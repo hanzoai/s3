@@ -1,0 +1,44 @@
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build
+
+ARG TARGETARCH
+ARG VERSION
+ARG COMMIT_ID=unknown
+
+RUN apk add --no-cache git ca-certificates bash
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN LDFLAGS="-s -w \
+    -X github.com/minio/minio/cmd.Version=${VERSION} \
+    -X github.com/minio/minio/cmd.CopyrightYear=2026 \
+    -X github.com/minio/minio/cmd.ReleaseTag=RELEASE.${VERSION} \
+    -X github.com/minio/minio/cmd.CommitID=${COMMIT_ID} \
+    -X github.com/minio/minio/cmd.ShortCommitID=${COMMIT_ID}" && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -tags kqueue -trimpath -ldflags "${LDFLAGS}" -o /go/bin/minio .
+
+FROM alpine:3.21
+
+ENV MINIO_ACCESS_KEY_FILE=access_key \
+    MINIO_SECRET_KEY_FILE=secret_key \
+    MINIO_ROOT_USER_FILE=access_key \
+    MINIO_ROOT_PASSWORD_FILE=secret_key \
+    MINIO_KMS_SECRET_KEY_FILE=kms_master_key \
+    MINIO_CONFIG_ENV_FILE=config.env \
+    MC_CONFIG_DIR=/tmp/.mc
+
+RUN apk add --no-cache ca-certificates curl && \
+    chmod -R 777 /usr/bin
+
+COPY --from=build /go/bin/minio /usr/bin/minio
+COPY dockerscripts/docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
+RUN chmod +x /usr/bin/docker-entrypoint.sh /usr/bin/minio
+
+EXPOSE 9000 9001
+VOLUME ["/data"]
+
+ENTRYPOINT ["/usr/bin/docker-entrypoint.sh"]
+CMD ["minio"]
