@@ -4,7 +4,7 @@ ARG TARGETARCH
 ARG VERSION
 ARG COMMIT_ID=unknown
 ARG CONSOLE_REPO=https://github.com/hanzoai/storage-console.git
-ARG CONSOLE_REF=v1.7.7-hanzo.1
+ARG CONSOLE_REF=v1.7.7-hanzo.2
 
 RUN apk add --no-cache git ca-certificates bash
 
