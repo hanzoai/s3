@@ -21,7 +21,7 @@ import (
 	"net"
 	"net/http"
 
-	consoleapi "github.com/minio/console/api"
+	consoleapi "github.com/hanzoai/storage-console/api"
 	xhttp "github.com/minio/minio/internal/http"
 	"github.com/minio/mux"
 	"github.com/minio/pkg/v3/wildcard"

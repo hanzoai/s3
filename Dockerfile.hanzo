@@ -8,20 +8,19 @@ ARG CONSOLE_REF=v1.7.7-hanzo.1
 
 RUN apk add --no-cache git ca-certificates bash
 
-# Clone Hanzo-branded console fork
+# Clone Hanzo-branded console fork (bypass Go module proxy cache)
 WORKDIR /console
 RUN git clone --depth 1 --branch ${CONSOLE_REF} ${CONSOLE_REPO} .
 
 WORKDIR /src
 COPY go.mod go.sum ./
-
-# Add local replace directive for console fork
-RUN echo '' >> go.mod && \
-    echo 'replace github.com/minio/console => /console' >> go.mod
-
 RUN go mod download
 
 COPY . .
+
+# Use local console clone instead of cached module
+RUN echo '' >> go.mod && \
+    echo 'replace github.com/hanzoai/storage-console => /console' >> go.mod
 
 RUN LDFLAGS="-s -w \
     -X github.com/minio/minio/cmd.Version=${VERSION} \
