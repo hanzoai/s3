@@ -6,11 +6,14 @@ ARG COMMIT_ID=unknown
 ARG CONSOLE_REPO=https://github.com/hanzoai/storage-console.git
 ARG CONSOLE_REF=v1.7.7-hanzo.2
 
-RUN apk add --no-cache git ca-certificates bash
+RUN apk add --no-cache git ca-certificates bash python3
 
 # Clone Hanzo-branded console fork (bypass Go module proxy cache)
 WORKDIR /console
 RUN git clone --depth 1 --branch ${CONSOLE_REF} ${CONSOLE_REPO} .
+
+# Patch compiled JS bundles: replace MinIO/min.io refs with Hanzo Space branding
+RUN python3 /console/patch_minio_refs.py /console
 
 WORKDIR /src
 COPY go.mod go.sum ./
@@ -31,6 +34,10 @@ RUN LDFLAGS="-s -w \
     CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -tags kqueue -trimpath -ldflags "${LDFLAGS}" -o /go/bin/minio .
 
 FROM alpine:3.21
+
+LABEL org.opencontainers.image.source="https://github.com/hanzoai/storage"
+LABEL org.opencontainers.image.description="Hanzo Space — S3-compatible object storage"
+LABEL org.opencontainers.image.licenses="AGPL-3.0"
 
 ENV MINIO_ACCESS_KEY_FILE=access_key \
     MINIO_SECRET_KEY_FILE=secret_key \
