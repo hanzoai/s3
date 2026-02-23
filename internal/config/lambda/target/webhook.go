@@ -43,11 +43,11 @@ const (
 	WebhookClientCert = "client_cert"
 	WebhookClientKey  = "client_key"
 
-	EnvWebhookEnable     = "MINIO_LAMBDA_WEBHOOK_ENABLE"
-	EnvWebhookEndpoint   = "MINIO_LAMBDA_WEBHOOK_ENDPOINT"
-	EnvWebhookAuthToken  = "MINIO_LAMBDA_WEBHOOK_AUTH_TOKEN"
-	EnvWebhookClientCert = "MINIO_LAMBDA_WEBHOOK_CLIENT_CERT"
-	EnvWebhookClientKey  = "MINIO_LAMBDA_WEBHOOK_CLIENT_KEY"
+	EnvWebhookEnable     = "S3_LAMBDA_WEBHOOK_ENABLE"
+	EnvWebhookEndpoint   = "S3_LAMBDA_WEBHOOK_ENDPOINT"
+	EnvWebhookAuthToken  = "S3_LAMBDA_WEBHOOK_AUTH_TOKEN"
+	EnvWebhookClientCert = "S3_LAMBDA_WEBHOOK_CLIENT_CERT"
+	EnvWebhookClientKey  = "S3_LAMBDA_WEBHOOK_CLIENT_KEY"
 )
 
 // WebhookArgs - Webhook target arguments.

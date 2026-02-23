@@ -147,7 +147,7 @@ func (evnot *EventNotifier) Send(args eventArgs) {
 		return
 	}
 
-	// If MINIO_API_SYNC_EVENTS is set, send events synchronously.
+	// If S3_API_SYNC_EVENTS is set, send events synchronously.
 	evnot.targetList.Send(args.ToEvent(true), targetIDSet, globalAPIConfig.isSyncEventsEnabled())
 }
 

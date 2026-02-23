@@ -138,7 +138,7 @@ func (t *tierMetrics) logFailure(tier string) {
 }
 
 var (
-	// {minio_node}_{tier}_{ttlb_seconds_distribution}
+	// {s3_node}_{tier}_{ttlb_seconds_distribution}
 	tierTTLBMD = MetricDescription{
 		Namespace: nodeMetricNamespace,
 		Subsystem: tierSubsystem,
@@ -147,7 +147,7 @@ var (
 		Type:      gaugeMetric,
 	}
 
-	// {minio_node}_{tier}_{requests_success}
+	// {s3_node}_{tier}_{requests_success}
 	tierRequestsSuccessMD = MetricDescription{
 		Namespace: nodeMetricNamespace,
 		Subsystem: tierSubsystem,
@@ -155,7 +155,7 @@ var (
 		Help:      "Number of requests to download object from warm tier that were successful",
 		Type:      counterMetric,
 	}
-	// {minio_node}_{tier}_{requests_failure}
+	// {s3_node}_{tier}_{requests_failure}
 	tierRequestsFailureMD = MetricDescription{
 		Namespace: nodeMetricNamespace,
 		Subsystem: tierSubsystem,

@@ -23,9 +23,9 @@ const (
 	transitionWorkers = "transition_workers"
 	expirationWorkers = "expiration_workers"
 	// EnvILMTransitionWorkers env variable to configure number of transition workers
-	EnvILMTransitionWorkers = "MINIO_ILM_TRANSITION_WORKERS"
+	EnvILMTransitionWorkers = "S3_ILM_TRANSITION_WORKERS"
 	// EnvILMExpirationWorkers env variable to configure number of expiration workers
-	EnvILMExpirationWorkers = "MINIO_ILM_EXPIRATION_WORKERS"
+	EnvILMExpirationWorkers = "S3_ILM_EXPIRATION_WORKERS"
 )
 
 var (

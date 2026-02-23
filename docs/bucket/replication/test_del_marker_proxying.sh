@@ -24,8 +24,8 @@ cleanup() {
 
 cleanup
 
-export MINIO_CI_CD=1
-export MINIO_BROWSER=off
+export S3_CI_CD=1
+export S3_BROWSER=off
 
 make install-race
 

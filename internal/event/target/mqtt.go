@@ -53,16 +53,16 @@ const (
 	MqttQueueDir          = "queue_dir"
 	MqttQueueLimit        = "queue_limit"
 
-	EnvMQTTEnable            = "MINIO_NOTIFY_MQTT_ENABLE"
-	EnvMQTTBroker            = "MINIO_NOTIFY_MQTT_BROKER"
-	EnvMQTTTopic             = "MINIO_NOTIFY_MQTT_TOPIC"
-	EnvMQTTQoS               = "MINIO_NOTIFY_MQTT_QOS"
-	EnvMQTTUsername          = "MINIO_NOTIFY_MQTT_USERNAME"
-	EnvMQTTPassword          = "MINIO_NOTIFY_MQTT_PASSWORD"
-	EnvMQTTReconnectInterval = "MINIO_NOTIFY_MQTT_RECONNECT_INTERVAL"
-	EnvMQTTKeepAliveInterval = "MINIO_NOTIFY_MQTT_KEEP_ALIVE_INTERVAL"
-	EnvMQTTQueueDir          = "MINIO_NOTIFY_MQTT_QUEUE_DIR"
-	EnvMQTTQueueLimit        = "MINIO_NOTIFY_MQTT_QUEUE_LIMIT"
+	EnvMQTTEnable            = "S3_NOTIFY_MQTT_ENABLE"
+	EnvMQTTBroker            = "S3_NOTIFY_MQTT_BROKER"
+	EnvMQTTTopic             = "S3_NOTIFY_MQTT_TOPIC"
+	EnvMQTTQoS               = "S3_NOTIFY_MQTT_QOS"
+	EnvMQTTUsername          = "S3_NOTIFY_MQTT_USERNAME"
+	EnvMQTTPassword          = "S3_NOTIFY_MQTT_PASSWORD"
+	EnvMQTTReconnectInterval = "S3_NOTIFY_MQTT_RECONNECT_INTERVAL"
+	EnvMQTTKeepAliveInterval = "S3_NOTIFY_MQTT_KEEP_ALIVE_INTERVAL"
+	EnvMQTTQueueDir          = "S3_NOTIFY_MQTT_QUEUE_DIR"
+	EnvMQTTQueueLimit        = "S3_NOTIFY_MQTT_QUEUE_LIMIT"
 )
 
 // MQTTArgs - MQTT target arguments.

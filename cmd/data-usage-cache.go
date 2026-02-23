@@ -523,7 +523,7 @@ func (d *dataUsageCache) reduceChildrenOf(path dataUsageHash, limit int, compact
 		return
 	}
 
-	// Appears to be printed with _MINIO_SERVER_DEBUG=off
+	// Appears to be printed with _S3_SERVER_DEBUG=off
 	// console.Debugf(" %d children found, compacting %v\n", total, path)
 
 	leaves := make([]struct {
@@ -572,7 +572,7 @@ func (d *dataUsageCache) reduceChildrenOf(path dataUsageHash, limit int, compact
 			leaves = leaves[1:]
 			continue
 		}
-		// Appears to be printed with _MINIO_SERVER_DEBUG=off
+		// Appears to be printed with _S3_SERVER_DEBUG=off
 		// console.Debugf("compacting %v, removing %d children\n", candidate, removing)
 
 		flat.Compacted = true

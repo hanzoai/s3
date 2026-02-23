@@ -8,13 +8,13 @@ x-minio-common: &minio-common
     - "9000"
     - "9001"
   environment:
-    MINIO_CI_CD: "on"
-    MINIO_ROOT_USER: "minio"
-    MINIO_ROOT_PASSWORD: "minio123"
-    MINIO_COMPRESSION_ENABLE: "on"
-    MINIO_COMPRESSION_MIME_TYPES: "*"
-    MINIO_COMPRESSION_ALLOW_ENCRYPTION: "on"
-    MINIO_KMS_SECRET_KEY: "my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw="
+    S3_CI_CD: "on"
+    S3_ROOT_USER: "minio"
+    S3_ROOT_PASSWORD: "minio123"
+    S3_COMPRESSION_ENABLE: "on"
+    S3_COMPRESSION_MIME_TYPES: "*"
+    S3_COMPRESSION_ALLOW_ENCRYPTION: "on"
+    S3_KMS_SECRET_KEY: "my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw="
   healthcheck:
     test: ["CMD", "mc", "ready", "local"]
     interval: 5s

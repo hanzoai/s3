@@ -98,7 +98,7 @@ func (md metricDisplay) TableRow() string {
 // listMetrics - returns a handler that lists all the metrics that could be
 // returned for the requested path.
 //
-// FIXME: It currently only lists `minio_` prefixed metrics.
+// FIXME: It currently only lists `s3_` prefixed metrics.
 func (h *metricsV3Server) listMetrics(path string) http.Handler {
 	// First collect all matching MetricsGroup's
 	matchingMG := make(map[collectorPath]*MetricsGroup)

@@ -105,7 +105,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "time() - max(minio_node_process_starttime_seconds{job=~\"$scrape_jobs\"})",
+          "expr": "time() - max(s3_node_process_starttime_seconds{job=~\"$scrape_jobs\"})",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -184,7 +184,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (instance) (minio_s3_traffic_received_bytes{job=~\"$scrape_jobs\"})",
+          "expr": "sum by (instance) (s3_s3_traffic_received_bytes{job=~\"$scrape_jobs\"})",
           "format": "table",
           "hide": false,
           "instant": false,
@@ -303,7 +303,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "topk(1, sum(minio_cluster_capacity_usable_total_bytes{job=~\"$scrape_jobs\"}) by (instance)) - topk(1, sum(minio_cluster_capacity_usable_free_bytes{job=~\"$scrape_jobs\"}) by (instance))",
+          "expr": "topk(1, sum(s3_cluster_capacity_usable_total_bytes{job=~\"$scrape_jobs\"}) by (instance)) - topk(1, sum(s3_cluster_capacity_usable_free_bytes{job=~\"$scrape_jobs\"}) by (instance))",
           "format": "time_series",
           "instant": false,
           "interval": "1m",
@@ -318,7 +318,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "topk(1, sum(minio_cluster_capacity_usable_free_bytes{job=~\"$scrape_jobs\"}) by (instance)) ",
+          "expr": "topk(1, sum(s3_cluster_capacity_usable_free_bytes{job=~\"$scrape_jobs\"}) by (instance)) ",
           "hide": false,
           "interval": "1m",
           "legendFormat": "Free",
@@ -456,7 +456,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "max(minio_cluster_usage_total_bytes{job=~\"$scrape_jobs\"})",
+          "expr": "max(s3_cluster_usage_total_bytes{job=~\"$scrape_jobs\"})",
           "interval": "",
           "legendFormat": "Usage",
           "range": true,
@@ -524,7 +524,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": true,
-          "expr": "minio_cluster_objects_size_distribution{job=~\"$scrape_jobs\"}",
+          "expr": "s3_cluster_objects_size_distribution{job=~\"$scrape_jobs\"}",
           "format": "time_series",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -629,7 +629,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "minio_node_file_descriptor_open_total{job=~\"$scrape_jobs\"}",
+          "expr": "s3_node_file_descriptor_open_total{job=~\"$scrape_jobs\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -709,7 +709,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (instance) (minio_s3_traffic_sent_bytes{job=~\"$scrape_jobs\"})",
+          "expr": "sum by (instance) (s3_s3_traffic_sent_bytes{job=~\"$scrape_jobs\"})",
           "format": "table",
           "hide": false,
           "instant": false,
@@ -813,7 +813,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "minio_node_go_routine_total{job=~\"$scrape_jobs\"}",
+          "expr": "s3_node_go_routine_total{job=~\"$scrape_jobs\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -882,7 +882,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": true,
-          "expr": "minio_cluster_health_status{job=~\"$scrape_jobs\"}",
+          "expr": "s3_cluster_health_status{job=~\"$scrape_jobs\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "interval": "",
@@ -948,7 +948,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "max(minio_cluster_drive_online_total{job=~\"$scrape_jobs\"})",
+          "expr": "max(s3_cluster_drive_online_total{job=~\"$scrape_jobs\"})",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -967,7 +967,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "max(minio_cluster_drive_offline_total{job=~\"$scrape_jobs\"})",
+          "expr": "max(s3_cluster_drive_offline_total{job=~\"$scrape_jobs\"})",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -1052,7 +1052,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "max(minio_cluster_bucket_total{job=~\"$scrape_jobs\"})",
+          "expr": "max(s3_cluster_bucket_total{job=~\"$scrape_jobs\"})",
           "format": "time_series",
           "instant": false,
           "interval": "1m",
@@ -1151,7 +1151,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (rate(minio_s3_traffic_received_bytes{job=~\"$scrape_jobs\"}[$__rate_interval]))",
+          "expr": "sum by (server) (rate(s3_s3_traffic_received_bytes{job=~\"$scrape_jobs\"}[$__rate_interval]))",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "Data Received [{{server}}]",
@@ -1248,7 +1248,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (rate(minio_s3_traffic_sent_bytes{job=~\"$scrape_jobs\"}[$__rate_interval]))",
+          "expr": "sum by (server) (rate(s3_s3_traffic_sent_bytes{job=~\"$scrape_jobs\"}[$__rate_interval]))",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "Data Sent [{{server}}]",
@@ -1327,7 +1327,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "max(minio_cluster_nodes_online_total{job=~\"$scrape_jobs\"})",
+          "expr": "max(s3_cluster_nodes_online_total{job=~\"$scrape_jobs\"})",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -1415,7 +1415,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "max(minio_cluster_usage_object_total{job=~\"$scrape_jobs\"})",
+          "expr": "max(s3_cluster_usage_object_total{job=~\"$scrape_jobs\"})",
           "format": "time_series",
           "instant": false,
           "interval": "1m",
@@ -1485,7 +1485,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "max(minio_heal_time_last_activity_nano_seconds{job=~\"$scrape_jobs\"})",
+          "expr": "max(s3_heal_time_last_activity_nano_seconds{job=~\"$scrape_jobs\"})",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -1557,7 +1557,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "max(minio_usage_last_activity_nano_seconds{job=~\"$scrape_jobs\"})",
+          "expr": "max(s3_usage_last_activity_nano_seconds{job=~\"$scrape_jobs\"})",
           "format": "time_series",
           "instant": true,
           "interval": "",
@@ -1689,7 +1689,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server,api) (increase(minio_s3_requests_total{job=~\"$scrape_jobs\"}[$__rate_interval]))",
+          "expr": "sum by (server,api) (increase(s3_s3_requests_total{job=~\"$scrape_jobs\"}[$__rate_interval]))",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server,api}}",
@@ -1817,7 +1817,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server,api) (increase(minio_s3_requests_4xx_errors_total{job=~\"$scrape_jobs\"}[$__rate_interval]))",
+          "expr": "sum by (server,api) (increase(s3_s3_requests_4xx_errors_total{job=~\"$scrape_jobs\"}[$__rate_interval]))",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server,api}}",
@@ -1945,7 +1945,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server,api) (increase(minio_s3_requests_5xx_errors_total{job=~\"$scrape_jobs\"}[$__rate_interval]))",
+          "expr": "sum by (server,api) (increase(s3_s3_requests_5xx_errors_total{job=~\"$scrape_jobs\"}[$__rate_interval]))",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server,api}}",
@@ -2012,7 +2012,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "minio_cluster_health_erasure_set_online_drives{job=~\"$scrape_jobs\"}",
+          "expr": "s3_cluster_health_erasure_set_online_drives{job=~\"$scrape_jobs\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2029,7 +2029,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "minio_cluster_health_erasure_set_read_quorum{job=~\"$scrape_jobs\"}",
+          "expr": "s3_cluster_health_erasure_set_read_quorum{job=~\"$scrape_jobs\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2046,7 +2046,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "minio_cluster_health_erasure_set_write_quorum{job=~\"$scrape_jobs\"}",
+          "expr": "s3_cluster_health_erasure_set_write_quorum{job=~\"$scrape_jobs\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2063,7 +2063,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "minio_cluster_health_erasure_set_healing_drives{job=~\"$scrape_jobs\"}",
+          "expr": "s3_cluster_health_erasure_set_healing_drives{job=~\"$scrape_jobs\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2080,7 +2080,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "minio_cluster_health_erasure_set_status{job=~\"$scrape_jobs\"}",
+          "expr": "s3_cluster_health_erasure_set_status{job=~\"$scrape_jobs\"}",
           "fullMetaSearch": false,
           "hide": false,
           "includeNullMetadata": true,
@@ -2156,7 +2156,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "minio_node_process_resident_memory_bytes{job=~\"$scrape_jobs\"}",
+          "expr": "s3_node_process_resident_memory_bytes{job=~\"$scrape_jobs\"}",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -2255,7 +2255,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "rate(minio_node_io_rchar_bytes{job=~\"$scrape_jobs\"}[$__rate_interval])",
+          "expr": "rate(s3_node_io_rchar_bytes{job=~\"$scrape_jobs\"}[$__rate_interval])",
           "format": "time_series",
           "instant": false,
           "interval": "",
@@ -2268,7 +2268,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "rate(minio_node_io_wchar_bytes{job=~\"$scrape_jobs\"}[$__rate_interval])",
+          "expr": "rate(s3_node_io_wchar_bytes{job=~\"$scrape_jobs\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "Node WChar [{{server}}]",
           "refId": "B"
@@ -2337,7 +2337,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "rate(minio_node_process_cpu_total_seconds{job=~\"$scrape_jobs\"}[$__rate_interval])",
+          "expr": "rate(s3_node_process_cpu_total_seconds{job=~\"$scrape_jobs\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{server}}",
           "range": true,
@@ -2436,12 +2436,12 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "rate(minio_inter_node_traffic_sent_bytes{job=~\"$scrape_jobs\"}[$__rate_interval])",
+          "expr": "rate(s3_inter_node_traffic_sent_bytes{job=~\"$scrape_jobs\"}[$__rate_interval])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
           "legendFormat": "Internode Bytes Received [{{server}}]",
-          "metric": "minio_http_requests_duration_seconds_count",
+          "metric": "s3_http_requests_duration_seconds_count",
           "range": true,
           "refId": "A",
           "step": 4
@@ -2452,7 +2452,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "rate(minio_inter_node_traffic_received_bytes{job=~\"$scrape_jobs\"}[$__rate_interval])",
+          "expr": "rate(s3_inter_node_traffic_received_bytes{job=~\"$scrape_jobs\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "Internode Bytes Sent [{{server}}]",
           "refId": "B"
@@ -2582,7 +2582,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_file_descriptor_open_total{job=~\"$scrape_jobs\"}",
+          "expr": "s3_node_file_descriptor_open_total{job=~\"$scrape_jobs\"}",
           "interval": "",
           "legendFormat": "Open FDs [{{server}}]",
           "refId": "B"
@@ -2713,7 +2713,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "rate(minio_node_syscall_read_total{job=~\"$scrape_jobs\"}[$__rate_interval])",
+          "expr": "rate(s3_node_syscall_read_total{job=~\"$scrape_jobs\"}[$__rate_interval])",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -2728,7 +2728,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "rate(minio_node_syscall_write_total{job=~\"$scrape_jobs\"}[$__rate_interval])",
+          "expr": "rate(s3_node_syscall_write_total{job=~\"$scrape_jobs\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "Write Syscalls [{{server}}]",
           "refId": "B"
@@ -2825,7 +2825,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "rate(minio_node_scanner_objects_scanned{job=~\"$scrape_jobs\"}[$__rate_interval])",
+          "expr": "rate(s3_node_scanner_objects_scanned{job=~\"$scrape_jobs\"}[$__rate_interval])",
           "interval": "1m",
           "legendFormat": "[{{server}}]",
           "refId": "A"
@@ -2922,7 +2922,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "rate(minio_node_scanner_versions_scanned{job=~\"$scrape_jobs\"}[$__rate_interval])",
+          "expr": "rate(s3_node_scanner_versions_scanned{job=~\"$scrape_jobs\"}[$__rate_interval])",
           "interval": "1m",
           "legendFormat": "[{{server}}]",
           "refId": "A"
@@ -3019,7 +3019,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "rate(minio_node_scanner_directories_scanned{job=~\"$scrape_jobs\"}[$__rate_interval])",
+          "expr": "rate(s3_node_scanner_directories_scanned{job=~\"$scrape_jobs\"}[$__rate_interval])",
           "interval": "1m",
           "legendFormat": "[{{server}}]",
           "refId": "A"
@@ -3093,13 +3093,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_cluster_kms_uptime{job=~\"$scrape_jobs\"}",
+          "expr": "s3_cluster_kms_uptime{job=~\"$scrape_jobs\"}",
           "format": "time_series",
           "instant": true,
           "interval": "",
           "intervalFactor": 1,
           "legendFormat": "{{instance}}",
-          "metric": "minio_cluster_kms_uptime",
+          "metric": "s3_cluster_kms_uptime",
           "refId": "A",
           "step": 60
         }
@@ -3225,7 +3225,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (increase(minio_cluster_kms_request_error{job=~\"$scrape_jobs\"}[$__rate_interval]))",
+          "expr": "sum by (server) (increase(s3_cluster_kms_request_error{job=~\"$scrape_jobs\"}[$__rate_interval]))",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server}}",
@@ -3323,7 +3323,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (minio_cluster_kms_online{job=~\"$scrape_jobs\"})",
+          "expr": "sum by (server) (s3_cluster_kms_online{job=~\"$scrape_jobs\"})",
           "interval": "1m",
           "legendFormat": "{{server}}",
           "refId": "A"
@@ -3420,7 +3420,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "rate(minio_node_scanner_bucket_scans_finished{job=~\"$scrape_jobs\"}[$__rate_interval])",
+          "expr": "rate(s3_node_scanner_bucket_scans_finished{job=~\"$scrape_jobs\"}[$__rate_interval])",
           "interval": "1m",
           "legendFormat": "[{{server}}]",
           "refId": "A"
@@ -3547,7 +3547,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (increase(minio_cluster_kms_request_failure{job=~\"$scrape_jobs\"}[$__rate_interval]))",
+          "expr": "sum by (server) (increase(s3_cluster_kms_request_failure{job=~\"$scrape_jobs\"}[$__rate_interval]))",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server}}",
@@ -3675,7 +3675,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (rate(minio_cluster_kms_request_success{job=~\"$scrape_jobs\"}[$__rate_interval]))",
+          "expr": "sum by (server) (rate(s3_cluster_kms_request_success{job=~\"$scrape_jobs\"}[$__rate_interval]))",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "KMS Request Success [{{server}}]",
@@ -3773,7 +3773,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "rate(minio_node_scanner_bucket_scans_started{job=~\"$scrape_jobs\"}[$__rate_interval])",
+          "expr": "rate(s3_node_scanner_bucket_scans_started{job=~\"$scrape_jobs\"}[$__rate_interval])",
           "interval": "1m",
           "legendFormat": "[{{server}}]",
           "refId": "A"

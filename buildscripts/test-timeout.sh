@@ -5,8 +5,8 @@ if [ -n "$TEST_DEBUG" ]; then
 fi
 
 WORK_DIR="$PWD/.verify-$RANDOM"
-MINIO_CONFIG_DIR="$WORK_DIR/.minio"
-MINIO=("$PWD/minio" --config-dir "$MINIO_CONFIG_DIR" server)
+S3_CONFIG_DIR="$WORK_DIR/.minio"
+MINIO=("$PWD/minio" --config-dir "$S3_CONFIG_DIR" server)
 
 if [ ! -x "$PWD/minio" ]; then
 	echo "minio executable binary not found in current directory"
@@ -70,13 +70,13 @@ function send_put_object_request() {
 	return 0
 }
 
-function test_minio_with_timeout() {
+function test_s3_with_timeout() {
 	start_port=$1
 
-	export MINIO_ROOT_USER=minio
-	export MINIO_ROOT_PASSWORD=minio123
+	export S3_ROOT_USER=minio
+	export S3_ROOT_PASSWORD=minio123
 	export MC_HOST_minio="http://minio:minio123@127.0.0.1:${start_port}/"
-	export MINIO_CI_CD=1
+	export S3_CI_CD=1
 
 	mkdir ${WORK_DIR}
 	C_PWD=${PWD}
@@ -131,7 +131,7 @@ function main() {
 	export srv_idle_timeout=5
 	export -f gen_put_request
 
-	test_minio_with_timeout ${start_port}
+	test_s3_with_timeout ${start_port}
 }
 
 main "$@"

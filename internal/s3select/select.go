@@ -79,7 +79,7 @@ const (
 var parquetSupport bool
 
 func init() {
-	parquetSupport = env.Get("MINIO_API_SELECT_PARQUET", config.EnableOff) == config.EnableOn
+	parquetSupport = env.Get("S3_API_SELECT_PARQUET", config.EnableOff) == config.EnableOn
 }
 
 var bufPool = bpool.Pool[*bytes.Buffer]{

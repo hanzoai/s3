@@ -22,11 +22,11 @@ cleanup() {
 
 cleanup
 
-export MINIO_CI_CD=1
-export MINIO_BROWSER=off
-export MINIO_ROOT_USER="minio"
-export MINIO_ROOT_PASSWORD="minio123"
-TEST_MINIO_ENC_KEY="MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDA"
+export S3_CI_CD=1
+export S3_BROWSER=off
+export S3_ROOT_USER="minio"
+export S3_ROOT_PASSWORD="minio123"
+TEST_S3_ENC_KEY="MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDA"
 
 # Create certificates for TLS enabled MinIO
 echo -n "Setup certs for MinIO instances ..."
@@ -78,12 +78,12 @@ echo "Create bucket in source MinIO instance"
 # Load objects to source site
 echo "Loading objects to source MinIO instance"
 ./mc cp /tmp/data/plainfile minio1/test-bucket --insecure
-./mc cp /tmp/data/encrypted minio1/test-bucket/encrypted --enc-c "minio1/test-bucket/encrypted=${TEST_MINIO_ENC_KEY}" --insecure
-./mc cp /tmp/data/defpartsize minio1/test-bucket/defpartsize --enc-c "minio1/test-bucket/defpartsize=${TEST_MINIO_ENC_KEY}" --insecure
+./mc cp /tmp/data/encrypted minio1/test-bucket/encrypted --enc-c "minio1/test-bucket/encrypted=${TEST_S3_ENC_KEY}" --insecure
+./mc cp /tmp/data/defpartsize minio1/test-bucket/defpartsize --enc-c "minio1/test-bucket/defpartsize=${TEST_S3_ENC_KEY}" --insecure
 
 # Below should fail as compression and SSEC used at the same time
 # DISABLED: We must check the response header to see if compression was actually applied
-#RESULT=$({ ./mc put /tmp/data/mpartobj.txt minio1/test-bucket/mpartobj.txt --enc-c "minio1/test-bucket/mpartobj.txt=${TEST_MINIO_ENC_KEY}" --insecure; } 2>&1)
+#RESULT=$({ ./mc put /tmp/data/mpartobj.txt minio1/test-bucket/mpartobj.txt --enc-c "minio1/test-bucket/mpartobj.txt=${TEST_S3_ENC_KEY}" --insecure; } 2>&1)
 #if [[ ${RESULT} != *"Server side encryption specified with SSE-C with compression not allowed"* ]]; then
 #	echo "BUG: Loading an SSE-C object to site with compression should fail. Succeeded though."
 #	exit_1
@@ -135,28 +135,28 @@ fi
 
 # Stat the SSEC objects from source site
 echo "Stat minio1/test-bucket/encrypted"
-./mc stat --no-list minio1/test-bucket/encrypted --enc-c "minio1/test-bucket/encrypted=${TEST_MINIO_ENC_KEY}" --insecure --json
-stat_out1=$(./mc stat --no-list minio1/test-bucket/encrypted --enc-c "minio1/test-bucket/encrypted=${TEST_MINIO_ENC_KEY}" --insecure --json)
+./mc stat --no-list minio1/test-bucket/encrypted --enc-c "minio1/test-bucket/encrypted=${TEST_S3_ENC_KEY}" --insecure --json
+stat_out1=$(./mc stat --no-list minio1/test-bucket/encrypted --enc-c "minio1/test-bucket/encrypted=${TEST_S3_ENC_KEY}" --insecure --json)
 src_obj1_etag=$(echo "${stat_out1}" | jq '.etag')
 src_obj1_size=$(echo "${stat_out1}" | jq '.size')
 src_obj1_md5=$(echo "${stat_out1}" | jq '.metadata."X-Amz-Server-Side-Encryption-Customer-Key-Md5"')
 echo "Stat minio1/test-bucket/defpartsize"
-./mc stat --no-list minio1/test-bucket/defpartsize --enc-c "minio1/test-bucket/defpartsize=${TEST_MINIO_ENC_KEY}" --insecure --json
-stat_out2=$(./mc stat --no-list minio1/test-bucket/defpartsize --enc-c "minio1/test-bucket/defpartsize=${TEST_MINIO_ENC_KEY}" --insecure --json)
+./mc stat --no-list minio1/test-bucket/defpartsize --enc-c "minio1/test-bucket/defpartsize=${TEST_S3_ENC_KEY}" --insecure --json
+stat_out2=$(./mc stat --no-list minio1/test-bucket/defpartsize --enc-c "minio1/test-bucket/defpartsize=${TEST_S3_ENC_KEY}" --insecure --json)
 src_obj2_etag=$(echo "${stat_out2}" | jq '.etag')
 src_obj2_size=$(echo "${stat_out2}" | jq '.size')
 src_obj2_md5=$(echo "${stat_out2}" | jq '.metadata."X-Amz-Server-Side-Encryption-Customer-Key-Md5"')
 
 # Stat the SSEC objects from replicated site
 echo "Stat minio2/test-bucket/encrypted"
-./mc stat --no-list minio2/test-bucket/encrypted --enc-c "minio2/test-bucket/encrypted=${TEST_MINIO_ENC_KEY}" --insecure --json
-stat_out1_rep=$(./mc stat --no-list minio2/test-bucket/encrypted --enc-c "minio2/test-bucket/encrypted=${TEST_MINIO_ENC_KEY}" --insecure --json)
+./mc stat --no-list minio2/test-bucket/encrypted --enc-c "minio2/test-bucket/encrypted=${TEST_S3_ENC_KEY}" --insecure --json
+stat_out1_rep=$(./mc stat --no-list minio2/test-bucket/encrypted --enc-c "minio2/test-bucket/encrypted=${TEST_S3_ENC_KEY}" --insecure --json)
 rep_obj1_etag=$(echo "${stat_out1_rep}" | jq '.etag')
 rep_obj1_size=$(echo "${stat_out1_rep}" | jq '.size')
 rep_obj1_md5=$(echo "${stat_out1_rep}" | jq '.metadata."X-Amz-Server-Side-Encryption-Customer-Key-Md5"')
 echo "Stat minio2/test-bucket/defpartsize"
-./mc stat --no-list minio2/test-bucket/defpartsize --enc-c "minio2/test-bucket/defpartsize=${TEST_MINIO_ENC_KEY}" --insecure --json
-stat_out2_rep=$(./mc stat --no-list minio2/test-bucket/defpartsize --enc-c "minio2/test-bucket/defpartsize=${TEST_MINIO_ENC_KEY}" --insecure --json)
+./mc stat --no-list minio2/test-bucket/defpartsize --enc-c "minio2/test-bucket/defpartsize=${TEST_S3_ENC_KEY}" --insecure --json
+stat_out2_rep=$(./mc stat --no-list minio2/test-bucket/defpartsize --enc-c "minio2/test-bucket/defpartsize=${TEST_S3_ENC_KEY}" --insecure --json)
 rep_obj2_etag=$(echo "${stat_out2_rep}" | jq '.etag')
 rep_obj2_size=$(echo "${stat_out2_rep}" | jq '.size')
 rep_obj2_md5=$(echo "${stat_out2_rep}" | jq '.metadata."X-Amz-Server-Side-Encryption-Customer-Key-Md5"')
@@ -180,8 +180,8 @@ if [ "${rep_obj2_size}" != "${src_obj2_size}" ]; then
 fi
 
 # Check content of replicated SSEC objects
-./mc cat minio2/test-bucket/encrypted --enc-c "minio2/test-bucket/encrypted=${TEST_MINIO_ENC_KEY}" --insecure
-./mc cat minio2/test-bucket/defpartsize --enc-c "minio2/test-bucket/defpartsize=${TEST_MINIO_ENC_KEY}" --insecure >/dev/null || exit_1
+./mc cat minio2/test-bucket/encrypted --enc-c "minio2/test-bucket/encrypted=${TEST_S3_ENC_KEY}" --insecure
+./mc cat minio2/test-bucket/defpartsize --enc-c "minio2/test-bucket/defpartsize=${TEST_S3_ENC_KEY}" --insecure >/dev/null || exit_1
 
 # Check the MD5 checksums of encrypted objects from source and target
 if [ "${src_obj1_md5}" != "${rep_obj1_md5}" ]; then

@@ -103,7 +103,7 @@ Once decommission is complete, it will be indicated with *Complete* status.  *Co
 └─────┴─────────────────────────────────┴──────────────────────────────────┴──────────┘
 ```
 
-- On baremetal setups, if you have `MINIO_VOLUMES="http://minio{1...2}/data{1...4} http://minio{3...4}/data{1...4}"`, you can remove the first argument `http://minio{1...2}/data{1...4}` to update your `MINIO_VOLUMES` setting, then restart all the servers in the setup in parallel using `systemctl restart minio`.
+- On baremetal setups, if you have `S3_VOLUMES="http://minio{1...2}/data{1...4} http://minio{3...4}/data{1...4}"`, you can remove the first argument `http://minio{1...2}/data{1...4}` to update your `S3_VOLUMES` setting, then restart all the servers in the setup in parallel using `systemctl restart minio`.
 
 - On Kubernetes setups, the statefulset specification needs to be modified by changing the command line input for the MinIO container. Once the relevant changes are done, proceed to execute `kubectl apply -f statefulset.yaml`.
 

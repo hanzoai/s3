@@ -13,7 +13,7 @@ if [ ! -f ./mc ]; then
 fi
 
 export CI=true
-export MINIO_KMS_SECRET_KEY=my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw=
+export S3_KMS_SECRET_KEY=my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw=
 export MC_HOST_myminio="http://minioadmin:minioadmin@localhost:9000/"
 
 (minio server http://localhost:9000/tmp/xl/{1...10}/disk{0...1} 2>&1 >/dev/null) &

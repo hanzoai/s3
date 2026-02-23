@@ -2,7 +2,7 @@
 
 set -x
 
-export MINIO_CI_CD=1
+export S3_CI_CD=1
 killall -9 minio
 
 rm -rf ${HOME}/tmp/dist
@@ -50,7 +50,7 @@ set -e
 
 killall -9 minio
 
-export MINIO_API_ROOT_ACCESS=on
+export S3_API_ROOT_ACCESS=on
 for ((i = 0; i < $((nr_servers)); i++)); do
 	(minio server --address ":$((9100 + i))" $args 2>&1 >/tmp/log$i.txt) &
 done
@@ -99,7 +99,7 @@ export MC_HOST_siteb=http://minioadmin:minioadmin@127.0.0.1:9004
 killall -9 minio
 
 echo "turning off root access, however site replication must continue"
-export MINIO_API_ROOT_ACCESS=off
+export S3_API_ROOT_ACCESS=off
 
 minio server --address 127.0.0.1:9001 "http://127.0.0.1:9001/tmp/multisitea/data/disterasure/xl{1...4}" \
 	"http://127.0.0.1:9002/tmp/multisitea/data/disterasure/xl{5...8}" >/tmp/sitea_1.log 2>&1 &

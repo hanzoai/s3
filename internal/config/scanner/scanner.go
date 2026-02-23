@@ -29,27 +29,27 @@ import (
 // Compression environment variables
 const (
 	Speed    = "speed"
-	EnvSpeed = "MINIO_SCANNER_SPEED"
+	EnvSpeed = "S3_SCANNER_SPEED"
 
 	IdleSpeed    = "idle_speed"
-	EnvIdleSpeed = "MINIO_SCANNER_IDLE_SPEED"
+	EnvIdleSpeed = "S3_SCANNER_IDLE_SPEED"
 
 	ExcessVersions    = "alert_excess_versions"
-	EnvExcessVersions = "MINIO_SCANNER_ALERT_EXCESS_VERSIONS"
+	EnvExcessVersions = "S3_SCANNER_ALERT_EXCESS_VERSIONS"
 
 	ExcessFolders    = "alert_excess_folders"
-	EnvExcessFolders = "MINIO_SCANNER_ALERT_EXCESS_FOLDERS"
+	EnvExcessFolders = "S3_SCANNER_ALERT_EXCESS_FOLDERS"
 
 	// All below are deprecated in October 2022 and
 	// replaced them with a single speed parameter
 	Delay            = "delay"
 	MaxWait          = "max_wait"
 	Cycle            = "cycle"
-	EnvDelay         = "MINIO_SCANNER_DELAY"
-	EnvCycle         = "MINIO_SCANNER_CYCLE"
-	EnvDelayLegacy   = "MINIO_CRAWLER_DELAY"
-	EnvMaxWait       = "MINIO_SCANNER_MAX_WAIT"
-	EnvMaxWaitLegacy = "MINIO_CRAWLER_MAX_WAIT"
+	EnvDelay         = "S3_SCANNER_DELAY"
+	EnvCycle         = "S3_SCANNER_CYCLE"
+	EnvDelayLegacy   = "S3_CRAWLER_DELAY"
+	EnvMaxWait       = "S3_SCANNER_MAX_WAIT"
+	EnvMaxWaitLegacy = "S3_CRAWLER_MAX_WAIT"
 )
 
 // Config represents the heal settings.

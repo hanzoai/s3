@@ -156,9 +156,9 @@ func (h *healRoutine) AddWorker(ctx context.Context, objAPI ObjectLayer, bgSeq *
 func newHealRoutine() *healRoutine {
 	workers := runtime.GOMAXPROCS(0) / 2
 
-	if envHealWorkers := env.Get("_MINIO_HEAL_WORKERS", ""); envHealWorkers != "" {
+	if envHealWorkers := env.Get("_S3_HEAL_WORKERS", ""); envHealWorkers != "" {
 		if numHealers, err := strconv.Atoi(envHealWorkers); err != nil {
-			bugLogIf(context.Background(), fmt.Errorf("invalid _MINIO_HEAL_WORKERS value: %w", err))
+			bugLogIf(context.Background(), fmt.Errorf("invalid _S3_HEAL_WORKERS value: %w", err))
 		} else {
 			workers = numHealers
 		}

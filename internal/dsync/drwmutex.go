@@ -42,11 +42,11 @@ var lockRetryMinInterval time.Duration
 var lockRetryBackOff func(*rand.Rand, uint) time.Duration
 
 func init() {
-	// Check for MINIO_DSYNC_TRACE env variable, if set logging will be enabled for failed REST operations.
-	dsyncLog = env.Get("_MINIO_DSYNC_TRACE", "0") == "1"
+	// Check for S3_DSYNC_TRACE env variable, if set logging will be enabled for failed REST operations.
+	dsyncLog = env.Get("_S3_DSYNC_TRACE", "0") == "1"
 
 	lockRetryMinInterval = 250 * time.Millisecond
-	if lri := env.Get("_MINIO_LOCK_RETRY_INTERVAL", ""); lri != "" {
+	if lri := env.Get("_S3_LOCK_RETRY_INTERVAL", ""); lri != "" {
 		v, err := strconv.Atoi(lri)
 		if err != nil {
 			panic(err)

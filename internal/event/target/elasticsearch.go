@@ -52,14 +52,14 @@ const (
 	ElasticUsername   = "username"
 	ElasticPassword   = "password"
 
-	EnvElasticEnable     = "MINIO_NOTIFY_ELASTICSEARCH_ENABLE"
-	EnvElasticFormat     = "MINIO_NOTIFY_ELASTICSEARCH_FORMAT"
-	EnvElasticURL        = "MINIO_NOTIFY_ELASTICSEARCH_URL"
-	EnvElasticIndex      = "MINIO_NOTIFY_ELASTICSEARCH_INDEX"
-	EnvElasticQueueDir   = "MINIO_NOTIFY_ELASTICSEARCH_QUEUE_DIR"
-	EnvElasticQueueLimit = "MINIO_NOTIFY_ELASTICSEARCH_QUEUE_LIMIT"
-	EnvElasticUsername   = "MINIO_NOTIFY_ELASTICSEARCH_USERNAME"
-	EnvElasticPassword   = "MINIO_NOTIFY_ELASTICSEARCH_PASSWORD"
+	EnvElasticEnable     = "S3_NOTIFY_ELASTICSEARCH_ENABLE"
+	EnvElasticFormat     = "S3_NOTIFY_ELASTICSEARCH_FORMAT"
+	EnvElasticURL        = "S3_NOTIFY_ELASTICSEARCH_URL"
+	EnvElasticIndex      = "S3_NOTIFY_ELASTICSEARCH_INDEX"
+	EnvElasticQueueDir   = "S3_NOTIFY_ELASTICSEARCH_QUEUE_DIR"
+	EnvElasticQueueLimit = "S3_NOTIFY_ELASTICSEARCH_QUEUE_LIMIT"
+	EnvElasticUsername   = "S3_NOTIFY_ELASTICSEARCH_USERNAME"
+	EnvElasticPassword   = "S3_NOTIFY_ELASTICSEARCH_PASSWORD"
 )
 
 // ESSupportStatus is a typed string representing the support status for

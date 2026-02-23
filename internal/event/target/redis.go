@@ -46,14 +46,14 @@ const (
 	RedisQueueDir   = "queue_dir"
 	RedisQueueLimit = "queue_limit"
 
-	EnvRedisEnable     = "MINIO_NOTIFY_REDIS_ENABLE"
-	EnvRedisFormat     = "MINIO_NOTIFY_REDIS_FORMAT"
-	EnvRedisAddress    = "MINIO_NOTIFY_REDIS_ADDRESS"
-	EnvRedisPassword   = "MINIO_NOTIFY_REDIS_PASSWORD"
-	EnvRedisUser       = "MINIO_NOTIFY_REDIS_USER"
-	EnvRedisKey        = "MINIO_NOTIFY_REDIS_KEY"
-	EnvRedisQueueDir   = "MINIO_NOTIFY_REDIS_QUEUE_DIR"
-	EnvRedisQueueLimit = "MINIO_NOTIFY_REDIS_QUEUE_LIMIT"
+	EnvRedisEnable     = "S3_NOTIFY_REDIS_ENABLE"
+	EnvRedisFormat     = "S3_NOTIFY_REDIS_FORMAT"
+	EnvRedisAddress    = "S3_NOTIFY_REDIS_ADDRESS"
+	EnvRedisPassword   = "S3_NOTIFY_REDIS_PASSWORD"
+	EnvRedisUser       = "S3_NOTIFY_REDIS_USER"
+	EnvRedisKey        = "S3_NOTIFY_REDIS_KEY"
+	EnvRedisQueueDir   = "S3_NOTIFY_REDIS_QUEUE_DIR"
+	EnvRedisQueueLimit = "S3_NOTIFY_REDIS_QUEUE_LIMIT"
 )
 
 // RedisArgs - Redis target arguments.

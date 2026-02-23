@@ -23,61 +23,61 @@ export ENABLE_HTTPS=0
 export GO111MODULE=on
 export GOGC=25
 export ENABLE_ADMIN=1
-export MINIO_CI_CD=1
+export S3_CI_CD=1
 
-MINIO_CONFIG_DIR="$WORK_DIR/.minio"
-MINIO=("$PWD/minio" --config-dir "$MINIO_CONFIG_DIR")
+S3_CONFIG_DIR="$WORK_DIR/.minio"
+MINIO=("$PWD/minio" --config-dir "$S3_CONFIG_DIR")
 
 FILE_1_MB="$MINT_DATA_DIR/datafile-1-MB"
 FILE_65_MB="$MINT_DATA_DIR/datafile-65-MB"
 
 FUNCTIONAL_TESTS="$WORK_DIR/functional-tests.sh"
 
-function start_minio_fs() {
-	export MINIO_ROOT_USER=$ACCESS_KEY
-	export MINIO_ROOT_PASSWORD=$SECRET_KEY
+function start_s3_fs() {
+	export S3_ROOT_USER=$ACCESS_KEY
+	export S3_ROOT_PASSWORD=$SECRET_KEY
 	"${MINIO[@]}" server "${WORK_DIR}/fs-disk" >"$WORK_DIR/fs-minio.log" 2>&1 &
 
 	"${WORK_DIR}/mc" ready verify
 }
 
-function start_minio_erasure() {
+function start_s3_erasure() {
 	"${MINIO[@]}" server "${WORK_DIR}/erasure-disk1" "${WORK_DIR}/erasure-disk2" "${WORK_DIR}/erasure-disk3" "${WORK_DIR}/erasure-disk4" >"$WORK_DIR/erasure-minio.log" 2>&1 &
 
 	"${WORK_DIR}/mc" ready verify
 }
 
-function start_minio_erasure_sets() {
-	export MINIO_ENDPOINTS="${WORK_DIR}/erasure-disk-sets{1...32}"
+function start_s3_erasure_sets() {
+	export S3_ENDPOINTS="${WORK_DIR}/erasure-disk-sets{1...32}"
 	"${MINIO[@]}" server >"$WORK_DIR/erasure-minio-sets.log" 2>&1 &
 
 	"${WORK_DIR}/mc" ready verify
 }
 
-function start_minio_pool_erasure_sets() {
-	export MINIO_ROOT_USER=$ACCESS_KEY
-	export MINIO_ROOT_PASSWORD=$SECRET_KEY
-	export MINIO_ENDPOINTS="http://127.0.0.1:9000${WORK_DIR}/pool-disk-sets{1...4} http://127.0.0.1:9001${WORK_DIR}/pool-disk-sets{5...8}"
+function start_s3_pool_erasure_sets() {
+	export S3_ROOT_USER=$ACCESS_KEY
+	export S3_ROOT_PASSWORD=$SECRET_KEY
+	export S3_ENDPOINTS="http://127.0.0.1:9000${WORK_DIR}/pool-disk-sets{1...4} http://127.0.0.1:9001${WORK_DIR}/pool-disk-sets{5...8}"
 	"${MINIO[@]}" server --address ":9000" >"$WORK_DIR/pool-minio-9000.log" 2>&1 &
 	"${MINIO[@]}" server --address ":9001" >"$WORK_DIR/pool-minio-9001.log" 2>&1 &
 
 	"${WORK_DIR}/mc" ready verify
 }
 
-function start_minio_pool_erasure_sets_ipv6() {
-	export MINIO_ROOT_USER=$ACCESS_KEY
-	export MINIO_ROOT_PASSWORD=$SECRET_KEY
-	export MINIO_ENDPOINTS="http://[::1]:9000${WORK_DIR}/pool-disk-sets-ipv6{1...4} http://[::1]:9001${WORK_DIR}/pool-disk-sets-ipv6{5...8}"
+function start_s3_pool_erasure_sets_ipv6() {
+	export S3_ROOT_USER=$ACCESS_KEY
+	export S3_ROOT_PASSWORD=$SECRET_KEY
+	export S3_ENDPOINTS="http://[::1]:9000${WORK_DIR}/pool-disk-sets-ipv6{1...4} http://[::1]:9001${WORK_DIR}/pool-disk-sets-ipv6{5...8}"
 	"${MINIO[@]}" server --address="[::1]:9000" >"$WORK_DIR/pool-minio-ipv6-9000.log" 2>&1 &
 	"${MINIO[@]}" server --address="[::1]:9001" >"$WORK_DIR/pool-minio-ipv6-9001.log" 2>&1 &
 
 	"${WORK_DIR}/mc" ready verify_ipv6
 }
 
-function start_minio_dist_erasure() {
-	export MINIO_ROOT_USER=$ACCESS_KEY
-	export MINIO_ROOT_PASSWORD=$SECRET_KEY
-	export MINIO_ENDPOINTS="http://127.0.0.1:9000${WORK_DIR}/dist-disk1 http://127.0.0.1:9001${WORK_DIR}/dist-disk2 http://127.0.0.1:9002${WORK_DIR}/dist-disk3 http://127.0.0.1:9003${WORK_DIR}/dist-disk4"
+function start_s3_dist_erasure() {
+	export S3_ROOT_USER=$ACCESS_KEY
+	export S3_ROOT_PASSWORD=$SECRET_KEY
+	export S3_ENDPOINTS="http://127.0.0.1:9000${WORK_DIR}/dist-disk1 http://127.0.0.1:9001${WORK_DIR}/dist-disk2 http://127.0.0.1:9002${WORK_DIR}/dist-disk3 http://127.0.0.1:9003${WORK_DIR}/dist-disk4"
 	for i in $(seq 0 3); do
 		"${MINIO[@]}" server --address ":900${i}" >"$WORK_DIR/dist-minio-900${i}.log" 2>&1 &
 	done
@@ -86,7 +86,7 @@ function start_minio_dist_erasure() {
 }
 
 function run_test_fs() {
-	start_minio_fs
+	start_s3_fs
 
 	(cd "$WORK_DIR" && "$FUNCTIONAL_TESTS")
 	rv=$?
@@ -103,7 +103,7 @@ function run_test_fs() {
 }
 
 function run_test_erasure_sets() {
-	start_minio_erasure_sets
+	start_s3_erasure_sets
 
 	(cd "$WORK_DIR" && "$FUNCTIONAL_TESTS")
 	rv=$?
@@ -120,7 +120,7 @@ function run_test_erasure_sets() {
 }
 
 function run_test_pool_erasure_sets() {
-	start_minio_pool_erasure_sets
+	start_s3_pool_erasure_sets
 
 	(cd "$WORK_DIR" && "$FUNCTIONAL_TESTS")
 	rv=$?
@@ -143,7 +143,7 @@ function run_test_pool_erasure_sets() {
 }
 
 function run_test_pool_erasure_sets_ipv6() {
-	start_minio_pool_erasure_sets_ipv6
+	start_s3_pool_erasure_sets_ipv6
 
 	export SERVER_ENDPOINT="[::1]:9000"
 
@@ -168,7 +168,7 @@ function run_test_pool_erasure_sets_ipv6() {
 }
 
 function run_test_erasure() {
-	start_minio_erasure
+	start_s3_erasure
 
 	(cd "$WORK_DIR" && "$FUNCTIONAL_TESTS")
 	rv=$?
@@ -185,7 +185,7 @@ function run_test_erasure() {
 }
 
 function run_test_dist_erasure() {
-	start_minio_dist_erasure
+	start_s3_dist_erasure
 
 	(cd "$WORK_DIR" && "$FUNCTIONAL_TESTS")
 	rv=$?
@@ -216,7 +216,7 @@ function purge() {
 function __init__() {
 	echo "Initializing environment"
 	mkdir -p "$WORK_DIR"
-	mkdir -p "$MINIO_CONFIG_DIR"
+	mkdir -p "$S3_CONFIG_DIR"
 	mkdir -p "$MINT_DATA_DIR"
 
 	MC_BUILD_DIR="mc-$RANDOM"
@@ -235,7 +235,7 @@ function __init__() {
 	shred -n 1 -s 65M - 1>"$FILE_65_MB" 2>/dev/null
 
 	## version is purposefully set to '3' for minio to migrate configuration file
-	echo '{"version": "3", "credential": {"accessKey": "minio", "secretKey": "minio123"}, "region": "us-east-1"}' >"$MINIO_CONFIG_DIR/config.json"
+	echo '{"version": "3", "credential": {"accessKey": "minio", "secretKey": "minio123"}, "region": "us-east-1"}' >"$S3_CONFIG_DIR/config.json"
 
 	if ! wget -q -O "$FUNCTIONAL_TESTS" https://raw.githubusercontent.com/minio/mc/master/functional-tests.sh; then
 		echo "failed to download https://raw.githubusercontent.com/minio/mc/master/functional-tests.sh"

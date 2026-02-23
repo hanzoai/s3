@@ -18,25 +18,25 @@ KEY:
 identity_openid[:name]  enable OpenID SSO support
 
 ARGS:
-MINIO_IDENTITY_OPENID_ENABLE*               (on|off)    enable identity_openid target, default is 'off'
-MINIO_IDENTITY_OPENID_DISPLAY_NAME          (string)    Friendly display name for this Provider/App
-MINIO_IDENTITY_OPENID_CONFIG_URL*           (url)       openid discovery document e.g. "https://accounts.google.com/.well-known/openid-configuration"
-MINIO_IDENTITY_OPENID_CLIENT_ID*            (string)    unique public identifier for apps e.g. "292085223830.apps.googleusercontent.com"
-MINIO_IDENTITY_OPENID_CLIENT_SECRET*        (string)    secret for the unique public identifier for apps
-MINIO_IDENTITY_OPENID_ROLE_POLICY           (string)    Set the IAM access policies applicable to this client application and IDP e.g. "app-bucket-write,app-bucket-list"
-MINIO_IDENTITY_OPENID_CLAIM_NAME            (string)    JWT canned policy claim name (default: 'policy')
-MINIO_IDENTITY_OPENID_SCOPES                (csv)       Comma separated list of OpenID scopes for server, defaults to advertised scopes from discovery document e.g. "email,admin"
-MINIO_IDENTITY_OPENID_VENDOR                (string)    Specify vendor type for vendor specific behavior to checking validity of temporary credentials and service accounts on MinIO
-MINIO_IDENTITY_OPENID_CLAIM_USERINFO        (on|off)    Enable fetching claims from UserInfo Endpoint for authenticated user
-MINIO_IDENTITY_OPENID_KEYCLOAK_REALM        (string)    Specify Keycloak 'realm' name, only honored if vendor was set to 'keycloak' as value, if no realm is specified 'master' is default
-MINIO_IDENTITY_OPENID_KEYCLOAK_ADMIN_URL    (string)    Specify Keycloak 'admin' REST API endpoint e.g. http://localhost:8080/auth/admin/
-MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC  (on|off)    Enable 'Host' header based dynamic redirect URI (default: 'off')
-MINIO_IDENTITY_OPENID_COMMENT               (sentence)  optionally add a comment to this setting
+S3_IDENTITY_OPENID_ENABLE*               (on|off)    enable identity_openid target, default is 'off'
+S3_IDENTITY_OPENID_DISPLAY_NAME          (string)    Friendly display name for this Provider/App
+S3_IDENTITY_OPENID_CONFIG_URL*           (url)       openid discovery document e.g. "https://accounts.google.com/.well-known/openid-configuration"
+S3_IDENTITY_OPENID_CLIENT_ID*            (string)    unique public identifier for apps e.g. "292085223830.apps.googleusercontent.com"
+S3_IDENTITY_OPENID_CLIENT_SECRET*        (string)    secret for the unique public identifier for apps
+S3_IDENTITY_OPENID_ROLE_POLICY           (string)    Set the IAM access policies applicable to this client application and IDP e.g. "app-bucket-write,app-bucket-list"
+S3_IDENTITY_OPENID_CLAIM_NAME            (string)    JWT canned policy claim name (default: 'policy')
+S3_IDENTITY_OPENID_SCOPES                (csv)       Comma separated list of OpenID scopes for server, defaults to advertised scopes from discovery document e.g. "email,admin"
+S3_IDENTITY_OPENID_VENDOR                (string)    Specify vendor type for vendor specific behavior to checking validity of temporary credentials and service accounts on MinIO
+S3_IDENTITY_OPENID_CLAIM_USERINFO        (on|off)    Enable fetching claims from UserInfo Endpoint for authenticated user
+S3_IDENTITY_OPENID_KEYCLOAK_REALM        (string)    Specify Keycloak 'realm' name, only honored if vendor was set to 'keycloak' as value, if no realm is specified 'master' is default
+S3_IDENTITY_OPENID_KEYCLOAK_ADMIN_URL    (string)    Specify Keycloak 'admin' REST API endpoint e.g. http://localhost:8080/auth/admin/
+S3_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC  (on|off)    Enable 'Host' header based dynamic redirect URI (default: 'off')
+S3_IDENTITY_OPENID_COMMENT               (sentence)  optionally add a comment to this setting
 ```
 
 ### Access Control Configuration Variables
 
-Either `MINIO_IDENTITY_OPENID_ROLE_POLICY` (recommended) or `MINIO_IDENTITY_OPENID_CLAIM_NAME` must be specified but not both. See the section Access Control Policies to understand the differences between the two.
+Either `S3_IDENTITY_OPENID_ROLE_POLICY` (recommended) or `S3_IDENTITY_OPENID_CLAIM_NAME` must be specified but not both. See the section Access Control Policies to understand the differences between the two.
 
 **NOTE**: When configuring multiple OpenID based authentication providers on a MinIO cluster, any number of Role Policy based providers may be configured, and at most one JWT Claim based provider may be configured.
 
@@ -45,21 +45,21 @@ Either `MINIO_IDENTITY_OPENID_ROLE_POLICY` (recommended) or `MINIO_IDENTITY_OPEN
 Sample environment variables:
 
 ```
-MINIO_IDENTITY_OPENID_DISPLAY_NAME="my first openid"
-MINIO_IDENTITY_OPENID_CONFIG_URL=http://myopenid.com/.well-known/openid-configuration
-MINIO_IDENTITY_OPENID_CLIENT_ID="minio-client-app"
-MINIO_IDENTITY_OPENID_CLIENT_SECRET="minio-client-app-secret"
-MINIO_IDENTITY_OPENID_SCOPES="openid,groups"
-MINIO_IDENTITY_OPENID_REDIRECT_URI="http://127.0.0.1:10000/oauth_callback"
-MINIO_IDENTITY_OPENID_ROLE_POLICY="consoleAdmin"
+S3_IDENTITY_OPENID_DISPLAY_NAME="my first openid"
+S3_IDENTITY_OPENID_CONFIG_URL=http://myopenid.com/.well-known/openid-configuration
+S3_IDENTITY_OPENID_CLIENT_ID="minio-client-app"
+S3_IDENTITY_OPENID_CLIENT_SECRET="minio-client-app-secret"
+S3_IDENTITY_OPENID_SCOPES="openid,groups"
+S3_IDENTITY_OPENID_REDIRECT_URI="http://127.0.0.1:10000/oauth_callback"
+S3_IDENTITY_OPENID_ROLE_POLICY="consoleAdmin"
 
-MINIO_IDENTITY_OPENID_DISPLAY_NAME_APP2="another oidc"
-MINIO_IDENTITY_OPENID_CONFIG_URL_APP2="http://anotheroidc.com/.well-known/openid-configuration"
-MINIO_IDENTITY_OPENID_CLIENT_ID_APP2="minio-client-app-2"
-MINIO_IDENTITY_OPENID_CLIENT_SECRET_APP2="minio-client-app-secret-2"
-MINIO_IDENTITY_OPENID_SCOPES_APP2="openid,groups"
-MINIO_IDENTITY_OPENID_REDIRECT_URI_APP2="http://127.0.0.1:10000/oauth_callback"
-MINIO_IDENTITY_OPENID_ROLE_POLICY_APP2="readwrite"
+S3_IDENTITY_OPENID_DISPLAY_NAME_APP2="another oidc"
+S3_IDENTITY_OPENID_CONFIG_URL_APP2="http://anotheroidc.com/.well-known/openid-configuration"
+S3_IDENTITY_OPENID_CLIENT_ID_APP2="minio-client-app-2"
+S3_IDENTITY_OPENID_CLIENT_SECRET_APP2="minio-client-app-secret-2"
+S3_IDENTITY_OPENID_SCOPES_APP2="openid,groups"
+S3_IDENTITY_OPENID_REDIRECT_URI_APP2="http://127.0.0.1:10000/oauth_callback"
+S3_IDENTITY_OPENID_ROLE_POLICY_APP2="readwrite"
 
 ```
 </details>
@@ -69,35 +69,35 @@ MINIO_IDENTITY_OPENID_ROLE_POLICY_APP2="readwrite"
 Sample environment variables:
 
 ```
-MINIO_IDENTITY_OPENID_DISPLAY_NAME="my openid"
-MINIO_IDENTITY_OPENID_CONFIG_URL=http://myopenid.com/.well-known/openid-configuration
-MINIO_IDENTITY_OPENID_CLIENT_ID="minio-client-app"
-MINIO_IDENTITY_OPENID_CLIENT_SECRET="minio-client-app-secret"
-MINIO_IDENTITY_OPENID_SCOPES="openid,groups"
-MINIO_IDENTITY_OPENID_REDIRECT_URI="http://127.0.0.1:10000/oauth_callback"
-MINIO_IDENTITY_OPENID_CLAIM_NAME="groups"
+S3_IDENTITY_OPENID_DISPLAY_NAME="my openid"
+S3_IDENTITY_OPENID_CONFIG_URL=http://myopenid.com/.well-known/openid-configuration
+S3_IDENTITY_OPENID_CLIENT_ID="minio-client-app"
+S3_IDENTITY_OPENID_CLIENT_SECRET="minio-client-app-secret"
+S3_IDENTITY_OPENID_SCOPES="openid,groups"
+S3_IDENTITY_OPENID_REDIRECT_URI="http://127.0.0.1:10000/oauth_callback"
+S3_IDENTITY_OPENID_CLAIM_NAME="groups"
 ```
 </details>
 
 ### Redirection from OpenID Provider
 
-To login to MinIO, the user first loads the MinIO console on their browser, and selects the OpenID Provider they wish to use (the `MINIO_IDENTITY_OPENID_DISPLAY_NAME` value is shown here). The user is then redirected to the OpenID provider's login page and performs necessary login actions (e.g. entering credentials, responding to MFA authentication challenges, etc). After successful login, the user is redirected back to the MinIO console. This redirect URL is specified as a parameter by MinIO when the user is redirected to the OpenID Provider in the beginning. For some setups, extra configuration may be required for this step to work correctly.
+To login to MinIO, the user first loads the MinIO console on their browser, and selects the OpenID Provider they wish to use (the `S3_IDENTITY_OPENID_DISPLAY_NAME` value is shown here). The user is then redirected to the OpenID provider's login page and performs necessary login actions (e.g. entering credentials, responding to MFA authentication challenges, etc). After successful login, the user is redirected back to the MinIO console. This redirect URL is specified as a parameter by MinIO when the user is redirected to the OpenID Provider in the beginning. For some setups, extra configuration may be required for this step to work correctly.
 
 For a simple setup where the user/client app accesses MinIO directly (i.e. with no intervening proxies/load-balancers), and each MinIO server (if there are more than one) has a unique domain name, this redirection should work automatically with no further configuration. For example, if the MinIO service is being accessed by the browser at the URL `https://minio-node-1.example.org`, the redirect URL will be `https://minio-node-1.example.org/oauth_callback` and all is well.
 
-For deployments with a load-balancer (LB), it is required that the LB is configured to send requests from the same user/client-app to the same backend MinIO server (at least for the initial login request and subsequent redirection, as the OpenID auth flow's state parameter is currently local to the MinIO server). For this setup, set the `MINIO_BROWSER_REDIRECT_URL` parameter to the publicly/client-accessible endpoint for the MinIO Console. For example `MINIO_BROWSER_REDIRECT_URL=https://console.minio.example.org`. This will ensure that the redirect URL is set to `https://console.minio.example.org/oauth_callback` and the login process should work correctly.
+For deployments with a load-balancer (LB), it is required that the LB is configured to send requests from the same user/client-app to the same backend MinIO server (at least for the initial login request and subsequent redirection, as the OpenID auth flow's state parameter is currently local to the MinIO server). For this setup, set the `S3_BROWSER_REDIRECT_URL` parameter to the publicly/client-accessible endpoint for the MinIO Console. For example `S3_BROWSER_REDIRECT_URL=https://console.minio.example.org`. This will ensure that the redirect URL is set to `https://console.minio.example.org/oauth_callback` and the login process should work correctly.
 
-For deployments employing DNS round-robin on a single domain to all the MinIO servers, it is possible that after redirection the browser may land on a different MinIO server. For example, the domain `console.minio.example.org` may resolve to `console-X.minio.example.org`, where `X` is `1`, `2`, `3` or `4`. For the login to work, if the user first landed on `console-1.minio.example.org`, they must be redirected back to the same place after logging in at the OpenID provider's web-page. To ensure this, set the `MINIO_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC=on` parameter - this lets MinIO set the redirect URL based on the "Host" header of the (initial login) request.
+For deployments employing DNS round-robin on a single domain to all the MinIO servers, it is possible that after redirection the browser may land on a different MinIO server. For example, the domain `console.minio.example.org` may resolve to `console-X.minio.example.org`, where `X` is `1`, `2`, `3` or `4`. For the login to work, if the user first landed on `console-1.minio.example.org`, they must be redirected back to the same place after logging in at the OpenID provider's web-page. To ensure this, set the `S3_IDENTITY_OPENID_REDIRECT_URI_DYNAMIC=on` parameter - this lets MinIO set the redirect URL based on the "Host" header of the (initial login) request.
 
-The **deprecated** parameter `MINIO_IDENTITY_OPENID_REDIRECT_URI` works similar to the `MINIO_BROWSER_REDIRECT_URL` but needs to include the `/oauth_callback` suffix. Please do not use it, as it is sufficient to the set the `MINIO_BROWSER_REDIRECT_URL` parameter (which is required anyway for most load-balancer based setups to work correctly). This deprecated parameter **will be removed** in a future release. 
+The **deprecated** parameter `S3_IDENTITY_OPENID_REDIRECT_URI` works similar to the `S3_BROWSER_REDIRECT_URL` but needs to include the `/oauth_callback` suffix. Please do not use it, as it is sufficient to the set the `S3_BROWSER_REDIRECT_URL` parameter (which is required anyway for most load-balancer based setups to work correctly). This deprecated parameter **will be removed** in a future release. 
 
 ## Specifying Access Control with IAM Policies
 
 The STS API authenticates the user by verifying the JWT provided in the request. However access to object storage resources are controlled via named IAM policies defined in the MinIO instance. Once authenticated via the STS API, the MinIO server applies one or more IAM policies to the generated credentials. MinIO's AssumeRoleWithWebIdentity implementation supports specifying IAM policies in two ways:
 
-1. Role Policy (Recommended): When specified as part of the OpenID provider configuration, all users authenticating via this provider are authorized to (only) use the specified role policy. The policy to associate with such users is specified via the `role_policy` configuration parameter or the `MINIO_IDENTITY_OPENID_ROLE_POLICY` environment variable. The value is a comma-separated list of IAM access policy names already defined in the server. In this situation, the server prints a role ARN at startup that must be specified as a `RoleArn` API request parameter in the STS AssumeRoleWithWebIdentity API call. When using Role Policies, multiple OpenID providers and/or client applications (with unique client IDs) may be configured with independent role policies. Each configuration is assigned a unique RoleARN by the MinIO server and this is used to select the policies to apply to temporary credentials generated in the AssumeRoleWithWebIdentity call.
+1. Role Policy (Recommended): When specified as part of the OpenID provider configuration, all users authenticating via this provider are authorized to (only) use the specified role policy. The policy to associate with such users is specified via the `role_policy` configuration parameter or the `S3_IDENTITY_OPENID_ROLE_POLICY` environment variable. The value is a comma-separated list of IAM access policy names already defined in the server. In this situation, the server prints a role ARN at startup that must be specified as a `RoleArn` API request parameter in the STS AssumeRoleWithWebIdentity API call. When using Role Policies, multiple OpenID providers and/or client applications (with unique client IDs) may be configured with independent role policies. Each configuration is assigned a unique RoleARN by the MinIO server and this is used to select the policies to apply to temporary credentials generated in the AssumeRoleWithWebIdentity call.
 
-2. `id_token` claims: When the role policy is not configured, MinIO looks for a specific claim in the `id_token` (JWT) returned by the OpenID provider in the STS request. The default claim is `policy` and can be overridden by the `claim_name` configuration parameter or the `MINIO_IDENTITY_OPENID_CLAIM_NAME` environment variable. The claim value can be a string (comma-separated list) or an array of IAM access policy names defined in the server. A `RoleArn` API request parameter *must not* be specified in the STS AssumeRoleWithWebIdentity API call.
+2. `id_token` claims: When the role policy is not configured, MinIO looks for a specific claim in the `id_token` (JWT) returned by the OpenID provider in the STS request. The default claim is `policy` and can be overridden by the `claim_name` configuration parameter or the `S3_IDENTITY_OPENID_CLAIM_NAME` environment variable. The claim value can be a string (comma-separated list) or an array of IAM access policy names defined in the server. A `RoleArn` API request parameter *must not* be specified in the STS AssumeRoleWithWebIdentity API call.
 
 ## API Request Parameters
 
@@ -196,12 +196,12 @@ http://minio.cluster:9000?Action=AssumeRoleWithWebIdentity&DurationSeconds=3600&
 ## Using WebIdentity API
 
 ```
-export MINIO_ROOT_USER=minio
-export MINIO_ROOT_PASSWORD=minio123
-export MINIO_IDENTITY_OPENID_CONFIG_URL=https://accounts.google.com/.well-known/openid-configuration
-export MINIO_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
+export S3_ROOT_USER=minio
+export S3_ROOT_PASSWORD=minio123
+export S3_IDENTITY_OPENID_CONFIG_URL=https://accounts.google.com/.well-known/openid-configuration
+export S3_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
 # Optional: Allow to specify the requested OpenID scopes (OpenID only requires the `openid` scope)
-#export MINIO_IDENTITY_OPENID_SCOPES="openid,profile,email"
+#export S3_IDENTITY_OPENID_SCOPES="openid,profile,email"
 minio server /mnt/export
 ```
 

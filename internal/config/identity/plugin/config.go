@@ -49,10 +49,10 @@ const (
 	RolePolicy = "role_policy"
 	RoleID     = "role_id"
 
-	EnvIdentityPluginURL        = "MINIO_IDENTITY_PLUGIN_URL"
-	EnvIdentityPluginAuthToken  = "MINIO_IDENTITY_PLUGIN_AUTH_TOKEN"
-	EnvIdentityPluginRolePolicy = "MINIO_IDENTITY_PLUGIN_ROLE_POLICY"
-	EnvIdentityPluginRoleID     = "MINIO_IDENTITY_PLUGIN_ROLE_ID"
+	EnvIdentityPluginURL        = "S3_IDENTITY_PLUGIN_URL"
+	EnvIdentityPluginAuthToken  = "S3_IDENTITY_PLUGIN_AUTH_TOKEN"
+	EnvIdentityPluginRolePolicy = "S3_IDENTITY_PLUGIN_ROLE_POLICY"
+	EnvIdentityPluginRoleID     = "S3_IDENTITY_PLUGIN_ROLE_ID"
 )
 
 var (

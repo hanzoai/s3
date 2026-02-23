@@ -31,7 +31,7 @@ The id_token received is a signed JSON Web Token (JWT). Use a JWT decoder to dec
 
 | Claim Name | Type                                              | Claim Value                                                                                                                                                                                                        |
 |:----------:|:-------------------------------------------------:|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
-| policy     | _string_ or _[]string_ or _comma_separated_value_ | Canned policy name to be applied for STS credentials. (Mandatory) - This can be configured to any desired value such as `roles` or `groups` by setting the environment variable `MINIO_IDENTITY_OPENID_CLAIM_NAME` |
+| policy     | _string_ or _[]string_ or _comma_separated_value_ | Canned policy name to be applied for STS credentials. (Mandatory) - This can be configured to any desired value such as `roles` or `groups` by setting the environment variable `S3_IDENTITY_OPENID_CLAIM_NAME` |
 
 ## Get started
 
@@ -51,20 +51,20 @@ Make sure we have followed the previous step and configured each software indepe
 #### KeyCloak
 
 ```
-export MINIO_ROOT_USER=minio
-export MINIO_ROOT_PASSWORD=minio123
-export MINIO_IDENTITY_OPENID_CONFIG_URL=http://localhost:8080/auth/realms/demo/.well-known/openid-configuration
-export MINIO_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
+export S3_ROOT_USER=minio
+export S3_ROOT_PASSWORD=minio123
+export S3_IDENTITY_OPENID_CONFIG_URL=http://localhost:8080/auth/realms/demo/.well-known/openid-configuration
+export S3_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
 minio server /mnt/data
 ```
 
 #### Casdoor
 
 ```
-export MINIO_ROOT_USER=minio
-export MINIO_ROOT_PASSWORD=minio123
-export MINIO_IDENTITY_OPENID_CONFIG_URL=http://CASDOOR_ENDPOINT/.well-known/openid-configuration
-export MINIO_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
+export S3_ROOT_USER=minio
+export S3_ROOT_PASSWORD=minio123
+export S3_IDENTITY_OPENID_CONFIG_URL=http://CASDOOR_ENDPOINT/.well-known/openid-configuration
+export S3_IDENTITY_OPENID_CLIENT_ID="843351d4-1080-11ea-aa20-271ecba3924a"
 minio server /mnt/data
 ```
 

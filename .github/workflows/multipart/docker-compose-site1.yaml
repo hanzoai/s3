@@ -5,7 +5,7 @@ x-minio-common: &minio-common
   image: quay.io/minio/minio:${RELEASE}
   command: server http://site1-minio{1...4}/data{1...2}
   environment:
-    - MINIO_PROMETHEUS_AUTH_TYPE=public
+    - S3_PROMETHEUS_AUTH_TYPE=public
     - CI=true
 
 # starts 4 docker containers running minio server instances.

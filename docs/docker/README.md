@@ -16,8 +16,8 @@ MinIO needs a persistent volume to store configuration and application data. For
 docker run \
   -p 9000:9000 \
   -p 9001:9001 \
-  -e "MINIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "MINIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
+  -e "S3_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
+  -e "S3_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
   quay.io/minio/minio server /data --console-address ":9001"
 ```
 
@@ -33,8 +33,8 @@ docker run \
   -p 9001:9001 \
   --name minio1 \
   -v ~/minio/data:/data \
-  -e "MINIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "MINIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
+  -e "S3_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
+  -e "S3_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
   quay.io/minio/minio server /data --console-address ":9001"
 ```
 
@@ -48,8 +48,8 @@ docker run \
   -p 9001:9001 \
   --name minio1 \
   -v D:\data:/data \
-  -e "MINIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "MINIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
+  -e "S3_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
+  -e "S3_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
   quay.io/minio/minio server /data --console-address ":9001"
 ```
 
@@ -72,8 +72,8 @@ docker run \
   -p 9000:9000 \
   -p 9001:9001 \
   --name minio1 \
-  -e "MINIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "MINIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
+  -e "S3_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
+  -e "S3_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
   -v /mnt/data:/data \
   quay.io/minio/minio server /data --console-address ":9001"
 ```
@@ -85,8 +85,8 @@ docker run \
   -p 9000:9000 \
   -p 9001:9001 \
   --name minio1 \
-  -e "MINIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "MINIO_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
+  -e "S3_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
+  -e "S3_ROOT_PASSWORD=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
   -v D:\data:/data \
   quay.io/minio/minio server /data --console-address ":9001"
 ```
@@ -108,8 +108,8 @@ docker run \
   -p 9001:9001 \
   --user $(id -u):$(id -g) \
   --name minio1 \
-  -e "MINIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "MINIO_ROOT_PASSWORD=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY" \
+  -e "S3_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
+  -e "S3_ROOT_PASSWORD=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY" \
   -v ${HOME}/data:/data \
   quay.io/minio/minio server /data --console-address ":9001"
 ```
@@ -126,8 +126,8 @@ docker run \
   -p 9001:9001 \
   --name minio1 \
   --security-opt "credentialspec=file://myuser.json"
-  -e "MINIO_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
-  -e "MINIO_ROOT_PASSWORD=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY" \
+  -e "S3_ROOT_USER=AKIAIOSFODNN7EXAMPLE" \
+  -e "S3_ROOT_PASSWORD=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY" \
   -v D:\data:/data \
   quay.io/minio/minio server /data --console-address ":9001"
 ```
@@ -157,16 +157,16 @@ To use other secret names follow the instructions above and replace `access_key`
 docker service create --name="minio-service" \
   --secret="my_access_key" \
   --secret="my_secret_key" \
-  --env="MINIO_ROOT_USER_FILE=my_access_key" \
-  --env="MINIO_ROOT_PASSWORD_FILE=my_secret_key" \
+  --env="S3_ROOT_USER_FILE=my_access_key" \
+  --env="S3_ROOT_PASSWORD_FILE=my_secret_key" \
   quay.io/minio/minio server /data
 ```
 
-`MINIO_ROOT_USER_FILE` and `MINIO_ROOT_PASSWORD_FILE` also support custom absolute paths, in case Docker secrets are mounted to custom locations or other tools are used to mount secrets into the container. For example, HashiCorp Vault injects secrets to `/vault/secrets`. With the custom names above, set the environment variables to
+`S3_ROOT_USER_FILE` and `S3_ROOT_PASSWORD_FILE` also support custom absolute paths, in case Docker secrets are mounted to custom locations or other tools are used to mount secrets into the container. For example, HashiCorp Vault injects secrets to `/vault/secrets`. With the custom names above, set the environment variables to
 
 ```
-MINIO_ROOT_USER_FILE=/vault/secrets/my_access_key
-MINIO_ROOT_PASSWORD_FILE=/vault/secrets/my_secret_key
+S3_ROOT_USER_FILE=/vault/secrets/my_access_key
+S3_ROOT_PASSWORD_FILE=/vault/secrets/my_secret_key
 ```
 
 ### Retrieving Container ID

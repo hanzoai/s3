@@ -818,7 +818,7 @@ func (p PoolEndpointList) UpdateIsLocal() error {
 						continue
 					}
 
-					if endpoint.Host == "" || (orchestrated && env.Get("_MINIO_SERVER_LOCAL", "") == endpoint.Host) {
+					if endpoint.Host == "" || (orchestrated && env.Get("_S3_SERVER_LOCAL", "") == endpoint.Host) {
 						if !foundLocal {
 							foundLocal = true
 						}
@@ -1041,7 +1041,7 @@ func CreatePoolEndpoints(serverAddr string, poolsLayout ...poolDisksLayout) ([]E
 			}
 		}
 
-		reverseProxy := (env.Get("_MINIO_REVERSE_PROXY", "") != "") && ((env.Get("MINIO_CI_CD", "") != "") || (env.Get("CI", "") != ""))
+		reverseProxy := (env.Get("_S3_REVERSE_PROXY", "") != "") && ((env.Get("S3_CI_CD", "") != "") || (env.Get("CI", "") != ""))
 		// If not orchestrated
 		// and not setup in reverse proxy
 		if !orchestrated && !reverseProxy {

@@ -83,7 +83,7 @@ func init() {
 // to define metric and  help string
 func newMinioCollector() *minioCollector {
 	return &minioCollector{
-		desc: prometheus.NewDesc("minio_stats", "Statistics exposed by MinIO server", nil, nil),
+		desc: prometheus.NewDesc("s3_stats", "Statistics exposed by MinIO server", nil, nil),
 	}
 }
 

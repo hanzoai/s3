@@ -49,7 +49,7 @@ See <https://docs.aws.amazon.com/AmazonS3/latest/dev/object-lock-overview.html> 
   - New objects inherit the retention settings of the bucket object lock configuration automatically
   - Retention headers can be optionally set while uploading objects
   - Once objects are uploaded PutObjectRetention API can be called to change retention settings
-- *MINIO_NTP_SERVER* environment variable can be set to remote NTP server endpoint if system time is not desired for setting retention dates.
+- *S3_NTP_SERVER* environment variable can be set to remote NTP server endpoint if system time is not desired for setting retention dates.
 
 ## Explore Further
 

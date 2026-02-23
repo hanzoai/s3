@@ -46,7 +46,7 @@ import (
 )
 
 const (
-	envMinisignPubKey = "MINIO_UPDATE_MINISIGN_PUBKEY"
+	envMinisignPubKey = "S3_UPDATE_MINISIGN_PUBKEY"
 	updateTimeout     = 10 * time.Second
 )
 
@@ -143,7 +143,7 @@ func IsDocker() bool {
 		// if none of the files are present we may be running inside
 		// CRI-O, Containerd etc..
 		// Fallback to our container specific ENVs if they are set.
-		return env.IsSet("MINIO_ACCESS_KEY_FILE")
+		return env.IsSet("S3_ACCESS_KEY_FILE")
 	}
 
 	// Log error, as we will not propagate it to caller
@@ -220,7 +220,7 @@ func IsSourceBuild() bool {
 
 // IsPCFTile returns if server is running in PCF
 func IsPCFTile() bool {
-	return env.Get("MINIO_PCF_TILE_VERSION", "") != ""
+	return env.Get("S3_PCF_TILE_VERSION", "") != ""
 }
 
 // DO NOT CHANGE USER AGENT STYLE.
@@ -277,18 +277,18 @@ func getUserAgent(mode string) string {
 			uaAppend(" helm-", helmChartVersion)
 		}
 		// In Kubernetes environment, try to fetch the Operator, VSPHERE plugin version
-		opVersion := env.Get("MINIO_OPERATOR_VERSION", "")
+		opVersion := env.Get("S3_OPERATOR_VERSION", "")
 		if opVersion != "" {
 			uaAppend(" operator-", opVersion)
 		}
-		vsphereVersion := env.Get("MINIO_VSPHERE_PLUGIN_VERSION", "")
+		vsphereVersion := env.Get("S3_VSPHERE_PLUGIN_VERSION", "")
 		if vsphereVersion != "" {
 			uaAppend(" vsphere-plugin-", vsphereVersion)
 		}
 	}
 
 	if IsPCFTile() {
-		pcfTileVersion := env.Get("MINIO_PCF_TILE_VERSION", "")
+		pcfTileVersion := env.Get("S3_PCF_TILE_VERSION", "")
 		if pcfTileVersion != "" {
 			uaAppend(" pcf-tile-", pcfTileVersion)
 		}

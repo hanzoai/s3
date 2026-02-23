@@ -45,13 +45,13 @@ const (
 	NSQQueueDir      = "queue_dir"
 	NSQQueueLimit    = "queue_limit"
 
-	EnvNSQEnable        = "MINIO_NOTIFY_NSQ_ENABLE"
-	EnvNSQAddress       = "MINIO_NOTIFY_NSQ_NSQD_ADDRESS"
-	EnvNSQTopic         = "MINIO_NOTIFY_NSQ_TOPIC"
-	EnvNSQTLS           = "MINIO_NOTIFY_NSQ_TLS"
-	EnvNSQTLSSkipVerify = "MINIO_NOTIFY_NSQ_TLS_SKIP_VERIFY"
-	EnvNSQQueueDir      = "MINIO_NOTIFY_NSQ_QUEUE_DIR"
-	EnvNSQQueueLimit    = "MINIO_NOTIFY_NSQ_QUEUE_LIMIT"
+	EnvNSQEnable        = "S3_NOTIFY_NSQ_ENABLE"
+	EnvNSQAddress       = "S3_NOTIFY_NSQ_NSQD_ADDRESS"
+	EnvNSQTopic         = "S3_NOTIFY_NSQ_TOPIC"
+	EnvNSQTLS           = "S3_NOTIFY_NSQ_TLS"
+	EnvNSQTLSSkipVerify = "S3_NOTIFY_NSQ_TLS_SKIP_VERIFY"
+	EnvNSQQueueDir      = "S3_NOTIFY_NSQ_QUEUE_DIR"
+	EnvNSQQueueLimit    = "S3_NOTIFY_NSQ_QUEUE_LIMIT"
 )
 
 // NSQArgs - NSQ target arguments.

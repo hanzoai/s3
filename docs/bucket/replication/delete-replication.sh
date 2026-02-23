@@ -31,17 +31,17 @@ catch() {
 catch
 
 set -e
-export MINIO_CI_CD=1
-export MINIO_BROWSER=off
-export MINIO_ROOT_USER="minio"
-export MINIO_ROOT_PASSWORD="minio123"
-export MINIO_KMS_AUTO_ENCRYPTION=off
-export MINIO_PROMETHEUS_AUTH_TYPE=public
-export MINIO_KMS_SECRET_KEY=my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw=
-unset MINIO_KMS_KES_CERT_FILE
-unset MINIO_KMS_KES_KEY_FILE
-unset MINIO_KMS_KES_ENDPOINT
-unset MINIO_KMS_KES_KEY_NAME
+export S3_CI_CD=1
+export S3_BROWSER=off
+export S3_ROOT_USER="minio"
+export S3_ROOT_PASSWORD="minio123"
+export S3_KMS_AUTO_ENCRYPTION=off
+export S3_PROMETHEUS_AUTH_TYPE=public
+export S3_KMS_SECRET_KEY=my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw=
+unset S3_KMS_KES_CERT_FILE
+unset S3_KMS_KES_KEY_FILE
+unset S3_KMS_KES_ENDPOINT
+unset S3_KMS_KES_KEY_NAME
 
 if [ ! -f ./mc ]; then
 	wget --quiet -O mc https://dl.minio.io/client/mc/release/linux-amd64/mc &&
@@ -50,9 +50,9 @@ fi
 
 mkdir -p /tmp/xl/1/ /tmp/xl/2/
 
-export MINIO_KMS_SECRET_KEY="my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw="
-export MINIO_ROOT_USER="minioadmin"
-export MINIO_ROOT_PASSWORD="minioadmin"
+export S3_KMS_SECRET_KEY="my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw="
+export S3_ROOT_USER="minioadmin"
+export S3_ROOT_PASSWORD="minioadmin"
 
 ./minio server --address ":9001" /tmp/xl/1/{1...4}/ 2>&1 >/tmp/dc1.log &
 pid1=$!

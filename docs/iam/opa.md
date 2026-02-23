@@ -53,13 +53,13 @@ curl -X PUT --data-binary @example.rego \
 
 ### 4. Setup MinIO with OPA
 
-Set the `MINIO_POLICY_PLUGIN_URL` as the endpoint that MinIO should send authorization requests to. Then start the server.
+Set the `S3_POLICY_PLUGIN_URL` as the endpoint that MinIO should send authorization requests to. Then start the server.
 
 ```sh
-export MINIO_POLICY_PLUGIN_URL=http://localhost:8181/v1/data/httpapi/authz/allow
-export MINIO_CI_CD=1
-export MINIO_ROOT_USER=minio
-export MINIO_ROOT_PASSWORD=minio123
+export S3_POLICY_PLUGIN_URL=http://localhost:8181/v1/data/httpapi/authz/allow
+export S3_CI_CD=1
+export S3_ROOT_USER=minio
+export S3_ROOT_PASSWORD=minio123
 minio server /mnt/data
 ```
 

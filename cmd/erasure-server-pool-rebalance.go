@@ -566,7 +566,7 @@ func (z *erasureServerPools) rebalanceBucket(ctx context.Context, bucket string,
 
 	pool := z.serverPools[poolIdx]
 
-	const envRebalanceWorkers = "_MINIO_REBALANCE_WORKERS"
+	const envRebalanceWorkers = "_S3_REBALANCE_WORKERS"
 	workerSize, err := env.GetInt(envRebalanceWorkers, len(pool.sets))
 	if err != nil {
 		rebalanceLogIf(ctx, fmt.Errorf("invalid workers value err: %v, defaulting to %d", err, len(pool.sets)))

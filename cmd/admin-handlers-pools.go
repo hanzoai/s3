@@ -378,7 +378,7 @@ func (a adminAPIHandlers) RebalanceStop(w http.ResponseWriter, r *http.Request) 
 }
 
 func proxyDecommissionRequest(ctx context.Context, defaultEndPoint Endpoint, w http.ResponseWriter, r *http.Request) (proxy bool) {
-	host := env.Get("_MINIO_DECOM_ENDPOINT_HOST", defaultEndPoint.Host)
+	host := env.Get("_S3_DECOM_ENDPOINT_HOST", defaultEndPoint.Host)
 	if host == "" {
 		return proxy
 	}

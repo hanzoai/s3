@@ -12,12 +12,12 @@ cleanup() {
 
 cleanup
 
-unset MINIO_KMS_KES_CERT_FILE
-unset MINIO_KMS_KES_KEY_FILE
-unset MINIO_KMS_KES_ENDPOINT
-unset MINIO_KMS_KES_KEY_NAME
+unset S3_KMS_KES_CERT_FILE
+unset S3_KMS_KES_KEY_FILE
+unset S3_KMS_KES_ENDPOINT
+unset S3_KMS_KES_KEY_NAME
 
-export MINIO_CI_CD=1
+export S3_CI_CD=1
 
 if [ ! -f ./mc ]; then
 	os="$(uname -s)"

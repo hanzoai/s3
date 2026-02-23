@@ -29,7 +29,7 @@ import (
 const (
 	// EnvIdentityTLSEnabled is an environment variable that controls whether the X.509
 	// TLS STS API is enabled. By default, if not set, it is enabled.
-	EnvIdentityTLSEnabled = "MINIO_IDENTITY_TLS_ENABLE"
+	EnvIdentityTLSEnabled = "S3_IDENTITY_TLS_ENABLE"
 
 	// EnvIdentityTLSSkipVerify is an environment variable that controls whether
 	// MinIO verifies the client certificate present by the client
@@ -40,7 +40,7 @@ const (
 	// when debugging or testing a setup since it allows arbitrary
 	// clients to obtain temp. credentials with arbitrary policy
 	// permissions - including admin permissions.
-	EnvIdentityTLSSkipVerify = "MINIO_IDENTITY_TLS_SKIP_VERIFY"
+	EnvIdentityTLSSkipVerify = "S3_IDENTITY_TLS_SKIP_VERIFY"
 )
 
 // Config contains the STS TLS configuration for generating temp.

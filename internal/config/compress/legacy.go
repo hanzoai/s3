@@ -25,15 +25,15 @@ import (
 
 // Legacy envs.
 const (
-	EnvCompress                 = "MINIO_COMPRESS"
-	EnvCompressMimeTypesLegacy1 = "MINIO_COMPRESS_MIMETYPES"
+	EnvCompress                 = "S3_COMPRESS"
+	EnvCompressMimeTypesLegacy1 = "S3_COMPRESS_MIMETYPES"
 
 	// These envs were wrong but we supported them for a long time
 	// so keep them here to support existing deployments.
-	EnvCompressEnableLegacy          = "MINIO_COMPRESS_ENABLE"
-	EnvCompressAllowEncryptionLegacy = "MINIO_COMPRESS_ALLOW_ENCRYPTION"
-	EnvCompressExtensionsLegacy      = "MINIO_COMPRESS_EXTENSIONS"
-	EnvCompressMimeTypesLegacy2      = "MINIO_COMPRESS_MIME_TYPES"
+	EnvCompressEnableLegacy          = "S3_COMPRESS_ENABLE"
+	EnvCompressAllowEncryptionLegacy = "S3_COMPRESS_ALLOW_ENCRYPTION"
+	EnvCompressExtensionsLegacy      = "S3_COMPRESS_EXTENSIONS"
+	EnvCompressMimeTypesLegacy2      = "S3_COMPRESS_MIME_TYPES"
 )
 
 // SetCompressionConfig - One time migration code needed, for migrating from older config to new for Compression.

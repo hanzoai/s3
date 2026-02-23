@@ -107,7 +107,7 @@ func (c *Config) Update(ncfg Config, isDevEnv bool) {
 	c.BaseURL = baseURL
 
 	if isDevEnv {
-		c.BaseURL = os.Getenv("_MINIO_SUBNET_URL")
+		c.BaseURL = os.Getenv("_S3_SUBNET_URL")
 		if c.BaseURL == "" {
 			c.BaseURL = baseURLDev
 		}
