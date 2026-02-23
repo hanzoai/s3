@@ -1,4 +1,4 @@
-name: Publish to GHCR
+name: Publish
 
 on:
   push:
@@ -8,10 +8,10 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: hanzoai/storage
 
 jobs:
-  build-and-push:
+  docker:
+    name: Build and push Docker images
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -37,7 +37,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: |
+            ${{ env.REGISTRY }}/hanzoai/s3
+            ${{ env.REGISTRY }}/hanzoai/storage
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=
@@ -54,3 +56,53 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  binaries:
+    name: Build and upload release binaries
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Get version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build binaries
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          COMMIT_ID: ${{ github.sha }}
+        run: |
+          LDFLAGS="-s -w \
+            -X github.com/minio/minio/cmd.Version=${VERSION} \
+            -X github.com/minio/minio/cmd.CopyrightYear=2026 \
+            -X github.com/minio/minio/cmd.ReleaseTag=RELEASE.${VERSION} \
+            -X github.com/minio/minio/cmd.CommitID=${COMMIT_ID:0:12} \
+            -X github.com/minio/minio/cmd.ShortCommitID=${COMMIT_ID:0:12}"
+
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags kqueue -trimpath -ldflags "${LDFLAGS}" -o s3-linux-amd64 .
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -tags kqueue -trimpath -ldflags "${LDFLAGS}" -o s3-linux-arm64 .
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -tags kqueue -trimpath -ldflags "${LDFLAGS}" -o s3-darwin-amd64 .
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -tags kqueue -trimpath -ldflags "${LDFLAGS}" -o s3-darwin-arm64 .
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -tags kqueue -trimpath -ldflags "${LDFLAGS}" -o s3-windows-amd64.exe .
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" \
+            s3-linux-amd64 \
+            s3-linux-arm64 \
+            s3-darwin-amd64 \
+            s3-darwin-arm64 \
+            s3-windows-amd64.exe \
+            --clobber
