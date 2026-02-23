@@ -32,7 +32,7 @@ RUN LDFLAGS="-s -w \
 
 FROM alpine:3.21
 
-LABEL org.opencontainers.image.source="https://github.com/hanzoai/storage"
+LABEL org.opencontainers.image.source="https://github.com/hanzoai/s3"
 LABEL org.opencontainers.image.description="Hanzo Space — S3-compatible object storage"
 LABEL org.opencontainers.image.licenses="AGPL-3.0"
 
