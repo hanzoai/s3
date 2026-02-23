@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a bug in MinIO (community edition is source-only)
+about: Report a bug in Hanzo Storage
 title: ''
 labels: community, triage
 assignees: ''
@@ -9,11 +9,9 @@ assignees: ''
 
 ## IMPORTANT NOTES
 
-**Community Edition**: MinIO community edition is now source-only. Install via `go install github.com/minio/minio@latest`
+**Feature Requests**: For feature requests and enterprise support, please visit [Hanzo Enterprise Support](https://hanzo.ai/pricing).
 
-**Feature Requests**: We are no longer accepting feature requests for the community edition. For feature requests and enterprise support, please subscribe to [MinIO Enterprise Support](https://min.io/pricing).
-
-**Urgent Issues**: If this case is urgent or affects production, please subscribe to [SUBNET](https://min.io/pricing) for 24/7 enterprise support.
+**Urgent Issues**: If this case is urgent or affects production, please visit [Hanzo Support](https://hanzo.ai/pricing) for enterprise support.
 
 <!--- Provide a general summary of the issue in the Title above -->
 
