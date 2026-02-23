@@ -54,17 +54,17 @@ The compression settings may also be set through environment variables.
 When set, environment variables override the defined `compress` config settings in the server config.
 
 ```bash
-export MINIO_COMPRESSION_ENABLE="on"
-export MINIO_COMPRESSION_EXTENSIONS=".txt,.log,.csv,.json,.tar,.xml,.bin"
-export MINIO_COMPRESSION_MIME_TYPES="text/*,application/json,application/xml"
+export S3_COMPRESSION_ENABLE="on"
+export S3_COMPRESSION_EXTENSIONS=".txt,.log,.csv,.json,.tar,.xml,.bin"
+export S3_COMPRESSION_MIME_TYPES="text/*,application/json,application/xml"
 ```
 
 > [!NOTE]
 > To enable compression for all content when using environment variables, set either or both of the extensions and MIME types to `*` instead of an empty string:
 > ```bash
-> export MINIO_COMPRESSION_ENABLE="on"
-> export MINIO_COMPRESSION_EXTENSIONS="*"
-> export MINIO_COMPRESSION_MIME_TYPES="*"
+> export S3_COMPRESSION_ENABLE="on"
+> export S3_COMPRESSION_EXTENSIONS="*"
+> export S3_COMPRESSION_MIME_TYPES="*"
 > ```
 
 ### 3. Compression + Encryption
@@ -84,7 +84,7 @@ To enable compression+encryption use:
 ~ mc admin config set myminio compression allow_encryption=on
 ```
 
-Or alternatively through the environment variable `MINIO_COMPRESSION_ALLOW_ENCRYPTION=on`.
+Or alternatively through the environment variable `S3_COMPRESSION_ALLOW_ENCRYPTION=on`.
 
 ### 4. Excluded Types
 

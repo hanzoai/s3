@@ -36,7 +36,7 @@ type TestItem struct {
 
 var (
 	// TestDir
-	queueDir = filepath.Join(os.TempDir(), "minio_test")
+	queueDir = filepath.Join(os.TempDir(), "s3_test")
 	// Sample test item.
 	testItem = TestItem{Name: "test-item", Property: "property"}
 	// Ext for test item

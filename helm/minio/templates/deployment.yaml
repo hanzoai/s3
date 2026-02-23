@@ -91,28 +91,28 @@ spec:
             - name: {{ $scheme }}-console
               containerPort: {{ .Values.minioConsolePort }}
           env:
-            - name: MINIO_ROOT_USER
+            - name: S3_ROOT_USER
               valueFrom:
                 secretKeyRef:
                   name: {{ template "minio.secretName" . }}
                   key: rootUser
-            - name: MINIO_ROOT_PASSWORD
+            - name: S3_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ template "minio.secretName" . }}
                   key: rootPassword
             {{- if .Values.extraSecret }}
-            - name: MINIO_CONFIG_ENV_FILE
+            - name: S3_CONFIG_ENV_FILE
               value: "/tmp/minio-config-env/config.env"
             {{- end }}
             {{- if .Values.metrics.serviceMonitor.public }}
-            - name: MINIO_PROMETHEUS_AUTH_TYPE
+            - name: S3_PROMETHEUS_AUTH_TYPE
               value: "public"
             {{- end }}
             {{- if .Values.oidc.enabled }}
-            - name: MINIO_IDENTITY_OPENID_CONFIG_URL
+            - name: S3_IDENTITY_OPENID_CONFIG_URL
               value: {{ .Values.oidc.configUrl }}
-            - name: MINIO_IDENTITY_OPENID_CLIENT_ID
+            - name: S3_IDENTITY_OPENID_CLIENT_ID
             {{- if and .Values.oidc.existingClientSecretName .Values.oidc.existingClientIdKey }}
               valueFrom:
                 secretKeyRef:
@@ -121,7 +121,7 @@ spec:
             {{- else }}
               value: {{ .Values.oidc.clientId }}
             {{- end }}
-            - name: MINIO_IDENTITY_OPENID_CLIENT_SECRET
+            - name: S3_IDENTITY_OPENID_CLIENT_SECRET
             {{- if and .Values.oidc.existingClientSecretName .Values.oidc.existingClientSecretKey }}
               valueFrom:
                 secretKeyRef:
@@ -130,36 +130,36 @@ spec:
             {{- else }}
               value: {{ .Values.oidc.clientSecret }}
             {{- end }}
-            - name: MINIO_IDENTITY_OPENID_CLAIM_NAME
+            - name: S3_IDENTITY_OPENID_CLAIM_NAME
               value: {{ .Values.oidc.claimName }}
-            - name: MINIO_IDENTITY_OPENID_CLAIM_PREFIX
+            - name: S3_IDENTITY_OPENID_CLAIM_PREFIX
               value: {{ .Values.oidc.claimPrefix }}
-            - name: MINIO_IDENTITY_OPENID_SCOPES
+            - name: S3_IDENTITY_OPENID_SCOPES
               value: {{ .Values.oidc.scopes }}
-            - name: MINIO_IDENTITY_OPENID_COMMENT
+            - name: S3_IDENTITY_OPENID_COMMENT
               value: {{ .Values.oidc.comment }}
-            - name: MINIO_IDENTITY_OPENID_REDIRECT_URI
+            - name: S3_IDENTITY_OPENID_REDIRECT_URI
               value: {{ .Values.oidc.redirectUri }}
-            - name: MINIO_IDENTITY_OPENID_DISPLAY_NAME
+            - name: S3_IDENTITY_OPENID_DISPLAY_NAME
               value: {{ .Values.oidc.displayName }}
             {{- end }}
             {{- if .Values.etcd.endpoints }}
-            - name: MINIO_ETCD_ENDPOINTS
+            - name: S3_ETCD_ENDPOINTS
               value: {{ join "," .Values.etcd.endpoints | quote }}
             {{- if .Values.etcd.clientCert }}
-            - name: MINIO_ETCD_CLIENT_CERT
+            - name: S3_ETCD_CLIENT_CERT
               value: "/tmp/credentials/etcd_client_cert.pem"
             {{- end }}
             {{- if .Values.etcd.clientCertKey }}
-            - name: MINIO_ETCD_CLIENT_CERT_KEY
+            - name: S3_ETCD_CLIENT_CERT_KEY
               value: "/tmp/credentials/etcd_client_cert_key.pem"
             {{- end }}
             {{- if .Values.etcd.pathPrefix }}
-            - name: MINIO_ETCD_PATH_PREFIX
+            - name: S3_ETCD_PATH_PREFIX
               value: {{ .Values.etcd.pathPrefix }}
             {{- end }}
             {{- if .Values.etcd.corednsPathPrefix }}
-            - name: MINIO_ETCD_COREDNS_PATH
+            - name: S3_ETCD_COREDNS_PATH
               value: {{ .Values.etcd.corednsPathPrefix }}
             {{- end }}
             {{- end }}

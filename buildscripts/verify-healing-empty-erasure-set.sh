@@ -10,14 +10,14 @@ if [ ! -x "$PWD/minio" ]; then
 fi
 
 WORK_DIR="$PWD/.verify-$RANDOM"
-MINIO_CONFIG_DIR="$WORK_DIR/.minio"
-MINIO=("$PWD/minio" --config-dir "$MINIO_CONFIG_DIR" server)
+S3_CONFIG_DIR="$WORK_DIR/.minio"
+MINIO=("$PWD/minio" --config-dir "$S3_CONFIG_DIR" server)
 
-function start_minio_3_node() {
-	export MINIO_ROOT_USER=minio
-	export MINIO_ROOT_PASSWORD=minio123
-	export MINIO_ERASURE_SET_DRIVE_COUNT=6
-	export MINIO_CI_CD=1
+function start_s3_3_node() {
+	export S3_ROOT_USER=minio
+	export S3_ROOT_PASSWORD=minio123
+	export S3_ERASURE_SET_DRIVE_COUNT=6
+	export S3_CI_CD=1
 
 	start_port=$1
 	args=""
@@ -113,10 +113,10 @@ function purge() {
 function __init__() {
 	echo "Initializing environment"
 	mkdir -p "$WORK_DIR"
-	mkdir -p "$MINIO_CONFIG_DIR"
+	mkdir -p "$S3_CONFIG_DIR"
 
 	## version is purposefully set to '3' for minio to migrate configuration file
-	echo '{"version": "3", "credential": {"accessKey": "minio", "secretKey": "minio123"}, "region": "us-east-1"}' >"$MINIO_CONFIG_DIR/config.json"
+	echo '{"version": "3", "credential": {"accessKey": "minio", "secretKey": "minio123"}, "region": "us-east-1"}' >"$S3_CONFIG_DIR/config.json"
 
 	if [ ! -f /tmp/mc ]; then
 		wget --quiet -O /tmp/mc https://dl.minio.io/client/mc/release/linux-amd64/mc &&
@@ -125,7 +125,7 @@ function __init__() {
 }
 
 function perform_test() {
-	start_minio_3_node $2
+	start_s3_3_node $2
 
 	echo "Testing Distributed Erasure setup healing of drives"
 	echo "Remove the contents of the disks belonging to '${1}' erasure set"
@@ -133,7 +133,7 @@ function perform_test() {
 	rm -rf ${WORK_DIR}/${1}/*/
 
 	set -x
-	start_minio_3_node $2
+	start_s3_3_node $2
 }
 
 function main() {

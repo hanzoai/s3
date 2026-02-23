@@ -4,11 +4,11 @@ trap 'cleanup $LINENO' ERR
 
 # shellcheck disable=SC2120
 cleanup() {
-	MINIO_VERSION=dev /tmp/gopath/bin/docker-compose \
+	S3_VERSION=dev /tmp/gopath/bin/docker-compose \
 		-f "buildscripts/upgrade-tests/compose.yml" \
 		down || true
 
-	MINIO_VERSION=dev /tmp/gopath/bin/docker-compose \
+	S3_VERSION=dev /tmp/gopath/bin/docker-compose \
 		-f "buildscripts/upgrade-tests/compose.yml" \
 		rm || true
 
@@ -78,7 +78,7 @@ __init__() {
 
 	TAG=minio/minio:dev make docker
 
-	MINIO_VERSION=RELEASE.2019-12-19T22-52-26Z docker-compose \
+	S3_VERSION=RELEASE.2019-12-19T22-52-26Z docker-compose \
 		-f "buildscripts/upgrade-tests/compose.yml" \
 		up -d --build
 
@@ -93,11 +93,11 @@ __init__() {
 
 	curl -s http://127.0.0.1:9000/minio-test/to-read/hosts | sha256sum
 
-	MINIO_VERSION=dev /tmp/gopath/bin/docker-compose -f "buildscripts/upgrade-tests/compose.yml" stop
+	S3_VERSION=dev /tmp/gopath/bin/docker-compose -f "buildscripts/upgrade-tests/compose.yml" stop
 }
 
 main() {
-	MINIO_VERSION=dev /tmp/gopath/bin/docker-compose -f "buildscripts/upgrade-tests/compose.yml" up -d --build
+	S3_VERSION=dev /tmp/gopath/bin/docker-compose -f "buildscripts/upgrade-tests/compose.yml" up -d --build
 
 	add_alias
 

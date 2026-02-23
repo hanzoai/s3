@@ -25,8 +25,8 @@ time="2020-07-12T20:45:50Z" level=info msg="listening (http) on 0.0.0.0:5556"
 ### Configure MinIO server with Dex
 
 ```
-~ export MINIO_IDENTITY_OPENID_CLAIM_NAME=name
-~ export MINIO_IDENTITY_OPENID_CONFIG_URL=http://127.0.0.1:5556/dex/.well-known/openid-configuration
+~ export S3_IDENTITY_OPENID_CLAIM_NAME=name
+~ export S3_IDENTITY_OPENID_CONFIG_URL=http://127.0.0.1:5556/dex/.well-known/openid-configuration
 ~ minio server ~/test
 ```
 
@@ -92,7 +92,7 @@ Now you have successfully configured Dex IdP with MinIO.
 > NOTE: Dex supports groups with external connectors so you can use `groups` as policy claim instead of `name`.
 
 ```
-export MINIO_IDENTITY_OPENID_CLAIM_NAME=groups
+export S3_IDENTITY_OPENID_CLAIM_NAME=groups
 ```
 
 and add relevant policies on MinIO using `mc admin policy create myminio/ <group_name> group-access.json`

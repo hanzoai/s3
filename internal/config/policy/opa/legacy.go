@@ -23,8 +23,8 @@ import (
 
 // Legacy OPA envs
 const (
-	EnvIamOpaURL       = "MINIO_IAM_OPA_URL"
-	EnvIamOpaAuthToken = "MINIO_IAM_OPA_AUTHTOKEN"
+	EnvIamOpaURL       = "S3_IAM_OPA_URL"
+	EnvIamOpaAuthToken = "S3_IAM_OPA_AUTHTOKEN"
 )
 
 // SetPolicyOPAConfig - One time migration code needed, for migrating from older config to new for PolicyOPAConfig.

@@ -28,11 +28,11 @@ const (
 	// requires a valid KMS configuration and turns any non-SSE-C
 	// request into an SSE-S3 request.
 	// If present EnvAutoEncryption must be either "on" or "off".
-	EnvKMSAutoEncryption = "MINIO_KMS_AUTO_ENCRYPTION"
+	EnvKMSAutoEncryption = "S3_KMS_AUTO_ENCRYPTION"
 )
 
 // LookupAutoEncryption returns true if and only if
-// the MINIO_KMS_AUTO_ENCRYPTION env. variable is
+// the S3_KMS_AUTO_ENCRYPTION env. variable is
 // set to "on".
 func LookupAutoEncryption() bool {
 	auto, _ := config.ParseBool(env.Get(EnvKMSAutoEncryption, config.EnableOff))

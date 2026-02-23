@@ -2905,7 +2905,7 @@ func (store *IAMStoreSys) UpdateUserIdentity(ctx context.Context, cred auth.Cred
 
 // LoadUser - attempts to load user info from storage and updates cache.
 func (store *IAMStoreSys) LoadUser(ctx context.Context, accessKey string) error {
-	groupLoad := env.Get("_MINIO_IAM_GROUP_REFRESH", config.EnableOff) == config.EnableOn
+	groupLoad := env.Get("_S3_IAM_GROUP_REFRESH", config.EnableOff) == config.EnableOn
 
 	newCachePopulate := func() (val any, err error) {
 		newCache := newIamCache()

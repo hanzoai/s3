@@ -86,10 +86,10 @@ type apiEndpoints struct {
 	STSEndpoint string `xml:"STSEndpoint"`
 }
 
-// globalVeeamForceSC is set by the environment variable _MINIO_VEEAM_FORCE_SC
+// globalVeeamForceSC is set by the environment variable _S3_VEEAM_FORCE_SC
 // This will override the storage class returned by the storage backend if it is non-standard
 // and we detect a Veeam client by checking the User Agent.
-var globalVeeamForceSC = os.Getenv("_MINIO_VEEAM_FORCE_SC")
+var globalVeeamForceSC = os.Getenv("_S3_VEEAM_FORCE_SC")
 
 type systemInfo struct {
 	XMLName              xml.Name `xml:"SystemInfo" json:"-"`

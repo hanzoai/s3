@@ -195,7 +195,7 @@ func printMinIOVersion(c *cli.Context) {
 	io.Copy(c.App.Writer, versionBanner(c))
 }
 
-var debugNoExit = env.Get("_MINIO_DEBUG_NO_EXIT", "") != ""
+var debugNoExit = env.Get("_S3_DEBUG_NO_EXIT", "") != ""
 
 // Main main for minio server.
 func Main(args []string) {

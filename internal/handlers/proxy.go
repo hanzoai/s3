@@ -55,7 +55,7 @@ var (
 )
 
 // Used to disable all processing of the X-Forwarded-For header in source IP discovery.
-var enableXFFHeader = env.Get("_MINIO_API_XFF_HEADER", config.EnableOn) == config.EnableOn
+var enableXFFHeader = env.Get("_S3_API_XFF_HEADER", config.EnableOn) == config.EnableOn
 
 // GetSourceScheme retrieves the scheme from the X-Forwarded-Proto and RFC7239
 // Forwarded headers (in that order).

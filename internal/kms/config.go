@@ -43,33 +43,33 @@ import (
 
 // Environment variables for MinIO KMS.
 const (
-	EnvKMSEndpoint   = "MINIO_KMS_SERVER"  // List of MinIO KMS endpoints, separated by ','
-	EnvKMSEnclave    = "MINIO_KMS_ENCLAVE" // MinIO KMS enclave in which the key and identity exists
-	EnvKMSDefaultKey = "MINIO_KMS_SSE_KEY" // Default key used for SSE-S3 or when no SSE-KMS key ID is specified
-	EnvKMSAPIKey     = "MINIO_KMS_API_KEY" // Credential to access the MinIO KMS.
+	EnvKMSEndpoint   = "S3_KMS_SERVER"  // List of MinIO KMS endpoints, separated by ','
+	EnvKMSEnclave    = "S3_KMS_ENCLAVE" // MinIO KMS enclave in which the key and identity exists
+	EnvKMSDefaultKey = "S3_KMS_SSE_KEY" // Default key used for SSE-S3 or when no SSE-KMS key ID is specified
+	EnvKMSAPIKey     = "S3_KMS_API_KEY" // Credential to access the MinIO KMS.
 )
 
 // Environment variables for MinIO KES.
 const (
-	EnvKESEndpoint       = "MINIO_KMS_KES_ENDPOINT"     // One or multiple KES endpoints, separated by ','
-	EnvKESDefaultKey     = "MINIO_KMS_KES_KEY_NAME"     // The default key name used for IAM data and when no key ID is specified on a bucket
-	EnvKESAPIKey         = "MINIO_KMS_KES_API_KEY"      // Access credential for KES - API keys and private key / certificate are mutually exclusive
-	EnvKESClientKey      = "MINIO_KMS_KES_KEY_FILE"     // Path to TLS private key for authenticating to KES with mTLS - usually prefer API keys
-	EnvKESClientCert     = "MINIO_KMS_KES_CERT_FILE"    // Path to TLS certificate for authenticating to KES with mTLS - usually prefer API keys
-	EnvKESServerCA       = "MINIO_KMS_KES_CAPATH"       // Path to file/directory containing CA certificates to verify the KES server certificate
-	EnvKESClientPassword = "MINIO_KMS_KES_KEY_PASSWORD" // Optional password to decrypt an encrypt TLS private key
+	EnvKESEndpoint       = "S3_KMS_KES_ENDPOINT"     // One or multiple KES endpoints, separated by ','
+	EnvKESDefaultKey     = "S3_KMS_KES_KEY_NAME"     // The default key name used for IAM data and when no key ID is specified on a bucket
+	EnvKESAPIKey         = "S3_KMS_KES_API_KEY"      // Access credential for KES - API keys and private key / certificate are mutually exclusive
+	EnvKESClientKey      = "S3_KMS_KES_KEY_FILE"     // Path to TLS private key for authenticating to KES with mTLS - usually prefer API keys
+	EnvKESClientCert     = "S3_KMS_KES_CERT_FILE"    // Path to TLS certificate for authenticating to KES with mTLS - usually prefer API keys
+	EnvKESServerCA       = "S3_KMS_KES_CAPATH"       // Path to file/directory containing CA certificates to verify the KES server certificate
+	EnvKESClientPassword = "S3_KMS_KES_KEY_PASSWORD" // Optional password to decrypt an encrypt TLS private key
 )
 
 // Environment variables for static KMS key.
 const (
-	EnvKMSSecretKey     = "MINIO_KMS_SECRET_KEY"      // Static KMS key in the form "<key-name>:<base64-32byte-key>". Implements a subset of KMS/KES APIs
-	EnvKMSSecretKeyFile = "MINIO_KMS_SECRET_KEY_FILE" // Path to a file to read the static KMS key from
+	EnvKMSSecretKey     = "S3_KMS_SECRET_KEY"      // Static KMS key in the form "<key-name>:<base64-32byte-key>". Implements a subset of KMS/KES APIs
+	EnvKMSSecretKeyFile = "S3_KMS_SECRET_KEY_FILE" // Path to a file to read the static KMS key from
 )
 
 // EnvKMSReplicateKeyID is an env. variable that controls whether MinIO
 // replicates the KMS key ID. By default, KMS key ID replication is enabled
 // but can be turned off.
-const EnvKMSReplicateKeyID = "MINIO_KMS_REPLICATE_KEYID"
+const EnvKMSReplicateKeyID = "S3_KMS_REPLICATE_KEYID"
 
 const (
 	tlsClientSessionCacheSize = 100
@@ -85,7 +85,7 @@ var replicateKeyID = sync.OnceValue(func() bool {
 // ReplicateKeyID reports whether KMS key IDs should be included when
 // replicating objects. It's enabled by default. To disable it, set:
 //
-//	MINIO_KMS_REPLICATE_KEYID=off
+//	S3_KMS_REPLICATE_KEYID=off
 //
 // Some deployments use different KMS clusters with destinct keys on
 // each site. Trying to replicate the KMS key ID can cause requests
@@ -101,10 +101,10 @@ type ConnectionOptions struct {
 // Connect returns a new Conn to a KMS. It uses configuration from the
 // environment and returns a:
 //
-//   - connection to MinIO KMS if the "MINIO_KMS_SERVER" variable is present.
-//   - connection to MinIO KES if the "MINIO_KMS_KES_ENDPOINT" is present.
+//   - connection to MinIO KMS if the "S3_KMS_SERVER" variable is present.
+//   - connection to MinIO KES if the "S3_KMS_KES_ENDPOINT" is present.
 //   - connection to a "local" KMS implementation using a static key if the
-//     "MINIO_KMS_SECRET_KEY" or "MINIO_KMS_SECRET_KEY_FILE" is present.
+//     "S3_KMS_SECRET_KEY" or "S3_KMS_SECRET_KEY_FILE" is present.
 //
 // It returns an error if connecting to the KMS implementation fails,
 // e.g. due to incomplete config, or when configurations for multiple
@@ -330,15 +330,15 @@ func IsPresent() (bool, error) {
 		EnvKESClientPassword,
 		EnvKESServerCA,
 	)
-	// We have to handle a special case for MINIO_KMS_SECRET_KEY and
-	// MINIO_KMS_SECRET_KEY_FILE. The docker image always sets the
-	// MINIO_KMS_SECRET_KEY_FILE - either to the argument passed to
-	// the container or to a default string (e.g. "minio_master_key").
+	// We have to handle a special case for S3_KMS_SECRET_KEY and
+	// S3_KMS_SECRET_KEY_FILE. The docker image always sets the
+	// S3_KMS_SECRET_KEY_FILE - either to the argument passed to
+	// the container or to a default string (e.g. "s3_master_key").
 	//
 	// We have to distinguish a explicit config from an implicit. Hence,
 	// we unset the env. vars if they are set but empty or contain a path
 	// which does not exist. The downside of this check is that if
-	// MINIO_KMS_SECRET_KEY_FILE is set to a path that does not exist,
+	// S3_KMS_SECRET_KEY_FILE is set to a path that does not exist,
 	// the server does not complain and start without a KMS config.
 	//
 	// Until the container image changes, this behavior has to be preserved.

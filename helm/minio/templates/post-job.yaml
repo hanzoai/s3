@@ -102,9 +102,9 @@ spec:
           command: [ "/bin/sh", "/config/add-policy" ]
           {{- end }}
           env:
-            - name: MINIO_ENDPOINT
+            - name: S3_ENDPOINT
               value: {{ template "minio.fullname" . }}
-            - name: MINIO_PORT
+            - name: S3_PORT
               value: {{ .Values.service.port | quote }}
           volumeMounts:
             - name: etc-path
@@ -136,9 +136,9 @@ spec:
           command: [ "/bin/sh", "/config/initialize" ]
           {{- end }}
           env:
-            - name: MINIO_ENDPOINT
+            - name: S3_ENDPOINT
               value: {{ template "minio.fullname" . }}
-            - name: MINIO_PORT
+            - name: S3_PORT
               value: {{ .Values.service.port | quote }}
           volumeMounts:
             - name: etc-path
@@ -169,9 +169,9 @@ spec:
           command: [ "/bin/sh", "/config/add-user" ]
           {{- end }}
           env:
-            - name: MINIO_ENDPOINT
+            - name: S3_ENDPOINT
               value: {{ template "minio.fullname" . }}
-            - name: MINIO_PORT
+            - name: S3_PORT
               value: {{ .Values.service.port | quote }}
           volumeMounts:
             - name: etc-path
@@ -202,9 +202,9 @@ spec:
           command: [ "/bin/sh", "/config/custom-command" ]
           {{- end }}
           env:
-            - name: MINIO_ENDPOINT
+            - name: S3_ENDPOINT
               value: {{ template "minio.fullname" . }}
-            - name: MINIO_PORT
+            - name: S3_PORT
               value: {{ .Values.service.port | quote }}
           volumeMounts:
             - name: etc-path
@@ -238,9 +238,9 @@ spec:
           command: ["/bin/sh", "/config/add-svcacct"]
           {{- end }}
           env:
-            - name: MINIO_ENDPOINT
+            - name: S3_ENDPOINT
               value: {{ template "minio.fullname" . }}
-            - name: MINIO_PORT
+            - name: S3_PORT
               value: {{ .Values.service.port | quote }}
           volumeMounts:
             - name: etc-path

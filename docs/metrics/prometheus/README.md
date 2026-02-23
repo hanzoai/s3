@@ -39,7 +39,7 @@ Refer [Prometheus documentation](https://prometheus.io/docs/introduction/first_s
 MinIO supports two authentication modes for Prometheus either `jwt` or `public`, by default MinIO runs in `jwt` mode. To allow public access without authentication for prometheus metrics set environment as follows.
 
 ```
-export MINIO_PROMETHEUS_AUTH_TYPE="public"
+export S3_PROMETHEUS_AUTH_TYPE="public"
 minio server ~/test
 ```
 

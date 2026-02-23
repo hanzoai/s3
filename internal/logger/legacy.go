@@ -24,8 +24,8 @@ import (
 
 // Legacy envs
 const (
-	legacyEnvAuditLoggerHTTPEndpoint = "MINIO_AUDIT_LOGGER_HTTP_ENDPOINT"
-	legacyEnvLoggerHTTPEndpoint      = "MINIO_LOGGER_HTTP_ENDPOINT"
+	legacyEnvAuditLoggerHTTPEndpoint = "S3_AUDIT_LOGGER_HTTP_ENDPOINT"
+	legacyEnvLoggerHTTPEndpoint      = "S3_LOGGER_HTTP_ENDPOINT"
 )
 
 // SetLoggerHTTPAudit - helper for migrating older config to newer KV format.

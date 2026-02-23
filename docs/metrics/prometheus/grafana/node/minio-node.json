@@ -103,7 +103,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "max(minio_node_drive_total{job=~\"$scrape_jobs\",server=\"$server\"})",
+          "expr": "max(s3_node_drive_total{job=~\"$scrape_jobs\",server=\"$server\"})",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -171,7 +171,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "max(minio_node_drive_online_total{job=~\"$scrape_jobs\",server=\"$server\"})",
+          "expr": "max(s3_node_drive_online_total{job=~\"$scrape_jobs\",server=\"$server\"})",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -190,7 +190,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "max(minio_node_drive_offline_total{job=~\"$scrape_jobs\",server=\"$server\"})",
+          "expr": "max(s3_node_drive_offline_total{job=~\"$scrape_jobs\",server=\"$server\"})",
           "format": "time_series",
           "hide": false,
           "instant": true,
@@ -292,7 +292,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_drive_total_bytes{job=~\"$scrape_jobs\",server=\"$server\"}",
+          "expr": "s3_node_drive_total_bytes{job=~\"$scrape_jobs\",server=\"$server\"}",
           "interval": "",
           "legendFormat": "Total [{{drive}}]",
           "refId": "A"
@@ -303,7 +303,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_drive_used_bytes{job=~\"$scrape_jobs\",server=\"$server\"}",
+          "expr": "s3_node_drive_used_bytes{job=~\"$scrape_jobs\",server=\"$server\"}",
           "interval": "",
           "legendFormat": "Used [{{drive}}]",
           "refId": "B"
@@ -314,7 +314,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_drive_free_bytes{job=~\"$scrape_jobs\",server=\"$server\"}",
+          "expr": "s3_node_drive_free_bytes{job=~\"$scrape_jobs\",server=\"$server\"}",
           "interval": "",
           "legendFormat": "Free [{{drive}}]",
           "refId": "C"
@@ -413,7 +413,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_drive_free_inodes{job=~\"$scrape_jobs\",server=\"$server\"}",
+          "expr": "s3_node_drive_free_inodes{job=~\"$scrape_jobs\",server=\"$server\"}",
           "interval": "",
           "legendFormat": "[{{drive}}]",
           "refId": "B"
@@ -512,7 +512,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_drive_latency_us{job=~\"$scrape_jobs\",server=\"$server\"}",
+          "expr": "s3_node_drive_latency_us{job=~\"$scrape_jobs\",server=\"$server\"}",
           "interval": "",
           "legendFormat": "[{{drive}}:{{api}}]",
           "refId": "B"
@@ -611,7 +611,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_drive_errors_availability{job=~\"$scrape_jobs\",server=\"$server\"}",
+          "expr": "s3_node_drive_errors_availability{job=~\"$scrape_jobs\",server=\"$server\"}",
           "interval": "",
           "legendFormat": "[{{drive}}]",
           "refId": "B"
@@ -741,7 +741,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_drive_errors_timeout{job=~\"$scrape_jobs\",server=\"$server\"}",
+          "expr": "s3_node_drive_errors_timeout{job=~\"$scrape_jobs\",server=\"$server\"}",
           "interval": "",
           "legendFormat": "[{{drive}}]",
           "refId": "B"
@@ -840,7 +840,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_drive_io_waiting{job=~\"$scrape_jobs\",server=\"$server\"}",
+          "expr": "s3_node_drive_io_waiting{job=~\"$scrape_jobs\",server=\"$server\"}",
           "interval": "",
           "legendFormat": "[{{drive}}]",
           "refId": "B"
@@ -899,7 +899,7 @@
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"
         },
-        "definition": "label_values(minio_node_drive_total,server)",
+        "definition": "label_values(s3_node_drive_total,server)",
         "hide": 0,
         "includeAll": false,
         "label": "Server",
@@ -908,7 +908,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(minio_node_drive_total,server)",
+          "query": "label_values(s3_node_drive_total,server)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,

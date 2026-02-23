@@ -62,25 +62,25 @@ const (
 	KafkaCompressionCodec   = "compression_codec"
 	KafkaCompressionLevel   = "compression_level"
 
-	EnvKafkaEnable                   = "MINIO_NOTIFY_KAFKA_ENABLE"
-	EnvKafkaBrokers                  = "MINIO_NOTIFY_KAFKA_BROKERS"
-	EnvKafkaTopic                    = "MINIO_NOTIFY_KAFKA_TOPIC"
-	EnvKafkaQueueDir                 = "MINIO_NOTIFY_KAFKA_QUEUE_DIR"
-	EnvKafkaQueueLimit               = "MINIO_NOTIFY_KAFKA_QUEUE_LIMIT"
-	EnvKafkaTLS                      = "MINIO_NOTIFY_KAFKA_TLS"
-	EnvKafkaTLSSkipVerify            = "MINIO_NOTIFY_KAFKA_TLS_SKIP_VERIFY"
-	EnvKafkaTLSClientAuth            = "MINIO_NOTIFY_KAFKA_TLS_CLIENT_AUTH"
-	EnvKafkaSASLEnable               = "MINIO_NOTIFY_KAFKA_SASL"
-	EnvKafkaSASLUsername             = "MINIO_NOTIFY_KAFKA_SASL_USERNAME"
-	EnvKafkaSASLPassword             = "MINIO_NOTIFY_KAFKA_SASL_PASSWORD"
-	EnvKafkaSASLMechanism            = "MINIO_NOTIFY_KAFKA_SASL_MECHANISM"
-	EnvKafkaClientTLSCert            = "MINIO_NOTIFY_KAFKA_CLIENT_TLS_CERT"
-	EnvKafkaClientTLSKey             = "MINIO_NOTIFY_KAFKA_CLIENT_TLS_KEY"
-	EnvKafkaVersion                  = "MINIO_NOTIFY_KAFKA_VERSION"
-	EnvKafkaBatchSize                = "MINIO_NOTIFY_KAFKA_BATCH_SIZE"
-	EnvKafkaBatchCommitTimeout       = "MINIO_NOTIFY_KAFKA_BATCH_COMMIT_TIMEOUT"
-	EnvKafkaProducerCompressionCodec = "MINIO_NOTIFY_KAFKA_PRODUCER_COMPRESSION_CODEC"
-	EnvKafkaProducerCompressionLevel = "MINIO_NOTIFY_KAFKA_PRODUCER_COMPRESSION_LEVEL"
+	EnvKafkaEnable                   = "S3_NOTIFY_KAFKA_ENABLE"
+	EnvKafkaBrokers                  = "S3_NOTIFY_KAFKA_BROKERS"
+	EnvKafkaTopic                    = "S3_NOTIFY_KAFKA_TOPIC"
+	EnvKafkaQueueDir                 = "S3_NOTIFY_KAFKA_QUEUE_DIR"
+	EnvKafkaQueueLimit               = "S3_NOTIFY_KAFKA_QUEUE_LIMIT"
+	EnvKafkaTLS                      = "S3_NOTIFY_KAFKA_TLS"
+	EnvKafkaTLSSkipVerify            = "S3_NOTIFY_KAFKA_TLS_SKIP_VERIFY"
+	EnvKafkaTLSClientAuth            = "S3_NOTIFY_KAFKA_TLS_CLIENT_AUTH"
+	EnvKafkaSASLEnable               = "S3_NOTIFY_KAFKA_SASL"
+	EnvKafkaSASLUsername             = "S3_NOTIFY_KAFKA_SASL_USERNAME"
+	EnvKafkaSASLPassword             = "S3_NOTIFY_KAFKA_SASL_PASSWORD"
+	EnvKafkaSASLMechanism            = "S3_NOTIFY_KAFKA_SASL_MECHANISM"
+	EnvKafkaClientTLSCert            = "S3_NOTIFY_KAFKA_CLIENT_TLS_CERT"
+	EnvKafkaClientTLSKey             = "S3_NOTIFY_KAFKA_CLIENT_TLS_KEY"
+	EnvKafkaVersion                  = "S3_NOTIFY_KAFKA_VERSION"
+	EnvKafkaBatchSize                = "S3_NOTIFY_KAFKA_BATCH_SIZE"
+	EnvKafkaBatchCommitTimeout       = "S3_NOTIFY_KAFKA_BATCH_COMMIT_TIMEOUT"
+	EnvKafkaProducerCompressionCodec = "S3_NOTIFY_KAFKA_PRODUCER_COMPRESSION_CODEC"
+	EnvKafkaProducerCompressionLevel = "S3_NOTIFY_KAFKA_PRODUCER_COMPRESSION_LEVEL"
 )
 
 var codecs = map[string]sarama.CompressionCodec{
@@ -334,7 +334,7 @@ func (target *KafkaTarget) init() error {
 }
 
 func (target *KafkaTarget) initKafka() error {
-	if os.Getenv("_MINIO_KAFKA_DEBUG") != "" {
+	if os.Getenv("_S3_KAFKA_DEBUG") != "" {
 		sarama.DebugLogger = log.Default()
 	}
 

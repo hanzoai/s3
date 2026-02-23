@@ -53,29 +53,29 @@ const (
 	apiSyncEvents                  = "sync_events"
 	apiObjectMaxVersions           = "object_max_versions"
 
-	EnvAPIRequestsMax             = "MINIO_API_REQUESTS_MAX"
-	EnvAPIRequestsDeadline        = "MINIO_API_REQUESTS_DEADLINE"
-	EnvAPIClusterDeadline         = "MINIO_API_CLUSTER_DEADLINE"
-	EnvAPICorsAllowOrigin         = "MINIO_API_CORS_ALLOW_ORIGIN"
-	EnvAPIRemoteTransportDeadline = "MINIO_API_REMOTE_TRANSPORT_DEADLINE"
-	EnvAPITransitionWorkers       = "MINIO_API_TRANSITION_WORKERS"
-	EnvAPIListQuorum              = "MINIO_API_LIST_QUORUM"
-	EnvAPISecureCiphers           = "MINIO_API_SECURE_CIPHERS" // default config.EnableOn
-	EnvAPIReplicationPriority     = "MINIO_API_REPLICATION_PRIORITY"
-	EnvAPIReplicationMaxWorkers   = "MINIO_API_REPLICATION_MAX_WORKERS"
-	EnvAPIReplicationMaxLWorkers  = "MINIO_API_REPLICATION_MAX_LRG_WORKERS"
+	EnvAPIRequestsMax             = "S3_API_REQUESTS_MAX"
+	EnvAPIRequestsDeadline        = "S3_API_REQUESTS_DEADLINE"
+	EnvAPIClusterDeadline         = "S3_API_CLUSTER_DEADLINE"
+	EnvAPICorsAllowOrigin         = "S3_API_CORS_ALLOW_ORIGIN"
+	EnvAPIRemoteTransportDeadline = "S3_API_REMOTE_TRANSPORT_DEADLINE"
+	EnvAPITransitionWorkers       = "S3_API_TRANSITION_WORKERS"
+	EnvAPIListQuorum              = "S3_API_LIST_QUORUM"
+	EnvAPISecureCiphers           = "S3_API_SECURE_CIPHERS" // default config.EnableOn
+	EnvAPIReplicationPriority     = "S3_API_REPLICATION_PRIORITY"
+	EnvAPIReplicationMaxWorkers   = "S3_API_REPLICATION_MAX_WORKERS"
+	EnvAPIReplicationMaxLWorkers  = "S3_API_REPLICATION_MAX_LRG_WORKERS"
 
-	EnvAPIStaleUploadsCleanupInterval = "MINIO_API_STALE_UPLOADS_CLEANUP_INTERVAL"
-	EnvAPIStaleUploadsExpiry          = "MINIO_API_STALE_UPLOADS_EXPIRY"
-	EnvAPIDeleteCleanupInterval       = "MINIO_API_DELETE_CLEANUP_INTERVAL"
-	EnvDeleteCleanupInterval          = "MINIO_DELETE_CLEANUP_INTERVAL"
-	EnvAPIODirect                     = "MINIO_API_ODIRECT"
-	EnvAPIDisableODirect              = "MINIO_API_DISABLE_ODIRECT"
-	EnvAPIGzipObjects                 = "MINIO_API_GZIP_OBJECTS"
-	EnvAPIRootAccess                  = "MINIO_API_ROOT_ACCESS" // default config.EnableOn
-	EnvAPISyncEvents                  = "MINIO_API_SYNC_EVENTS" // default "off"
-	EnvAPIObjectMaxVersions           = "MINIO_API_OBJECT_MAX_VERSIONS"
-	EnvAPIObjectMaxVersionsLegacy     = "_MINIO_OBJECT_MAX_VERSIONS"
+	EnvAPIStaleUploadsCleanupInterval = "S3_API_STALE_UPLOADS_CLEANUP_INTERVAL"
+	EnvAPIStaleUploadsExpiry          = "S3_API_STALE_UPLOADS_EXPIRY"
+	EnvAPIDeleteCleanupInterval       = "S3_API_DELETE_CLEANUP_INTERVAL"
+	EnvDeleteCleanupInterval          = "S3_DELETE_CLEANUP_INTERVAL"
+	EnvAPIODirect                     = "S3_API_ODIRECT"
+	EnvAPIDisableODirect              = "S3_API_DISABLE_ODIRECT"
+	EnvAPIGzipObjects                 = "S3_API_GZIP_OBJECTS"
+	EnvAPIRootAccess                  = "S3_API_ROOT_ACCESS" // default config.EnableOn
+	EnvAPISyncEvents                  = "S3_API_SYNC_EVENTS" // default "off"
+	EnvAPIObjectMaxVersions           = "S3_API_OBJECT_MAX_VERSIONS"
+	EnvAPIObjectMaxVersionsLegacy     = "_S3_OBJECT_MAX_VERSIONS"
 )
 
 // Deprecated key and ENVs

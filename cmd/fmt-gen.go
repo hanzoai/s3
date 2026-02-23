@@ -40,7 +40,7 @@ var fmtGenFlags = []cli.Flag{
 		Name:   "address",
 		Value:  ":" + GlobalMinioDefaultPort,
 		Usage:  "bind to a specific ADDRESS:PORT, ADDRESS can be an IP or hostname",
-		EnvVar: "MINIO_ADDRESS",
+		EnvVar: "S3_ADDRESS",
 	},
 }
 

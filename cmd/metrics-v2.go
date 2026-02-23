@@ -131,13 +131,13 @@ type MetricNamespace string
 type MetricSubsystem string
 
 const (
-	bucketMetricNamespace    MetricNamespace = "minio_bucket"
-	clusterMetricNamespace   MetricNamespace = "minio_cluster"
-	healMetricNamespace      MetricNamespace = "minio_heal"
-	interNodeMetricNamespace MetricNamespace = "minio_inter_node"
-	nodeMetricNamespace      MetricNamespace = "minio_node"
+	bucketMetricNamespace    MetricNamespace = "s3_bucket"
+	clusterMetricNamespace   MetricNamespace = "s3_cluster"
+	healMetricNamespace      MetricNamespace = "s3_heal"
+	interNodeMetricNamespace MetricNamespace = "s3_inter_node"
+	nodeMetricNamespace      MetricNamespace = "s3_node"
 	minioMetricNamespace     MetricNamespace = "minio"
-	s3MetricNamespace        MetricNamespace = "minio_s3"
+	s3MetricNamespace        MetricNamespace = "s3_s3"
 )
 
 const (
@@ -2788,7 +2788,7 @@ func getNotificationMetrics(opts MetricsGroupOpts) *MetricsGroupV2 {
 					Namespace: minioNamespace,
 					Subsystem: notifySubsystem,
 					Name:      "current_send_in_progress",
-					Help:      "Number of concurrent async Send calls active to all targets (deprecated, please use 'minio_notify_target_current_send_in_progress' instead)",
+					Help:      "Number of concurrent async Send calls active to all targets (deprecated, please use 's3_notify_target_current_send_in_progress' instead)",
 					Type:      gaugeMetric,
 				},
 				Value: float64(nstats.CurrentSendCalls),
@@ -2808,7 +2808,7 @@ func getNotificationMetrics(opts MetricsGroupOpts) *MetricsGroupV2 {
 					Namespace: minioNamespace,
 					Subsystem: notifySubsystem,
 					Name:      "events_errors_total",
-					Help:      "Events that were failed to be sent to the targets (deprecated, please use 'minio_notify_target_failed_events' instead)",
+					Help:      "Events that were failed to be sent to the targets (deprecated, please use 's3_notify_target_failed_events' instead)",
 					Type:      counterMetric,
 				},
 				Value: float64(nstats.EventsErrorsTotal),
@@ -2818,7 +2818,7 @@ func getNotificationMetrics(opts MetricsGroupOpts) *MetricsGroupV2 {
 					Namespace: minioNamespace,
 					Subsystem: notifySubsystem,
 					Name:      "events_sent_total",
-					Help:      "Total number of events sent to the targets (deprecated, please use 'minio_notify_target_total_events' instead)",
+					Help:      "Total number of events sent to the targets (deprecated, please use 's3_notify_target_total_events' instead)",
 					Type:      counterMetric,
 				},
 				Value: float64(nstats.TotalEvents),
@@ -4091,7 +4091,7 @@ type minioBucketCollector struct {
 func newMinioBucketCollector(metricsGroups []*MetricsGroupV2) *minioBucketCollector {
 	return &minioBucketCollector{
 		metricsGroups: metricsGroups,
-		desc:          prometheus.NewDesc("minio_bucket_stats", "Statistics exposed by MinIO server cluster wide per bucket", nil, nil),
+		desc:          prometheus.NewDesc("s3_bucket_stats", "Statistics exposed by MinIO server cluster wide per bucket", nil, nil),
 	}
 }
 
@@ -4127,7 +4127,7 @@ type minioClusterCollector struct {
 func newMinioClusterCollector(metricsGroups []*MetricsGroupV2) *minioClusterCollector {
 	return &minioClusterCollector{
 		metricsGroups: metricsGroups,
-		desc:          prometheus.NewDesc("minio_stats", "Statistics exposed by MinIO server per cluster", nil, nil),
+		desc:          prometheus.NewDesc("s3_stats", "Statistics exposed by MinIO server per cluster", nil, nil),
 	}
 }
 
@@ -4274,7 +4274,7 @@ func getOrderedLabelValueArrays(labelsWithValue map[string]string) (labels, valu
 func newMinioCollectorNode(metricsGroups []*MetricsGroupV2) *minioNodeCollector {
 	return &minioNodeCollector{
 		metricsGroups: metricsGroups,
-		desc:          prometheus.NewDesc("minio_stats", "Statistics exposed by MinIO server per node", nil, nil),
+		desc:          prometheus.NewDesc("s3_stats", "Statistics exposed by MinIO server per node", nil, nil),
 	}
 }
 

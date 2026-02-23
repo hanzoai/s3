@@ -84,8 +84,8 @@ http://minio:9000/?Action=AssumeRole&DurationSeconds=3600&Version=2011-06-15&Pol
 ## Using AssumeRole API
 
 ```
-export MINIO_ROOT_USER=minio
-export MINIO_ROOT_PASSWORD=minio123
+export S3_ROOT_USER=minio
+export S3_ROOT_PASSWORD=minio123
 minio server ~/test
 ```
 

@@ -135,7 +135,7 @@ var (
 )
 
 const (
-	ntpServerEnv = "MINIO_NTP_SERVER"
+	ntpServerEnv = "S3_NTP_SERVER"
 )
 
 var ntpServer = env.Get(ntpServerEnv, "")

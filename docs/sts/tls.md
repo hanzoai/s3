@@ -14,13 +14,13 @@ KEY:
 identity_tls  enable X.509 TLS certificate SSO support
 
 ARGS:
-MINIO_IDENTITY_TLS_SKIP_VERIFY  (on|off)    trust client certificates without verification. Defaults to "off" (verify)
+S3_IDENTITY_TLS_SKIP_VERIFY  (on|off)    trust client certificates without verification. Defaults to "off" (verify)
 ```
 
 The MinIO TLS STS API is disabled by default. However, it can be *enabled* by setting environment variable:
 
 ```
-export MINIO_IDENTITY_TLS_ENABLE=on
+export S3_IDENTITY_TLS_ENABLE=on
 ```
 
 ## Example
@@ -105,7 +105,7 @@ Now, the STS certificate-based authentication happens in 4 steps:
 
 The returned credentials expiry after a certain period of time that can be configured via `&DurationSeconds=3600`. By default, the STS credentials are valid for 1 hour. The minimum expiration allowed is 15 minutes.
 
-Further, the temp. S3 credentials will never out-live the client certificate. For example, if the `MINIO_IDENTITY_TLS_STS_EXPIRY` is 7 days but the certificate itself is only valid for the next 3 days, then MinIO will return S3 credentials that are valid for 3 days only.
+Further, the temp. S3 credentials will never out-live the client certificate. For example, if the `S3_IDENTITY_TLS_STS_EXPIRY` is 7 days but the certificate itself is only valid for the next 3 days, then MinIO will return S3 credentials that are valid for 3 days only.
 
 ## Caveat
 

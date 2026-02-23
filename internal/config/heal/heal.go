@@ -36,10 +36,10 @@ const (
 	IOCount      = "max_io"
 	DriveWorkers = "drive_workers"
 
-	EnvBitrot       = "MINIO_HEAL_BITROTSCAN"
-	EnvSleep        = "MINIO_HEAL_MAX_SLEEP"
-	EnvIOCount      = "MINIO_HEAL_MAX_IO"
-	EnvDriveWorkers = "MINIO_HEAL_DRIVE_WORKERS"
+	EnvBitrot       = "S3_HEAL_BITROTSCAN"
+	EnvSleep        = "S3_HEAL_MAX_SLEEP"
+	EnvIOCount      = "S3_HEAL_MAX_IO"
+	EnvDriveWorkers = "S3_HEAL_DRIVE_WORKERS"
 )
 
 var configMutex sync.RWMutex

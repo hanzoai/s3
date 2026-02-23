@@ -371,7 +371,7 @@ func getDiskInfo(drivePath string) (di disk.Info, rootDrive bool, err error) {
 
 		if !globalIsCICD && !globalIsErasureSD {
 			if globalRootDiskThreshold > 0 {
-				// Use MINIO_ROOTDISK_THRESHOLD_SIZE to figure out if
+				// Use S3_ROOTDISK_THRESHOLD_SIZE to figure out if
 				// this disk is a root disk. treat those disks with
 				// size less than or equal to the threshold as rootDrives.
 				rootDrive = di.Total <= globalRootDiskThreshold

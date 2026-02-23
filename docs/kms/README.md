@@ -19,17 +19,17 @@ curl -sSL --tlsv1.2 \
 ### 2. Set the MinIO-KES configuration
 
 ```sh
-export MINIO_KMS_KES_ENDPOINT=https://play.min.io:7373
-export MINIO_KMS_KES_KEY_FILE=root.key
-export MINIO_KMS_KES_CERT_FILE=root.cert
-export MINIO_KMS_KES_KEY_NAME=my-minio-key
+export S3_KMS_KES_ENDPOINT=https://play.min.io:7373
+export S3_KMS_KES_KEY_FILE=root.key
+export S3_KMS_KES_CERT_FILE=root.cert
+export S3_KMS_KES_KEY_NAME=my-minio-key
 ```
 
 ### 3. Start the MinIO Server
 
 ```sh
-export MINIO_ROOT_USER=minio
-export MINIO_ROOT_PASSWORD=minio123
+export S3_ROOT_USER=minio
+export S3_ROOT_PASSWORD=minio123
 minio server ~/export
 ```
 
@@ -96,7 +96,7 @@ Auto encryption 'sse-s3' is enabled
 MinIO automatically encrypts all objects on buckets if KMS is successfully configured and following ENV is enabled:
 
 ```
-export MINIO_KMS_AUTO_ENCRYPTION=on
+export S3_KMS_AUTO_ENCRYPTION=on
 ```
 
 ### Verify auto-encryption
@@ -123,13 +123,13 @@ Encrypted :
 ## Encrypted Private Key
 
 MinIO supports encrypted KES client private keys. Therefore, you can use
-an password-protected private keys for `MINIO_KMS_KES_KEY_FILE`.
+an password-protected private keys for `S3_KMS_KES_KEY_FILE`.
 
 When using password-protected private keys for accessing KES you need to
 provide the password via:
 
 ```
-export MINIO_KMS_KES_KEY_PASSWORD=<your-password>
+export S3_KMS_KES_KEY_PASSWORD=<your-password>
 ```
 
 Note that MinIO only supports encrypted private keys - not encrypted certificates.

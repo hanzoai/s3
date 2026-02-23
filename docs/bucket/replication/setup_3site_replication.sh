@@ -34,17 +34,17 @@ catch() {
 catch
 
 set -e
-export MINIO_CI_CD=1
-export MINIO_BROWSER=off
-export MINIO_ROOT_USER="minio"
-export MINIO_ROOT_PASSWORD="minio123"
-export MINIO_KMS_AUTO_ENCRYPTION=off
-export MINIO_PROMETHEUS_AUTH_TYPE=public
-export MINIO_KMS_SECRET_KEY=my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw=
-unset MINIO_KMS_KES_CERT_FILE
-unset MINIO_KMS_KES_KEY_FILE
-unset MINIO_KMS_KES_ENDPOINT
-unset MINIO_KMS_KES_KEY_NAME
+export S3_CI_CD=1
+export S3_BROWSER=off
+export S3_ROOT_USER="minio"
+export S3_ROOT_PASSWORD="minio123"
+export S3_KMS_AUTO_ENCRYPTION=off
+export S3_PROMETHEUS_AUTH_TYPE=public
+export S3_KMS_SECRET_KEY=my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw=
+unset S3_KMS_KES_CERT_FILE
+unset S3_KMS_KES_KEY_FILE
+unset S3_KMS_KES_ENDPOINT
+unset S3_KMS_KES_KEY_NAME
 
 go install -v github.com/minio/mc@master
 cp -a $(go env GOPATH)/bin/mc ./mc

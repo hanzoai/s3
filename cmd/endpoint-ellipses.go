@@ -320,7 +320,7 @@ func GetAllSets(setDriveCount uint64, args ...string) ([][]string, error) {
 
 // Override set drive count for manual distribution.
 const (
-	EnvErasureSetDriveCount = "MINIO_ERASURE_SET_DRIVE_COUNT"
+	EnvErasureSetDriveCount = "S3_ERASURE_SET_DRIVE_COUNT"
 )
 
 type node struct {

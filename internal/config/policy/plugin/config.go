@@ -36,9 +36,9 @@ const (
 	AuthToken   = "auth_token"
 	EnableHTTP2 = "enable_http2"
 
-	EnvPolicyPluginURL         = "MINIO_POLICY_PLUGIN_URL"
-	EnvPolicyPluginAuthToken   = "MINIO_POLICY_PLUGIN_AUTH_TOKEN"
-	EnvPolicyPluginEnableHTTP2 = "MINIO_POLICY_PLUGIN_ENABLE_HTTP2"
+	EnvPolicyPluginURL         = "S3_POLICY_PLUGIN_URL"
+	EnvPolicyPluginAuthToken   = "S3_POLICY_PLUGIN_AUTH_TOKEN"
+	EnvPolicyPluginEnableHTTP2 = "S3_POLICY_PLUGIN_ENABLE_HTTP2"
 )
 
 // DefaultKVS - default config for Authz plugin config

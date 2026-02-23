@@ -11,7 +11,7 @@
 #   `localhost:389`
 #
 # if this is not the case, set the environment variable
-# `_MINIO_LDAP_TEST_SERVER`.
+# `_S3_LDAP_TEST_SERVER`.
 
 OLD_VERSION=RELEASE.2024-03-26T22-10-45Z
 OLD_BINARY_LINK=https://dl.min.io/server/minio/release/linux-amd64/archive/minio.${OLD_VERSION}
@@ -40,9 +40,9 @@ __init__() {
 		chmod +x minio.${OLD_VERSION}
 	fi
 
-	if [ -z "$_MINIO_LDAP_TEST_SERVER" ]; then
-		export _MINIO_LDAP_TEST_SERVER=localhost:389
-		echo "Using default LDAP endpoint: $_MINIO_LDAP_TEST_SERVER"
+	if [ -z "$_S3_LDAP_TEST_SERVER" ]; then
+		export _S3_LDAP_TEST_SERVER=localhost:389
+		echo "Using default LDAP endpoint: $_S3_LDAP_TEST_SERVER"
 	fi
 
 	rm -rf /tmp/data
@@ -51,7 +51,7 @@ __init__() {
 create_iam_content_in_old_minio() {
 	echo "Creating IAM content in old minio instance."
 
-	MINIO_CI_CD=1 ./minio.${OLD_VERSION} server /tmp/data/{1...4} &
+	S3_CI_CD=1 ./minio.${OLD_VERSION} server /tmp/data/{1...4} &
 	sleep 5
 
 	set -x
@@ -82,7 +82,7 @@ create_iam_content_in_old_minio() {
 import_iam_content_in_new_minio() {
 	echo "Importing IAM content in new minio instance."
 	# Assume current minio binary exists.
-	MINIO_CI_CD=1 ./minio server /tmp/data/{1...4} &
+	S3_CI_CD=1 ./minio server /tmp/data/{1...4} &
 	sleep 5
 
 	set -x

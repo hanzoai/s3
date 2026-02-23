@@ -31,7 +31,7 @@ const markerTagVersion = "v2"
 // parseMarker will parse a marker possibly encoded with encodeMarker
 func (o *listPathOptions) parseMarker() {
 	s := o.Marker
-	if !strings.Contains(s, "[minio_cache:"+markerTagVersion) {
+	if !strings.Contains(s, "[s3_cache:"+markerTagVersion) {
 		return
 	}
 	start := strings.LastIndex(s, "[")
@@ -45,7 +45,7 @@ func (o *listPathOptions) parseMarker() {
 			continue
 		}
 		switch kv[0] {
-		case "minio_cache":
+		case "s3_cache":
 			if kv[1] != markerTagVersion {
 				continue
 			}
@@ -81,10 +81,10 @@ func (o *listPathOptions) parseMarker() {
 func (o listPathOptions) encodeMarker(marker string) string {
 	if o.ID == "" {
 		// Mark as returning listing...
-		return fmt.Sprintf("%s[minio_cache:%s,return:]", marker, markerTagVersion)
+		return fmt.Sprintf("%s[s3_cache:%s,return:]", marker, markerTagVersion)
 	}
 	if strings.ContainsAny(o.ID, "[:,") {
 		internalLogIf(context.Background(), fmt.Errorf("encodeMarker: uuid %s contained invalid characters", o.ID))
 	}
-	return fmt.Sprintf("%s[minio_cache:%s,id:%s,p:%d,s:%d]", marker, markerTagVersion, o.ID, o.pool, o.set)
+	return fmt.Sprintf("%s[s3_cache:%s,id:%s,p:%d,s:%d]", marker, markerTagVersion, o.ID, o.pool, o.set)
 }

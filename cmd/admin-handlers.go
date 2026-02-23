@@ -330,7 +330,7 @@ func (a adminAPIHandlers) ServerUpdateHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	if globalInplaceUpdateDisabled || currentReleaseTime.IsZero() {
-		// if MINIO_UPDATE=off - inplace update is disabled, mostly in containers.
+		// if S3_UPDATE=off - inplace update is disabled, mostly in containers.
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(ErrMethodNotAllowed), r.URL)
 		return
 	}
@@ -3443,16 +3443,16 @@ function main() {
 	done
 
 	# Read content of inspect-input.txt
-	MINIO_OPTS=$(grep "Server command line args" <./inspect-input.txt | sed "s/Server command line args: //g" | sed -r "s#%s:\/\/#\.\/#g")
+	S3_OPTS=$(grep "Server command line args" <./inspect-input.txt | sed "s/Server command line args: //g" | sed -r "s#%s:\/\/#\.\/#g")
 
 	# Start MinIO instance using the options
-	START_CMD="CI=on _MINIO_AUTO_DRIVE_HEALING=off minio server ${MINIO_OPTS} &"
+	START_CMD="CI=on _S3_AUTO_DRIVE_HEALING=off minio server ${S3_OPTS} &"
 	echo
 	echo "Starting MinIO instance: ${START_CMD}"
 	echo
 	eval "$START_CMD"
-	MINIO_SRVR_PID="$!"
-	echo "MinIO Server PID: ${MINIO_SRVR_PID}"
+	S3_SRVR_PID="$!"
+	echo "MinIO Server PID: ${S3_SRVR_PID}"
 	echo
 	echo "Waiting for MinIO instance to get ready!"
 	sleep 10
