@@ -38,7 +38,6 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ env.REGISTRY }}/hanzoai/s3
             ${{ env.REGISTRY }}/hanzoai/storage
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
@@ -95,10 +94,20 @@ jobs:
           CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -tags kqueue -trimpath -ldflags "${LDFLAGS}" -o s3-darwin-arm64 .
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -tags kqueue -trimpath -ldflags "${LDFLAGS}" -o s3-windows-amd64.exe .
 
-      - name: Upload to release
+      - name: Create or update release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          gh release create "$GITHUB_REF_NAME" \
+            s3-linux-amd64 \
+            s3-linux-arm64 \
+            s3-darwin-amd64 \
+            s3-darwin-arm64 \
+            s3-windows-amd64.exe \
+            --title "Hanzo S3 $GITHUB_REF_NAME" \
+            --generate-notes \
+            --latest \
+            2>/dev/null || \
           gh release upload "$GITHUB_REF_NAME" \
             s3-linux-amd64 \
             s3-linux-arm64 \
