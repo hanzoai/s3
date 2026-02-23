@@ -27,9 +27,9 @@ import (
 
 // Drive specific timeout environment variables
 const (
-	EnvMaxDriveTimeout       = "MINIO_DRIVE_MAX_TIMEOUT"
-	EnvMaxDriveTimeoutLegacy = "_MINIO_DRIVE_MAX_TIMEOUT"
-	EnvMaxDiskTimeoutLegacy  = "_MINIO_DISK_MAX_TIMEOUT"
+	EnvMaxDriveTimeout       = "S3_DRIVE_MAX_TIMEOUT"
+	EnvMaxDriveTimeoutLegacy = "_S3_DRIVE_MAX_TIMEOUT"
+	EnvMaxDiskTimeoutLegacy  = "_S3_DISK_MAX_TIMEOUT"
 )
 
 // DefaultKVS - default KVS for drive

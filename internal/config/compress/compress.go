@@ -39,10 +39,10 @@ const (
 	AllowEncrypted = "allow_encryption"
 	MimeTypes      = "mime_types"
 
-	EnvCompressState           = "MINIO_COMPRESSION_ENABLE"
-	EnvCompressAllowEncryption = "MINIO_COMPRESSION_ALLOW_ENCRYPTION"
-	EnvCompressExtensions      = "MINIO_COMPRESSION_EXTENSIONS"
-	EnvCompressMimeTypes       = "MINIO_COMPRESSION_MIME_TYPES"
+	EnvCompressState           = "S3_COMPRESSION_ENABLE"
+	EnvCompressAllowEncryption = "S3_COMPRESSION_ALLOW_ENCRYPTION"
+	EnvCompressExtensions      = "S3_COMPRESSION_EXTENSIONS"
+	EnvCompressMimeTypes       = "S3_COMPRESSION_MIME_TYPES"
 
 	// Include-list for compression.
 	DefaultExtensions = ".txt,.log,.csv,.json,.tar,.xml,.bin"
@@ -130,7 +130,7 @@ func LookupConfig(kvs config.KVS) (Config, error) {
 	if compressExtensions != "" {
 		extensions, err := parseCompressIncludes(compressExtensions)
 		if err != nil {
-			return cfg, fmt.Errorf("%s: Invalid MINIO_COMPRESSION_EXTENSIONS value (`%s`)", err, extensions)
+			return cfg, fmt.Errorf("%s: Invalid S3_COMPRESSION_EXTENSIONS value (`%s`)", err, extensions)
 		}
 		cfg.Extensions = extensions
 	}
@@ -138,7 +138,7 @@ func LookupConfig(kvs config.KVS) (Config, error) {
 	if compressExtensionsLegacy != "" {
 		extensions, err := parseCompressIncludes(compressExtensions)
 		if err != nil {
-			return cfg, fmt.Errorf("%s: Invalid MINIO_COMPRESS_EXTENSIONS value (`%s`)", err, extensions)
+			return cfg, fmt.Errorf("%s: Invalid S3_COMPRESS_EXTENSIONS value (`%s`)", err, extensions)
 		}
 		cfg.Extensions = extensions
 	}
@@ -146,7 +146,7 @@ func LookupConfig(kvs config.KVS) (Config, error) {
 	if compressMimeTypes != "" {
 		mimeTypes, err := parseCompressIncludes(compressMimeTypes)
 		if err != nil {
-			return cfg, fmt.Errorf("%s: Invalid MINIO_COMPRESSION_MIME_TYPES value (`%s`)", err, mimeTypes)
+			return cfg, fmt.Errorf("%s: Invalid S3_COMPRESSION_MIME_TYPES value (`%s`)", err, mimeTypes)
 		}
 		cfg.MimeTypes = mimeTypes
 	}
@@ -154,7 +154,7 @@ func LookupConfig(kvs config.KVS) (Config, error) {
 	if compressMimeTypesLegacy1 != "" {
 		mimeTypes, err := parseCompressIncludes(compressMimeTypesLegacy1)
 		if err != nil {
-			return cfg, fmt.Errorf("%s: Invalid MINIO_COMPRESS_MIMETYPES value (`%s`)", err, mimeTypes)
+			return cfg, fmt.Errorf("%s: Invalid S3_COMPRESS_MIMETYPES value (`%s`)", err, mimeTypes)
 		}
 		cfg.MimeTypes = mimeTypes
 	}
@@ -162,7 +162,7 @@ func LookupConfig(kvs config.KVS) (Config, error) {
 	if compressMimeTypesLegacy2 != "" {
 		mimeTypes, err := parseCompressIncludes(compressMimeTypesLegacy2)
 		if err != nil {
-			return cfg, fmt.Errorf("%s: Invalid MINIO_COMPRESS_MIME_TYPES value (`%s`)", err, mimeTypes)
+			return cfg, fmt.Errorf("%s: Invalid S3_COMPRESS_MIME_TYPES value (`%s`)", err, mimeTypes)
 		}
 		cfg.MimeTypes = mimeTypes
 	}

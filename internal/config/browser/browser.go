@@ -39,11 +39,11 @@ const (
 	// browserReferrerPolicy setting name for Referrer-Policy response header
 	browserReferrerPolicy = "referrer_policy"
 
-	EnvBrowserCSPPolicy             = "MINIO_BROWSER_CONTENT_SECURITY_POLICY"
-	EnvBrowserHSTSSeconds           = "MINIO_BROWSER_HSTS_SECONDS"
-	EnvBrowserHSTSIncludeSubdomains = "MINIO_BROWSER_HSTS_INCLUDE_SUB_DOMAINS"
-	EnvBrowserHSTSPreload           = "MINIO_BROWSER_HSTS_PRELOAD"
-	EnvBrowserReferrerPolicy        = "MINIO_BROWSER_REFERRER_POLICY"
+	EnvBrowserCSPPolicy             = "S3_BROWSER_CONTENT_SECURITY_POLICY"
+	EnvBrowserHSTSSeconds           = "S3_BROWSER_HSTS_SECONDS"
+	EnvBrowserHSTSIncludeSubdomains = "S3_BROWSER_HSTS_INCLUDE_SUB_DOMAINS"
+	EnvBrowserHSTSPreload           = "S3_BROWSER_HSTS_PRELOAD"
+	EnvBrowserReferrerPolicy        = "S3_BROWSER_REFERRER_POLICY"
 )
 
 // DefaultKVS - default storage class config

@@ -145,7 +145,7 @@ func (a kmsAPIHandlers) KMSVersionHandler(w http.ResponseWriter, r *http.Request
 
 // KMSCreateKeyHandler - POST /minio/kms/v1/key/create?key-id=<master-key-id>
 func (a kmsAPIHandlers) KMSCreateKeyHandler(w http.ResponseWriter, r *http.Request) {
-	// If env variable MINIO_KMS_SECRET_KEY is populated, prevent creation of new keys
+	// If env variable S3_KMS_SECRET_KEY is populated, prevent creation of new keys
 	ctx := newContext(r, w, "KMSCreateKey")
 	defer logger.AuditLog(ctx, w, r, mustGetClaimsFromToken(r))
 

@@ -526,7 +526,7 @@ func lookupConfigs(s config.Config, objAPI ObjectLayer) {
 
 	globalAutoEncryption = crypto.LookupAutoEncryption() // Enable auto-encryption if enabled
 	if globalAutoEncryption && GlobalKMS == nil {
-		logger.Fatal(errors.New("no KMS configured"), "MINIO_KMS_AUTO_ENCRYPTION requires a valid KMS configuration")
+		logger.Fatal(errors.New("no KMS configured"), "S3_KMS_AUTO_ENCRYPTION requires a valid KMS configuration")
 	}
 
 	transport := NewHTTPTransport()

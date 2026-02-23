@@ -744,7 +744,7 @@ func (set *erasureObjects) listObjectsToDecommission(ctx context.Context, bi dec
 func (z *erasureServerPools) decommissionPool(ctx context.Context, idx int, pool *erasureSets, bi decomBucketInfo) error {
 	ctx = logger.SetReqInfo(ctx, &logger.ReqInfo{})
 
-	const envDecomWorkers = "_MINIO_DECOMMISSION_WORKERS"
+	const envDecomWorkers = "_S3_DECOMMISSION_WORKERS"
 	workerSize, err := env.GetInt(envDecomWorkers, len(pool.sets))
 	if err != nil {
 		decomLogIf(ctx, fmt.Errorf("invalid workers value err: %v, defaulting to %d", err, len(pool.sets)))

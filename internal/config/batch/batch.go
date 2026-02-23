@@ -31,9 +31,9 @@ const (
 	KeyRotationWorkersWait = "keyrotation_workers_wait"
 	ExpirationWorkersWait  = "expiration_workers_wait"
 
-	EnvReplicationWorkersWait   = "MINIO_BATCH_REPLICATION_WORKERS_WAIT"
-	EnvKeyRotationWorkersWait   = "MINIO_BATCH_KEYROTATION_WORKERS_WAIT"
-	EnvKeyExpirationWorkersWait = "MINIO_BATCH_EXPIRATION_WORKERS_WAIT"
+	EnvReplicationWorkersWait   = "S3_BATCH_REPLICATION_WORKERS_WAIT"
+	EnvKeyRotationWorkersWait   = "S3_BATCH_KEYROTATION_WORKERS_WAIT"
+	EnvKeyExpirationWorkersWait = "S3_BATCH_EXPIRATION_WORKERS_WAIT"
 )
 
 var configMu sync.RWMutex

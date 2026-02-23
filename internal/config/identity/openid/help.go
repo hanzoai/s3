@@ -105,7 +105,7 @@ var (
 		},
 		config.HelpKV{
 			Key:         RedirectURI,
-			Description: `[DEPRECATED use env 'MINIO_BROWSER_REDIRECT_URL'] Configure custom redirect_uri for OpenID login flow callback` + defaultHelpPostfix(RedirectURI),
+			Description: `[DEPRECATED use env 'S3_BROWSER_REDIRECT_URL'] Configure custom redirect_uri for OpenID login flow callback` + defaultHelpPostfix(RedirectURI),
 			Optional:    true,
 			Type:        "string",
 		},

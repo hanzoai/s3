@@ -233,7 +233,7 @@ func (h *Target) send(entry any) error {
 
 // Init initialize kafka target
 func (h *Target) init() error {
-	if os.Getenv("_MINIO_KAFKA_DEBUG") != "" {
+	if os.Getenv("_S3_KAFKA_DEBUG") != "" {
 		sarama.DebugLogger = log.Default()
 	}
 

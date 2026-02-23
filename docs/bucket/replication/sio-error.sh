@@ -14,7 +14,7 @@ killall -9 minio || true
 rm -rf /tmp/xl/
 mkdir -p /tmp/xl/1/ /tmp/xl/2/
 
-export MINIO_KMS_SECRET_KEY="my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw="
+export S3_KMS_SECRET_KEY="my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw="
 
 NODES=4
 

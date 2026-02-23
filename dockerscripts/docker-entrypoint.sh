@@ -9,13 +9,13 @@ if [ "${1}" != "minio" ]; then
 fi
 
 docker_switch_user() {
-	if [ -n "${MINIO_USERNAME}" ] && [ -n "${MINIO_GROUPNAME}" ]; then
-		if [ -n "${MINIO_UID}" ] && [ -n "${MINIO_GID}" ]; then
-			chroot --userspec=${MINIO_UID}:${MINIO_GID} / "$@"
+	if [ -n "${S3_USERNAME}" ] && [ -n "${S3_GROUPNAME}" ]; then
+		if [ -n "${S3_UID}" ] && [ -n "${S3_GID}" ]; then
+			chroot --userspec=${S3_UID}:${S3_GID} / "$@"
 		else
-			echo "${MINIO_USERNAME}:x:1000:1000:${MINIO_USERNAME}:/:/sbin/nologin" >>/etc/passwd
-			echo "${MINIO_GROUPNAME}:x:1000" >>/etc/group
-			chroot --userspec=${MINIO_USERNAME}:${MINIO_GROUPNAME} / "$@"
+			echo "${S3_USERNAME}:x:1000:1000:${S3_USERNAME}:/:/sbin/nologin" >>/etc/passwd
+			echo "${S3_GROUPNAME}:x:1000" >>/etc/group
+			chroot --userspec=${S3_USERNAME}:${S3_GROUPNAME} / "$@"
 		fi
 	else
 		exec "$@"

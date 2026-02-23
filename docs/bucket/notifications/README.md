@@ -64,7 +64,7 @@ notify_redis          publish bucket notifications to Redis datastores
 >
 > - '\*' at the end of arg means its mandatory.
 > - '\*' at the end of the values, means its the default value for the arg.
-> - When configured using environment variables, the `:name` can be specified using this format `MINIO_NOTIFY_WEBHOOK_ENABLE_<name>`.
+> - When configured using environment variables, the `:name` can be specified using this format `S3_NOTIFY_WEBHOOK_ENABLE_<name>`.
 
 ## Publish MinIO events via AMQP
 
@@ -101,20 +101,20 @@ KEY:
 notify_amqp[:name]  publish bucket notifications to AMQP endpoints
 
 ARGS:
-MINIO_NOTIFY_AMQP_ENABLE*        (on|off)    enable notify_amqp target, default is 'off'
-MINIO_NOTIFY_AMQP_URL*           (url)       AMQP server endpoint e.g. `amqp://myuser:mypassword@localhost:5672`
-MINIO_NOTIFY_AMQP_EXCHANGE       (string)    name of the AMQP exchange
-MINIO_NOTIFY_AMQP_EXCHANGE_TYPE  (string)    AMQP exchange type
-MINIO_NOTIFY_AMQP_ROUTING_KEY    (string)    routing key for publishing
-MINIO_NOTIFY_AMQP_MANDATORY      (on|off)    quietly ignore undelivered messages when set to 'off', default is 'on'
-MINIO_NOTIFY_AMQP_DURABLE        (on|off)    persist queue across broker restarts when set to 'on', default is 'off'
-MINIO_NOTIFY_AMQP_NO_WAIT        (on|off)    non-blocking message delivery when set to 'on', default is 'off'
-MINIO_NOTIFY_AMQP_INTERNAL       (on|off)    set to 'on' for exchange to be not used directly by publishers, but only when bound to other exchanges
-MINIO_NOTIFY_AMQP_AUTO_DELETED   (on|off)    auto delete queue when set to 'on', when there are no consumers
-MINIO_NOTIFY_AMQP_DELIVERY_MODE  (number)    set to '1' for non-persistent or '2' for persistent queue
-MINIO_NOTIFY_AMQP_QUEUE_DIR      (path)      staging dir for undelivered messages e.g. '/home/events'
-MINIO_NOTIFY_AMQP_QUEUE_LIMIT    (number)    maximum limit for undelivered messages, defaults to '100000'
-MINIO_NOTIFY_AMQP_COMMENT        (sentence)  optionally add a comment to this setting
+S3_NOTIFY_AMQP_ENABLE*        (on|off)    enable notify_amqp target, default is 'off'
+S3_NOTIFY_AMQP_URL*           (url)       AMQP server endpoint e.g. `amqp://myuser:mypassword@localhost:5672`
+S3_NOTIFY_AMQP_EXCHANGE       (string)    name of the AMQP exchange
+S3_NOTIFY_AMQP_EXCHANGE_TYPE  (string)    AMQP exchange type
+S3_NOTIFY_AMQP_ROUTING_KEY    (string)    routing key for publishing
+S3_NOTIFY_AMQP_MANDATORY      (on|off)    quietly ignore undelivered messages when set to 'off', default is 'on'
+S3_NOTIFY_AMQP_DURABLE        (on|off)    persist queue across broker restarts when set to 'on', default is 'off'
+S3_NOTIFY_AMQP_NO_WAIT        (on|off)    non-blocking message delivery when set to 'on', default is 'off'
+S3_NOTIFY_AMQP_INTERNAL       (on|off)    set to 'on' for exchange to be not used directly by publishers, but only when bound to other exchanges
+S3_NOTIFY_AMQP_AUTO_DELETED   (on|off)    auto delete queue when set to 'on', when there are no consumers
+S3_NOTIFY_AMQP_DELIVERY_MODE  (number)    set to '1' for non-persistent or '2' for persistent queue
+S3_NOTIFY_AMQP_QUEUE_DIR      (path)      staging dir for undelivered messages e.g. '/home/events'
+S3_NOTIFY_AMQP_QUEUE_LIMIT    (number)    maximum limit for undelivered messages, defaults to '100000'
+S3_NOTIFY_AMQP_COMMENT        (sentence)  optionally add a comment to this setting
 ```
 
 MinIO supports persistent event store. The persistent store will backup events when the AMQP broker goes offline and replays it when the broker comes back online. The event store can be configured by setting the directory path in `queue_dir` field and the maximum limit of events in the queue_dir in `queue_limit` field. For eg, the `queue_dir` can be `/home/events` and `queue_limit` can be `1000`. By default, the `queue_limit` is set to 100000.
@@ -235,17 +235,17 @@ KEY:
 notify_mqtt[:name]  publish bucket notifications to MQTT endpoints
 
 ARGS:
-MINIO_NOTIFY_MQTT_ENABLE*              (on|off)    enable notify_mqtt target, default is 'off'
-MINIO_NOTIFY_MQTT_BROKER*              (uri)       MQTT server endpoint e.g. `tcp://localhost:1883`
-MINIO_NOTIFY_MQTT_TOPIC*               (string)    name of the MQTT topic to publish
-MINIO_NOTIFY_MQTT_USERNAME             (string)    MQTT username
-MINIO_NOTIFY_MQTT_PASSWORD             (string)    MQTT password
-MINIO_NOTIFY_MQTT_QOS                  (number)    set the quality of service priority, defaults to '0'
-MINIO_NOTIFY_MQTT_KEEP_ALIVE_INTERVAL  (duration)  keep-alive interval for MQTT connections in s,m,h,d
-MINIO_NOTIFY_MQTT_RECONNECT_INTERVAL   (duration)  reconnect interval for MQTT connections in s,m,h,d
-MINIO_NOTIFY_MQTT_QUEUE_DIR            (path)      staging dir for undelivered messages e.g. '/home/events'
-MINIO_NOTIFY_MQTT_QUEUE_LIMIT          (number)    maximum limit for undelivered messages, defaults to '100000'
-MINIO_NOTIFY_MQTT_COMMENT              (sentence)  optionally add a comment to this setting
+S3_NOTIFY_MQTT_ENABLE*              (on|off)    enable notify_mqtt target, default is 'off'
+S3_NOTIFY_MQTT_BROKER*              (uri)       MQTT server endpoint e.g. `tcp://localhost:1883`
+S3_NOTIFY_MQTT_TOPIC*               (string)    name of the MQTT topic to publish
+S3_NOTIFY_MQTT_USERNAME             (string)    MQTT username
+S3_NOTIFY_MQTT_PASSWORD             (string)    MQTT password
+S3_NOTIFY_MQTT_QOS                  (number)    set the quality of service priority, defaults to '0'
+S3_NOTIFY_MQTT_KEEP_ALIVE_INTERVAL  (duration)  keep-alive interval for MQTT connections in s,m,h,d
+S3_NOTIFY_MQTT_RECONNECT_INTERVAL   (duration)  reconnect interval for MQTT connections in s,m,h,d
+S3_NOTIFY_MQTT_QUEUE_DIR            (path)      staging dir for undelivered messages e.g. '/home/events'
+S3_NOTIFY_MQTT_QUEUE_LIMIT          (number)    maximum limit for undelivered messages, defaults to '100000'
+S3_NOTIFY_MQTT_COMMENT              (sentence)  optionally add a comment to this setting
 ```
 
 MinIO supports persistent event store. The persistent store will backup events when the MQTT broker goes offline and replays it when the broker comes back online. The event store can be configured by setting the directory path in `queue_dir` field and the maximum limit of events in the queue_dir in `queue_limit` field. For eg, the `queue_dir` can be `/home/events` and `queue_limit` can be `1000`. By default, the `queue_limit` is set to 100000.
@@ -368,15 +368,15 @@ KEY:
 notify_elasticsearch[:name]  publish bucket notifications to Elasticsearch endpoints
 
 ARGS:
-MINIO_NOTIFY_ELASTICSEARCH_ENABLE*      (on|off)             enable notify_elasticsearch target, default is 'off'
-MINIO_NOTIFY_ELASTICSEARCH_URL*         (url)                Elasticsearch server's address, with optional authentication info
-MINIO_NOTIFY_ELASTICSEARCH_INDEX*       (string)             Elasticsearch index to store/update events, index is auto-created
-MINIO_NOTIFY_ELASTICSEARCH_FORMAT*      (namespace*|access)  'namespace' reflects current bucket/object list and 'access' reflects a journal of object operations, defaults to 'namespace'
-MINIO_NOTIFY_ELASTICSEARCH_QUEUE_DIR    (path)               staging dir for undelivered messages e.g. '/home/events'
-MINIO_NOTIFY_ELASTICSEARCH_QUEUE_LIMIT  (number)             maximum limit for undelivered messages, defaults to '100000'
-MINIO_NOTIFY_ELASTICSEARCH_USERNAME     (string)             username for Elasticsearch basic-auth
-MINIO_NOTIFY_ELASTICSEARCH_PASSWORD     (string)             password for Elasticsearch basic-auth
-MINIO_NOTIFY_ELASTICSEARCH_COMMENT      (sentence)           optionally add a comment to this setting
+S3_NOTIFY_ELASTICSEARCH_ENABLE*      (on|off)             enable notify_elasticsearch target, default is 'off'
+S3_NOTIFY_ELASTICSEARCH_URL*         (url)                Elasticsearch server's address, with optional authentication info
+S3_NOTIFY_ELASTICSEARCH_INDEX*       (string)             Elasticsearch index to store/update events, index is auto-created
+S3_NOTIFY_ELASTICSEARCH_FORMAT*      (namespace*|access)  'namespace' reflects current bucket/object list and 'access' reflects a journal of object operations, defaults to 'namespace'
+S3_NOTIFY_ELASTICSEARCH_QUEUE_DIR    (path)               staging dir for undelivered messages e.g. '/home/events'
+S3_NOTIFY_ELASTICSEARCH_QUEUE_LIMIT  (number)             maximum limit for undelivered messages, defaults to '100000'
+S3_NOTIFY_ELASTICSEARCH_USERNAME     (string)             username for Elasticsearch basic-auth
+S3_NOTIFY_ELASTICSEARCH_PASSWORD     (string)             password for Elasticsearch basic-auth
+S3_NOTIFY_ELASTICSEARCH_COMMENT      (sentence)           optionally add a comment to this setting
 ```
 
 For example: `http://localhost:9200` or with authentication info `http://elastic:MagicWord@127.0.0.1:9200`.
@@ -395,7 +395,7 @@ notify_elasticsearch:1 queue_limit="0"  url="" format="namespace" index="" queue
 Use `mc admin config set` command to update the configuration for the deployment. Restart the MinIO server to put the changes into effect. The server will print a line like `SQS ARNs: arn:minio:sqs::1:elasticsearch` at start-up if there were no errors.
 
 ```sh
-mc admin config set myminio notify_elasticsearch:1 queue_limit="0"  url="http://127.0.0.1:9200" format="namespace" index="minio_events" queue_dir="" username="" password=""
+mc admin config set myminio notify_elasticsearch:1 queue_limit="0"  url="http://127.0.0.1:9200" format="namespace" index="s3_events" queue_dir="" username="" password=""
 ```
 
 Note that, you can add as many Elasticsearch server endpoint configurations as needed by providing an identifier (like "1" in the example above) for the Elasticsearch instance and an object of per-server configuration parameters.
@@ -423,10 +423,10 @@ Upload a JPEG image into `images` bucket.
 mc cp myphoto.jpg myminio/images
 ```
 
-Use curl to view contents of `minio_events` index.
+Use curl to view contents of `s3_events` index.
 
 ```
-$ curl  "http://localhost:9200/minio_events/_search?pretty=true"
+$ curl  "http://localhost:9200/s3_events/_search?pretty=true"
 {
   "took" : 40,
   "timed_out" : false,
@@ -440,7 +440,7 @@ $ curl  "http://localhost:9200/minio_events/_search?pretty=true"
     "max_score" : 1.0,
     "hits" : [
       {
-        "_index" : "minio_events",
+        "_index" : "s3_events",
         "_type" : "event",
         "_id" : "images/myphoto.jpg",
         "_score" : 1.0,
@@ -534,13 +534,13 @@ KEY:
 notify_redis[:name]  publish bucket notifications to Redis datastores
 
 ARGS:
-MINIO_NOTIFY_REDIS_ENABLE*      (on|off)             enable notify_redis target, default is 'off'
-MINIO_NOTIFY_REDIS_KEY*         (string)             Redis key to store/update events, key is auto-created
-MINIO_NOTIFY_REDIS_FORMAT*      (namespace*|access)  'namespace' reflects current bucket/object list and 'access' reflects a journal of object operations, defaults to 'namespace'
-MINIO_NOTIFY_REDIS_PASSWORD     (string)             Redis server password
-MINIO_NOTIFY_REDIS_QUEUE_DIR    (path)               staging dir for undelivered messages e.g. '/home/events'
-MINIO_NOTIFY_REDIS_QUEUE_LIMIT  (number)             maximum limit for undelivered messages, defaults to '100000'
-MINIO_NOTIFY_REDIS_COMMENT      (sentence)           optionally add a comment to this setting
+S3_NOTIFY_REDIS_ENABLE*      (on|off)             enable notify_redis target, default is 'off'
+S3_NOTIFY_REDIS_KEY*         (string)             Redis key to store/update events, key is auto-created
+S3_NOTIFY_REDIS_FORMAT*      (namespace*|access)  'namespace' reflects current bucket/object list and 'access' reflects a journal of object operations, defaults to 'namespace'
+S3_NOTIFY_REDIS_PASSWORD     (string)             Redis server password
+S3_NOTIFY_REDIS_QUEUE_DIR    (path)               staging dir for undelivered messages e.g. '/home/events'
+S3_NOTIFY_REDIS_QUEUE_LIMIT  (number)             maximum limit for undelivered messages, defaults to '100000'
+S3_NOTIFY_REDIS_COMMENT      (sentence)           optionally add a comment to this setting
 ```
 
 MinIO supports persistent event store. The persistent store will backup events when the Redis broker goes offline and replays it when the broker comes back online. The event store can be configured by setting the directory path in `queue_dir` field and the maximum limit of events in the queue_dir in `queue_limit` field. For eg, the `queue_dir` can be `/home/events` and `queue_limit` can be `1000`. By default, the `queue_limit` is set to 100000.
@@ -597,12 +597,12 @@ In the previous terminal, you will now see the operation that MinIO performs on 
 127.0.0.1:6379> monitor
 OK
 1490686879.650649 [0 172.17.0.1:44710] "PING"
-1490686879.651061 [0 172.17.0.1:44710] "HSET" "minio_events" "images/myphoto.jpg" "{\"Records\":[{\"eventVersion\":\"2.0\",\"eventSource\":\"minio:s3\",\"awsRegion\":\"\",\"eventTime\":\"2017-03-28T07:41:19Z\",\"eventName\":\"s3:ObjectCreated:Put\",\"userIdentity\":{\"principalId\":\"minio\"},\"requestParameters\":{\"sourceIPAddress\":\"127.0.0.1:52234\"},\"responseElements\":{\"x-amz-request-id\":\"14AFFBD1ACE5F632\",\"x-minio-origin-endpoint\":\"http://192.168.86.115:9000\"},\"s3\":{\"s3SchemaVersion\":\"1.0\",\"configurationId\":\"Config\",\"bucket\":{\"name\":\"images\",\"ownerIdentity\":{\"principalId\":\"minio\"},\"arn\":\"arn:aws:s3:::images\"},\"object\":{\"key\":\"myphoto.jpg\",\"size\":2586,\"eTag\":\"5d284463f9da279f060f0ea4d11af098\",\"sequencer\":\"14AFFBD1ACE5F632\"}},\"source\":{\"host\":\"127.0.0.1\",\"port\":\"52234\",\"userAgent\":\"MinIO (linux; amd64) minio-go/2.0.3 mc/2017-02-15T17:57:25Z\"}}]}"
+1490686879.651061 [0 172.17.0.1:44710] "HSET" "s3_events" "images/myphoto.jpg" "{\"Records\":[{\"eventVersion\":\"2.0\",\"eventSource\":\"minio:s3\",\"awsRegion\":\"\",\"eventTime\":\"2017-03-28T07:41:19Z\",\"eventName\":\"s3:ObjectCreated:Put\",\"userIdentity\":{\"principalId\":\"minio\"},\"requestParameters\":{\"sourceIPAddress\":\"127.0.0.1:52234\"},\"responseElements\":{\"x-amz-request-id\":\"14AFFBD1ACE5F632\",\"x-minio-origin-endpoint\":\"http://192.168.86.115:9000\"},\"s3\":{\"s3SchemaVersion\":\"1.0\",\"configurationId\":\"Config\",\"bucket\":{\"name\":\"images\",\"ownerIdentity\":{\"principalId\":\"minio\"},\"arn\":\"arn:aws:s3:::images\"},\"object\":{\"key\":\"myphoto.jpg\",\"size\":2586,\"eTag\":\"5d284463f9da279f060f0ea4d11af098\",\"sequencer\":\"14AFFBD1ACE5F632\"}},\"source\":{\"host\":\"127.0.0.1\",\"port\":\"52234\",\"userAgent\":\"MinIO (linux; amd64) minio-go/2.0.3 mc/2017-02-15T17:57:25Z\"}}]}"
 ```
 
-Here we see that MinIO performed `HSET` on `minio_events` key.
+Here we see that MinIO performed `HSET` on `s3_events` key.
 
-In case, `access` format was used, then `minio_events` would be a list, and the MinIO server would have performed an `RPUSH` to append to the list. A consumer of this list would ideally use `BLPOP` to remove list items from the left-end of the list.
+In case, `access` format was used, then `s3_events` would be a list, and the MinIO server would have performed an `RPUSH` to append to the list. A consumer of this list would ideally use `BLPOP` to remove list items from the left-end of the list.
 
 ## Publish MinIO events via NATS
 
@@ -644,25 +644,25 @@ KEY:
 notify_nats[:name]  publish bucket notifications to NATS endpoints
 
 ARGS:
-MINIO_NOTIFY_NATS_ENABLE*                           (on|off)    enable notify_nats target, default is 'off'
-MINIO_NOTIFY_NATS_ADDRESS*                          (address)   NATS server address e.g. '0.0.0.0:4222'
-MINIO_NOTIFY_NATS_SUBJECT*                          (string)    NATS subscription subject
-MINIO_NOTIFY_NATS_USERNAME                          (string)    NATS username
-MINIO_NOTIFY_NATS_PASSWORD                          (string)    NATS password
-MINIO_NOTIFY_NATS_TOKEN                             (string)    NATS token
-MINIO_NOTIFY_NATS_TLS                               (on|off)    set to 'on' to enable TLS
-MINIO_NOTIFY_NATS_TLS_SKIP_VERIFY                   (on|off)    trust server TLS without verification, defaults to "on" (verify)
-MINIO_NOTIFY_NATS_PING_INTERVAL                     (duration)  client ping commands interval in s,m,h,d. Disabled by default
-MINIO_NOTIFY_NATS_STREAMING                         (on|off)    set to 'on', to use streaming NATS server
-MINIO_NOTIFY_NATS_STREAMING_ASYNC                   (on|off)    set to 'on', to enable asynchronous publish
-MINIO_NOTIFY_NATS_STREAMING_MAX_PUB_ACKS_IN_FLIGHT  (number)    number of messages to publish without waiting for ACKs
-MINIO_NOTIFY_NATS_STREAMING_CLUSTER_ID              (string)    unique ID for NATS streaming cluster
-MINIO_NOTIFY_NATS_CERT_AUTHORITY                    (string)    path to certificate chain of the target NATS server
-MINIO_NOTIFY_NATS_CLIENT_CERT                       (string)    client cert for NATS mTLS auth
-MINIO_NOTIFY_NATS_CLIENT_KEY                        (string)    client cert key for NATS mTLS auth
-MINIO_NOTIFY_NATS_QUEUE_DIR                         (path)      staging dir for undelivered messages e.g. '/home/events'
-MINIO_NOTIFY_NATS_QUEUE_LIMIT                       (number)    maximum limit for undelivered messages, defaults to '100000'
-MINIO_NOTIFY_NATS_COMMENT                           (sentence)  optionally add a comment to this setting
+S3_NOTIFY_NATS_ENABLE*                           (on|off)    enable notify_nats target, default is 'off'
+S3_NOTIFY_NATS_ADDRESS*                          (address)   NATS server address e.g. '0.0.0.0:4222'
+S3_NOTIFY_NATS_SUBJECT*                          (string)    NATS subscription subject
+S3_NOTIFY_NATS_USERNAME                          (string)    NATS username
+S3_NOTIFY_NATS_PASSWORD                          (string)    NATS password
+S3_NOTIFY_NATS_TOKEN                             (string)    NATS token
+S3_NOTIFY_NATS_TLS                               (on|off)    set to 'on' to enable TLS
+S3_NOTIFY_NATS_TLS_SKIP_VERIFY                   (on|off)    trust server TLS without verification, defaults to "on" (verify)
+S3_NOTIFY_NATS_PING_INTERVAL                     (duration)  client ping commands interval in s,m,h,d. Disabled by default
+S3_NOTIFY_NATS_STREAMING                         (on|off)    set to 'on', to use streaming NATS server
+S3_NOTIFY_NATS_STREAMING_ASYNC                   (on|off)    set to 'on', to enable asynchronous publish
+S3_NOTIFY_NATS_STREAMING_MAX_PUB_ACKS_IN_FLIGHT  (number)    number of messages to publish without waiting for ACKs
+S3_NOTIFY_NATS_STREAMING_CLUSTER_ID              (string)    unique ID for NATS streaming cluster
+S3_NOTIFY_NATS_CERT_AUTHORITY                    (string)    path to certificate chain of the target NATS server
+S3_NOTIFY_NATS_CLIENT_CERT                       (string)    client cert for NATS mTLS auth
+S3_NOTIFY_NATS_CLIENT_KEY                        (string)    client cert key for NATS mTLS auth
+S3_NOTIFY_NATS_QUEUE_DIR                         (path)      staging dir for undelivered messages e.g. '/home/events'
+S3_NOTIFY_NATS_QUEUE_LIMIT                       (number)    maximum limit for undelivered messages, defaults to '100000'
+S3_NOTIFY_NATS_COMMENT                           (sentence)  optionally add a comment to this setting
 ```
 
 To update the configuration, use `mc admin config get` command to get the current configuration file for the minio deployment.
@@ -847,7 +847,7 @@ Received a message: {"EventType":"s3:ObjectCreated:Put","Key":"images/myphoto.jp
 > an error message will be shown on the console upon server upgrade/restart, make sure to follow the above
 > instructions appropriately. For further questions please join our <https://slack.min.io>
 
-Install [PostgreSQL](https://www.postgresql.org/) database server. For illustrative purposes, we have set the "postgres" user password as `password` and created a database called `minio_events` to store the events.
+Install [PostgreSQL](https://www.postgresql.org/) database server. For illustrative purposes, we have set the "postgres" user password as `password` and created a database called `s3_events` to store the events.
 
 This notification target supports two formats: _namespace_ and _access_.
 
@@ -870,7 +870,7 @@ KEY:
 notify_postgres[:name]  publish bucket notifications to Postgres databases
 
 ARGS:
-connection_string*   (string)             Postgres server connection-string e.g. "host=localhost port=5432 dbname=minio_events user=postgres password=password sslmode=disable"
+connection_string*   (string)             Postgres server connection-string e.g. "host=localhost port=5432 dbname=s3_events user=postgres password=password sslmode=disable"
 table*               (string)             DB table name to store/update events, table is auto-created
 format*              (namespace*|access)  'namespace' reflects current bucket/object list and 'access' reflects a journal of object operations, defaults to 'namespace'
 queue_dir            (path)               staging dir for undelivered messages e.g. '/home/events'
@@ -886,17 +886,17 @@ KEY:
 notify_postgres[:name]  publish bucket notifications to Postgres databases
 
 ARGS:
-MINIO_NOTIFY_POSTGRES_ENABLE*              (on|off)             enable notify_postgres target, default is 'off'
-MINIO_NOTIFY_POSTGRES_CONNECTION_STRING*   (string)             Postgres server connection-string e.g. "host=localhost port=5432 dbname=minio_events user=postgres password=password sslmode=disable"
-MINIO_NOTIFY_POSTGRES_TABLE*               (string)             DB table name to store/update events, table is auto-created
-MINIO_NOTIFY_POSTGRES_FORMAT*              (namespace*|access)  'namespace' reflects current bucket/object list and 'access' reflects a journal of object operations, defaults to 'namespace'
-MINIO_NOTIFY_POSTGRES_QUEUE_DIR            (path)               staging dir for undelivered messages e.g. '/home/events'
-MINIO_NOTIFY_POSTGRES_QUEUE_LIMIT          (number)             maximum limit for undelivered messages, defaults to '100000'
-MINIO_NOTIFY_POSTGRES_COMMENT              (sentence)           optionally add a comment to this setting
-MINIO_NOTIFY_POSTGRES_MAX_OPEN_CONNECTIONS (number)             maximum number of open connections to the database, defaults to '2'
+S3_NOTIFY_POSTGRES_ENABLE*              (on|off)             enable notify_postgres target, default is 'off'
+S3_NOTIFY_POSTGRES_CONNECTION_STRING*   (string)             Postgres server connection-string e.g. "host=localhost port=5432 dbname=s3_events user=postgres password=password sslmode=disable"
+S3_NOTIFY_POSTGRES_TABLE*               (string)             DB table name to store/update events, table is auto-created
+S3_NOTIFY_POSTGRES_FORMAT*              (namespace*|access)  'namespace' reflects current bucket/object list and 'access' reflects a journal of object operations, defaults to 'namespace'
+S3_NOTIFY_POSTGRES_QUEUE_DIR            (path)               staging dir for undelivered messages e.g. '/home/events'
+S3_NOTIFY_POSTGRES_QUEUE_LIMIT          (number)             maximum limit for undelivered messages, defaults to '100000'
+S3_NOTIFY_POSTGRES_COMMENT              (sentence)           optionally add a comment to this setting
+S3_NOTIFY_POSTGRES_MAX_OPEN_CONNECTIONS (number)             maximum number of open connections to the database, defaults to '2'
 ```
 
-> NOTE: If the `max_open_connections` key or the environment variable `MINIO_NOTIFY_POSTGRES_MAX_OPEN_CONNECTIONS` is set to `0`, There will be no limit set on the number of
+> NOTE: If the `max_open_connections` key or the environment variable `S3_NOTIFY_POSTGRES_MAX_OPEN_CONNECTIONS` is set to `0`, There will be no limit set on the number of
 > open connections to the database. This setting is generally NOT recommended as the behavior may be inconsistent during recursive deletes in `namespace` format.
 
 MinIO supports persistent event store. The persistent store will backup events when the PostgreSQL connection goes offline and replays it when the broker comes back online. The event store can be configured by setting the directory path in `queue_dir` field and the maximum limit of events in the queue_dir in `queue_limit` field. For eg, the `queue_dir` can be `/home/events` and `queue_limit` can be `1000`. By default, the `queue_limit` is set to 100000.
@@ -912,7 +912,7 @@ notify_postgres:1 queue_dir="" connection_string="" queue_limit="0"  table="" fo
 Use `mc admin config set` command to update the configuration for the deployment. Restart the MinIO server to put the changes into effect. The server will print a line like `SQS ARNs: arn:minio:sqs::1:postgresql` at start-up if there were no errors.
 
 ```sh
-mc admin config set myminio notify_postgres:1 connection_string="host=localhost port=5432 dbname=minio_events user=postgres password=password sslmode=disable" table="bucketevents" format="namespace"
+mc admin config set myminio notify_postgres:1 connection_string="host=localhost port=5432 dbname=s3_events user=postgres password=password sslmode=disable" table="bucketevents" format="namespace"
 ```
 
 Note that, you can add as many PostgreSQL server endpoint configurations as needed by providing an identifier (like "1" in the example above) for the PostgreSQL instance and an object of per-server configuration parameters.
@@ -947,8 +947,8 @@ mc cp myphoto.jpg myminio/images
 Open PostgreSQL terminal to list the rows in the `bucketevents` table.
 
 ```
-$ psql -h 127.0.0.1 -U postgres -d minio_events
-minio_events=# select * from bucketevents;
+$ psql -h 127.0.0.1 -U postgres -d s3_events
+s3_events=# select * from bucketevents;
 
 key                 |                      value
 --------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1019,17 +1019,17 @@ KEY:
 notify_mysql[:name]  publish bucket notifications to MySQL databases
 
 ARGS:
-MINIO_NOTIFY_MYSQL_ENABLE*              (on|off)             enable notify_mysql target, default is 'off'
-MINIO_NOTIFY_MYSQL_DSN_STRING*          (string)             MySQL data-source-name connection string e.g. "<user>:<password>@tcp(<host>:<port>)/<database>"
-MINIO_NOTIFY_MYSQL_TABLE*               (string)             DB table name to store/update events, table is auto-created
-MINIO_NOTIFY_MYSQL_FORMAT*              (namespace*|access)  'namespace' reflects current bucket/object list and 'access' reflects a journal of object operations, defaults to 'namespace'
-MINIO_NOTIFY_MYSQL_QUEUE_DIR            (path)               staging dir for undelivered messages e.g. '/home/events'
-MINIO_NOTIFY_MYSQL_QUEUE_LIMIT          (number)             maximum limit for undelivered messages, defaults to '100000'
-MINIO_NOTIFY_MYSQL_MAX_OPEN_CONNECTIONS (number)             maximum number of open connections to the database, defaults to '2'
-MINIO_NOTIFY_MYSQL_COMMENT              (sentence)           optionally add a comment to this setting
+S3_NOTIFY_MYSQL_ENABLE*              (on|off)             enable notify_mysql target, default is 'off'
+S3_NOTIFY_MYSQL_DSN_STRING*          (string)             MySQL data-source-name connection string e.g. "<user>:<password>@tcp(<host>:<port>)/<database>"
+S3_NOTIFY_MYSQL_TABLE*               (string)             DB table name to store/update events, table is auto-created
+S3_NOTIFY_MYSQL_FORMAT*              (namespace*|access)  'namespace' reflects current bucket/object list and 'access' reflects a journal of object operations, defaults to 'namespace'
+S3_NOTIFY_MYSQL_QUEUE_DIR            (path)               staging dir for undelivered messages e.g. '/home/events'
+S3_NOTIFY_MYSQL_QUEUE_LIMIT          (number)             maximum limit for undelivered messages, defaults to '100000'
+S3_NOTIFY_MYSQL_MAX_OPEN_CONNECTIONS (number)             maximum number of open connections to the database, defaults to '2'
+S3_NOTIFY_MYSQL_COMMENT              (sentence)           optionally add a comment to this setting
 ```
 
-> NOTE: If the `max_open_connections` key or the environment variable `MINIO_NOTIFY_MYSQL_MAX_OPEN_CONNECTIONS` is set to `0`, There will be no limit set on the number of
+> NOTE: If the `max_open_connections` key or the environment variable `S3_NOTIFY_MYSQL_MAX_OPEN_CONNECTIONS` is set to `0`, There will be no limit set on the number of
 > open connections to the database. This setting is generally NOT recommended as the behavior may be inconsistent during recursive deletes in `namespace` format.
 
 `dsn_string` is required and is of form `"<user>:<password>@tcp(<host>:<port>)/<database>"`
@@ -1046,7 +1046,7 @@ notify_mysql:myinstance enable=off format=namespace host= port= username= passwo
 Use `mc admin config set` command to update MySQL notification configuration for the deployment with `dsn_string` parameter:
 
 ```sh
-mc admin config set myminio notify_mysql:myinstance table="minio_images" dsn_string="root:xxxx@tcp(172.17.0.1:3306)/miniodb"
+mc admin config set myminio notify_mysql:myinstance table="s3_images" dsn_string="root:xxxx@tcp(172.17.0.1:3306)/miniodb"
 ```
 
 Note that, you can add as many MySQL server endpoint configurations as needed by providing an identifier (like "myinstance" in the example above) for each MySQL instance desired.
@@ -1079,11 +1079,11 @@ Open another terminal and upload a JPEG image into `images` bucket:
 mc cp myphoto.jpg myminio/images
 ```
 
-Open MySQL terminal and list the rows in the `minio_images` table.
+Open MySQL terminal and list the rows in the `s3_images` table.
 
 ```
 $ mysql -h 172.17.0.1 -P 3306 -u root -p miniodb
-mysql> select * from minio_images;
+mysql> select * from s3_images;
 +--------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | key_name           | value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 +--------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -1134,24 +1134,24 @@ KEY:
 notify_kafka[:name]  publish bucket notifications to Kafka endpoints
 
 ARGS:
-MINIO_NOTIFY_KAFKA_ENABLE*                     (on|off)                    enable notify_kafka target, default is 'off'
-MINIO_NOTIFY_KAFKA_BROKERS*                    (csv)                       comma separated list of Kafka broker addresses
-MINIO_NOTIFY_KAFKA_TOPIC                       (string)                    Kafka topic used for bucket notifications
-MINIO_NOTIFY_KAFKA_SASL_USERNAME               (string)                    username for SASL/PLAIN or SASL/SCRAM authentication
-MINIO_NOTIFY_KAFKA_SASL_PASSWORD               (string)                    password for SASL/PLAIN or SASL/SCRAM authentication
-MINIO_NOTIFY_KAFKA_SASL_MECHANISM              (plain*|sha256|sha512)      sasl authentication mechanism, default 'plain'
-MINIO_NOTIFY_KAFKA_TLS_CLIENT_AUTH             (string)                    clientAuth determines the Kafka server's policy for TLS client auth
-MINIO_NOTIFY_KAFKA_SASL                        (on|off)                    set to 'on' to enable SASL authentication
-MINIO_NOTIFY_KAFKA_TLS                         (on|off)                    set to 'on' to enable TLS
-MINIO_NOTIFY_KAFKA_TLS_SKIP_VERIFY             (on|off)                    trust server TLS without verification, defaults to "on" (verify)
-MINIO_NOTIFY_KAFKA_CLIENT_TLS_CERT             (path)                      path to client certificate for mTLS auth
-MINIO_NOTIFY_KAFKA_CLIENT_TLS_KEY              (path)                      path to client key for mTLS auth
-MINIO_NOTIFY_KAFKA_QUEUE_DIR                   (path)                      staging dir for undelivered messages e.g. '/home/events'
-MINIO_NOTIFY_KAFKA_QUEUE_LIMIT                 (number)                    maximum limit for undelivered messages, defaults to '100000'
-MINIO_NOTIFY_KAFKA_COMMENT                     (sentence)                  optionally add a comment to this setting
-MINIO_NOTIFY_KAFKA_VERSION                     (string)                    specify the version of the Kafka cluster e.g. '2.2.0'
-MINIO_NOTIFY_KAFKA_PRODUCER_COMPRESSION_CODEC  (none|snappy|gzip|lz4|zstd) compression codec for producer messages
-MINIO_NOTIFY_KAFKA_PRODUCER_COMPRESSION_LEVEL  (number)                    compression level for producer messages, defaults to '0'
+S3_NOTIFY_KAFKA_ENABLE*                     (on|off)                    enable notify_kafka target, default is 'off'
+S3_NOTIFY_KAFKA_BROKERS*                    (csv)                       comma separated list of Kafka broker addresses
+S3_NOTIFY_KAFKA_TOPIC                       (string)                    Kafka topic used for bucket notifications
+S3_NOTIFY_KAFKA_SASL_USERNAME               (string)                    username for SASL/PLAIN or SASL/SCRAM authentication
+S3_NOTIFY_KAFKA_SASL_PASSWORD               (string)                    password for SASL/PLAIN or SASL/SCRAM authentication
+S3_NOTIFY_KAFKA_SASL_MECHANISM              (plain*|sha256|sha512)      sasl authentication mechanism, default 'plain'
+S3_NOTIFY_KAFKA_TLS_CLIENT_AUTH             (string)                    clientAuth determines the Kafka server's policy for TLS client auth
+S3_NOTIFY_KAFKA_SASL                        (on|off)                    set to 'on' to enable SASL authentication
+S3_NOTIFY_KAFKA_TLS                         (on|off)                    set to 'on' to enable TLS
+S3_NOTIFY_KAFKA_TLS_SKIP_VERIFY             (on|off)                    trust server TLS without verification, defaults to "on" (verify)
+S3_NOTIFY_KAFKA_CLIENT_TLS_CERT             (path)                      path to client certificate for mTLS auth
+S3_NOTIFY_KAFKA_CLIENT_TLS_KEY              (path)                      path to client key for mTLS auth
+S3_NOTIFY_KAFKA_QUEUE_DIR                   (path)                      staging dir for undelivered messages e.g. '/home/events'
+S3_NOTIFY_KAFKA_QUEUE_LIMIT                 (number)                    maximum limit for undelivered messages, defaults to '100000'
+S3_NOTIFY_KAFKA_COMMENT                     (sentence)                  optionally add a comment to this setting
+S3_NOTIFY_KAFKA_VERSION                     (string)                    specify the version of the Kafka cluster e.g. '2.2.0'
+S3_NOTIFY_KAFKA_PRODUCER_COMPRESSION_CODEC  (none|snappy|gzip|lz4|zstd) compression codec for producer messages
+S3_NOTIFY_KAFKA_PRODUCER_COMPRESSION_LEVEL  (number)                    compression level for producer messages, defaults to '0'
 ```
 
 To update the configuration, use `mc admin config get` command to get the current configuration.
@@ -1280,14 +1280,14 @@ KEY:
 notify_webhook[:name]  publish bucket notifications to webhook endpoints
 
 ARGS:
-MINIO_NOTIFY_WEBHOOK_ENABLE*      (on|off)    enable notify_webhook target, default is 'off'
-MINIO_NOTIFY_WEBHOOK_ENDPOINT*    (url)       webhook server endpoint e.g. http://localhost:8080/minio/events
-MINIO_NOTIFY_WEBHOOK_AUTH_TOKEN   (string)    opaque string or JWT authorization token
-MINIO_NOTIFY_WEBHOOK_QUEUE_DIR    (path)      staging dir for undelivered messages e.g. '/home/events'
-MINIO_NOTIFY_WEBHOOK_QUEUE_LIMIT  (number)    maximum limit for undelivered messages, defaults to '100000'
-MINIO_NOTIFY_WEBHOOK_COMMENT      (sentence)  optionally add a comment to this setting
-MINIO_NOTIFY_WEBHOOK_CLIENT_CERT  (string)    client cert for Webhook mTLS auth
-MINIO_NOTIFY_WEBHOOK_CLIENT_KEY   (string)    client cert key for Webhook mTLS auth
+S3_NOTIFY_WEBHOOK_ENABLE*      (on|off)    enable notify_webhook target, default is 'off'
+S3_NOTIFY_WEBHOOK_ENDPOINT*    (url)       webhook server endpoint e.g. http://localhost:8080/minio/events
+S3_NOTIFY_WEBHOOK_AUTH_TOKEN   (string)    opaque string or JWT authorization token
+S3_NOTIFY_WEBHOOK_QUEUE_DIR    (path)      staging dir for undelivered messages e.g. '/home/events'
+S3_NOTIFY_WEBHOOK_QUEUE_LIMIT  (number)    maximum limit for undelivered messages, defaults to '100000'
+S3_NOTIFY_WEBHOOK_COMMENT      (sentence)  optionally add a comment to this setting
+S3_NOTIFY_WEBHOOK_CLIENT_CERT  (string)    client cert for Webhook mTLS auth
+S3_NOTIFY_WEBHOOK_CLIENT_KEY   (string)    client cert key for Webhook mTLS auth
 ```
 
 ```sh
@@ -1388,14 +1388,14 @@ KEY:
 notify_nsq[:name]  publish bucket notifications to NSQ endpoints
 
 ARGS:
-MINIO_NOTIFY_NSQ_ENABLE*          (on|off)    enable notify_nsq target, default is 'off'
-MINIO_NOTIFY_NSQ_NSQD_ADDRESS*    (address)   NSQ server address e.g. '127.0.0.1:4150'
-MINIO_NOTIFY_NSQ_TOPIC*           (string)    NSQ topic
-MINIO_NOTIFY_NSQ_TLS              (on|off)    set to 'on' to enable TLS
-MINIO_NOTIFY_NSQ_TLS_SKIP_VERIFY  (on|off)    trust server TLS without verification, defaults to "on" (verify)
-MINIO_NOTIFY_NSQ_QUEUE_DIR        (path)      staging dir for undelivered messages e.g. '/home/events'
-MINIO_NOTIFY_NSQ_QUEUE_LIMIT      (number)    maximum limit for undelivered messages, defaults to '100000'
-MINIO_NOTIFY_NSQ_COMMENT          (sentence)  optionally add a comment to this setting
+S3_NOTIFY_NSQ_ENABLE*          (on|off)    enable notify_nsq target, default is 'off'
+S3_NOTIFY_NSQ_NSQD_ADDRESS*    (address)   NSQ server address e.g. '127.0.0.1:4150'
+S3_NOTIFY_NSQ_TOPIC*           (string)    NSQ topic
+S3_NOTIFY_NSQ_TLS              (on|off)    set to 'on' to enable TLS
+S3_NOTIFY_NSQ_TLS_SKIP_VERIFY  (on|off)    trust server TLS without verification, defaults to "on" (verify)
+S3_NOTIFY_NSQ_QUEUE_DIR        (path)      staging dir for undelivered messages e.g. '/home/events'
+S3_NOTIFY_NSQ_QUEUE_LIMIT      (number)    maximum limit for undelivered messages, defaults to '100000'
+S3_NOTIFY_NSQ_COMMENT          (sentence)  optionally add a comment to this setting
 ```
 
 ```sh

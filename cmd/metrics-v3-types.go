@@ -34,12 +34,12 @@ type collectorPath string
 
 // metricPrefix converts a collector path to a metric name prefix. The path is
 // converted to snake-case (by replaced '/' and '-' with '_') and prefixed with
-// `minio_`.
+// `s3_`.
 func (cp collectorPath) metricPrefix() string {
 	s := strings.TrimPrefix(string(cp), SlashSeparator)
 	s = strings.ReplaceAll(s, SlashSeparator, "_")
 	s = strings.ReplaceAll(s, "-", "_")
-	return "minio_" + s
+	return "s3_" + s
 }
 
 // isDescendantOf returns true if it is a descendant of (or the same as)

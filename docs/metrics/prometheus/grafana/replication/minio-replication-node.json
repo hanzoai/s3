@@ -152,7 +152,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (minio_node_replication_average_active_workers{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server) (s3_node_replication_average_active_workers{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server}}",
@@ -280,7 +280,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server, endpoint) (minio_node_replication_average_link_latency_ms{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server, endpoint) (s3_node_replication_average_link_latency_ms{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server,endpoint}}",
@@ -408,7 +408,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (minio_node_replication_average_queued_bytes{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server) (s3_node_replication_average_queued_bytes{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server}}",
@@ -536,7 +536,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (minio_node_replication_average_queued_count{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server) (s3_node_replication_average_queued_count{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server}}",
@@ -664,7 +664,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (minio_node_replication_average_transfer_rate{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server) (s3_node_replication_average_transfer_rate{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server}}",
@@ -792,7 +792,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (minio_node_replication_current_active_workers{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server) (s3_node_replication_current_active_workers{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server}}",
@@ -920,7 +920,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server,endpoint) (minio_node_replication_current_link_latency_ms{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server,endpoint) (s3_node_replication_current_link_latency_ms{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server}}",
@@ -1048,7 +1048,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (minio_node_replication_current_transfer_rate{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server) (s3_node_replication_current_transfer_rate{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server}}",
@@ -1176,7 +1176,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (minio_node_replication_last_minute_queued_bytes{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server) (s3_node_replication_last_minute_queued_bytes{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server}}",
@@ -1304,7 +1304,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server) (minio_node_replication_last_minute_queued_count{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server) (s3_node_replication_last_minute_queued_count{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{bucket}}",
@@ -1432,7 +1432,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server,endpoint) (minio_node_replication_link_downtime_duration_seconds{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server,endpoint) (s3_node_replication_link_downtime_duration_seconds{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "intervalFactor": 2,
           "legendFormat": "{{server,endpoint}}",
@@ -1530,7 +1530,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server,endpoint) (minio_node_replication_link_offline_duration_seconds{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server,endpoint) (s3_node_replication_link_offline_duration_seconds{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "legendFormat": "{{server,endpoint}}",
           "refId": "A"
@@ -1627,7 +1627,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_replication_max_active_workers{job=\"$scrape_jobs\"}",
+          "expr": "s3_node_replication_max_active_workers{job=\"$scrape_jobs\"}",
           "interval": "1m",
           "legendFormat": "{{server}}",
           "refId": "A"
@@ -1724,7 +1724,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server,endpoibt) (minio_node_replication_max_link_latency_ms{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server,endpoibt) (s3_node_replication_max_link_latency_ms{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "legendFormat": "{{server,endpoint}}",
           "refId": "A"
@@ -1821,7 +1821,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_replication_max_queued_bytes{job=\"$scrape_jobs\"}",
+          "expr": "s3_node_replication_max_queued_bytes{job=\"$scrape_jobs\"}",
           "interval": "1m",
           "legendFormat": "{{server}}",
           "refId": "A"
@@ -1918,7 +1918,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_replication_max_queued_count{job=\"$scrape_jobs\"}",
+          "expr": "s3_node_replication_max_queued_count{job=\"$scrape_jobs\"}",
           "interval": "1m",
           "legendFormat": "{{server}}",
           "refId": "A"
@@ -2015,7 +2015,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_replication_max_transfer_rate{job=\"$scrape_jobs\"}",
+          "expr": "s3_node_replication_max_transfer_rate{job=\"$scrape_jobs\"}",
           "interval": "1m",
           "legendFormat": "{{server}}",
           "refId": "A"
@@ -2112,7 +2112,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_replication_recent_backlog_count{job=\"$scrape_jobs\"}",
+          "expr": "s3_node_replication_recent_backlog_count{job=\"$scrape_jobs\"}",
           "interval": "1m",
           "legendFormat": "{{server}}",
           "refId": "A"
@@ -2209,7 +2209,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "sum by (server,endpoint) (minio_node_replication_link_online{job=\"$scrape_jobs\"})",
+          "expr": "sum by (server,endpoint) (s3_node_replication_link_online{job=\"$scrape_jobs\"})",
           "interval": "1m",
           "legendFormat": "{{endpoint}}",
           "refId": "A"
@@ -2306,7 +2306,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "exemplar": true,
-          "expr": "minio_node_replication_link_offline_duration_seconds{job=\"$scrape_jobs\"}",
+          "expr": "s3_node_replication_link_offline_duration_seconds{job=\"$scrape_jobs\"}",
           "interval": "1m",
           "legendFormat": "{{endpoint}}",
           "refId": "A"

@@ -19,10 +19,10 @@ This program, lets the admin user perform any action and prevents all other user
 In another terminal start MinIO:
 
 ```sh
-export MINIO_CI_CD=1
-export MINIO_ROOT_USER=minio
-export MINIO_ROOT_PASSWORD=minio123
-export MINIO_POLICY_PLUGIN_URL=http://localhost:8080/
+export S3_CI_CD=1
+export S3_ROOT_USER=minio
+export S3_ROOT_PASSWORD=minio123
+export S3_POLICY_PLUGIN_URL=http://localhost:8080/
 minio server /tmp/disk{1...4}
 ```
 
@@ -51,13 +51,13 @@ KEY:
 policy_plugin  enable Access Management Plugin for policy enforcement
 
 ARGS:
-MINIO_POLICY_PLUGIN_URL*          (url)       plugin hook endpoint (HTTP(S)) e.g. "http://localhost:8181/v1/data/httpapi/authz/allow"
-MINIO_POLICY_PLUGIN_AUTH_TOKEN    (string)    authorization header for plugin hook endpoint
-MINIO_POLICY_PLUGIN_ENABLE_HTTP2  (bool)      Enable experimental HTTP2 support to connect to plugin service (default: 'off')
-MINIO_POLICY_PLUGIN_COMMENT       (sentence)  optionally add a comment to this setting
+S3_POLICY_PLUGIN_URL*          (url)       plugin hook endpoint (HTTP(S)) e.g. "http://localhost:8181/v1/data/httpapi/authz/allow"
+S3_POLICY_PLUGIN_AUTH_TOKEN    (string)    authorization header for plugin hook endpoint
+S3_POLICY_PLUGIN_ENABLE_HTTP2  (bool)      Enable experimental HTTP2 support to connect to plugin service (default: 'off')
+S3_POLICY_PLUGIN_COMMENT       (sentence)  optionally add a comment to this setting
 ```
 
-By default this plugin uses HTTP 1.x. To enable HTTP2 use the `MINIO_POLICY_PLUGIN_ENABLE_HTTP2` environment variable.
+By default this plugin uses HTTP 1.x. To enable HTTP2 use the `S3_POLICY_PLUGIN_ENABLE_HTTP2` environment variable.
 
 ## Request and Response
 

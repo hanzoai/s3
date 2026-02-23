@@ -25,7 +25,7 @@ package main
 //
 // Run like:
 //
-// $ MINIO_ENDPOINT=http://localhost:9000 go run gen-oidc-sts-cred.go
+// $ S3_ENDPOINT=http://localhost:9000 go run gen-oidc-sts-cred.go
 
 import (
 	"context"
@@ -41,9 +41,9 @@ import (
 func main() {
 	ctx := context.Background()
 
-	endpoint := os.Getenv("MINIO_ENDPOINT")
+	endpoint := os.Getenv("S3_ENDPOINT")
 	if endpoint == "" {
-		log.Fatalf("Please specify a MinIO server endpoint environment variable like:\n\n\texport MINIO_ENDPOINT=http://localhost:9000")
+		log.Fatalf("Please specify a MinIO server endpoint environment variable like:\n\n\texport S3_ENDPOINT=http://localhost:9000")
 	}
 
 	appParams := cmd.OpenIDClientAppParams{

@@ -47,11 +47,11 @@ const (
 	InlineBlock   = "inline_block"
 
 	// Reduced redundancy storage class environment variable
-	RRSEnv = "MINIO_STORAGE_CLASS_RRS"
+	RRSEnv = "S3_STORAGE_CLASS_RRS"
 	// Standard storage class environment variable
-	StandardEnv = "MINIO_STORAGE_CLASS_STANDARD"
+	StandardEnv = "S3_STORAGE_CLASS_STANDARD"
 	// Optimize storage class environment variable
-	OptimizeEnv = "MINIO_STORAGE_CLASS_OPTIMIZE"
+	OptimizeEnv = "S3_STORAGE_CLASS_OPTIMIZE"
 	// Inline block indicates the size of the shard
 	// that is considered for inlining, remember this
 	// shard value is the value per drive shard it
@@ -59,7 +59,7 @@ const (
 	// for the STANDARD storage_class.
 	// inlining means data and metadata are written
 	// together in a single file i.e xl.meta
-	InlineBlockEnv = "MINIO_STORAGE_CLASS_INLINE_BLOCK"
+	InlineBlockEnv = "S3_STORAGE_CLASS_INLINE_BLOCK"
 
 	// Supported storage class scheme is EC
 	schemePrefix = "EC"
@@ -240,8 +240,8 @@ func validateParity(ssParity, rrsParity, setDriveCount int) (err error) {
 }
 
 // GetParityForSC - Returns the data and parity drive count based on storage class
-// If storage class is set using the env vars MINIO_STORAGE_CLASS_RRS and
-// MINIO_STORAGE_CLASS_STANDARD or server config fields corresponding values are
+// If storage class is set using the env vars S3_STORAGE_CLASS_RRS and
+// S3_STORAGE_CLASS_STANDARD or server config fields corresponding values are
 // returned.
 //
 // -- if input storage class is empty then standard is assumed

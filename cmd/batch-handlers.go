@@ -394,7 +394,7 @@ func (r *BatchJobReplicateV1) StartFromSource(ctx context.Context, api ObjectLay
 	c.SetAppInfo("minio-"+batchJobPrefix, r.APIVersion+" "+job.ID)
 	core := &minio.Core{Client: c}
 
-	workerSize, err := strconv.Atoi(env.Get("_MINIO_BATCH_REPLICATION_WORKERS", strconv.Itoa(runtime.GOMAXPROCS(0)/2)))
+	workerSize, err := strconv.Atoi(env.Get("_S3_BATCH_REPLICATION_WORKERS", strconv.Itoa(runtime.GOMAXPROCS(0)/2)))
 	if err != nil {
 		return err
 	}
@@ -1219,7 +1219,7 @@ func (r *BatchJobReplicateV1) Start(ctx context.Context, api ObjectLayer, job Ba
 			slowCh = walkCh
 		}
 
-		workerSize, err := strconv.Atoi(env.Get("_MINIO_BATCH_REPLICATION_WORKERS", strconv.Itoa(runtime.GOMAXPROCS(0)/2)))
+		workerSize, err := strconv.Atoi(env.Get("_S3_BATCH_REPLICATION_WORKERS", strconv.Itoa(runtime.GOMAXPROCS(0)/2)))
 		if err != nil {
 			return err
 		}
@@ -1230,7 +1230,7 @@ func (r *BatchJobReplicateV1) Start(ctx context.Context, api ObjectLayer, job Ba
 			return err
 		}
 
-		walkQuorum := env.Get("_MINIO_BATCH_REPLICATION_WALK_QUORUM", "strict")
+		walkQuorum := env.Get("_S3_BATCH_REPLICATION_WALK_QUORUM", "strict")
 		if walkQuorum == "" {
 			walkQuorum = "strict"
 		}

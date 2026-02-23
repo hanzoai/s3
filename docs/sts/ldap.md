@@ -34,19 +34,19 @@ KEY:
 identity_ldap  enable LDAP SSO support
 
 ARGS:
-MINIO_IDENTITY_LDAP_SERVER_ADDR*            (address)   AD/LDAP server address e.g. "myldap.com" or "myldapserver.com:636"
-MINIO_IDENTITY_LDAP_SRV_RECORD_NAME         (string)    DNS SRV record name for LDAP service, if given, must be one of "ldap", "ldaps" or "on"
-MINIO_IDENTITY_LDAP_LOOKUP_BIND_DN          (string)    DN for LDAP read-only service account used to perform DN and group lookups
-MINIO_IDENTITY_LDAP_LOOKUP_BIND_PASSWORD    (string)    Password for LDAP read-only service account used to perform DN and group lookups
-MINIO_IDENTITY_LDAP_USER_DN_SEARCH_BASE_DN  (list)      ";" separated list of user search base DNs e.g. "dc=myldapserver,dc=com"
-MINIO_IDENTITY_LDAP_USER_DN_SEARCH_FILTER   (string)    Search filter to lookup user DN
-MINIO_IDENTITY_LDAP_USER_DN_ATTRIBUTES      (list)      "," separated list of user DN attributes e.g. "uid,cn,mail,sshPublicKey"
-MINIO_IDENTITY_LDAP_GROUP_SEARCH_FILTER     (string)    search filter for groups e.g. "(&(objectclass=groupOfNames)(memberUid=%s))"
-MINIO_IDENTITY_LDAP_GROUP_SEARCH_BASE_DN    (list)      ";" separated list of group search base DNs e.g. "dc=myldapserver,dc=com"
-MINIO_IDENTITY_LDAP_TLS_SKIP_VERIFY         (on|off)    trust server TLS without verification (default: 'off')
-MINIO_IDENTITY_LDAP_SERVER_INSECURE         (on|off)    allow plain text connection to AD/LDAP server (default: 'off')
-MINIO_IDENTITY_LDAP_SERVER_STARTTLS         (on|off)    use StartTLS connection to AD/LDAP server (default: 'off')
-MINIO_IDENTITY_LDAP_COMMENT                 (sentence)  optionally add a comment to this setting
+S3_IDENTITY_LDAP_SERVER_ADDR*            (address)   AD/LDAP server address e.g. "myldap.com" or "myldapserver.com:636"
+S3_IDENTITY_LDAP_SRV_RECORD_NAME         (string)    DNS SRV record name for LDAP service, if given, must be one of "ldap", "ldaps" or "on"
+S3_IDENTITY_LDAP_LOOKUP_BIND_DN          (string)    DN for LDAP read-only service account used to perform DN and group lookups
+S3_IDENTITY_LDAP_LOOKUP_BIND_PASSWORD    (string)    Password for LDAP read-only service account used to perform DN and group lookups
+S3_IDENTITY_LDAP_USER_DN_SEARCH_BASE_DN  (list)      ";" separated list of user search base DNs e.g. "dc=myldapserver,dc=com"
+S3_IDENTITY_LDAP_USER_DN_SEARCH_FILTER   (string)    Search filter to lookup user DN
+S3_IDENTITY_LDAP_USER_DN_ATTRIBUTES      (list)      "," separated list of user DN attributes e.g. "uid,cn,mail,sshPublicKey"
+S3_IDENTITY_LDAP_GROUP_SEARCH_FILTER     (string)    search filter for groups e.g. "(&(objectclass=groupOfNames)(memberUid=%s))"
+S3_IDENTITY_LDAP_GROUP_SEARCH_BASE_DN    (list)      ";" separated list of group search base DNs e.g. "dc=myldapserver,dc=com"
+S3_IDENTITY_LDAP_TLS_SKIP_VERIFY         (on|off)    trust server TLS without verification (default: 'off')
+S3_IDENTITY_LDAP_SERVER_INSECURE         (on|off)    allow plain text connection to AD/LDAP server (default: 'off')
+S3_IDENTITY_LDAP_SERVER_STARTTLS         (on|off)    use StartTLS connection to AD/LDAP server (default: 'off')
+S3_IDENTITY_LDAP_COMMENT                 (sentence)  optionally add a comment to this setting
 ```
 
 ### LDAP server connectivity
@@ -54,11 +54,11 @@ MINIO_IDENTITY_LDAP_COMMENT                 (sentence)  optionally add a comment
 The variables relevant to configuring connectivity to the LDAP service are:
 
 ```
-MINIO_IDENTITY_LDAP_SERVER_ADDR*             (address)   AD/LDAP server address e.g. "myldap.com" or "myldapserver.com:1686"
-MINIO_IDENTITY_LDAP_SRV_RECORD_NAME          (string)    DNS SRV record name for LDAP service, if given, must be one of ldap, ldaps or on
-MINIO_IDENTITY_LDAP_TLS_SKIP_VERIFY         (on|off)    trust server TLS without verification, defaults to "off" (verify)
-MINIO_IDENTITY_LDAP_SERVER_INSECURE         (on|off)    allow plain text connection to AD/LDAP server, defaults to "off"
-MINIO_IDENTITY_LDAP_SERVER_STARTTLS         (on|off)    use StartTLS connection to AD/LDAP server, defaults to "off"
+S3_IDENTITY_LDAP_SERVER_ADDR*             (address)   AD/LDAP server address e.g. "myldap.com" or "myldapserver.com:1686"
+S3_IDENTITY_LDAP_SRV_RECORD_NAME          (string)    DNS SRV record name for LDAP service, if given, must be one of ldap, ldaps or on
+S3_IDENTITY_LDAP_TLS_SKIP_VERIFY         (on|off)    trust server TLS without verification, defaults to "off" (verify)
+S3_IDENTITY_LDAP_SERVER_INSECURE         (on|off)    allow plain text connection to AD/LDAP server, defaults to "off"
+S3_IDENTITY_LDAP_SERVER_STARTTLS         (on|off)    use StartTLS connection to AD/LDAP server, defaults to "off"
 ```
 
 The server address variable is _required_. TLS is assumed to be on by default. The port in the server address is optional and defaults to 636 if not provided.
@@ -71,7 +71,7 @@ If a self-signed certificate is being used, the certificate can be added to MinI
 
 Many Active Directory and other LDAP services are setup with [DNS SRV Records](https://ldap.com/dns-srv-records-for-ldap/) for high-availability of the directory service. To use this to find LDAP servers to connect to, an LDAP client makes a DNS SRV record request to the DNS service on a domain that looks like `_service._proto.example.com`. For LDAP the `proto` value is always `tcp`, and `service` is usually `ldap` or `ldaps`.
 
-To enable MinIO to use the SRV records, specify the `srv_record_name` config parameter (or equivalently the `MINIO_IDENTITY_LDAP_SRV_RECORD_NAME` environment variable). This parameter can be set to `ldap` or `ldaps` and MinIO will substitute it into the `service` value. For example, when `server_addr=myldapserver.com` and `srv_record_name=ldap`, MinIO will lookup the SRV record for `_ldap._tcp.myldapserver.com` and pick an appropriate target for LDAP requests.
+To enable MinIO to use the SRV records, specify the `srv_record_name` config parameter (or equivalently the `S3_IDENTITY_LDAP_SRV_RECORD_NAME` environment variable). This parameter can be set to `ldap` or `ldaps` and MinIO will substitute it into the `service` value. For example, when `server_addr=myldapserver.com` and `srv_record_name=ldap`, MinIO will lookup the SRV record for `_ldap._tcp.myldapserver.com` and pick an appropriate target for LDAP requests.
 
 If the DNS SRV record is at an entirely different place, say `_ldapsrv._tcpish.myldapserver.com`, then set `srv_record_name` to the special value `on` and set `server_addr=_ldapsrv._tcpish.myldapserver.com`.
 
@@ -86,8 +86,8 @@ The value of `srv_record_name` does not affect any TLS settings - they must be c
 A low-privilege read-only LDAP service account is configured in the MinIO server by providing the account's Distinguished Name (DN) and password. This service account is used to perform directory lookups as needed.
 
 ```
-MINIO_IDENTITY_LDAP_LOOKUP_BIND_DN*          (string)    DN for LDAP read-only service account used to perform DN and group lookups
-MINIO_IDENTITY_LDAP_LOOKUP_BIND_PASSWORD     (string)    Password for LDAP read-only service account used to perform DN and group lookups
+S3_IDENTITY_LDAP_LOOKUP_BIND_DN*          (string)    DN for LDAP read-only service account used to perform DN and group lookups
+S3_IDENTITY_LDAP_LOOKUP_BIND_PASSWORD     (string)    Password for LDAP read-only service account used to perform DN and group lookups
 ```
 
 If you set an empty lookup bind password, the lookup bind will use the unauthenticated authentication mechanism, as described in [RFC 4513 Section 5.1.2](https://tools.ietf.org/html/rfc4513#section-5.1.2).
@@ -97,8 +97,8 @@ If you set an empty lookup bind password, the lookup bind will use the unauthent
 When a user provides their LDAP credentials, MinIO runs a lookup query to find the user's Distinguished Name (DN). The search filter and base DN used in this lookup query are configured via the following variables:
 
 ```
-MINIO_IDENTITY_LDAP_USER_DN_SEARCH_BASE_DN*  (list)      ";" separated list of user search base DNs e.g. "dc=myldapserver,dc=com"
-MINIO_IDENTITY_LDAP_USER_DN_SEARCH_FILTER*   (string)    Search filter to lookup user DN
+S3_IDENTITY_LDAP_USER_DN_SEARCH_BASE_DN*  (list)      ";" separated list of user search base DNs e.g. "dc=myldapserver,dc=com"
+S3_IDENTITY_LDAP_USER_DN_SEARCH_FILTER*   (string)    Search filter to lookup user DN
 ```
 
 The search filter must use the LDAP username to find the user DN. This is done via [variable substitution](#variable-substitution-in-configuration-strings).
@@ -107,7 +107,7 @@ The returned user's DN and their password are then verified with the LDAP server
 
 The User DN attributes configuration parameter:
 ```
-MINIO_IDENTITY_LDAP_USER_DN_ATTRIBUTES      (list)      "," separated list of user DN attributes e.g. "uid,cn,mail,sshPublicKey"
+S3_IDENTITY_LDAP_USER_DN_ATTRIBUTES      (list)      "," separated list of user DN attributes e.g. "uid,cn,mail,sshPublicKey"
 ```
 is optional and can be used to specify additional attributes to lookup on the User DN record in the LDAP server. This is for certain display purposes and may be used for extended functionality that may be added in the future.
 
@@ -116,8 +116,8 @@ is optional and can be used to specify additional attributes to lookup on the Us
 MinIO can be optionally configured to find the groups of a user from AD/LDAP by specifying the following variables:
 
 ```
-MINIO_IDENTITY_LDAP_GROUP_SEARCH_FILTER     (string)    search filter for groups e.g. "(&(objectclass=groupOfNames)(memberUid=%s))"
-MINIO_IDENTITY_LDAP_GROUP_SEARCH_BASE_DN    (list)      ";" separated list of group search base DNs e.g. "dc=myldapserver,dc=com"
+S3_IDENTITY_LDAP_GROUP_SEARCH_FILTER     (string)    search filter for groups e.g. "(&(objectclass=groupOfNames)(memberUid=%s))"
+S3_IDENTITY_LDAP_GROUP_SEARCH_BASE_DN    (list)      ";" separated list of group search base DNs e.g. "dc=myldapserver,dc=com"
 ```
 
 The search filter must use the username or the DN to find the user's groups. This is done via [variable substitution](#variable-substitution-in-configuration-strings).
@@ -137,12 +137,12 @@ user_dn_search_filter: (&(memberOf:1.2.840.113556.1.4.1941:=CN=group,DC=dc,DC=ne
 Here are some (minimal) sample settings for development or experimentation:
 
 ```shell
-export MINIO_IDENTITY_LDAP_SERVER_ADDR=myldapserver.com:636
-export MINIO_IDENTITY_LDAP_LOOKUP_BIND_DN='cn=admin,dc=min,dc=io'
-export MINIO_IDENTITY_LDAP_LOOKUP_BIND_PASSWORD=admin
-export MINIO_IDENTITY_LDAP_USER_DN_SEARCH_BASE_DN='ou=hwengg,dc=min,dc=io'
-export MINIO_IDENTITY_LDAP_USER_DN_SEARCH_FILTER='(uid=%s)'
-export MINIO_IDENTITY_LDAP_TLS_SKIP_VERIFY=on
+export S3_IDENTITY_LDAP_SERVER_ADDR=myldapserver.com:636
+export S3_IDENTITY_LDAP_LOOKUP_BIND_DN='cn=admin,dc=min,dc=io'
+export S3_IDENTITY_LDAP_LOOKUP_BIND_PASSWORD=admin
+export S3_IDENTITY_LDAP_USER_DN_SEARCH_BASE_DN='ou=hwengg,dc=min,dc=io'
+export S3_IDENTITY_LDAP_USER_DN_SEARCH_FILTER='(uid=%s)'
+export S3_IDENTITY_LDAP_TLS_SKIP_VERIFY=on
 ```
 
 ### Variable substitution in configuration strings
@@ -151,8 +151,8 @@ In the configuration variables, `%s` is substituted with the _username_ from the
 
 | Variable                                    | Supported substitutions |
 |---------------------------------------------|-------------------------|
-| `MINIO_IDENTITY_LDAP_USER_DN_SEARCH_FILTER` | `%s`                    |
-| `MINIO_IDENTITY_LDAP_GROUP_SEARCH_FILTER`   | `%s` and `%d`           |
+| `S3_IDENTITY_LDAP_USER_DN_SEARCH_FILTER` | `%s`                    |
+| `S3_IDENTITY_LDAP_GROUP_SEARCH_FILTER`   | `%s` and `%d`           |
 
 ## Managing User/Group Access Policy
 
@@ -293,13 +293,13 @@ http://minio.cluster:9000?Action=AssumeRoleWithLDAPIdentity&LDAPUsername=foouser
 With multiple OU hierarchies for users, and multiple group search base DN's.
 
 ```
-export MINIO_ROOT_USER=minio
-export MINIO_ROOT_PASSWORD=minio123
-export MINIO_IDENTITY_LDAP_SERVER_ADDR='my.ldap-active-dir-server.com:636'
-export MINIO_IDENTITY_LDAP_LOOKUP_BIND_DN='cn=admin,dc=min,dc=io'
-export MINIO_IDENTITY_LDAP_LOOKUP_BIND_PASSWORD=admin
-export MINIO_IDENTITY_LDAP_GROUP_SEARCH_BASE_DN='dc=minioad,dc=local;dc=somedomain,dc=com'
-export MINIO_IDENTITY_LDAP_GROUP_SEARCH_FILTER='(&(objectclass=groupOfNames)(member=%d))'
+export S3_ROOT_USER=minio
+export S3_ROOT_PASSWORD=minio123
+export S3_IDENTITY_LDAP_SERVER_ADDR='my.ldap-active-dir-server.com:636'
+export S3_IDENTITY_LDAP_LOOKUP_BIND_DN='cn=admin,dc=min,dc=io'
+export S3_IDENTITY_LDAP_LOOKUP_BIND_PASSWORD=admin
+export S3_IDENTITY_LDAP_GROUP_SEARCH_BASE_DN='dc=minioad,dc=local;dc=somedomain,dc=com'
+export S3_IDENTITY_LDAP_GROUP_SEARCH_FILTER='(&(objectclass=groupOfNames)(member=%d))'
 minio server ~/test
 ```
 

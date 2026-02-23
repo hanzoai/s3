@@ -10,16 +10,16 @@ if [ ! -x "$PWD/minio" ]; then
 fi
 
 WORK_DIR="$(mktemp -d)"
-MINIO_CONFIG_DIR="$WORK_DIR/.minio"
-MINIO=("$PWD/minio" --config-dir "$MINIO_CONFIG_DIR" server)
+S3_CONFIG_DIR="$WORK_DIR/.minio"
+MINIO=("$PWD/minio" --config-dir "$S3_CONFIG_DIR" server)
 
 function start_minio() {
 	start_port=$1
 
-	export MINIO_ROOT_USER=minio
-	export MINIO_ROOT_PASSWORD=minio123
-	unset MINIO_KMS_AUTO_ENCRYPTION # do not auto-encrypt objects
-	unset MINIO_CI_CD
+	export S3_ROOT_USER=minio
+	export S3_ROOT_PASSWORD=minio123
+	unset S3_KMS_AUTO_ENCRYPTION # do not auto-encrypt objects
+	unset S3_CI_CD
 	unset CI
 
 	args=()
