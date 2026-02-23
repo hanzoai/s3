@@ -201,7 +201,7 @@ var (
 	// globalBrowserConfig Browser user configurable settings
 	globalBrowserConfig browser.Config
 
-	// This flag is set to 'true' when MINIO_UPDATE env is set to 'off'. Default is false.
+	// This flag is set to 'true' when S3_UPDATE env is set to 'off'. Default is false.
 	globalInplaceUpdateDisabled = false
 
 	// Captures site name and region
@@ -413,9 +413,9 @@ var (
 	globalLocalDrivesMap map[string]StorageAPI
 	globalLocalDrivesMu  sync.RWMutex
 
-	globalDriveMonitoring = env.Get("_MINIO_DRIVE_ACTIVE_MONITORING", config.EnableOn) == config.EnableOn
+	globalDriveMonitoring = env.Get("_S3_DRIVE_ACTIVE_MONITORING", config.EnableOn) == config.EnableOn
 
-	// Is MINIO_CI_CD set?
+	// Is S3_CI_CD set?
 	globalIsCICD bool
 
 	globalRootDiskThreshold uint64
@@ -443,7 +443,7 @@ var (
 	// dynamic sleeper for multipart expiration routine
 	deleteMultipartCleanupSleeper = newDynamicSleeper(5, 25*time.Millisecond, false)
 
-	// Is MINIO_SYNC_BOOT set?
+	// Is S3_SYNC_BOOT set?
 	globalEnableSyncBoot bool
 
 	// Contains NIC interface name used for internode communication

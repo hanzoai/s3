@@ -122,7 +122,7 @@ var iamTestSuites = func() []*TestSuiteIAM {
 }()
 
 const (
-	EnvTestEtcdBackend = "_MINIO_ETCD_TEST_SERVER"
+	EnvTestEtcdBackend = "_S3_ETCD_TEST_SERVER"
 )
 
 func (s *TestSuiteIAM) setUpEtcd(c *check, etcdServer string) {
@@ -1357,9 +1357,9 @@ func (s *TestSuiteIAM) SetUpAccMgmtPlugin(c *check) {
 	ctx, cancel := context.WithTimeout(context.Background(), testDefaultTimeout)
 	defer cancel()
 
-	pluginEndpoint := env.Get("_MINIO_POLICY_PLUGIN_ENDPOINT", "")
+	pluginEndpoint := env.Get("_S3_POLICY_PLUGIN_ENDPOINT", "")
 	if pluginEndpoint == "" {
-		c.Skip("_MINIO_POLICY_PLUGIN_ENDPOINT not given - skipping.")
+		c.Skip("_S3_POLICY_PLUGIN_ENDPOINT not given - skipping.")
 	}
 
 	configCmds := []string{

@@ -82,9 +82,9 @@ jobs:
           check-latest: true
       - name: Test LDAP/OpenID/Etcd combo
         env:
-          _MINIO_LDAP_TEST_SERVER: ${{ matrix.ldap }}
-          _MINIO_ETCD_TEST_SERVER: ${{ matrix.etcd }}
-          _MINIO_OPENID_TEST_SERVER: ${{ matrix.openid }}
+          _S3_LDAP_TEST_SERVER: ${{ matrix.ldap }}
+          _S3_ETCD_TEST_SERVER: ${{ matrix.etcd }}
+          _S3_OPENID_TEST_SERVER: ${{ matrix.openid }}
         run: |
           sudo sysctl net.ipv6.conf.all.disable_ipv6=0
           sudo sysctl net.ipv6.conf.default.disable_ipv6=0
@@ -92,20 +92,20 @@ jobs:
       - name: Test with multiple OpenID providers
         if: matrix.openid == 'http://127.0.0.1:5556/dex'
         env:
-          _MINIO_LDAP_TEST_SERVER: ${{ matrix.ldap }}
-          _MINIO_ETCD_TEST_SERVER: ${{ matrix.etcd }}
-          _MINIO_OPENID_TEST_SERVER: ${{ matrix.openid }}
-          _MINIO_OPENID_TEST_SERVER_2: "http://127.0.0.1:5557/dex"
+          _S3_LDAP_TEST_SERVER: ${{ matrix.ldap }}
+          _S3_ETCD_TEST_SERVER: ${{ matrix.etcd }}
+          _S3_OPENID_TEST_SERVER: ${{ matrix.openid }}
+          _S3_OPENID_TEST_SERVER_2: "http://127.0.0.1:5557/dex"
         run: |
           sudo sysctl net.ipv6.conf.all.disable_ipv6=0
           sudo sysctl net.ipv6.conf.default.disable_ipv6=0
           make test-iam
       - name: Test with Access Management Plugin enabled
         env:
-          _MINIO_LDAP_TEST_SERVER: ${{ matrix.ldap }}
-          _MINIO_ETCD_TEST_SERVER: ${{ matrix.etcd }}
-          _MINIO_OPENID_TEST_SERVER: ${{ matrix.openid }}
-          _MINIO_POLICY_PLUGIN_TEST_ENDPOINT: "http://127.0.0.1:8080"
+          _S3_LDAP_TEST_SERVER: ${{ matrix.ldap }}
+          _S3_ETCD_TEST_SERVER: ${{ matrix.etcd }}
+          _S3_OPENID_TEST_SERVER: ${{ matrix.openid }}
+          _S3_POLICY_PLUGIN_TEST_ENDPOINT: "http://127.0.0.1:8080"
         run: |
           sudo sysctl net.ipv6.conf.all.disable_ipv6=0
           sudo sysctl net.ipv6.conf.default.disable_ipv6=0
@@ -114,7 +114,7 @@ jobs:
       - name: Test MinIO Old Version data to IAM import current version
         if: matrix.ldap == 'ldaphost:389'
         env:
-          _MINIO_LDAP_TEST_SERVER: ${{ matrix.ldap }}
+          _S3_LDAP_TEST_SERVER: ${{ matrix.ldap }}
         run: |
           make test-iam-ldap-upgrade-import
       - name: Test LDAP for automatic site replication

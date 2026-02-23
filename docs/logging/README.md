@@ -34,9 +34,9 @@ NOTE: `http://endpoint:port/path` is a placeholder value to indicate the URL for
 MinIO also honors environment variable for HTTP target logging as shown below, this setting will override the endpoint settings in the MinIO server config.
 
 ```
-export MINIO_LOGGER_WEBHOOK_ENABLE_target1="on"
-export MINIO_LOGGER_WEBHOOK_AUTH_TOKEN_target1="token"
-export MINIO_LOGGER_WEBHOOK_ENDPOINT_target1=http://localhost:8080/minio/logs
+export S3_LOGGER_WEBHOOK_ENABLE_target1="on"
+export S3_LOGGER_WEBHOOK_AUTH_TOKEN_target1="token"
+export S3_LOGGER_WEBHOOK_ENDPOINT_target1=http://localhost:8080/minio/logs
 minio server /mnt/data
 ```
 
@@ -61,11 +61,11 @@ NOTE: `http://endpoint:port/path` is a placeholder value to indicate the URL for
 MinIO also honors environment variable for HTTP target Audit logging as shown below, this setting will override the endpoint settings in the MinIO server config.
 
 ```
-export MINIO_AUDIT_WEBHOOK_ENABLE_target1="on"
-export MINIO_AUDIT_WEBHOOK_AUTH_TOKEN_target1="token"
-export MINIO_AUDIT_WEBHOOK_ENDPOINT_target1=http://localhost:8080/minio/logs
-export MINIO_AUDIT_WEBHOOK_CLIENT_CERT="/tmp/cert.pem"
-export MINIO_AUDIT_WEBHOOK_CLIENT_KEY=="/tmp/key.pem"
+export S3_AUDIT_WEBHOOK_ENABLE_target1="on"
+export S3_AUDIT_WEBHOOK_AUTH_TOKEN_target1="token"
+export S3_AUDIT_WEBHOOK_ENDPOINT_target1=http://localhost:8080/minio/logs
+export S3_AUDIT_WEBHOOK_CLIENT_CERT="/tmp/cert.pem"
+export S3_AUDIT_WEBHOOK_CLIENT_KEY=="/tmp/key.pem"
 minio server /mnt/data
 ```
 
@@ -189,26 +189,26 @@ KEY:
 audit_kafka[:name]  send audit logs to kafka endpoints
 
 ARGS:
-MINIO_AUDIT_KAFKA_ENABLE*          (on|off)    enable audit_kafka target, default is 'off'
-MINIO_AUDIT_KAFKA_BROKERS*         (csv)       comma separated list of Kafka broker addresses
-MINIO_AUDIT_KAFKA_TOPIC            (string)    Kafka topic used for bucket notifications
-MINIO_AUDIT_KAFKA_SASL_USERNAME    (string)    username for SASL/PLAIN or SASL/SCRAM authentication
-MINIO_AUDIT_KAFKA_SASL_PASSWORD    (string)    password for SASL/PLAIN or SASL/SCRAM authentication
-MINIO_AUDIT_KAFKA_SASL_MECHANISM   (string)    sasl authentication mechanism, default 'plain'
-MINIO_AUDIT_KAFKA_TLS_CLIENT_AUTH  (string)    clientAuth determines the Kafka server's policy for TLS client auth
-MINIO_AUDIT_KAFKA_SASL             (on|off)    set to 'on' to enable SASL authentication
-MINIO_AUDIT_KAFKA_TLS              (on|off)    set to 'on' to enable TLS
-MINIO_AUDIT_KAFKA_TLS_SKIP_VERIFY  (on|off)    trust server TLS without verification, defaults to "on" (verify)
-MINIO_AUDIT_KAFKA_CLIENT_TLS_CERT  (path)      path to client certificate for mTLS auth
-MINIO_AUDIT_KAFKA_CLIENT_TLS_KEY   (path)      path to client key for mTLS auth
-MINIO_AUDIT_KAFKA_VERSION          (string)    specify the version of the Kafka cluster
-MINIO_AUDIT_KAFKA_COMMENT          (sentence)  optionally add a comment to this setting
+S3_AUDIT_KAFKA_ENABLE*          (on|off)    enable audit_kafka target, default is 'off'
+S3_AUDIT_KAFKA_BROKERS*         (csv)       comma separated list of Kafka broker addresses
+S3_AUDIT_KAFKA_TOPIC            (string)    Kafka topic used for bucket notifications
+S3_AUDIT_KAFKA_SASL_USERNAME    (string)    username for SASL/PLAIN or SASL/SCRAM authentication
+S3_AUDIT_KAFKA_SASL_PASSWORD    (string)    password for SASL/PLAIN or SASL/SCRAM authentication
+S3_AUDIT_KAFKA_SASL_MECHANISM   (string)    sasl authentication mechanism, default 'plain'
+S3_AUDIT_KAFKA_TLS_CLIENT_AUTH  (string)    clientAuth determines the Kafka server's policy for TLS client auth
+S3_AUDIT_KAFKA_SASL             (on|off)    set to 'on' to enable SASL authentication
+S3_AUDIT_KAFKA_TLS              (on|off)    set to 'on' to enable TLS
+S3_AUDIT_KAFKA_TLS_SKIP_VERIFY  (on|off)    trust server TLS without verification, defaults to "on" (verify)
+S3_AUDIT_KAFKA_CLIENT_TLS_CERT  (path)      path to client certificate for mTLS auth
+S3_AUDIT_KAFKA_CLIENT_TLS_KEY   (path)      path to client key for mTLS auth
+S3_AUDIT_KAFKA_VERSION          (string)    specify the version of the Kafka cluster
+S3_AUDIT_KAFKA_COMMENT          (sentence)  optionally add a comment to this setting
 ```
 
 ```
-export MINIO_AUDIT_KAFKA_ENABLE_target1="on"
-export MINIO_AUDIT_KAFKA_BROKERS_target1="localhost:29092"
-export MINIO_AUDIT_KAFKA_TOPIC_target1="auditlog"
+export S3_AUDIT_KAFKA_ENABLE_target1="on"
+export S3_AUDIT_KAFKA_BROKERS_target1="localhost:29092"
+export S3_AUDIT_KAFKA_TOPIC_target1="auditlog"
 minio server /mnt/data
 ```
 

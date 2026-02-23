@@ -26,26 +26,26 @@ cleanup() {
 
 cleanup
 
-unset MINIO_KMS_KES_CERT_FILE
-unset MINIO_KMS_KES_KEY_FILE
-unset MINIO_KMS_KES_ENDPOINT
-unset MINIO_KMS_KES_KEY_NAME
+unset S3_KMS_KES_CERT_FILE
+unset S3_KMS_KES_KEY_FILE
+unset S3_KMS_KES_ENDPOINT
+unset S3_KMS_KES_KEY_NAME
 
-export MINIO_CI_CD=1
-export MINIO_BROWSER=off
-export MINIO_ROOT_USER="minio"
-export MINIO_ROOT_PASSWORD="minio123"
-export MINIO_KMS_AUTO_ENCRYPTION=off
-export MINIO_PROMETHEUS_AUTH_TYPE=public
-export MINIO_KMS_SECRET_KEY=my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw=
-export MINIO_IDENTITY_LDAP_SERVER_ADDR="localhost:389"
-export MINIO_IDENTITY_LDAP_SERVER_INSECURE="on"
-export MINIO_IDENTITY_LDAP_LOOKUP_BIND_DN="cn=admin,dc=min,dc=io"
-export MINIO_IDENTITY_LDAP_LOOKUP_BIND_PASSWORD="admin"
-export MINIO_IDENTITY_LDAP_USER_DN_SEARCH_BASE_DN="dc=min,dc=io"
-export MINIO_IDENTITY_LDAP_USER_DN_SEARCH_FILTER="(uid=%s)"
-export MINIO_IDENTITY_LDAP_GROUP_SEARCH_BASE_DN="ou=swengg,dc=min,dc=io"
-export MINIO_IDENTITY_LDAP_GROUP_SEARCH_FILTER="(&(objectclass=groupOfNames)(member=%d))"
+export S3_CI_CD=1
+export S3_BROWSER=off
+export S3_ROOT_USER="minio"
+export S3_ROOT_PASSWORD="minio123"
+export S3_KMS_AUTO_ENCRYPTION=off
+export S3_PROMETHEUS_AUTH_TYPE=public
+export S3_KMS_SECRET_KEY=my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw=
+export S3_IDENTITY_LDAP_SERVER_ADDR="localhost:389"
+export S3_IDENTITY_LDAP_SERVER_INSECURE="on"
+export S3_IDENTITY_LDAP_LOOKUP_BIND_DN="cn=admin,dc=min,dc=io"
+export S3_IDENTITY_LDAP_LOOKUP_BIND_PASSWORD="admin"
+export S3_IDENTITY_LDAP_USER_DN_SEARCH_BASE_DN="dc=min,dc=io"
+export S3_IDENTITY_LDAP_USER_DN_SEARCH_FILTER="(uid=%s)"
+export S3_IDENTITY_LDAP_GROUP_SEARCH_BASE_DN="ou=swengg,dc=min,dc=io"
+export S3_IDENTITY_LDAP_GROUP_SEARCH_FILTER="(&(objectclass=groupOfNames)(member=%d))"
 
 if [ ! -f ./mc ]; then
 	wget -O mc https://dl.minio.io/client/mc/release/linux-amd64/mc &&

@@ -40,7 +40,7 @@ var (
 	ErrOverlappingDomainValue = newErrFn(
 		"Overlapping domain values",
 		"Please check the passed value",
-		"MINIO_DOMAIN only accepts non-overlapping domain values",
+		"S3_DOMAIN only accepts non-overlapping domain values",
 	)
 
 	ErrInvalidDomainValue = newErrFn(
@@ -64,7 +64,7 @@ var (
 	ErrInvalidConfigDecryptionKey = newErrFn(
 		"Incorrect encryption key to decrypt internal data",
 		"Please set the correct default KMS key value or the correct root credentials for older MinIO versions.",
-		`Revert MINIO_KMS_KES_KEY_NAME or MINIO_ROOT_USER/MINIO_ROOT_PASSWORD (for older MinIO versions) to be able to decrypt the internal data again.`,
+		`Revert S3_KMS_KES_KEY_NAME or S3_ROOT_USER/S3_ROOT_PASSWORD (for older MinIO versions) to be able to decrypt the internal data again.`,
 	)
 
 	ErrInvalidCredentials = newErrFn(
@@ -82,25 +82,25 @@ var (
 	ErrMissingEnvCredentialRootUser = newErrFn(
 		"Missing credential environment variable, \""+EnvRootUser+"\"",
 		"Environment variable \""+EnvRootUser+"\" is missing",
-		`Root user name (access key) and root password (secret key) are expected to be specified via environment variables MINIO_ROOT_USER and MINIO_ROOT_PASSWORD respectively`,
+		`Root user name (access key) and root password (secret key) are expected to be specified via environment variables S3_ROOT_USER and S3_ROOT_PASSWORD respectively`,
 	)
 
 	ErrMissingEnvCredentialRootPassword = newErrFn(
 		"Missing credential environment variable, \""+EnvRootPassword+"\"",
 		"Environment variable \""+EnvRootPassword+"\" is missing",
-		`Root user name (access key) and root password (secret key) are expected to be specified via environment variables MINIO_ROOT_USER and MINIO_ROOT_PASSWORD respectively`,
+		`Root user name (access key) and root password (secret key) are expected to be specified via environment variables S3_ROOT_USER and S3_ROOT_PASSWORD respectively`,
 	)
 
 	ErrMissingEnvCredentialAccessKey = newErrFn(
 		"Missing credential environment variable, \""+EnvAccessKey+"\"",
 		"Environment variables \""+EnvAccessKey+"\" and \""+EnvSecretKey+"\" are deprecated",
-		`Root user name (access key) and root password (secret key) are expected to be specified via environment variables MINIO_ROOT_USER and MINIO_ROOT_PASSWORD respectively`,
+		`Root user name (access key) and root password (secret key) are expected to be specified via environment variables S3_ROOT_USER and S3_ROOT_PASSWORD respectively`,
 	)
 
 	ErrMissingEnvCredentialSecretKey = newErrFn(
 		"Missing credential environment variable, \""+EnvSecretKey+"\"",
 		"Environment variables \""+EnvSecretKey+"\" and \""+EnvAccessKey+"\" are deprecated",
-		`Root user name (access key) and root password (secret key) are expected to be specified via environment variables MINIO_ROOT_USER and MINIO_ROOT_PASSWORD respectively`,
+		`Root user name (access key) and root password (secret key) are expected to be specified via environment variables S3_ROOT_USER and S3_ROOT_PASSWORD respectively`,
 	)
 
 	ErrInvalidErasureEndpoints = newErrFn(
@@ -118,8 +118,8 @@ var (
 	ErrStorageClassValue = newErrFn(
 		"Invalid storage class value",
 		"Please check the value",
-		`MINIO_STORAGE_CLASS_STANDARD: Format "EC:<Default_Parity_Standard_Class>" (e.g. "EC:3"). This sets the number of parity drives for MinIO server in Standard mode. Objects are stored in Standard mode, if storage class is not defined in Put request
-MINIO_STORAGE_CLASS_RRS: Format "EC:<Default_Parity_Reduced_Redundancy_Class>" (e.g. "EC:3"). This sets the number of parity drives for MinIO server in Reduced Redundancy mode. Objects are stored in Reduced Redundancy mode, if Put request specifies RRS storage class
+		`S3_STORAGE_CLASS_STANDARD: Format "EC:<Default_Parity_Standard_Class>" (e.g. "EC:3"). This sets the number of parity drives for MinIO server in Standard mode. Objects are stored in Standard mode, if storage class is not defined in Put request
+S3_STORAGE_CLASS_RRS: Format "EC:<Default_Parity_Reduced_Redundancy_Class>" (e.g. "EC:3"). This sets the number of parity drives for MinIO server in Reduced Redundancy mode. Objects are stored in Reduced Redundancy mode, if Put request specifies RRS storage class
 Refer to the link https://github.com/minio/minio/tree/master/docs/erasure/storage-class for more information`,
 	)
 
@@ -185,7 +185,7 @@ Examples:
 
 	ErrTLSNoPassword = newErrFn(
 		"Missing TLS password",
-		"Please set the password to environment variable `MINIO_CERT_PASSWD` so that the private key can be decrypted",
+		"Please set the password to environment variable `S3_CERT_PASSWD` so that the private key can be decrypted",
 		"",
 	)
 
@@ -203,7 +203,7 @@ Examples:
 
 	ErrTLSWrongPassword = newErrFn(
 		"Unable to decrypt the private key using the provided password",
-		"Please set the correct password in environment variable `MINIO_CERT_PASSWD`",
+		"Please set the correct password in environment variable `S3_CERT_PASSWD`",
 		"",
 	)
 
@@ -216,19 +216,19 @@ Examples:
 	ErrInvalidCompressionIncludesValue = newErrFn(
 		"Invalid compression include value",
 		"Please check the passed value",
-		"Compress extensions/mime-types are delimited by `,`. For eg, MINIO_COMPRESS_MIME_TYPES=\"A,B,C\"",
+		"Compress extensions/mime-types are delimited by `,`. For eg, S3_COMPRESS_MIME_TYPES=\"A,B,C\"",
 	)
 
 	ErrInvalidReplicationWorkersValue = newErrFn(
 		"Invalid value for replication workers",
 		"",
-		"MINIO_API_REPLICATION_WORKERS: should be > 0",
+		"S3_API_REPLICATION_WORKERS: should be > 0",
 	)
 
 	ErrInvalidTransitionWorkersValue = newErrFn(
 		"Invalid value for transition workers",
 		"",
-		"MINIO_API_TRANSITION_WORKERS: should be >= GOMAXPROCS/2",
+		"S3_API_TRANSITION_WORKERS: should be >= GOMAXPROCS/2",
 	)
 	ErrInvalidBatchKeyRotationWorkersWait = newErrFn(
 		"Invalid value for batch key rotation workers wait",

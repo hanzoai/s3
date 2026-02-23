@@ -182,7 +182,7 @@ func (sys *IAMSys) initStore(objAPI ObjectLayer, etcdClient *etcd.Client) {
 			group  *singleflight.Group
 			policy *singleflight.Group
 		)
-		if env.Get("_MINIO_IAM_SINGLE_FLIGHT", config.EnableOn) == config.EnableOn {
+		if env.Get("_S3_IAM_SINGLE_FLIGHT", config.EnableOn) == config.EnableOn {
 			group = &singleflight.Group{}
 			policy = &singleflight.Group{}
 		}

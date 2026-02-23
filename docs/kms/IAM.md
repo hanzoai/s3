@@ -6,15 +6,15 @@ MinIO supports encrypting config, IAM assets with KMS provided keys. If the KMS 
 
 MinIO supports two ways of encrypting IAM and configuration data.
 You can either use KES - together with an external KMS - or, much simpler,
-set the env. variable `MINIO_KMS_SECRET_KEY` and start/restart the MinIO server. For more details about KES and how
+set the env. variable `S3_KMS_SECRET_KEY` and start/restart the MinIO server. For more details about KES and how
 to set it up refer to our [KMS Guide](https://github.com/minio/minio/blob/master/docs/kms/README.md).
 
 Instead of configuring an external KMS you can start with a single key by
-setting the env. variable `MINIO_KMS_SECRET_KEY`. It expects the following
+setting the env. variable `S3_KMS_SECRET_KEY`. It expects the following
 format:
 
 ```sh
-MINIO_KMS_SECRET_KEY=<key-name>:<base64-value>
+S3_KMS_SECRET_KEY=<key-name>:<base64-value>
 ```
 
 First generate a 256 bit random key via:
@@ -24,18 +24,18 @@ $ cat /dev/urandom | head -c 32 | base64 -
 OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw=
 ```
 
-Now, you can set `MINIO_KMS_SECRET_KEY` like this:
+Now, you can set `S3_KMS_SECRET_KEY` like this:
 
 ```sh
-export MINIO_KMS_SECRET_KEY=my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw=
+export S3_KMS_SECRET_KEY=my-minio-key:OSMM+vkKUTCvQs9YL/CVMIMt43HFhkUpqJxTmGl6rYw=
 ```
 
 > You can choose an arbitrary name for the key - instead of `my-minio-key`.
-> Please note that losing the `MINIO_KMS_SECRET_KEY` will cause data loss
+> Please note that losing the `S3_KMS_SECRET_KEY` will cause data loss
 > since you will not be able to decrypt the IAM/configuration data anymore.
-For distributed MinIO deployments, specify the *same* `MINIO_KMS_SECRET_KEY` for each MinIO server process.
+For distributed MinIO deployments, specify the *same* `S3_KMS_SECRET_KEY` for each MinIO server process.
 
-At any point in time you can switch from `MINIO_KMS_SECRET_KEY` to a full KMS
+At any point in time you can switch from `S3_KMS_SECRET_KEY` to a full KMS
 deployment. You just need to import the generated key into KES - for example via
 the KES CLI once you have successfully setup KES:
 

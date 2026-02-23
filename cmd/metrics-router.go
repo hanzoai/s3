@@ -38,8 +38,8 @@ const (
 
 // Standard env prometheus auth type
 const (
-	EnvPrometheusAuthType    = "MINIO_PROMETHEUS_AUTH_TYPE"
-	EnvPrometheusOpenMetrics = "MINIO_PROMETHEUS_OPEN_METRICS"
+	EnvPrometheusAuthType    = "S3_PROMETHEUS_AUTH_TYPE"
+	EnvPrometheusOpenMetrics = "S3_PROMETHEUS_OPEN_METRICS"
 )
 
 type prometheusAuthType string

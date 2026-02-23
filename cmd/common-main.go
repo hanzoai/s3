@@ -65,7 +65,7 @@ import (
 
 // serverDebugLog will enable debug printing
 var (
-	serverDebugLog     = env.Get("_MINIO_SERVER_DEBUG", config.EnableOff) == config.EnableOn
+	serverDebugLog     = env.Get("_S3_SERVER_DEBUG", config.EnableOff) == config.EnableOn
 	currentReleaseTime time.Time
 	orchestrated       = IsKubernetes() || IsDocker()
 )
@@ -97,7 +97,7 @@ func init() {
 		globalVersionUnix = uint64(t.Unix())
 	}
 
-	globalIsCICD = env.Get("MINIO_CI_CD", "") != "" || env.Get("CI", "") != ""
+	globalIsCICD = env.Get("S3_CI_CD", "") != "" || env.Get("CI", "") != ""
 
 	console.SetColor("Debug", fcolor.New())
 
@@ -121,11 +121,11 @@ func minioConfigToConsoleFeatures() {
 	os.Setenv("CONSOLE_PBKDF_SALT", globalDeploymentID())
 	os.Setenv("CONSOLE_PBKDF_PASSPHRASE", globalDeploymentID())
 	if globalMinioEndpoint != "" {
-		os.Setenv("CONSOLE_MINIO_SERVER", globalMinioEndpoint)
+		os.Setenv("CONSOLE_S3_SERVER", globalMinioEndpoint)
 	} else {
 		// Explicitly set 127.0.0.1 so Console will automatically bypass TLS verification to the local S3 API.
 		// This will save users from providing a certificate with IP or FQDN SAN that points to the local host.
-		os.Setenv("CONSOLE_MINIO_SERVER", fmt.Sprintf("%s://127.0.0.1:%s", getURLScheme(globalIsTLS), globalMinioPort))
+		os.Setenv("CONSOLE_S3_SERVER", fmt.Sprintf("%s://127.0.0.1:%s", getURLScheme(globalIsTLS), globalMinioPort))
 	}
 	if value := env.Get(config.EnvMinIOLogQueryURL, ""); value != "" {
 		os.Setenv("CONSOLE_LOG_QUERY_URL", value)
@@ -177,11 +177,11 @@ func minioConfigToConsoleFeatures() {
 		os.Setenv("CONSOLE_STS_DURATION", valueSession)
 	}
 
-	os.Setenv("CONSOLE_MINIO_SITE_NAME", globalSite.Name())
-	os.Setenv("CONSOLE_MINIO_SITE_REGION", globalSite.Region())
-	os.Setenv("CONSOLE_MINIO_REGION", globalSite.Region())
+	os.Setenv("CONSOLE_S3_SITE_NAME", globalSite.Name())
+	os.Setenv("CONSOLE_S3_SITE_REGION", globalSite.Region())
+	os.Setenv("CONSOLE_S3_REGION", globalSite.Region())
 
-	os.Setenv("CONSOLE_CERT_PASSWD", env.Get("MINIO_CERT_PASSWD", ""))
+	os.Setenv("CONSOLE_CERT_PASSWD", env.Get("S3_CERT_PASSWD", ""))
 
 	// This section sets Browser (console) stored config
 	if valueSCP := globalBrowserConfig.GetCSPolicy(); valueSCP != "" {
@@ -705,7 +705,7 @@ func serverHandleEarlyEnvVars() {
 	var err error
 	globalBrowserEnabled, err = config.ParseBool(env.Get(config.EnvBrowser, config.EnableOn))
 	if err != nil {
-		logger.Fatal(config.ErrInvalidBrowserValue(err), "Invalid MINIO_BROWSER value in environment variable")
+		logger.Fatal(config.ErrInvalidBrowserValue(err), "Invalid S3_BROWSER value in environment variable")
 	}
 }
 
@@ -715,12 +715,12 @@ func serverHandleEnvVars() {
 		if redirectURL := env.Get(config.EnvBrowserRedirectURL, ""); redirectURL != "" {
 			u, err := xnet.ParseHTTPURL(redirectURL)
 			if err != nil {
-				logger.Fatal(err, "Invalid MINIO_BROWSER_REDIRECT_URL value in environment variable")
+				logger.Fatal(err, "Invalid S3_BROWSER_REDIRECT_URL value in environment variable")
 			}
 			// Look for if URL has invalid values and return error.
 			if !isValidURLEndpoint((*url.URL)(u)) {
 				err := fmt.Errorf("URL contains unexpected resources, expected URL to be one of http(s)://console.example.com or as a subpath via API endpoint http(s)://minio.example.com/minio format: %v", u)
-				logger.Fatal(err, "Invalid MINIO_BROWSER_REDIRECT_URL value is environment variable")
+				logger.Fatal(err, "Invalid S3_BROWSER_REDIRECT_URL value is environment variable")
 			}
 			globalBrowserRedirectURL = u
 		}
@@ -730,12 +730,12 @@ func serverHandleEnvVars() {
 	if serverURL := env.Get(config.EnvMinIOServerURL, ""); serverURL != "" {
 		u, err := xnet.ParseHTTPURL(serverURL)
 		if err != nil {
-			logger.Fatal(err, "Invalid MINIO_SERVER_URL value in environment variable")
+			logger.Fatal(err, "Invalid S3_SERVER_URL value in environment variable")
 		}
 		// Look for if URL has invalid values and return error.
 		if !isValidURLEndpoint((*url.URL)(u)) {
 			err := fmt.Errorf("URL contains unexpected resources, expected URL to be of http(s)://minio.example.com format: %v", u)
-			logger.Fatal(err, "Invalid MINIO_SERVER_URL value is environment variable")
+			logger.Fatal(err, "Invalid S3_SERVER_URL value is environment variable")
 		}
 		u.Path = "" // remove any path component such as `/`
 		globalMinioEndpoint = u.String()
@@ -744,7 +744,7 @@ func serverHandleEnvVars() {
 
 	globalFSOSync, err = config.ParseBool(env.Get(config.EnvFSOSync, config.EnableOff))
 	if err != nil {
-		logger.Fatal(config.ErrInvalidFSOSyncValue(err), "Invalid MINIO_FS_OSYNC value in environment variable")
+		logger.Fatal(config.ErrInvalidFSOSyncValue(err), "Invalid S3_FS_OSYNC value in environment variable")
 	}
 
 	rootDiskSize := env.Get(config.EnvRootDriveThresholdSize, "")
@@ -764,7 +764,7 @@ func serverHandleEnvVars() {
 		for domainName := range strings.SplitSeq(domains, config.ValueSeparator) {
 			if _, ok := dns2.IsDomainName(domainName); !ok {
 				logger.Fatal(config.ErrInvalidDomainValue(nil).Msgf("Unknown value `%s`", domainName),
-					"Invalid MINIO_DOMAIN value in environment variable")
+					"Invalid S3_DOMAIN value in environment variable")
 			}
 			globalDomainNames = append(globalDomainNames, domainName)
 		}
@@ -773,7 +773,7 @@ func serverHandleEnvVars() {
 		for _, domainName := range globalDomainNames {
 			if domainName == lcpSuf && len(globalDomainNames) > 1 {
 				logger.Fatal(config.ErrOverlappingDomainValue(nil).Msgf("Overlapping domains `%s` not allowed", globalDomainNames),
-					"Invalid MINIO_DOMAIN value in environment variable")
+					"Invalid S3_DOMAIN value in environment variable")
 			}
 		}
 	}
@@ -787,7 +787,7 @@ func serverHandleEnvVars() {
 				// Checking if the IP is a DNS entry.
 				addrs, err := globalDNSCache.LookupHost(GlobalContext, endpoint)
 				if err != nil {
-					logger.FatalIf(err, "Unable to initialize MinIO server with [%s] invalid entry found in MINIO_PUBLIC_IPS", endpoint)
+					logger.FatalIf(err, "Unable to initialize MinIO server with [%s] invalid entry found in S3_PUBLIC_IPS", endpoint)
 				}
 				for _, addr := range addrs {
 					domainIPs.Add(addr)
@@ -806,15 +806,15 @@ func serverHandleEnvVars() {
 		updateDomainIPs(domainIPs)
 	}
 
-	// In place update is true by default if the MINIO_UPDATE is not set
-	// or is not set to 'off', if MINIO_UPDATE is set to 'off' then
+	// In place update is true by default if the S3_UPDATE is not set
+	// or is not set to 'off', if S3_UPDATE is set to 'off' then
 	// in-place update is off.
 	globalInplaceUpdateDisabled = strings.EqualFold(env.Get(config.EnvUpdate, config.EnableOn), config.EnableOff)
 
 	// Check if the supported credential env vars,
-	// "MINIO_ROOT_USER" and "MINIO_ROOT_PASSWORD" are provided
+	// "S3_ROOT_USER" and "S3_ROOT_PASSWORD" are provided
 	// Warn user if deprecated environment variables,
-	// "MINIO_ACCESS_KEY" and "MINIO_SECRET_KEY", are defined
+	// "S3_ACCESS_KEY" and "S3_SECRET_KEY", are defined
 	// Check all error conditions first
 	//nolint:gocritic
 	if !env.IsSet(config.EnvRootUser) && env.IsSet(config.EnvRootPassword) {
@@ -829,7 +829,7 @@ func serverHandleEnvVars() {
 		}
 	}
 
-	globalEnableSyncBoot = env.Get("MINIO_SYNC_BOOT", config.EnableOff) == config.EnableOn
+	globalEnableSyncBoot = env.Get("S3_SYNC_BOOT", config.EnableOff) == config.EnableOn
 }
 
 func loadRootCredentials() auth.Credentials {

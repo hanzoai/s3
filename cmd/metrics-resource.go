@@ -414,7 +414,7 @@ func (c *minioResourceCollector) Collect(out chan<- prometheus.Metric) {
 func newMinioResourceCollector(metricsGroups []*MetricsGroupV2) *minioResourceCollector {
 	return &minioResourceCollector{
 		metricsGroups: metricsGroups,
-		desc:          prometheus.NewDesc("minio_resource_stats", "Resource statistics exposed by MinIO server", nil, nil),
+		desc:          prometheus.NewDesc("s3_resource_stats", "Resource statistics exposed by MinIO server", nil, nil),
 	}
 }
 

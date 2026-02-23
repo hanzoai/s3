@@ -33,7 +33,7 @@ function _build() {
 	# go build -trimpath to build the binary.
 	export GOOS=$os
 	export GOARCH=$arch
-	export MINIO_RELEASE=RELEASE
+	export S3_RELEASE=RELEASE
 	LDFLAGS=$(go run buildscripts/gen-ldflags.go)
 	go build -tags kqueue -trimpath --ldflags "${LDFLAGS}" -o ./minio-${arch}.${release}
 	minisign -qQSm ./minio-${arch}.${release} -s "$CRED_DIR/minisign.key" <"$CRED_DIR/minisign-passphrase"

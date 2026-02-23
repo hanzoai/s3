@@ -26,8 +26,8 @@ For a quick installation, docker-compose reference configs are also available on
 ### Configure MinIO
 
 ```
-export MINIO_ROOT_USER=minio
-export MINIO_ROOT_PASSWORD=minio123
+export S3_ROOT_USER=minio
+export S3_ROOT_PASSWORD=minio123
 minio server /mnt/export
 ```
 
@@ -57,12 +57,12 @@ KEY:
 identity_openid  enable OpenID SSO support
 
 ARGS:
-MINIO_IDENTITY_OPENID_CONFIG_URL*   (url)       openid discovery document e.g. "https://accounts.google.com/.well-known/openid-configuration"
-MINIO_IDENTITY_OPENID_CLIENT_ID     (string)    unique public identifier for apps e.g. "292085223830.apps.googleusercontent.com"
-MINIO_IDENTITY_OPENID_CLAIM_NAME    (string)    JWT canned policy claim name, defaults to "policy"
-MINIO_IDENTITY_OPENID_CLAIM_PREFIX  (string)    JWT claim namespace prefix e.g. "customer1/"
-MINIO_IDENTITY_OPENID_SCOPES        (csv)       Comma separated list of OpenID scopes for server, defaults to advertised scopes from discovery document e.g. "email,admin"
-MINIO_IDENTITY_OPENID_COMMENT       (sentence)  optionally add a comment to this setting
+S3_IDENTITY_OPENID_CONFIG_URL*   (url)       openid discovery document e.g. "https://accounts.google.com/.well-known/openid-configuration"
+S3_IDENTITY_OPENID_CLIENT_ID     (string)    unique public identifier for apps e.g. "292085223830.apps.googleusercontent.com"
+S3_IDENTITY_OPENID_CLAIM_NAME    (string)    JWT canned policy claim name, defaults to "policy"
+S3_IDENTITY_OPENID_CLAIM_PREFIX  (string)    JWT claim namespace prefix e.g. "customer1/"
+S3_IDENTITY_OPENID_SCOPES        (csv)       Comma separated list of OpenID scopes for server, defaults to advertised scopes from discovery document e.g. "email,admin"
+S3_IDENTITY_OPENID_COMMENT       (sentence)  optionally add a comment to this setting
 ```
 
 Set `identity_openid` config with `config_url`, `client_id` and restart MinIO

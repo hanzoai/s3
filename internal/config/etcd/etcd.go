@@ -46,11 +46,11 @@ const (
 	ClientCert    = "client_cert"
 	ClientCertKey = "client_cert_key"
 
-	EnvEtcdEndpoints     = "MINIO_ETCD_ENDPOINTS"
-	EnvEtcdPathPrefix    = "MINIO_ETCD_PATH_PREFIX"
-	EnvEtcdCoreDNSPath   = "MINIO_ETCD_COREDNS_PATH"
-	EnvEtcdClientCert    = "MINIO_ETCD_CLIENT_CERT"
-	EnvEtcdClientCertKey = "MINIO_ETCD_CLIENT_CERT_KEY"
+	EnvEtcdEndpoints     = "S3_ETCD_ENDPOINTS"
+	EnvEtcdPathPrefix    = "S3_ETCD_PATH_PREFIX"
+	EnvEtcdCoreDNSPath   = "S3_ETCD_COREDNS_PATH"
+	EnvEtcdClientCert    = "S3_ETCD_CLIENT_CERT"
+	EnvEtcdClientCertKey = "S3_ETCD_CLIENT_CERT_KEY"
 )
 
 // DefaultKVS - default KV settings for etcd.

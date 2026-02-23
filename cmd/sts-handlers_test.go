@@ -944,7 +944,7 @@ func (s *TestSuiteIAM) SetUpLDAPWithNonNormalizedBaseDN(c *check, serverAddr str
 }
 
 const (
-	EnvTestLDAPServer = "_MINIO_LDAP_TEST_SERVER"
+	EnvTestLDAPServer = "_S3_LDAP_TEST_SERVER"
 )
 
 func TestIAMWithLDAPServerSuite(t *testing.T) {
@@ -2845,8 +2845,8 @@ var testAppParams = OpenIDClientAppParams{
 }
 
 const (
-	EnvTestOpenIDServer  = "_MINIO_OPENID_TEST_SERVER"
-	EnvTestOpenIDServer2 = "_MINIO_OPENID_TEST_SERVER_2"
+	EnvTestOpenIDServer  = "_S3_OPENID_TEST_SERVER"
+	EnvTestOpenIDServer2 = "_S3_OPENID_TEST_SERVER_2"
 )
 
 // SetUpOpenIDs - sets up one or more OpenID test servers using the test OpenID

@@ -8,7 +8,7 @@ x-minio-common: &minio-common
     - "9000"
     - "9001"
   environment:
-    MINIO_CI_CD: 1
+    S3_CI_CD: 1
   healthcheck:
     test: ["CMD", "mc", "ready", "local"]
     interval: 5s

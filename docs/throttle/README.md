@@ -16,9 +16,9 @@ If you have traditional spinning (hdd) drives, some applications with high concu
 Example: Limit a MinIO cluster to accept at max 1600 simultaneous S3 API requests across all nodes of the cluster.
 
 ```sh
-export MINIO_API_REQUESTS_MAX=1600
-export MINIO_ROOT_USER=your-access-key
-export MINIO_ROOT_PASSWORD=your-secret-key
+export S3_API_REQUESTS_MAX=1600
+export S3_ROOT_USER=your-access-key
+export S3_ROOT_PASSWORD=your-secret-key
 minio server http://server{1...8}/mnt/hdd{1...16}
 ```
 

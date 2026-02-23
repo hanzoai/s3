@@ -74,80 +74,80 @@ func Test_minioEnvironFromFile(t *testing.T) {
 	}{
 		{
 			`
-export MINIO_ROOT_USER=minio
-export MINIO_ROOT_PASSWORD=minio123`,
+export S3_ROOT_USER=minio
+export S3_ROOT_PASSWORD=minio123`,
 			false,
 			[]envKV{
 				{
-					Key:   "MINIO_ROOT_USER",
+					Key:   "S3_ROOT_USER",
 					Value: "minio",
 				},
 				{
-					Key:   "MINIO_ROOT_PASSWORD",
+					Key:   "S3_ROOT_PASSWORD",
 					Value: "minio123",
 				},
 			},
 		},
 		// Value with double quotes
 		{
-			`export MINIO_ROOT_USER="minio"`,
+			`export S3_ROOT_USER="minio"`,
 			false,
 			[]envKV{
 				{
-					Key:   "MINIO_ROOT_USER",
+					Key:   "S3_ROOT_USER",
 					Value: "minio",
 				},
 			},
 		},
 		// Value with single quotes
 		{
-			`export MINIO_ROOT_USER='minio'`,
+			`export S3_ROOT_USER='minio'`,
 			false,
 			[]envKV{
 				{
-					Key:   "MINIO_ROOT_USER",
+					Key:   "S3_ROOT_USER",
 					Value: "minio",
 				},
 			},
 		},
 		{
 			`
-MINIO_ROOT_USER=minio
-MINIO_ROOT_PASSWORD=minio123`,
+S3_ROOT_USER=minio
+S3_ROOT_PASSWORD=minio123`,
 			false,
 			[]envKV{
 				{
-					Key:   "MINIO_ROOT_USER",
+					Key:   "S3_ROOT_USER",
 					Value: "minio",
 				},
 				{
-					Key:   "MINIO_ROOT_PASSWORD",
+					Key:   "S3_ROOT_PASSWORD",
 					Value: "minio123",
 				},
 			},
 		},
 		{
 			`
-export MINIO_ROOT_USERminio
-export MINIO_ROOT_PASSWORD=minio123`,
+export S3_ROOT_USERminio
+export S3_ROOT_PASSWORD=minio123`,
 			true,
 			nil,
 		},
 		{
 			`
 # simple comment
-# MINIO_ROOT_USER=minioadmin
-# MINIO_ROOT_PASSWORD=minioadmin
-MINIO_ROOT_USER=minio
-MINIO_ROOT_PASSWORD=minio123`,
+# S3_ROOT_USER=minioadmin
+# S3_ROOT_PASSWORD=minioadmin
+S3_ROOT_USER=minio
+S3_ROOT_PASSWORD=minio123`,
 			false,
 			[]envKV{
 				{
-					Key:   "MINIO_ROOT_USER",
+					Key:   "S3_ROOT_USER",
 					Value: "minio",
 				},
 				{
-					Key:   "MINIO_ROOT_PASSWORD",
+					Key:   "S3_ROOT_PASSWORD",
 					Value: "minio123",
 				},
 			},

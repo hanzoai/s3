@@ -91,7 +91,7 @@ func (s1 *ServerSystemConfig) Diff(s2 *ServerSystemConfig) error {
 			extra = append(extra, k)
 		}
 	}
-	msg := "Expected MINIO_* environment name and values across all servers to be same: "
+	msg := "Expected S3_* environment name and values across all servers to be same: "
 	if len(missing) > 0 {
 		msg += fmt.Sprintf(`Missing environment values: %v. `, missing)
 	}
@@ -106,21 +106,21 @@ func (s1 *ServerSystemConfig) Diff(s2 *ServerSystemConfig) error {
 }
 
 var skipEnvs = map[string]struct{}{
-	"MINIO_OPTS":                   {},
-	"MINIO_CERT_PASSWD":            {},
-	"MINIO_SERVER_DEBUG":           {},
-	"MINIO_DSYNC_TRACE":            {},
-	"MINIO_ROOT_USER":              {},
-	"MINIO_ROOT_PASSWORD":          {},
-	"MINIO_ACCESS_KEY":             {},
-	"MINIO_SECRET_KEY":             {},
-	"MINIO_OPERATOR_VERSION":       {},
-	"MINIO_VSPHERE_PLUGIN_VERSION": {},
-	"MINIO_CI_CD":                  {},
+	"S3_OPTS":                   {},
+	"S3_CERT_PASSWD":            {},
+	"S3_SERVER_DEBUG":           {},
+	"S3_DSYNC_TRACE":            {},
+	"S3_ROOT_USER":              {},
+	"S3_ROOT_PASSWORD":          {},
+	"S3_ACCESS_KEY":             {},
+	"S3_SECRET_KEY":             {},
+	"S3_OPERATOR_VERSION":       {},
+	"S3_VSPHERE_PLUGIN_VERSION": {},
+	"S3_CI_CD":                  {},
 }
 
 func getServerSystemCfg() *ServerSystemConfig {
-	envs := env.List("MINIO_")
+	envs := env.List("S3_")
 	envValues := make(map[string]string, len(envs))
 	for _, envK := range envs {
 		// skip certain environment variables as part

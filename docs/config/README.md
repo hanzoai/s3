@@ -23,11 +23,11 @@ You can provide a custom certs directory using `--certs-dir` command line option
 
 #### Credentials
 
-On MinIO admin credentials or root credentials are only allowed to be changed using ENVs namely `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD`.
+On MinIO admin credentials or root credentials are only allowed to be changed using ENVs namely `S3_ROOT_USER` and `S3_ROOT_PASSWORD`.
 
 ```sh
-export MINIO_ROOT_USER=minio
-export MINIO_ROOT_PASSWORD=minio13
+export S3_ROOT_USER=minio
+export S3_ROOT_PASSWORD=minio13
 minio server /data
 ```
 
@@ -50,16 +50,16 @@ KEY:
 site  label the server and its location
 
 ARGS:
-MINIO_SITE_NAME     (string)    name for the site e.g. "cal-rack0"
-MINIO_SITE_REGION   (string)    name of the location of the server e.g. "us-west-1"
-MINIO_SITE_COMMENT  (sentence)  optionally add a comment to this setting
+S3_SITE_NAME     (string)    name for the site e.g. "cal-rack0"
+S3_SITE_REGION   (string)    name of the location of the server e.g. "us-west-1"
+S3_SITE_COMMENT  (sentence)  optionally add a comment to this setting
 ```
 
 Example:
 
 ```sh
-export MINIO_SITE_REGION="us-west-0"
-export MINIO_SITE_NAME="sfo-rack-1"
+export S3_SITE_REGION="us-west-0"
+export S3_SITE_NAME="sfo-rack-1"
 minio server /data
 ```
 
@@ -84,9 +84,9 @@ KEY:
 storage_class  define object level redundancy
 
 ARGS:
-MINIO_STORAGE_CLASS_STANDARD  (string)    set the parity count for default standard storage class e.g. "EC:4"
-MINIO_STORAGE_CLASS_RRS       (string)    set the parity count for reduced redundancy storage class e.g. "EC:2"
-MINIO_STORAGE_CLASS_COMMENT   (sentence)  optionally add a comment to this setting
+S3_STORAGE_CLASS_STANDARD  (string)    set the parity count for default standard storage class e.g. "EC:4"
+S3_STORAGE_CLASS_RRS       (string)    set the parity count for reduced redundancy storage class e.g. "EC:2"
+S3_STORAGE_CLASS_COMMENT   (sentence)  optionally add a comment to this setting
 ```
 
 #### Etcd
@@ -115,12 +115,12 @@ KEY:
 etcd  federate multiple clusters for IAM and Bucket DNS
 
 ARGS:
-MINIO_ETCD_ENDPOINTS*       (csv)       comma separated list of etcd endpoints e.g. "http://localhost:2379"
-MINIO_ETCD_PATH_PREFIX      (path)      namespace prefix to isolate tenants e.g. "customer1/"
-MINIO_ETCD_COREDNS_PATH     (path)      shared bucket DNS records, default is "/skydns"
-MINIO_ETCD_CLIENT_CERT      (path)      client cert for mTLS authentication
-MINIO_ETCD_CLIENT_CERT_KEY  (path)      client cert key for mTLS authentication
-MINIO_ETCD_COMMENT          (sentence)  optionally add a comment to this setting
+S3_ETCD_ENDPOINTS*       (csv)       comma separated list of etcd endpoints e.g. "http://localhost:2379"
+S3_ETCD_PATH_PREFIX      (path)      namespace prefix to isolate tenants e.g. "customer1/"
+S3_ETCD_COREDNS_PATH     (path)      shared bucket DNS records, default is "/skydns"
+S3_ETCD_CLIENT_CERT      (path)      client cert for mTLS authentication
+S3_ETCD_CLIENT_CERT_KEY  (path)      client cert key for mTLS authentication
+S3_ETCD_COMMENT          (sentence)  optionally add a comment to this setting
 ```
 
 ### API
@@ -153,21 +153,21 @@ object_max_versions             (number)    set max allowed number of versions p
 or environment variables
 
 ```
-MINIO_API_REQUESTS_MAX                    (number)    set the maximum number of concurrent requests (default: 'auto')
-MINIO_API_CLUSTER_DEADLINE                (duration)  set the deadline for cluster readiness check (default: '10s')
-MINIO_API_CORS_ALLOW_ORIGIN               (csv)       set comma separated list of origins allowed for CORS requests (default: '*')
-MINIO_API_REMOTE_TRANSPORT_DEADLINE       (duration)  set the deadline for API requests on remote transports while proxying between federated instances e.g. "2h" (default: '2h')
-MINIO_API_LIST_QUORUM                     (string)    set the acceptable quorum expected for list operations e.g. "optimal", "reduced", "disk", "strict", "auto" (default: 'strict')
-MINIO_API_REPLICATION_PRIORITY            (string)    set replication priority (default: 'auto')
-MINIO_API_REPLICATION_MAX_WORKERS         (number)    set the maximum number of replication workers (default: '500')
-MINIO_API_TRANSITION_WORKERS              (number)    set the number of transition workers (default: '100')
-MINIO_API_STALE_UPLOADS_EXPIRY            (duration)  set to expire stale multipart uploads older than this values (default: '24h')
-MINIO_API_STALE_UPLOADS_CLEANUP_INTERVAL  (duration)  set to change intervals when stale multipart uploads are expired (default: '6h')
-MINIO_API_DELETE_CLEANUP_INTERVAL         (duration)  set to change intervals when deleted objects are permanently deleted from ".trash" folder (default: '5m')
-MINIO_API_ODIRECT                         (boolean)   set to enable or disable O_DIRECT for writes under special conditions. NOTE: do not disable O_DIRECT without prior testing (default: 'on')
-MINIO_API_ROOT_ACCESS                     (boolean)   turn 'off' root credential access for all API calls including s3, admin operations (default: 'on')
-MINIO_API_SYNC_EVENTS                     (boolean)   set to enable synchronous bucket notifications (default: 'off')
-MINIO_API_OBJECT_MAX_VERSIONS             (number)    set max allowed number of versions per object (default: '9223372036854775807')
+S3_API_REQUESTS_MAX                    (number)    set the maximum number of concurrent requests (default: 'auto')
+S3_API_CLUSTER_DEADLINE                (duration)  set the deadline for cluster readiness check (default: '10s')
+S3_API_CORS_ALLOW_ORIGIN               (csv)       set comma separated list of origins allowed for CORS requests (default: '*')
+S3_API_REMOTE_TRANSPORT_DEADLINE       (duration)  set the deadline for API requests on remote transports while proxying between federated instances e.g. "2h" (default: '2h')
+S3_API_LIST_QUORUM                     (string)    set the acceptable quorum expected for list operations e.g. "optimal", "reduced", "disk", "strict", "auto" (default: 'strict')
+S3_API_REPLICATION_PRIORITY            (string)    set replication priority (default: 'auto')
+S3_API_REPLICATION_MAX_WORKERS         (number)    set the maximum number of replication workers (default: '500')
+S3_API_TRANSITION_WORKERS              (number)    set the number of transition workers (default: '100')
+S3_API_STALE_UPLOADS_EXPIRY            (duration)  set to expire stale multipart uploads older than this values (default: '24h')
+S3_API_STALE_UPLOADS_CLEANUP_INTERVAL  (duration)  set to change intervals when stale multipart uploads are expired (default: '6h')
+S3_API_DELETE_CLEANUP_INTERVAL         (duration)  set to change intervals when deleted objects are permanently deleted from ".trash" folder (default: '5m')
+S3_API_ODIRECT                         (boolean)   set to enable or disable O_DIRECT for writes under special conditions. NOTE: do not disable O_DIRECT without prior testing (default: 'on')
+S3_API_ROOT_ACCESS                     (boolean)   turn 'off' root credential access for all API calls including s3, admin operations (default: 'on')
+S3_API_SYNC_EVENTS                     (boolean)   set to enable synchronous bucket notifications (default: 'off')
+S3_API_OBJECT_MAX_VERSIONS             (number)    set max allowed number of versions per object (default: '9223372036854775807')
 ```
 
 #### Notifications
@@ -227,12 +227,12 @@ KEY:
 etcd  federate multiple clusters for IAM and Bucket DNS
 
 ARGS:
-MINIO_ETCD_ENDPOINTS*       (csv)       comma separated list of etcd endpoints e.g. "http://localhost:2379"
-MINIO_ETCD_PATH_PREFIX      (path)      namespace prefix to isolate tenants e.g. "customer1/"
-MINIO_ETCD_COREDNS_PATH     (path)      shared bucket DNS records, default is "/skydns"
-MINIO_ETCD_CLIENT_CERT      (path)      client cert for mTLS authentication
-MINIO_ETCD_CLIENT_CERT_KEY  (path)      client cert key for mTLS authentication
-MINIO_ETCD_COMMENT          (sentence)  optionally add a comment to this setting
+S3_ETCD_ENDPOINTS*       (csv)       comma separated list of etcd endpoints e.g. "http://localhost:2379"
+S3_ETCD_PATH_PREFIX      (path)      namespace prefix to isolate tenants e.g. "customer1/"
+S3_ETCD_COREDNS_PATH     (path)      shared bucket DNS records, default is "/skydns"
+S3_ETCD_CLIENT_CERT      (path)      client cert for mTLS authentication
+S3_ETCD_CLIENT_CERT_KEY  (path)      client cert key for mTLS authentication
+S3_ETCD_COMMENT          (sentence)  optionally add a comment to this setting
 ```
 
 This behavior is consistent across all keys; each key self-documents itself with valid examples.
@@ -307,30 +307,30 @@ Once set the healer settings are automatically applied without the need for serv
 
 ### Browser
 
-Enable or disable access to console web UI. By default it is set to `on`. You may override this field with `MINIO_BROWSER` environment variable.
+Enable or disable access to console web UI. By default it is set to `on`. You may override this field with `S3_BROWSER` environment variable.
 
 Example:
 
 ```sh
-export MINIO_BROWSER=off
+export S3_BROWSER=off
 minio server /data
 ```
 
 ### Domain
 
-By default, MinIO supports path-style requests that are of the format <http://mydomain.com/bucket/object>. `MINIO_DOMAIN` environment variable is used to enable virtual-host-style requests. If the request `Host` header matches with `(.+).mydomain.com` then the matched pattern `$1` is used as bucket and the path is used as object. Read more about path-style and virtual-host-style [here](http://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAPI.html).
+By default, MinIO supports path-style requests that are of the format <http://mydomain.com/bucket/object>. `S3_DOMAIN` environment variable is used to enable virtual-host-style requests. If the request `Host` header matches with `(.+).mydomain.com` then the matched pattern `$1` is used as bucket and the path is used as object. Read more about path-style and virtual-host-style [here](http://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAPI.html).
 
 Example:
 
 ```sh
-export MINIO_DOMAIN=mydomain.com
+export S3_DOMAIN=mydomain.com
 minio server /data
 ```
 
-For advanced use cases `MINIO_DOMAIN` environment variable supports multiple-domains with comma separated values.
+For advanced use cases `S3_DOMAIN` environment variable supports multiple-domains with comma separated values.
 
 ```sh
-export MINIO_DOMAIN=sub1.mydomain.com,sub2.mydomain.com
+export S3_DOMAIN=sub1.mydomain.com,sub2.mydomain.com
 minio server /data
 ```
 

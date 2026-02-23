@@ -63,31 +63,31 @@ var ServerFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:   "config",
 		Usage:  "specify server configuration via YAML configuration",
-		EnvVar: "MINIO_CONFIG",
+		EnvVar: "S3_CONFIG",
 	},
 	cli.StringFlag{
 		Name:   "address",
 		Value:  ":" + GlobalMinioDefaultPort,
 		Usage:  "bind to a specific ADDRESS:PORT, ADDRESS can be an IP or hostname",
-		EnvVar: "MINIO_ADDRESS",
+		EnvVar: "S3_ADDRESS",
 	},
 	cli.IntFlag{
 		Name:   "listeners", // Deprecated Oct 2022
 		Value:  1,
 		Usage:  "bind N number of listeners per ADDRESS:PORT",
-		EnvVar: "MINIO_LISTENERS",
+		EnvVar: "S3_LISTENERS",
 		Hidden: true,
 	},
 	cli.StringFlag{
 		Name:   "console-address",
 		Usage:  "bind to a specific ADDRESS:PORT for embedded Console UI, ADDRESS can be an IP or hostname",
-		EnvVar: "MINIO_CONSOLE_ADDRESS",
+		EnvVar: "S3_CONSOLE_ADDRESS",
 	},
 	cli.DurationFlag{
 		Name:   "shutdown-timeout",
 		Value:  time.Second * 30,
 		Usage:  "shutdown timeout to gracefully shutdown server (DEPRECATED)",
-		EnvVar: "MINIO_SHUTDOWN_TIMEOUT",
+		EnvVar: "S3_SHUTDOWN_TIMEOUT",
 		Hidden: true,
 	},
 
@@ -95,14 +95,14 @@ var ServerFlags = []cli.Flag{
 		Name:   "idle-timeout",
 		Value:  xhttp.DefaultIdleTimeout,
 		Usage:  "idle timeout is the maximum amount of time to wait for the next request when keep-alive are enabled",
-		EnvVar: "MINIO_IDLE_TIMEOUT",
+		EnvVar: "S3_IDLE_TIMEOUT",
 		Hidden: true,
 	},
 	cli.DurationFlag{
 		Name:   "read-header-timeout",
 		Value:  xhttp.DefaultReadHeaderTimeout,
 		Usage:  "read header timeout is the amount of time allowed to read request headers",
-		EnvVar: "MINIO_READ_HEADER_TIMEOUT",
+		EnvVar: "S3_READ_HEADER_TIMEOUT",
 		Hidden: true,
 	},
 	cli.DurationFlag{
@@ -110,13 +110,13 @@ var ServerFlags = []cli.Flag{
 		Usage:  "custom TCP_USER_TIMEOUT for socket buffers",
 		Hidden: true,
 		Value:  10 * time.Minute,
-		EnvVar: "MINIO_CONN_USER_TIMEOUT",
+		EnvVar: "S3_CONN_USER_TIMEOUT",
 	},
 	cli.StringFlag{
 		Name:   "interface",
 		Usage:  "bind to right VRF device for MinIO services",
 		Hidden: true,
-		EnvVar: "MINIO_INTERFACE",
+		EnvVar: "S3_INTERFACE",
 	},
 	cli.DurationFlag{
 		Name:   "dns-cache-ttl",
@@ -128,14 +128,14 @@ var ServerFlags = []cli.Flag{
 			}
 			return 10 * time.Minute
 		}(),
-		EnvVar: "MINIO_DNS_CACHE_TTL",
+		EnvVar: "S3_DNS_CACHE_TTL",
 	},
 	cli.IntFlag{
 		Name:   "max-idle-conns-per-host",
 		Usage:  "set a custom max idle connections per host value",
 		Hidden: true,
 		Value:  2048,
-		EnvVar: "MINIO_MAX_IDLE_CONNS_PER_HOST",
+		EnvVar: "S3_MAX_IDLE_CONNS_PER_HOST",
 	},
 	cli.StringSliceFlag{
 		Name:  "ftp",
@@ -149,49 +149,49 @@ var ServerFlags = []cli.Flag{
 		Name:   "crossdomain-xml",
 		Usage:  "provide a custom crossdomain-xml configuration to report at http://endpoint/crossdomain.xml",
 		Hidden: true,
-		EnvVar: "MINIO_CROSSDOMAIN_XML",
+		EnvVar: "S3_CROSSDOMAIN_XML",
 	},
 	cli.StringFlag{
 		Name:   "memlimit",
 		Usage:  "set global memory limit per server via GOMEMLIMIT",
 		Hidden: true,
-		EnvVar: "MINIO_MEMLIMIT",
+		EnvVar: "S3_MEMLIMIT",
 	},
 	cli.IntFlag{
 		Name:   "send-buf-size",
 		Value:  4 * humanize.MiByte,
-		EnvVar: "MINIO_SEND_BUF_SIZE",
+		EnvVar: "S3_SEND_BUF_SIZE",
 		Hidden: true,
 	},
 	cli.IntFlag{
 		Name:   "recv-buf-size",
 		Value:  4 * humanize.MiByte,
-		EnvVar: "MINIO_RECV_BUF_SIZE",
+		EnvVar: "S3_RECV_BUF_SIZE",
 		Hidden: true,
 	},
 	cli.StringFlag{
 		Name:   "log-dir",
 		Usage:  "specify the directory to save the server log",
-		EnvVar: "MINIO_LOG_DIR",
+		EnvVar: "S3_LOG_DIR",
 		Hidden: true,
 	},
 	cli.IntFlag{
 		Name:   "log-size",
 		Usage:  "specify the maximum server log file size in bytes before its rotated",
 		Value:  10 * humanize.MiByte,
-		EnvVar: "MINIO_LOG_SIZE",
+		EnvVar: "S3_LOG_SIZE",
 		Hidden: true,
 	},
 	cli.BoolFlag{
 		Name:   "log-compress",
 		Usage:  "specify if we want the rotated logs to be gzip compressed or not",
-		EnvVar: "MINIO_LOG_COMPRESS",
+		EnvVar: "S3_LOG_COMPRESS",
 		Hidden: true,
 	},
 	cli.StringFlag{
 		Name:   "log-prefix",
 		Usage:  "specify the log prefix name for the server log",
-		EnvVar: "MINIO_LOG_PREFIX",
+		EnvVar: "S3_LOG_PREFIX",
 		Hidden: true,
 	},
 }
@@ -254,7 +254,7 @@ func serverCmdArgs(ctx *cli.Context) []string {
 		}
 	}
 	if v == "" {
-		// Fall back to older environment value MINIO_ENDPOINTS
+		// Fall back to older environment value S3_ENDPOINTS
 		v, _, _, err = env.LookupEnv(config.EnvEndpoints)
 		if err != nil {
 			logger.FatalIf(err, "Unable to validate passed arguments in %s:%s",
@@ -995,7 +995,7 @@ func serverMain(ctx *cli.Context) {
 		}
 	})
 	if globalActiveCred.Equal(auth.DefaultCredentials) {
-		msg := fmt.Sprintf("Detected default credentials '%s', we recommend that you change these values with 'MINIO_ROOT_USER' and 'MINIO_ROOT_PASSWORD' environment variables",
+		msg := fmt.Sprintf("Detected default credentials '%s', we recommend that you change these values with 'S3_ROOT_USER' and 'S3_ROOT_PASSWORD' environment variables",
 			globalActiveCred)
 		warnings = append(warnings, color.YellowBold(msg))
 	}
@@ -1042,14 +1042,14 @@ func serverMain(ctx *cli.Context) {
 			defer bootstrapTrace("unfreezeServices", unfreezeServices)
 			t := time.AfterFunc(5*time.Minute, func() {
 				warnings = append(warnings,
-					color.YellowBold("- Initializing the config subsystem is taking longer than 5 minutes. Please remove 'MINIO_SYNC_BOOT=on' to not freeze the APIs"))
+					color.YellowBold("- Initializing the config subsystem is taking longer than 5 minutes. Please remove 'S3_SYNC_BOOT=on' to not freeze the APIs"))
 			})
 			defer t.Stop()
 		}
 
 		// Initialize data scanner.
 		bootstrapTrace("initDataScanner", func() {
-			if v := env.Get("_MINIO_SCANNER", config.EnableOn); v == config.EnableOn {
+			if v := env.Get("_S3_SCANNER", config.EnableOn); v == config.EnableOn {
 				initDataScanner(GlobalContext, newObject)
 			}
 		})

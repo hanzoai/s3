@@ -30,10 +30,10 @@ API_KEY=$(grep "API Key" <kes-server.log | awk -F" " '{print $3}')
 (openssl s_client -connect 127.0.0.1:7373 2>/dev/null 1>public.crt)
 
 export CI=true
-export MINIO_KMS_KES_ENDPOINT=https://127.0.0.1:7373
-export MINIO_KMS_KES_API_KEY="${API_KEY}"
-export MINIO_KMS_KES_KEY_NAME=minio-default-key
-export MINIO_KMS_KES_CAPATH=public.crt
+export S3_KMS_KES_ENDPOINT=https://127.0.0.1:7373
+export S3_KMS_KES_API_KEY="${API_KEY}"
+export S3_KMS_KES_KEY_NAME=minio-default-key
+export S3_KMS_KES_CAPATH=public.crt
 export MC_HOST_myminio="http://minioadmin:minioadmin@localhost:9000/"
 
 (minio server http://localhost:9000/tmp/xl/{1...10}/disk{0...1} 2>&1 >/dev/null) &
