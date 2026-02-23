@@ -4,8 +4,5 @@ compatibility_date = "2024-01-01"
 
 [env.production]
 routes = [
-  { pattern = "dl.hanzo.space/*", zone_name = "hanzo.space" }
+  { pattern = "dl.hanzo.space", custom_domain = true }
 ]
-
-[[env.production.custom_domains]]
-hostname = "dl.hanzo.space"

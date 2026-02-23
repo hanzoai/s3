@@ -8,9 +8,9 @@ assignees: ''
 ---
 
 ## NOTE
-All GitHub issues are addressed on a best-effort basis at MinIO's sole discretion. There are no Service Level Agreements (SLA) or Objectives (SLO). Remember our [Code of Conduct](https://github.com/minio/minio/blob/master/code_of_conduct.md) when engaging with MinIO Engineers and the larger community.
+All GitHub issues are addressed on a best-effort basis at Hanzo's sole discretion. There are no Service Level Agreements (SLA) or Objectives (SLO). Remember our [Code of Conduct](https://github.com/hanzoai/storage/blob/main/code_of_conduct.md) when engaging with Hanzo Engineers and the larger community.
 
-For urgent issues (e.g. production down, etc.), subscribe to [SUBNET](https://min.io/pricing?jmp=github) for direct to engineering support.
+For urgent issues (e.g. production down, etc.), visit [Hanzo Support](https://hanzo.ai/pricing) for direct to engineering support.
  
 <!--- Provide a general summary of the issue in the Title above -->
 
