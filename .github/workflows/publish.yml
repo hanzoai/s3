@@ -41,7 +41,7 @@ jobs:
         with:
           images: |
             ${{ env.REGISTRY }}/hanzoai/s3
-            ${{ env.REGISTRY }}/hanzoai/storage
+            ${{ env.REGISTRY }}/hanzoai/space
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=
