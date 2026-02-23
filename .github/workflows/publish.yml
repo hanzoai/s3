@@ -12,7 +12,7 @@ env:
 jobs:
   docker:
     name: Build and push Docker images
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, hanzo-build]
     permissions:
       contents: read
       packages: write
@@ -25,6 +25,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -59,7 +61,7 @@ jobs:
 
   binaries:
     name: Build and upload release binaries
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, hanzo-build]
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
