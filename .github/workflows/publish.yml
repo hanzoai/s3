@@ -112,7 +112,7 @@ jobs:
             s3-darwin-amd64 \
             s3-darwin-arm64 \
             s3-windows-amd64.exe \
-            --title "Hanzo S3 $GITHUB_REF_NAME" \
+            --title "S3 $GITHUB_REF_NAME" \
             --generate-notes \
             --latest \
             2>/dev/null || \

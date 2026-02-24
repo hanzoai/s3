@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "MinIO Grafana Dashboard - https://min.io/",
+  "description": "S3 Dashboard - https://hanzo.ai/",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "gnetId": 15306,
@@ -2390,7 +2390,7 @@
     ]
   },
   "timezone": "",
-  "title": "MinIO Node Replication Dashboard",
+  "title": "S3 Node Replication Dashboard",
   "uid": "gmTJnqnnk3",
   "version": 1,
   "weekStart": ""

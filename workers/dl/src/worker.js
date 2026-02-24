@@ -1,5 +1,5 @@
 /**
- * dl.hanzo.space — Download proxy for Hanzo S3 server binaries.
+ * dl.hanzo.space — Download proxy for S3 server binaries.
  *
  * Routes:
  *   /server/s3/release/linux-amd64/s3       → GitHub release asset s3-linux-amd64
@@ -26,7 +26,7 @@ export default {
     const path = url.pathname;
 
     if (path === '/' || path === '') {
-      return new Response('Hanzo S3 Downloads\nhttps://github.com/hanzoai/s3\n', {
+      return new Response('S3 Downloads\nhttps://github.com/hanzoai/s3\n', {
         headers: { 'content-type': 'text/plain' },
       });
     }

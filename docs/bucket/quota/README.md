@@ -1,4 +1,4 @@
-# Bucket Quota Configuration Quickstart Guide [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io) [![Docker Pulls](https://img.shields.io/docker/pulls/minio/minio.svg?maxAge=604800)](https://hub.docker.com/r/minio/minio/)
+# Bucket Quota Configuration Quickstart Guide
 
 ![quota](https://raw.githubusercontent.com/minio/minio/master/docs/bucket/quota/bucketquota.png)
 
@@ -6,24 +6,24 @@ Buckets can be configured to have `Hard` quota - it disallows writes to the buck
 
 ## Prerequisites
 
-- Install MinIO - [MinIO Quickstart Guide](https://docs.min.io/community/minio-object-store/operations/deployments/baremetal-deploy-minio-on-redhat-linux.html#procedure).
-- [Use `mc` with MinIO Server](https://docs.min.io/community/minio-object-store/reference/minio-mc.html#quickstart)
+- Install S3 - [S3 Quickstart Guide](https://docs.hanzo.ai/community/minio-object-store/operations/deployments/baremetal-deploy-minio-on-redhat-linux.html#procedure).
+- [Use `mc` with S3 Server](https://docs.hanzo.ai/community/minio-object-store/reference/minio-mc.html#quickstart)
 
 ## Set bucket quota configuration
 
-### Set a hard quota of 1GB for a bucket `mybucket` on MinIO object storage
+### Set a hard quota of 1GB for a bucket `mybucket` on S3 object storage
 
 ```sh
 mc admin bucket quota myminio/mybucket --hard 1gb
 ```
 
-### Verify the quota configured on `mybucket` on MinIO
+### Verify the quota configured on `mybucket` on S3
 
 ```sh
 mc admin bucket quota myminio/mybucket
 ```
 
-### Clear bucket quota configuration for `mybucket` on MinIO
+### Clear bucket quota configuration for `mybucket` on S3
 
 ```sh
 mc admin bucket quota myminio/mybucket --clear

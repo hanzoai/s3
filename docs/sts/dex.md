@@ -1,4 +1,4 @@
-# Dex Quickstart Guide [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
+# Dex Quickstart Guide [![Discord](https://hanzo.ai/discord?type=svg)](https://hanzo.ai/discord)
 
 Dex is an identity service that uses OpenID Connect to drive authentication for apps. Dex acts as a portal to other identity providers through "connectors." This lets dex defer authentication to LDAP servers, SAML providers, or established identity providers like GitHub, Google, and Active Directory. Clients write their authentication logic once to talk to dex, then dex handles the protocols for a given backend.
 
@@ -22,7 +22,7 @@ time="2020-07-12T20:45:50Z" level=info msg="config id tokens valid for: 3h0m0s"
 time="2020-07-12T20:45:50Z" level=info msg="listening (http) on 0.0.0.0:5556"
 ```
 
-### Configure MinIO server with Dex
+### Configure S3 server with Dex
 
 ```
 ~ export S3_IDENTITY_OPENID_CLAIM_NAME=name
@@ -69,7 +69,7 @@ You will be redirected to dex login screen - click "Login with email", enter use
 
 and then click "Grant access"
 
-On the browser now you shall see the list of buckets output, along with your temporary credentials obtained from MinIO.
+On the browser now you shall see the list of buckets output, along with your temporary credentials obtained from S3.
 
 ```
 {
@@ -87,7 +87,7 @@ On the browser now you shall see the list of buckets output, along with your tem
 }
 ```
 
-Now you have successfully configured Dex IdP with MinIO.
+Now you have successfully configured Dex IdP with S3.
 
 > NOTE: Dex supports groups with external connectors so you can use `groups` as policy claim instead of `name`.
 
@@ -95,9 +95,9 @@ Now you have successfully configured Dex IdP with MinIO.
 export S3_IDENTITY_OPENID_CLAIM_NAME=groups
 ```
 
-and add relevant policies on MinIO using `mc admin policy create myminio/ <group_name> group-access.json`
+and add relevant policies on S3 using `mc admin policy create myminio/ <group_name> group-access.json`
 
 ## Explore Further
 
-- [MinIO STS Quickstart Guide](https://docs.min.io/community/minio-object-store/developers/security-token-service.html)
-- [The MinIO documentation website](https://docs.min.io/community/minio-object-store/index.html)
+- [S3 STS Quickstart Guide](https://docs.hanzo.ai/community/minio-object-store/developers/security-token-service.html)
+- [The S3 documentation website](https://docs.hanzo.ai/community/minio-object-store/index.html)

@@ -4,11 +4,11 @@ version: '3.7'
 
 services:
   openldap:
-    image: quay.io/minio/openldap
+    image: ghcr.io/hanzos3/openldap
     ports:
       - "389:389"
       - "636:636"
     environment:
-      LDAP_ORGANIZATION: "MinIO Inc"
-      LDAP_DOMAIN: "min.io"
+      LDAP_ORGANIZATION: "Hanzo AI Inc"
+      LDAP_DOMAIN: "hanzo.ai"
       LDAP_ADMIN_PASSWORD: "admin"

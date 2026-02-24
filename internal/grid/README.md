@@ -1,18 +1,18 @@
-# MinIO Grid
+# S3 Grid
 
-The MinIO Grid is a package that provides two-way communication between servers.
+The S3 Grid is a package that provides two-way communication between servers.
 It uses a single two-way connection to send and receive messages between servers.
 
 It includes built in muxing of concurrent requests as well as congestion handling for streams.
 
 Requests can be "Single Payload" or "Streamed".
 
-Use the MinIO Grid for:
+Use the S3 Grid for:
 
 * Small, frequent requests with low latency requirements.
 * Long-running requests with small/medium payloads.
 
-Do *not* use the MinIO Grid for:
+Do *not* use the S3 Grid for:
 
 * Large payloads.
 

@@ -450,10 +450,10 @@ func getLatestReleaseTime(u *url.URL, timeout time.Duration, mode string) (sha25
 
 const (
 	// Kubernetes deployment doc link.
-	kubernetesDeploymentDoc = "https://docs.min.io/community/minio-object-store/operations/deployments/kubernetes.html"
+	kubernetesDeploymentDoc = "https://docs.hanzo.ai/community/minio-object-store/operations/deployments/kubernetes.html"
 
 	// Mesos deployment doc link.
-	mesosDeploymentDoc = "https://docs.min.io/community/minio-object-store/operations/deployments/kubernetes.html"
+	mesosDeploymentDoc = "https://docs.hanzo.ai/community/minio-object-store/operations/deployments/kubernetes.html"
 )
 
 func getDownloadURL(releaseTag string) (downloadURL string) {
@@ -472,7 +472,7 @@ func getDownloadURL(releaseTag string) (downloadURL string) {
 	// Check if we are docker environment, return docker update command
 	if IsDocker() {
 		// Construct release tag name.
-		return fmt.Sprintf("podman pull quay.io/minio/minio:%s", releaseTag)
+		return fmt.Sprintf("podman pull ghcr.io/hanzoai/s3:%s", releaseTag)
 	}
 
 	// For binary only installations, we return link to the latest binary.

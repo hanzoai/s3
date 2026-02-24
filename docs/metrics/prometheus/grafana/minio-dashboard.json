@@ -21,7 +21,7 @@
       }
     ]
   },
-  "description": "MinIO Grafana Dashboard - https://min.io/",
+  "description": "S3 Dashboard - https://hanzo.ai/",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "gnetId": 13502,
@@ -2352,7 +2352,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Total number of bytes received and sent on MinIO cluster",
+      "description": "Total number of bytes received and sent on S3 cluster",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2596,7 +2596,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Number of online drives per MinIO Server",
+      "description": "Number of online drives per S3 server",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3861,7 +3861,7 @@
     ]
   },
   "timezone": "",
-  "title": "MinIO Dashboard",
+  "title": "S3 Dashboard",
   "uid": "TgmJnqnnk",
   "version": 1,
   "weekStart": ""

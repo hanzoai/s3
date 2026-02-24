@@ -56,7 +56,7 @@ import (
 //   target:
 //     type: "minio"
 //     bucket: "testbucket1"
-//     endpoint: "https://play.min.io"
+//     endpoint: "https://play.hanzo.space"
 //     path: "on"
 //     credentials:
 //       accessKey: "minioadmin"

@@ -50,7 +50,7 @@ var (
 	minioOSARCH = runtime.GOOS + "-" + runtime.GOARCH
 
 	// MinioReleaseBaseURL - release url without os and arch.
-	MinioReleaseBaseURL = "https://dl.min.io/server/minio/release/"
+	MinioReleaseBaseURL = "https://dl.hanzo.space/server/minio/release/"
 
 	// MinioReleaseURL - release URL.
 	MinioReleaseURL = MinioReleaseBaseURL + minioOSARCH + SlashSeparator
