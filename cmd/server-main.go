@@ -854,7 +854,7 @@ func serverMain(ctx *cli.Context) {
 	// Check for updates in non-blocking manner.
 	go func() {
 		if !globalServerCtxt.Quiet && !globalInplaceUpdateDisabled {
-			// Check for new updates from dl.min.io.
+			// Check for new updates from dl.hanzo.space.
 			bootstrapTrace("checkUpdate", func() {
 				checkUpdate(getMinioMode())
 			})

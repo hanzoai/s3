@@ -1,8 +1,8 @@
-# Bucket Versioning Design Guide [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io) [![Docker Pulls](https://img.shields.io/docker/pulls/minio/minio.svg?maxAge=604800)](https://hub.docker.com/r/minio/minio/)
+# Bucket Versioning Design Guide
 
 ## Description of `xl.meta`
 
-`xl.meta` is a new self describing backend format used by MinIO to support AWS S3 compatible versioning.
+`xl.meta` is a new self describing backend format used by S3 to support AWS S3 compatible versioning.
 This file is the source of truth for each `version` at rest. `xl.meta` is a msgpack file serialized from a
 well defined data structure. To understand `xl.meta` here are the few things to start with
 
@@ -42,7 +42,7 @@ Therefore, the metadata is wrapped as a binary array for easy skipping.
 - LegacyObjectType (preserves existing deployments and older xl.json format)
 - DeleteMarker (a versionId to capture the DELETE sequences implemented primarily for AWS spec compatibility)
 
-A sample msgpack-JSON `xl.meta`, you can debug the content inside `xl.meta` using [xl-meta.go](https://github.com/minio/minio/tree/master/docs/debugging#decoding-metadata) program.
+A sample msgpack-JSON `xl.meta`, you can debug the content inside `xl.meta` using [xl-meta.go](https://github.com/hanzoai/s3/tree/master/docs/debugging#decoding-metadata) program.
 
 ```json
 {
@@ -84,7 +84,7 @@ A sample msgpack-JSON `xl.meta`, you can debug the content inside `xl.meta` usin
 
 ### v1.3+ versions
 
-Version 1.3 introduces changes to help with [faster metadata reads and updates](https://blog.min.io/minio-versioning-metadata-deep-dive/)
+Version 1.3 introduces changes to help with [faster metadata reads and updates](https://hanzo.ai/blog/versioning-metadata-deep-dive/)
 
 | Entry           | Encoding                    | Content
 | ----------------|-----------------------------|----------------------------------------
