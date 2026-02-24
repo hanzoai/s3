@@ -1,14 +1,14 @@
-# AssumeRoleWithCustomToken [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
+# AssumeRoleWithCustomToken [![Discord](https://hanzo.ai/discord?type=svg)](https://hanzo.ai/discord)
 
 ## Introduction
 
-To integrate with custom authentication methods using the [Identity Management Plugin](../iam/identity-management-plugin.md)), MinIO provides an STS API extension called `AssumeRoleWithCustomToken`.
+To integrate with custom authentication methods using the [Identity Management Plugin](../iam/identity-management-plugin.md)), S3 provides an STS API extension called `AssumeRoleWithCustomToken`.
 
 After configuring the plugin, use the generated Role ARN with `AssumeRoleWithCustomToken` to get temporary credentials to access object storage.
 
 ## API Request
 
-To make an STS API request with this method, send a POST request to the MinIO endpoint with following query parameters:
+To make an STS API request with this method, send a POST request to the S3 endpoint with following query parameters:
 
 | Parameter       | Type    | Required |                                                                      |
 |-----------------|---------|----------|----------------------------------------------------------------------|

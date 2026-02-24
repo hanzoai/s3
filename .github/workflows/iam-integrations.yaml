@@ -21,7 +21,7 @@ jobs:
 
     services:
       openldap:
-        image: quay.io/minio/openldap
+        image: ghcr.io/hanzos3/openldap
         ports:
           - "389:389"
           - "636:636"
@@ -42,13 +42,13 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       openid:
-        image: quay.io/minio/dex
+        image: ghcr.io/hanzos3/dex
         ports:
           - "5556:5556"
         env:
           DEX_LDAP_SERVER: "openldap:389"
       openid2:
-        image: quay.io/minio/dex
+        image: ghcr.io/hanzos3/dex
         ports:
           - "5557:5557"
         env:
@@ -111,7 +111,7 @@ jobs:
           sudo sysctl net.ipv6.conf.default.disable_ipv6=0
           go run docs/iam/access-manager-plugin.go &
           make test-iam
-      - name: Test MinIO Old Version data to IAM import current version
+      - name: Test S3 Old Version data to IAM import current version
         if: matrix.ldap == 'ldaphost:389'
         env:
           _S3_LDAP_TEST_SERVER: ${{ matrix.ldap }}

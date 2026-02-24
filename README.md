@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-AGPL%20v3-blue?style=flat-square)](https://github.com/hanzoai/storage/blob/main/LICENSE)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/hanzoai/storage?style=flat-square)](https://github.com/hanzoai/storage)
 
-High-performance, S3-compatible object storage for AI workloads, built on MinIO and optimized for the Hanzo ecosystem.
+High-performance, S3-compatible object storage for AI workloads, built on S3 and optimized for the Hanzo ecosystem.
 
 ## Features
 
@@ -50,7 +50,7 @@ GOOS=linux GOARCH=arm64 go build -o hanzo-storage .
 
 ### Verify Connectivity
 
-Use any S3-compatible client. With the MinIO Client (`mc`):
+Use any S3-compatible client. With the S3 Client (`mc`):
 
 ```sh
 mc alias set hanzo http://localhost:9000 minioadmin minioadmin
@@ -62,7 +62,7 @@ mc ls hanzo/my-bucket/
 
 ## SDKs
 
-Hanzo Storage is fully S3-compatible. Use any S3 SDK, or the purpose-built MinIO SDKs:
+Hanzo Storage is fully S3-compatible. Use any S3 SDK, or the purpose-built S3 SDKs:
 
 | Language | Package |
 |----------|---------|
@@ -78,7 +78,7 @@ Full documentation is available at [docs.hanzo.ai](https://docs.hanzo.ai).
 
 ## Attribution
 
-Based on [MinIO](https://github.com/minio/minio). See the upstream [LICENSE](LICENSE) for attribution.
+Based on [S3](https://github.com/minio/minio). See the upstream [LICENSE](LICENSE) for attribution.
 
 ## License
 

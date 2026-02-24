@@ -217,13 +217,13 @@ func TestExtractSignedHeaders(t *testing.T) {
 	// If the `expect` key exists in the signed headers then golang server would have stripped out the value, expecting the `expect` header set to `100-continue` in the result.
 	signedHeaders = append(signedHeaders, "expect")
 	// expected header values.
-	expectedHost := "play.min.io:9000"
+	expectedHost := "play.hanzo.space:9000"
 	expectedContentSha256 := "1234abcd"
 	expectedTime := UTCNow().Format(iso8601Format)
 	expectedTransferEncoding := "gzip"
 	expectedExpect := "100-continue"
 
-	r, err := http.NewRequest(http.MethodGet, "http://play.min.io:9000", nil)
+	r, err := http.NewRequest(http.MethodGet, "http://play.hanzo.space:9000", nil)
 	if err != nil {
 		t.Fatal("Unable to create http.Request :", err)
 	}
@@ -373,7 +373,7 @@ func TestCheckMetaHeaders(t *testing.T) {
 	expectedMetaTest := "test"
 	expectedMetaExtension := "png"
 	expectedMetaName := "imagepng"
-	r, err := http.NewRequest(http.MethodPut, "http://play.min.io:9000", nil)
+	r, err := http.NewRequest(http.MethodPut, "http://play.hanzo.space:9000", nil)
 	if err != nil {
 		t.Fatal("Unable to create http.Request :", err)
 	}
@@ -406,7 +406,7 @@ func TestCheckMetaHeaders(t *testing.T) {
 	}
 
 	// Creating input url values
-	r, err = http.NewRequest(http.MethodPut, "http://play.min.io:9000?x-amz-meta-test=test&x-amz-meta-extension=png&x-amz-meta-name=imagepng", nil)
+	r, err = http.NewRequest(http.MethodPut, "http://play.hanzo.space:9000?x-amz-meta-test=test&x-amz-meta-extension=png&x-amz-meta-name=imagepng", nil)
 	if err != nil {
 		t.Fatal("Unable to create http.Request :", err)
 	}

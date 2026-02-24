@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	baseURL    = "https://subnet.min.io"
+	baseURL    = "https://subnet.hanzo.ai"
 	baseURLDev = "http://localhost:9000"
 )
 

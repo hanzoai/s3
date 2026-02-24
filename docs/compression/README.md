@@ -1,8 +1,8 @@
-# Compression Guide [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
+# Compression Guide
 
-MinIO server allows streaming compression to ensure efficient disk space usage.
+S3 server allows streaming compression to ensure efficient disk space usage.
 Compression happens inflight, i.e objects are compressed before being written to disk(s).
-MinIO uses [`klauspost/compress/s2`](https://github.com/klauspost/compress/tree/master/s2)
+S3 uses [`klauspost/compress/s2`](https://github.com/klauspost/compress/tree/master/s2)
 streaming compression due to its stability and performance.
 
 This algorithm is specifically optimized for machine generated content.
@@ -19,11 +19,11 @@ will increase speed when the content can be compressed.
 
 ### 1. Prerequisites
 
-Install MinIO - [MinIO Quickstart Guide](https://docs.min.io/community/minio-object-store/operations/deployments/baremetal-deploy-minio-on-redhat-linux.html).
+Install S3 - [S3 Quickstart Guide](https://docs.hanzo.ai/community/minio-object-store/operations/deployments/baremetal-deploy-minio-on-redhat-linux.html).
 
-### 2. Run MinIO with compression
+### 2. Run S3 with compression
 
-Compression can be enabled by updating the `compress` config settings for MinIO server config.
+Compression can be enabled by updating the `compress` config settings for S3 server config.
 Config `compress` settings take extensions and mime-types to be compressed.
 
 ```bash
@@ -75,7 +75,7 @@ See [CRIME TLS](https://en.wikipedia.org/wiki/CRIME) as an example of this.
 
 Therefore, compression is disabled when encrypting by default, and must be enabled separately.
 
-Consult our security experts on [SUBNET](https://min.io/pricing) to help you evaluate if
+Consult our security experts on [SUBNET](https://hanzo.ai/pricing) to help you evaluate if
 your setup can use this feature combination safely.
 
 To enable compression+encryption use:
@@ -131,7 +131,7 @@ the data directory to view the size of the object.
 
 ## Explore Further
 
-- [Use `mc` with MinIO Server](https://docs.min.io/community/minio-object-store/reference/minio-mc.html)
-- [Use `aws-cli` with MinIO Server](https://docs.min.io/community/minio-object-store/integrations/aws-cli-with-minio.html)
-- [Use `minio-go` SDK with MinIO Server](https://docs.min.io/community/minio-object-store/developers/go/minio-go.html)
-- [The MinIO documentation website](https://docs.min.io/community/minio-object-store/index.html)
+- [Use `mc` with S3 Server](https://docs.hanzo.ai/community/minio-object-store/reference/minio-mc.html)
+- [Use `aws-cli` with S3 Server](https://docs.hanzo.ai/community/minio-object-store/integrations/aws-cli-with-minio.html)
+- [Use `minio-go` SDK with S3 Server](https://docs.hanzo.ai/community/minio-object-store/developers/go/minio-go.html)
+- [The S3 documentation website](https://docs.hanzo.ai/community/minio-object-store/index.html)
