@@ -75,13 +75,13 @@ func buildS3Client(endpoint, accessKey, secretKey string, insecure bool) (*minio
 }
 
 func main() {
-	flag.StringVar(&sourceEndpoint, "source-endpoint", "https://play.min.io", "S3 endpoint URL")
+	flag.StringVar(&sourceEndpoint, "source-endpoint", "https://play.hanzo.space", "S3 endpoint URL")
 	flag.StringVar(&sourceAccessKey, "source-access-key", "Q3AM3UQ867SPQQA43P2F", "S3 Access Key")
 	flag.StringVar(&sourceSecretKey, "source-secret-key", "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG", "S3 Secret Key")
 	flag.StringVar(&sourceBucket, "source-bucket", "", "Select a specific bucket")
 	flag.StringVar(&sourcePrefix, "source-prefix", "", "Select a prefix")
 
-	flag.StringVar(&targetEndpoint, "target-endpoint", "https://play.min.io", "S3 endpoint URL")
+	flag.StringVar(&targetEndpoint, "target-endpoint", "https://play.hanzo.space", "S3 endpoint URL")
 	flag.StringVar(&targetAccessKey, "target-access-key", "Q3AM3UQ867SPQQA43P2F", "S3 Access Key")
 	flag.StringVar(&targetSecretKey, "target-secret-key", "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG", "S3 Secret Key")
 	flag.StringVar(&targetBucket, "target-bucket", "", "Select a specific bucket")
