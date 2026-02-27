@@ -52,7 +52,7 @@ func getMD5Sum(data []byte) []byte {
 }
 
 func main() {
-	flag.StringVar(&endpoint, "endpoint", "https://play.min.io", "S3 endpoint URL")
+	flag.StringVar(&endpoint, "endpoint", "https://play.hanzo.space", "S3 endpoint URL")
 	flag.StringVar(&accessKey, "access-key", "Q3AM3UQ867SPQQA43P2F", "S3 Access Key")
 	flag.StringVar(&secretKey, "secret-key", "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG", "S3 Secret Key")
 	flag.StringVar(&bucket, "bucket", "", "Select a specific bucket")
