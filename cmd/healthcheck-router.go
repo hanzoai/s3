@@ -34,7 +34,7 @@ const (
 
 // registerHealthCheckRouter - add handler functions for liveness and readiness routes.
 func registerHealthCheckRouter(router *mux.Router) {
-	// Healthcheck router
+	// Healthcheck router at /minio/health (legacy path)
 	healthRouter := router.PathPrefix(healthCheckPathPrefix).Subrouter()
 
 	// Cluster check handler to verify cluster is active
@@ -50,4 +50,15 @@ func registerHealthCheckRouter(router *mux.Router) {
 	// Readiness handler
 	healthRouter.Methods(http.MethodGet).Path(healthCheckReadinessPath).HandlerFunc(httpTraceAll(ReadinessCheckHandler))
 	healthRouter.Methods(http.MethodHead).Path(healthCheckReadinessPath).HandlerFunc(httpTraceAll(ReadinessCheckHandler))
+
+	// Also register at /health (short path, no /minio/ prefix)
+	shortHealthRouter := router.PathPrefix(healthCheckPath).Subrouter()
+	shortHealthRouter.Methods(http.MethodGet).Path(healthCheckClusterPath).HandlerFunc(httpTraceAll(ClusterCheckHandler))
+	shortHealthRouter.Methods(http.MethodHead).Path(healthCheckClusterPath).HandlerFunc(httpTraceAll(ClusterCheckHandler))
+	shortHealthRouter.Methods(http.MethodGet).Path(healthCheckClusterReadPath).HandlerFunc(httpTraceAll(ClusterReadCheckHandler))
+	shortHealthRouter.Methods(http.MethodHead).Path(healthCheckClusterReadPath).HandlerFunc(httpTraceAll(ClusterReadCheckHandler))
+	shortHealthRouter.Methods(http.MethodGet).Path(healthCheckLivenessPath).HandlerFunc(httpTraceAll(LivenessCheckHandler))
+	shortHealthRouter.Methods(http.MethodHead).Path(healthCheckLivenessPath).HandlerFunc(httpTraceAll(LivenessCheckHandler))
+	shortHealthRouter.Methods(http.MethodGet).Path(healthCheckReadinessPath).HandlerFunc(httpTraceAll(ReadinessCheckHandler))
+	shortHealthRouter.Methods(http.MethodHead).Path(healthCheckReadinessPath).HandlerFunc(httpTraceAll(ReadinessCheckHandler))
 }
