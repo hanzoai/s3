@@ -117,6 +117,11 @@ var skipEnvs = map[string]struct{}{
 	"S3_OPERATOR_VERSION":       {},
 	"S3_VSPHERE_PLUGIN_VERSION": {},
 	"S3_CI_CD":                  {},
+	// Legacy MINIO_ prefix backwards compatibility
+	"MINIO_ROOT_USER":     {},
+	"MINIO_ROOT_PASSWORD": {},
+	"MINIO_ACCESS_KEY":    {},
+	"MINIO_SECRET_KEY":    {},
 }
 
 func getServerSystemCfg() *ServerSystemConfig {
