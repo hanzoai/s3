@@ -813,19 +813,24 @@ func serverHandleEnvVars() {
 
 	// Check if the supported credential env vars,
 	// "S3_ROOT_USER" and "S3_ROOT_PASSWORD" are provided
+	// Also check legacy "MINIO_ROOT_USER" / "MINIO_ROOT_PASSWORD" for backwards compat
 	// Warn user if deprecated environment variables,
 	// "S3_ACCESS_KEY" and "S3_SECRET_KEY", are defined
 	// Check all error conditions first
+	hasRootUser := env.IsSet(config.EnvRootUser) || env.IsSet("MINIO_ROOT_USER")
+	hasRootPassword := env.IsSet(config.EnvRootPassword) || env.IsSet("MINIO_ROOT_PASSWORD")
+	hasAccessKey := env.IsSet(config.EnvAccessKey) || env.IsSet("MINIO_ACCESS_KEY")
+	hasSecretKey := env.IsSet(config.EnvSecretKey) || env.IsSet("MINIO_SECRET_KEY")
 	//nolint:gocritic
-	if !env.IsSet(config.EnvRootUser) && env.IsSet(config.EnvRootPassword) {
-		logger.Fatal(config.ErrMissingEnvCredentialRootUser(nil), "Unable to start MinIO")
-	} else if env.IsSet(config.EnvRootUser) && !env.IsSet(config.EnvRootPassword) {
-		logger.Fatal(config.ErrMissingEnvCredentialRootPassword(nil), "Unable to start MinIO")
-	} else if !env.IsSet(config.EnvRootUser) && !env.IsSet(config.EnvRootPassword) {
-		if !env.IsSet(config.EnvAccessKey) && env.IsSet(config.EnvSecretKey) {
-			logger.Fatal(config.ErrMissingEnvCredentialAccessKey(nil), "Unable to start MinIO")
-		} else if env.IsSet(config.EnvAccessKey) && !env.IsSet(config.EnvSecretKey) {
-			logger.Fatal(config.ErrMissingEnvCredentialSecretKey(nil), "Unable to start MinIO")
+	if !hasRootUser && hasRootPassword {
+		logger.Fatal(config.ErrMissingEnvCredentialRootUser(nil), "Unable to start S3")
+	} else if hasRootUser && !hasRootPassword {
+		logger.Fatal(config.ErrMissingEnvCredentialRootPassword(nil), "Unable to start S3")
+	} else if !hasRootUser && !hasRootPassword {
+		if !hasAccessKey && hasSecretKey {
+			logger.Fatal(config.ErrMissingEnvCredentialAccessKey(nil), "Unable to start S3")
+		} else if hasAccessKey && !hasSecretKey {
+			logger.Fatal(config.ErrMissingEnvCredentialSecretKey(nil), "Unable to start S3")
 		}
 	}
 
@@ -842,9 +847,17 @@ func loadRootCredentials() auth.Credentials {
 	if env.IsSet(config.EnvRootUser) && env.IsSet(config.EnvRootPassword) {
 		user = env.Get(config.EnvRootUser, "")
 		password = env.Get(config.EnvRootPassword, "")
+	} else if env.IsSet("MINIO_ROOT_USER") && env.IsSet("MINIO_ROOT_PASSWORD") {
+		// Legacy MINIO_ prefix backwards compatibility
+		user = env.Get("MINIO_ROOT_USER", "")
+		password = env.Get("MINIO_ROOT_PASSWORD", "")
 	} else if env.IsSet(config.EnvAccessKey) && env.IsSet(config.EnvSecretKey) {
 		user = env.Get(config.EnvAccessKey, "")
 		password = env.Get(config.EnvSecretKey, "")
+		legacyCredentials = true
+	} else if env.IsSet("MINIO_ACCESS_KEY") && env.IsSet("MINIO_SECRET_KEY") {
+		user = env.Get("MINIO_ACCESS_KEY", "")
+		password = env.Get("MINIO_SECRET_KEY", "")
 		legacyCredentials = true
 	} else if globalServerCtxt.RootUser != "" && globalServerCtxt.RootPwd != "" {
 		user, password = globalServerCtxt.RootUser, globalServerCtxt.RootPwd
