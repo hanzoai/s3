@@ -66,7 +66,7 @@ jobs:
 
   binaries:
     name: Build and upload release binaries
-    runs-on: [self-hosted, hanzo-build]
+    runs-on: hanzo-build-linux-amd64
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
