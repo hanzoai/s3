@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -448,7 +448,7 @@ func (er *erasureObjects) streamMetadataParts(ctx context.Context, o listPathOpt
 				if !disk.IsOnline() {
 					continue
 				}
-				_, err := disk.ReadVersion(ctx, "", minioMetaBucket,
+				_, err := disk.ReadVersion(ctx, "", s3MetaBucket,
 					o.objectPath(0), "", ReadOptions{})
 				if err != nil {
 					time.Sleep(retryDelay250)
@@ -468,9 +468,9 @@ func (er *erasureObjects) streamMetadataParts(ctx context.Context, o listPathOpt
 		}
 		// Load first part metadata...
 		// Read metadata associated with the object from all disks.
-		fi, metaArr, onlineDisks, err := er.getObjectFileInfo(ctx, minioMetaBucket, o.objectPath(0), ObjectOptions{}, true)
+		fi, metaArr, onlineDisks, err := er.getObjectFileInfo(ctx, s3MetaBucket, o.objectPath(0), ObjectOptions{}, true)
 		if err != nil {
-			switch toObjectErr(err, minioMetaBucket, o.objectPath(0)).(type) {
+			switch toObjectErr(err, s3MetaBucket, o.objectPath(0)).(type) {
 			case ObjectNotFound, InsufficientReadQuorum:
 				retryWait()
 				continue
@@ -525,7 +525,7 @@ func (er *erasureObjects) streamMetadataParts(ctx context.Context, o listPathOpt
 						if !disk.IsOnline() {
 							continue
 						}
-						_, err := disk.ReadVersion(ctx, "", minioMetaBucket,
+						_, err := disk.ReadVersion(ctx, "", s3MetaBucket,
 							o.objectPath(partN), "", ReadOptions{})
 						if err != nil {
 							time.Sleep(retryDelay250)
@@ -537,7 +537,7 @@ func (er *erasureObjects) streamMetadataParts(ctx context.Context, o listPathOpt
 				}
 
 				// Load partN metadata...
-				fi, metaArr, onlineDisks, err = er.getObjectFileInfo(ctx, minioMetaBucket, o.objectPath(partN), ObjectOptions{}, true)
+				fi, metaArr, onlineDisks, err = er.getObjectFileInfo(ctx, s3MetaBucket, o.objectPath(partN), ObjectOptions{}, true)
 				if err != nil {
 					time.Sleep(retryDelay250)
 					retries++
@@ -555,7 +555,7 @@ func (er *erasureObjects) streamMetadataParts(ctx context.Context, o listPathOpt
 
 			pr, pw := io.Pipe()
 			go func() {
-				werr := er.getObjectWithFileInfo(ctx, minioMetaBucket, o.objectPath(partN), 0,
+				werr := er.getObjectWithFileInfo(ctx, s3MetaBucket, o.objectPath(partN), 0,
 					fi.Size, pw, fi, metaArr, onlineDisks)
 				pw.CloseWithError(werr)
 			}()
@@ -574,7 +574,7 @@ func (er *erasureObjects) streamMetadataParts(ctx context.Context, o listPathOpt
 				return entries, nil
 			}
 			if err != nil && !errors.Is(err, io.EOF) {
-				switch toObjectErr(err, minioMetaBucket, o.objectPath(partN)).(type) {
+				switch toObjectErr(err, s3MetaBucket, o.objectPath(partN)).(type) {
 				case ObjectNotFound:
 					retries++
 					time.Sleep(retryDelay250)
@@ -908,7 +908,7 @@ func (er *erasureObjects) saveMetaCacheStream(ctx context.Context, mc *metaCache
 				Metadata: make(map[string]string, len(meta)),
 			}
 			maps.Copy(fi.Metadata, meta)
-			err := er.updateObjectMetaWithOpts(ctx, minioMetaBucket, o.objectPath(0), fi, er.getDisks(), UpdateMetadataOpts{NoPersistence: true})
+			err := er.updateObjectMetaWithOpts(ctx, s3MetaBucket, o.objectPath(0), fi, er.getDisks(), UpdateMetadataOpts{NoPersistence: true})
 			if err == nil {
 				break
 			}

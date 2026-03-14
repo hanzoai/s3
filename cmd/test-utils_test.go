@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -1607,7 +1607,7 @@ func ExecObjectLayerAPIAnonTest(t *testing.T, obj ObjectLayer, testName, bucketN
 	// simple function which returns a message which gives the context of the test
 	// and then followed by the actual error message.
 	failTestStr := func(testType, failMsg string) string {
-		return fmt.Sprintf("MinIO %s: %s fail for \"%s\": \n<Error> %s", instanceType, testType, testName, failMsg)
+		return fmt.Sprintf("Hanzo S3 %s: %s fail for \"%s\": \n<Error> %s", instanceType, testType, testName, failMsg)
 	}
 
 	// httptest Recorder to capture all the response by the http handler.
@@ -1722,20 +1722,20 @@ func ExecObjectLayerAPINilTest(t TestErrHandler, bucketName, objectName, instanc
 		// read the response body.
 		actualContent, err := io.ReadAll(rec.Body)
 		if err != nil {
-			t.Fatalf("MinIO %s: Failed parsing response body: <ERROR> %v", instanceType, err)
+			t.Fatalf("Hanzo S3 %s: Failed parsing response body: <ERROR> %v", instanceType, err)
 		}
 
 		actualError := &APIErrorResponse{}
 		if err = xml.Unmarshal(actualContent, actualError); err != nil {
-			t.Errorf("MinIO %s: error response failed to parse error XML", instanceType)
+			t.Errorf("Hanzo S3 %s: error response failed to parse error XML", instanceType)
 		}
 
 		if actualError.BucketName != bucketName {
-			t.Errorf("MinIO %s: error response bucket name differs from expected value", instanceType)
+			t.Errorf("Hanzo S3 %s: error response bucket name differs from expected value", instanceType)
 		}
 
 		if actualError.Key != objectName {
-			t.Errorf("MinIO %s: error response object name differs from expected value", instanceType)
+			t.Errorf("Hanzo S3 %s: error response object name differs from expected value", instanceType)
 		}
 	}
 }

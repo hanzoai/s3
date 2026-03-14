@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -33,12 +33,12 @@ import (
 )
 
 const (
-	minioConfigPrefix = "config"
-	minioConfigBucket = minioMetaBucket + SlashSeparator + minioConfigPrefix
+	s3ConfigPrefix = "config"
+	s3ConfigBucket = s3MetaBucket + SlashSeparator + s3ConfigPrefix
 	kvPrefix          = ".kv"
 
 	// Captures all the previous SetKV operations and allows rollback.
-	minioConfigHistoryPrefix = minioConfigPrefix + "/history"
+	minioConfigHistoryPrefix = s3ConfigPrefix + "/history"
 
 	// MinIO configuration file.
 	minioConfigFile = "config.json"
@@ -52,7 +52,7 @@ func listServerConfigHistory(ctx context.Context, objAPI ObjectLayer, withData b
 	// List all kvs
 	marker := ""
 	for {
-		res, err := objAPI.ListObjects(ctx, minioMetaBucket, minioConfigHistoryPrefix, marker, "", maxObjectList)
+		res, err := objAPI.ListObjects(ctx, s3MetaBucket, minioConfigHistoryPrefix, marker, "", maxObjectList)
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +96,7 @@ func listServerConfigHistory(ctx context.Context, objAPI ObjectLayer, withData b
 
 func delServerConfigHistory(ctx context.Context, objAPI ObjectLayer, uuidKV string) error {
 	historyFile := pathJoin(minioConfigHistoryPrefix, uuidKV+kvPrefix)
-	_, err := objAPI.DeleteObject(ctx, minioMetaBucket, historyFile, ObjectOptions{
+	_, err := objAPI.DeleteObject(ctx, s3MetaBucket, historyFile, ObjectOptions{
 		DeletePrefix:       true,
 		DeletePrefixObject: true, // use prefix delete on exact object (this is an optimization to avoid fan-out calls)
 	})
@@ -120,7 +120,7 @@ func saveServerConfigHistory(ctx context.Context, objAPI ObjectLayer, kv []byte)
 	if GlobalKMS != nil {
 		var err error
 		kv, err = config.EncryptBytes(GlobalKMS, kv, kms.Context{
-			minioMetaBucket: path.Join(minioMetaBucket, historyFile),
+			s3MetaBucket: path.Join(s3MetaBucket, historyFile),
 		})
 		if err != nil {
 			return err
@@ -135,10 +135,10 @@ func saveServerConfig(ctx context.Context, objAPI ObjectLayer, cfg any) error {
 		return err
 	}
 
-	configFile := path.Join(minioConfigPrefix, minioConfigFile)
+	configFile := path.Join(s3ConfigPrefix, minioConfigFile)
 	if GlobalKMS != nil {
 		data, err = config.EncryptBytes(GlobalKMS, data, kms.Context{
-			minioMetaBucket: path.Join(minioMetaBucket, configFile),
+			s3MetaBucket: path.Join(s3MetaBucket, configFile),
 		})
 		if err != nil {
 			return err
@@ -152,7 +152,7 @@ func readServerConfig(ctx context.Context, objAPI ObjectLayer, data []byte) (con
 	srvCfg := config.New()
 	var err error
 	if len(data) == 0 {
-		configFile := path.Join(minioConfigPrefix, minioConfigFile)
+		configFile := path.Join(s3ConfigPrefix, minioConfigFile)
 		data, err = readConfig(ctx, objAPI, configFile)
 		if err != nil {
 			if errors.Is(err, errConfigNotFound) {

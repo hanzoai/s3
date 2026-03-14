@@ -127,10 +127,10 @@ public class EnableVersioning {
   public static void main(String[] args)
       throws IOException, NoSuchAlgorithmException, InvalidKeyException {
     try {
-      /* play.hanzo.space for test and development. */
+      /* s3-demo.hanzo.ai for test and development. */
       MinioClient minioClient =
           MinioClient.builder()
-              .endpoint("https://play.hanzo.space")
+              .endpoint("https://s3-demo.hanzo.ai")
               .credentials("Q3AM3UQ867SPQQA43P2F", "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
               .build();
 
@@ -161,10 +161,10 @@ public class IsVersioningEnabled {
   public static void main(String[] args)
       throws IOException, NoSuchAlgorithmException, InvalidKeyException {
     try {
-      /* play.hanzo.space for test and development. */
+      /* s3-demo.hanzo.ai for test and development. */
       MinioClient minioClient =
           MinioClient.builder()
-              .endpoint("https://play.hanzo.space")
+              .endpoint("https://s3-demo.hanzo.ai")
               .credentials("Q3AM3UQ867SPQQA43P2F", "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG")
               .build();
 

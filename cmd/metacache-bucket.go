@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -60,7 +60,7 @@ func newBucketMetacache(bucket string, cleanup bool) *bucketMetacache {
 			ez, ok := objAPI.(deleteAllStorager)
 			if ok {
 				ctx := context.Background()
-				ez.deleteAll(ctx, minioMetaBucket, metacachePrefixForID(bucket, slashSeparator))
+				ez.deleteAll(ctx, s3MetaBucket, metacachePrefixForID(bucket, slashSeparator))
 			}
 		}
 	}
@@ -229,7 +229,7 @@ func (b *bucketMetacache) deleteAll() {
 
 	b.updated = true
 	// Delete all.
-	ez.deleteAll(ctx, minioMetaBucket, metacachePrefixForID(b.bucket, slashSeparator))
+	ez.deleteAll(ctx, s3MetaBucket, metacachePrefixForID(b.bucket, slashSeparator))
 	b.caches = make(map[string]metacache, 10)
 	b.cachesRoot = make(map[string][]string, 10)
 }

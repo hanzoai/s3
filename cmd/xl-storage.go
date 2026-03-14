@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2023 MinIO, Inc.
+// Copyright (c) 2015-2023 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -204,10 +204,10 @@ func makeFormatErasureMetaVolumes(disk StorageAPI) error {
 		return errDiskNotFound
 	}
 	volumes := []string{
-		minioMetaTmpDeletedBucket, // creates .minio.sys/tmp as well as .minio.sys/tmp/.trash
-		minioMetaMultipartBucket,  // creates .minio.sys/multipart
-		dataUsageBucket,           // creates .minio.sys/buckets
-		minioConfigBucket,         // creates .minio.sys/config
+		s3MetaTmpDeletedBucket, // creates .s3.sys/tmp as well as .s3.sys/tmp/.trash
+		s3MetaMultipartBucket,  // creates .s3.sys/multipart
+		dataUsageBucket,           // creates .s3.sys/buckets
+		s3ConfigBucket,         // creates .s3.sys/config
 	}
 	// Attempt to create MinIO internal buckets.
 	return disk.MakeVolBulk(context.TODO(), volumes...)
@@ -283,7 +283,7 @@ func newXLStorage(ep Endpoint, cleanUp bool) (s *xlStorage, err error) {
 	}
 	s.formatData = formatData
 	s.formatFileInfo = formatFi
-	s.formatFile = pathJoin(s.drivePath, minioMetaBucket, formatConfigFile)
+	s.formatFile = pathJoin(s.drivePath, s3MetaBucket, formatConfigFile)
 
 	// Create all necessary bucket folders if possible.
 	if err = makeFormatErasureMetaVolumes(s); err != nil {
@@ -429,7 +429,7 @@ func (s *xlStorage) GetDiskLoc() (poolIdx, setIdx, diskIdx int) {
 }
 
 func (s *xlStorage) Healing() *healingTracker {
-	healingFile := pathJoin(s.drivePath, minioMetaBucket,
+	healingFile := pathJoin(s.drivePath, s3MetaBucket,
 		bucketMetaPrefix, healingTrackerFilename)
 	b, err := os.ReadFile(healingFile)
 	if err != nil {
@@ -466,7 +466,7 @@ func (s *xlStorage) checkODirectDiskSupport(fsType string) error {
 
 	// Check if backend is writable and supports O_DIRECT
 	uuid := mustGetUUID()
-	filePath := pathJoin(s.drivePath, minioMetaTmpDeletedBucket, ".writable-check-"+uuid+".tmp")
+	filePath := pathJoin(s.drivePath, s3MetaTmpDeletedBucket, ".writable-check-"+uuid+".tmp")
 
 	// Create top level directories if they don't exist.
 	// with mode 0o777 mkdir honors system umask.
@@ -1231,10 +1231,10 @@ func (s *xlStorage) diskAlmostFilled() bool {
 
 func (s *xlStorage) moveToTrashNoDeadline(filePath string, recursive, immediatePurge bool) (err error) {
 	pathUUID := mustGetUUID()
-	targetPath := pathutil.Join(s.drivePath, minioMetaTmpDeletedBucket, pathUUID)
+	targetPath := pathutil.Join(s.drivePath, s3MetaTmpDeletedBucket, pathUUID)
 
 	if recursive {
-		err = renameAll(filePath, targetPath, pathutil.Join(s.drivePath, minioMetaBucket))
+		err = renameAll(filePath, targetPath, pathutil.Join(s.drivePath, s3MetaBucket))
 	} else {
 		err = Rename(filePath, targetPath)
 	}
@@ -1242,8 +1242,8 @@ func (s *xlStorage) moveToTrashNoDeadline(filePath string, recursive, immediateP
 	var targetPath2 string
 	if immediatePurge && HasSuffix(filePath, SlashSeparator) {
 		// With immediate purge also attempt deleting for `__XL_DIR__` folder/directory objects.
-		targetPath2 = pathutil.Join(s.drivePath, minioMetaTmpDeletedBucket, mustGetUUID())
-		renameAll(encodeDirObject(filePath), targetPath2, pathutil.Join(s.drivePath, minioMetaBucket))
+		targetPath2 = pathutil.Join(s.drivePath, s3MetaTmpDeletedBucket, mustGetUUID())
+		renameAll(encodeDirObject(filePath), targetPath2, pathutil.Join(s.drivePath, s3MetaBucket))
 	}
 
 	// ENOSPC is a valid error from rename(); remove instead of rename in that case
@@ -1489,7 +1489,7 @@ func (s *xlStorage) WriteMetadata(ctx context.Context, origvolume, volume, path 
 		// First writes for special situations do not write to stable storage.
 		// this is currently used by
 		// - emphemeral objects such as objects created during listObjects() calls
-		ok := volume == minioMetaMultipartBucket // - newMultipartUpload() call must be synced to drives.
+		ok := volume == s3MetaMultipartBucket // - newMultipartUpload() call must be synced to drives.
 		return s.writeAll(ctx, volume, pathJoin(path, xlStorageFormatFile), buf, ok, "")
 	}
 
@@ -1829,7 +1829,7 @@ func (s *xlStorage) readAllDataWithDMTime(ctx context.Context, volume, volumeDir
 func (s *xlStorage) ReadAll(ctx context.Context, volume string, path string) (buf []byte, err error) {
 	// Specific optimization to avoid re-read from the drives for `format.json`
 	// in-case the caller is a network operation.
-	if volume == minioMetaBucket && path == formatConfigFile {
+	if volume == s3MetaBucket && path == formatConfigFile {
 		s.RLock()
 		formatData := make([]byte, len(s.formatData))
 		copy(formatData, s.formatData)
@@ -2117,9 +2117,9 @@ func (s *xlStorage) CreateFile(ctx context.Context, origvolume, volume, path str
 	parentFilePath := pathutil.Dir(filePath)
 	defer func() {
 		if err != nil {
-			if volume == minioMetaTmpBucket {
+			if volume == s3MetaTmpBucket {
 				// only cleanup parent path if the
-				// parent volume name is minioMetaTmpBucket
+				// parent volume name is s3MetaTmpBucket
 				removeAll(parentFilePath)
 			}
 		}
@@ -2224,7 +2224,7 @@ func (s *xlStorage) writeAllMeta(ctx context.Context, volume string, path string
 		return err
 	}
 
-	tmpVolumeDir, err := s.getVolDir(minioMetaTmpBucket)
+	tmpVolumeDir, err := s.getVolDir(s3MetaTmpBucket)
 	if err != nil {
 		return err
 	}
@@ -2305,7 +2305,7 @@ func (s *xlStorage) writeAll(ctx context.Context, volume string, path string, b 
 func (s *xlStorage) WriteAll(ctx context.Context, volume string, path string, b []byte) (err error) {
 	// Specific optimization to avoid re-read from the drives for `format.json`
 	// in-case the caller is a network operation.
-	if volume == minioMetaBucket && path == formatConfigFile {
+	if volume == s3MetaBucket && path == formatConfigFile {
 		s.Lock()
 		s.formatData = b
 		s.Unlock()
@@ -2550,7 +2550,7 @@ func (s *xlStorage) Delete(ctx context.Context, volume string, path string, dele
 }
 
 func skipAccessChecks(volume string) (ok bool) {
-	return strings.HasPrefix(volume, minioMetaBucket)
+	return strings.HasPrefix(volume, s3MetaBucket)
 }
 
 // RenameData - rename source path to destination path atomically, metadata and data directory.
@@ -2904,8 +2904,8 @@ func (s *xlStorage) RenameData(ctx context.Context, srcVolume, srcPath string, f
 		return res, osErrToFileErr(err)
 	}
 
-	if srcVolume != minioMetaMultipartBucket {
-		// srcFilePath is some-times minioMetaTmpBucket, an attempt to
+	if srcVolume != s3MetaMultipartBucket {
+		// srcFilePath is some-times s3MetaTmpBucket, an attempt to
 		// remove the temporary folder is enough since at this point
 		// ideally all transaction should be complete.
 		Remove(pathutil.Dir(srcFilePath))

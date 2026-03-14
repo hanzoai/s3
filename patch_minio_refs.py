@@ -42,8 +42,8 @@ REPLACEMENTS = [
     ("docs.min.io",           "docs.min.io",           "docs.hanzo.ai/storage", False),
     ("blog.min.io",           "blog.min.io",           "hanzo.ai/blog",         False),
     ("subnet.min.io",         "subnet.min.io",         "hanzo.ai/support",      False),
-    ("dl.min.io",             "dl.min.io",             "hanzo.space",           False),
-    ("play.min.io",           "play.min.io",           "hanzo.space",           False),
+    ("dl.min.io",             "dl.min.io",             "dl.hanzo.ai",                False),
+    ("play.min.io",           "play.min.io",           "s3-demo.hanzo.ai",           False),
 
     # -- URLs: specific paths on min.io --
     ("min.io/product/subnet", "min.io/product/subnet", "hanzo.ai/support",      False),

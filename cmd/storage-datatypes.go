@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -364,7 +364,7 @@ func (fi FileInfo) IsCompressed() bool {
 // InlineData returns true if object contents are inlined alongside its metadata.
 func (fi FileInfo) InlineData() bool {
 	_, ok := fi.Metadata[ReservedMetadataPrefixLower+"inline-data"]
-	// Earlier MinIO versions didn't reset "x-minio-internal-inline-data"
+	// Earlier MinIO versions didn't reset "x-hanzo-s3-internal-inline-data"
 	// from fi.Metadata when the object was tiered. So, tiered objects
 	// would return true for InlineData() in these versions even though the
 	// object isn't inlined in xl.meta

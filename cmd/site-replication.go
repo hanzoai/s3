@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2022 MinIO, Inc.
+// Copyright (c) 2015-2022 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -52,7 +52,7 @@ import (
 )
 
 const (
-	srStatePrefix = minioConfigPrefix + "/site-replication"
+	srStatePrefix = s3ConfigPrefix + "/site-replication"
 	srStateFile   = "state.json"
 )
 
@@ -4353,11 +4353,11 @@ type srStatusInfo struct {
 type SRBucketDeleteOp string
 
 const (
-	// MarkDelete creates .minio.sys/buckets/.deleted/<bucket> vol entry to hold onto deleted bucket's state
+	// MarkDelete creates .s3.sys/buckets/.deleted/<bucket> vol entry to hold onto deleted bucket's state
 	// until peers are synced in site replication setup.
 	MarkDelete SRBucketDeleteOp = "MarkDelete"
 
-	// Purge deletes the .minio.sys/buckets/.deleted/<bucket> vol entry
+	// Purge deletes the .s3.sys/buckets/.deleted/<bucket> vol entry
 	Purge SRBucketDeleteOp = "Purge"
 	// NoOp no action needed
 	NoOp SRBucketDeleteOp = "NoOp"
@@ -4996,7 +4996,7 @@ func (c *SiteReplicationSys) purgeDeletedBucket(ctx context.Context, objAPI Obje
 	if !ok {
 		return
 	}
-	z.s3Peer.DeleteBucket(context.Background(), pathJoin(minioMetaBucket, bucketMetaPrefix, deletedBucketsPrefix, bucket), DeleteBucketOptions{})
+	z.s3Peer.DeleteBucket(context.Background(), pathJoin(s3MetaBucket, bucketMetaPrefix, deletedBucketsPrefix, bucket), DeleteBucketOptions{})
 }
 
 // healBucket creates/deletes the bucket according to latest state across clusters participating in site replication.
@@ -5114,7 +5114,7 @@ func (c *SiteReplicationSys) healBucket(ctx context.Context, objAPI ObjectLayer,
 		}
 		return nil
 	}
-	// all buckets are marked deleted across sites at this point. It should be safe to purge the .minio.sys/buckets/.deleted/<bucket> entry
+	// all buckets are marked deleted across sites at this point. It should be safe to purge the .s3.sys/buckets/.deleted/<bucket> entry
 	// from disk
 	if deleteOp == Purge {
 		for _, dID := range missingB {
@@ -5745,8 +5745,8 @@ func (c *SiteReplicationSys) getPeerForUpload(deplID string) (pi srPeerInfo, loc
 }
 
 // startResync initiates resync of data to peerSite specified. The overall site resync status
-// is maintained in .minio.sys/buckets/site-replication/resync/<deployment-id.meta>, while collecting
-// individual bucket resync status in .minio.sys/buckets/<bucket-name>/replication/resync.bin
+// is maintained in .s3.sys/buckets/site-replication/resync/<deployment-id.meta>, while collecting
+// individual bucket resync status in .s3.sys/buckets/<bucket-name>/replication/resync.bin
 func (c *SiteReplicationSys) startResync(ctx context.Context, objAPI ObjectLayer, peer madmin.PeerInfo) (res madmin.SRResyncOpStatus, err error) {
 	if !c.isEnabled() {
 		return res, errSRNotEnabled

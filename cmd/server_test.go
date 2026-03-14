@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -210,7 +210,7 @@ func (s *TestSuiteCommon) TestMetricsV3Handler(c *check) {
 	c.Assert(err, nil)
 
 	for _, cpath := range globalMetricsV3CollectorPaths {
-		request, err := newTestSignedRequest(http.MethodGet, s.endPoint+minioReservedBucketPath+metricsV3Path+string(cpath),
+		request, err := newTestSignedRequest(http.MethodGet, s.endPoint+s3ReservedBucketPath+metricsV3Path+string(cpath),
 			0, nil, s.accessKey, s.secretKey, s.signer)
 		c.Assert(err, nil)
 

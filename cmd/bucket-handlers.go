@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2022 MinIO, Inc.
+// Copyright (c) 2015-2022 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -71,8 +71,8 @@ const (
 	bucketTaggingConfig     = "tagging.xml"
 	bucketReplicationConfig = "replication.xml"
 
-	xMinIOErrCodeHeader = "x-minio-error-code"
-	xMinIOErrDescHeader = "x-minio-error-desc"
+	xMinIOErrCodeHeader = "x-hanzo-s3-error-code"
+	xMinIOErrDescHeader = "x-hanzo-s3-error-desc"
 
 	postPolicyBucketTagging = "tagging"
 )
@@ -1013,7 +1013,7 @@ func (api objectAPIHandlers) PostPolicyBucketHandler(w http.ResponseWriter, r *h
 
 		headerLen += int64(len(name)) + int64(len(fileName))
 		if name != "file" {
-			if http.CanonicalHeaderKey(name) == http.CanonicalHeaderKey("x-minio-fanout-list") {
+			if http.CanonicalHeaderKey(name) == http.CanonicalHeaderKey("x-hanzo-s3-fanout-list") {
 				dec := json.NewDecoder(part)
 
 				// while the array contains values
@@ -1434,7 +1434,7 @@ func (api objectAPIHandlers) PostPolicyBucketHandler(w http.ResponseWriter, r *h
 					Object:       objInfo,
 					ReqParams:    extractReqParams(r),
 					RespElements: extractRespElements(w),
-					UserAgent:    r.UserAgent() + " " + "MinIO-Fan-Out",
+					UserAgent:    r.UserAgent() + " " + "Hanzo S3-Fan-Out",
 					Host:         handlers.GetSourceIP(r),
 				})
 			}
@@ -1462,7 +1462,7 @@ func (api objectAPIHandlers) PostPolicyBucketHandler(w http.ResponseWriter, r *h
 					Object:       eventArgsList[i].Object,
 					ReqParams:    extractReqParams(r),
 					RespElements: extractRespElements(w),
-					UserAgent:    r.UserAgent() + " " + "MinIO-Fan-Out",
+					UserAgent:    r.UserAgent() + " " + "Hanzo S3-Fan-Out",
 					Host:         handlers.GetSourceIP(r),
 				})
 

@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -374,7 +374,7 @@ func releaseInfoToReleaseTime(releaseInfo string) (releaseTime time.Time, err er
 		err = fmt.Errorf("Unknown release information `%s`", releaseInfo)
 		return releaseTime, err
 	}
-	if nfields[0] != "minio" {
+	if nfields[0] != "s3" && nfields[0] != "minio" {
 		err = fmt.Errorf("Unknown release `%s`", releaseInfo)
 		return releaseTime, err
 	}
@@ -477,10 +477,10 @@ func getDownloadURL(releaseTag string) (downloadURL string) {
 
 	// For binary only installations, we return link to the latest binary.
 	if runtime.GOOS == "windows" {
-		return MinioReleaseURL + "minio.exe"
+		return MinioReleaseURL + "s3.exe"
 	}
 
-	return MinioReleaseURL + "minio"
+	return MinioReleaseURL + "s3"
 }
 
 func getUpdateReaderFromURL(u *url.URL, transport http.RoundTripper, mode string) (io.ReadCloser, error) {

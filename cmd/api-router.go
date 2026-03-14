@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -280,7 +280,7 @@ func registerAPIRouter(router *mux.Router) {
 				// All other `<bucket>.<namespace>.svc.<cluster_domain>`
 				// makes sure that buckets are routed through this matcher
 				// to match for `<bucket>`
-				return host != minioReservedBucket+"."+domainName
+				return host != s3ReservedBucket+"."+domainName
 			}).Host("{bucket:.+}."+domainName).Subrouter())
 		} else {
 			routers = append(routers, apiRouter.Host("{bucket:.+}."+domainName).Subrouter())

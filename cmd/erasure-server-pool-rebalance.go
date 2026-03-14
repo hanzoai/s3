@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2022 MinIO, Inc.
+// Copyright (c) 2015-2022 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -540,7 +540,7 @@ func (z *erasureServerPools) rebalanceBucket(ctx context.Context, bucket string,
 	var lc *lifecycle.Lifecycle
 	var lr objectlock.Retention
 	var rcfg *replication.Config
-	if bucket != minioMetaBucket {
+	if bucket != s3MetaBucket {
 		vc, err = globalBucketVersioningSys.Get(bucket)
 		if err != nil {
 			return err
@@ -792,10 +792,10 @@ const (
 )
 
 func (z *erasureServerPools) saveRebalanceStats(ctx context.Context, poolIdx int, opts rebalSaveOpts) error {
-	lock := z.serverPools[0].NewNSLock(minioMetaBucket, rebalMetaName)
+	lock := z.serverPools[0].NewNSLock(s3MetaBucket, rebalMetaName)
 	lkCtx, err := lock.GetLock(ctx, globalOperationTimeout)
 	if err != nil {
-		rebalanceLogIf(ctx, fmt.Errorf("failed to acquire write lock on %s/%s: %w", minioMetaBucket, rebalMetaName, err))
+		rebalanceLogIf(ctx, fmt.Errorf("failed to acquire write lock on %s/%s: %w", s3MetaBucket, rebalMetaName, err))
 		return err
 	}
 	defer lock.Unlock(lkCtx)

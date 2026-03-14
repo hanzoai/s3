@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -31,10 +31,10 @@ var isMultipartTests = []struct {
 	Multipart bool
 }{
 	{Multipart: true, Metadata: map[string]string{MetaMultipart: ""}},                          // 0
-	{Multipart: true, Metadata: map[string]string{"X-Minio-Internal-Encrypted-Multipart": ""}}, // 1
+	{Multipart: true, Metadata: map[string]string{"X-Hanzo-S3-Internal-Encrypted-Multipart": ""}}, // 1
 	{Multipart: true, Metadata: map[string]string{MetaMultipart: "some-value"}},                // 2
 	{Multipart: false, Metadata: map[string]string{"": ""}},                                    // 3
-	{Multipart: false, Metadata: map[string]string{"X-Minio-Internal-EncryptedMultipart": ""}}, // 4
+	{Multipart: false, Metadata: map[string]string{"X-Hanzo-S3-Internal-EncryptedMultipart": ""}}, // 4
 }
 
 func TestIsMultipart(t *testing.T) {
@@ -57,7 +57,7 @@ var isEncryptedTests = []struct {
 	{Encrypted: true, Metadata: map[string]string{MetaKeyID: ""}},                                  // 5
 	{Encrypted: true, Metadata: map[string]string{MetaDataEncryptionKey: ""}},                      // 6
 	{Encrypted: false, Metadata: map[string]string{"": ""}},                                        // 7
-	{Encrypted: false, Metadata: map[string]string{"X-Minio-Internal-Server-Side-Encryption": ""}}, // 8
+	{Encrypted: false, Metadata: map[string]string{"X-Hanzo-S3-Internal-Server-Side-Encryption": ""}}, // 8
 }
 
 func TestIsEncrypted(t *testing.T) {
@@ -80,7 +80,7 @@ var s3IsEncryptedTests = []struct {
 	{Encrypted: false, Metadata: map[string]string{MetaKeyID: ""}},                                 // 5
 	{Encrypted: false, Metadata: map[string]string{MetaDataEncryptionKey: ""}},                     // 6
 	{Encrypted: false, Metadata: map[string]string{"": ""}},                                        // 7
-	{Encrypted: false, Metadata: map[string]string{"X-Minio-Internal-Server-Side-Encryption": ""}}, // 8
+	{Encrypted: false, Metadata: map[string]string{"X-Hanzo-S3-Internal-Server-Side-Encryption": ""}}, // 8
 }
 
 func TestS3IsEncrypted(t *testing.T) {
@@ -103,7 +103,7 @@ var ssecIsEncryptedTests = []struct {
 	{Encrypted: false, Metadata: map[string]string{MetaKeyID: ""}},                                 // 5
 	{Encrypted: false, Metadata: map[string]string{MetaDataEncryptionKey: ""}},                     // 6
 	{Encrypted: false, Metadata: map[string]string{"": ""}},                                        // 7
-	{Encrypted: false, Metadata: map[string]string{"X-Minio-Internal-Server-Side-Encryption": ""}}, // 8
+	{Encrypted: false, Metadata: map[string]string{"X-Hanzo-S3-Internal-Server-Side-Encryption": ""}}, // 8
 }
 
 func TestSSECIsEncrypted(t *testing.T) {
@@ -428,11 +428,11 @@ var removeInternalEntriesTests = []struct {
 			MetaMultipart:        "",
 			MetaIV:               "",
 			"X-Amz-Meta-A":       "X",
-			"X-Minio-Internal-B": "Y",
+			"X-Hanzo-S3-Internal-B": "Y",
 		},
 		Expected: map[string]string{
 			"X-Amz-Meta-A":       "X",
-			"X-Minio-Internal-B": "Y",
+			"X-Hanzo-S3-Internal-B": "Y",
 		},
 	},
 }

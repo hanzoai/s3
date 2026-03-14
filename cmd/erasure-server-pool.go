@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -860,7 +860,7 @@ func (z *erasureServerPools) MakeBucket(ctx context.Context, bucket string, opts
 
 		if !opts.NoLock {
 			// Lock the bucket name before creating.
-			lk := z.NewNSLock(minioMetaTmpBucket, bucket+".lck")
+			lk := z.NewNSLock(s3MetaTmpBucket, bucket+".lck")
 			lkctx, err := lk.GetLock(ctx, globalOperationTimeout)
 			if err != nil {
 				return err
@@ -1610,8 +1610,8 @@ func (z *erasureServerPools) listObjectsGeneric(ctx context.Context, bucket, pre
 		//     spark.sparkContext.setLogLevel("ERROR")
 		//     spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "http://minio-lb:9000")
 		//     spark.sparkContext.hadoopConfiguration.set("fs.s3a.path.style.access", "true")
-		//     spark.sparkContext.hadoopConfiguration.set("fs.s3a.access.key", "minioadmin")
-		//     spark.sparkContext.hadoopConfiguration.set("fs.s3a.secret.key", "minioadmin")
+		//     spark.sparkContext.hadoopConfiguration.set("fs.s3a.access.key", "admin")
+		//     spark.sparkContext.hadoopConfiguration.set("fs.s3a.secret.key", "admin")
 		//
 		//     val df = spark.read.json("s3a://testbucket/s3.json")
 		//
@@ -2068,7 +2068,7 @@ func (z *erasureServerPools) DeleteBucket(ctx context.Context, bucket string, op
 
 	if !opts.NoLock {
 		// Lock the bucket name before creating.
-		lk := z.NewNSLock(minioMetaTmpBucket, bucket+".lck")
+		lk := z.NewNSLock(s3MetaTmpBucket, bucket+".lck")
 		lkctx, err := lk.GetLock(ctx, globalOperationTimeout)
 		if err != nil {
 			return err
@@ -2109,20 +2109,20 @@ func (z *erasureServerPools) DeleteBucket(ctx context.Context, bucket string, op
 	if err == nil || isErrBucketNotFound(err) {
 		// If site replication is configured, hold on to deleted bucket state until sites sync
 		if opts.SRDeleteOp == MarkDelete {
-			z.s3Peer.MakeBucket(context.Background(), pathJoin(minioMetaBucket, bucketMetaPrefix, deletedBucketsPrefix, bucket), MakeBucketOptions{})
+			z.s3Peer.MakeBucket(context.Background(), pathJoin(s3MetaBucket, bucketMetaPrefix, deletedBucketsPrefix, bucket), MakeBucketOptions{})
 		}
 	}
 
 	if err == nil {
 		// Purge the entire bucket metadata entirely.
-		z.deleteAll(context.Background(), minioMetaBucket, pathJoin(bucketMetaPrefix, bucket))
+		z.deleteAll(context.Background(), s3MetaBucket, pathJoin(bucketMetaPrefix, bucket))
 	}
 
 	return toObjectErr(err, bucket)
 }
 
 // deleteAll will rename bucket+prefix unconditionally across all disks to
-// minioMetaTmpDeletedBucket + unique uuid,
+// s3MetaTmpDeletedBucket + unique uuid,
 // Note that set distribution is ignored so it should only be used in cases where
 // data is not distributed across sets. Errors are logged but individual
 // disk failures are not returned.
@@ -2184,7 +2184,7 @@ func (z *erasureServerPools) ListBuckets(ctx context.Context, opts BucketOptions
 
 func (z *erasureServerPools) HealFormat(ctx context.Context, dryRun bool) (madmin.HealResultItem, error) {
 	// Acquire lock on format.json
-	formatLock := z.NewNSLock(minioMetaBucket, formatConfigFile)
+	formatLock := z.NewNSLock(s3MetaBucket, formatConfigFile)
 	lkctx, err := formatLock.GetLock(ctx, globalOperationTimeout)
 	if err != nil {
 		return madmin.HealResultItem{}, err
@@ -2447,8 +2447,8 @@ func (z *erasureServerPools) HealObjects(ctx context.Context, bucket, prefix str
 		}
 		// We might land at .metacache, .trash, .multipart
 		// no need to heal them skip, only when bucket
-		// is '.minio.sys'
-		if bucket == minioMetaBucket {
+		// is '.s3.sys'
+		if bucket == s3MetaBucket {
 			if wildcard.Match("buckets/*/.metacache/*", entry.name) {
 				return nil
 			}

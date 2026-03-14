@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -59,7 +59,7 @@ func newBgHealSequence() *healSequence {
 		startTime:   UTCNow(),
 		clientToken: bgHealingUUID,
 		// run-background heal with reserved bucket
-		bucket:   minioReservedBucket,
+		bucket:   s3ReservedBucket,
 		settings: hs,
 		currentStatus: healSequenceStatus{
 			Summary:      healNotStartedStatus,
@@ -400,8 +400,8 @@ func (er *erasureObjects) healErasureSet(ctx context.Context, buckets []string, 
 
 			// We might land at .metacache, .trash, .multipart
 			// no need to heal them skip, only when bucket
-			// is '.minio.sys'
-			if bucket == minioMetaBucket {
+			// is '.s3.sys'
+			if bucket == s3MetaBucket {
 				if wildcard.Match("buckets/*/.metacache/*", entry.name) {
 					return
 				}

@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -350,7 +350,7 @@ func (er erasureObjects) getOnlineDisksWithHealing(inclHealing bool) ([]StorageA
 	return newDisks, healing > 0
 }
 
-// Clean-up previously deleted objects. from .minio.sys/tmp/.trash/
+// Clean-up previously deleted objects. from .s3.sys/tmp/.trash/
 func (er erasureObjects) cleanupDeletedObjects(ctx context.Context) {
 	var wg sync.WaitGroup
 	for _, disk := range er.getLocalDisks() {
@@ -361,11 +361,11 @@ func (er erasureObjects) cleanupDeletedObjects(ctx context.Context) {
 		go func(disk StorageAPI) {
 			defer wg.Done()
 			drivePath := disk.Endpoint().Path
-			readDirFn(pathJoin(drivePath, minioMetaTmpDeletedBucket), func(ddir string, typ os.FileMode) error {
+			readDirFn(pathJoin(drivePath, s3MetaTmpDeletedBucket), func(ddir string, typ os.FileMode) error {
 				w := xioutil.NewDeadlineWorker(globalDriveConfig.GetMaxTimeout())
 				return w.Run(func() error {
 					wait := deleteCleanupSleeper.Timer(ctx)
-					removeAll(pathJoin(drivePath, minioMetaTmpDeletedBucket, ddir))
+					removeAll(pathJoin(drivePath, s3MetaTmpDeletedBucket, ddir))
 					wait()
 					return nil
 				})

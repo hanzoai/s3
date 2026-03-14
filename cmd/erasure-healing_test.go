@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -949,7 +949,7 @@ func TestHealCorrectQuorum(t *testing.T) {
 			t.Fatal("Expected all xl.meta healed, but partial heal detected")
 		}
 
-		fileInfos, errs = readAllFileInfo(ctx, erasureDisks, "", minioMetaBucket, cfgFile, "", false, true)
+		fileInfos, errs = readAllFileInfo(ctx, erasureDisks, "", s3MetaBucket, cfgFile, "", false, true)
 		nfi, err = getLatestFileInfo(ctx, fileInfos, er.defaultParityCount, errs)
 		if errors.Is(err, errFileNotFound) {
 			continue
@@ -959,19 +959,19 @@ func TestHealCorrectQuorum(t *testing.T) {
 		}
 
 		for i := 0; i < nfi.Erasure.ParityBlocks; i++ {
-			erasureDisks[i].Delete(t.Context(), minioMetaBucket, pathJoin(cfgFile, xlStorageFormatFile), DeleteOptions{
+			erasureDisks[i].Delete(t.Context(), s3MetaBucket, pathJoin(cfgFile, xlStorageFormatFile), DeleteOptions{
 				Recursive: false,
 				Immediate: false,
 			})
 		}
 
 		// Try healing now, it should heal the content properly.
-		_, err = objLayer.HealObject(ctx, minioMetaBucket, cfgFile, "", hopts)
+		_, err = objLayer.HealObject(ctx, s3MetaBucket, cfgFile, "", hopts)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		fileInfos, errs = readAllFileInfo(ctx, erasureDisks, "", minioMetaBucket, cfgFile, "", false, true)
+		fileInfos, errs = readAllFileInfo(ctx, erasureDisks, "", s3MetaBucket, cfgFile, "", false, true)
 		if countErrs(errs, nil) != len(fileInfos) {
 			t.Fatal("Expected all xl.meta healed, but partial heal detected")
 		}

@@ -1,10 +1,10 @@
-# Hanzo Storage
+# Hanzo S3
 
-[![GitHub Stars](https://img.shields.io/github/stars/hanzoai/storage?style=flat-square)](https://github.com/hanzoai/storage)
-[![License](https://img.shields.io/badge/license-AGPL%20v3-blue?style=flat-square)](https://github.com/hanzoai/storage/blob/main/LICENSE)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/hanzoai/storage?style=flat-square)](https://github.com/hanzoai/storage)
+[![GitHub Stars](https://img.shields.io/github/stars/hanzoai/s3?style=flat-square)](https://github.com/hanzoai/s3)
+[![License](https://img.shields.io/badge/license-AGPL%20v3-blue?style=flat-square)](https://github.com/hanzoai/s3/blob/main/LICENSE)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/hanzoai/s3?style=flat-square)](https://github.com/hanzoai/s3)
 
-High-performance, S3-compatible object storage for AI workloads, built on S3 and optimized for the Hanzo ecosystem.
+High-performance, S3-compatible object storage for AI workloads, optimized for the Hanzo ecosystem.
 
 ## Features
 
@@ -21,64 +21,61 @@ High-performance, S3-compatible object storage for AI workloads, built on S3 and
 
 ### Docker
 
-Build and run a standalone Hanzo Storage server:
-
 ```sh
-docker build -t hanzo-storage .
 docker run -p 9000:9000 -p 9001:9001 \
-  hanzo-storage server /data --console-address :9001
+  -e S3_ROOT_USER=admin \
+  -e S3_ROOT_PASSWORD=changeme123 \
+  ghcr.io/hanzoai/s3:latest server /data --console-address :9001
 ```
 
-The web console is available at `http://127.0.0.1:9001`. Default credentials are `minioadmin:minioadmin` -- change these immediately in production.
+Console: `http://127.0.0.1:9001` -- change the default credentials immediately in production.
 
 ### Install from Source
 
 Requires Go 1.24 or later.
 
 ```sh
-git clone https://github.com/hanzoai/storage.git
-cd storage
-go build -o hanzo-storage .
-./hanzo-storage server /data --console-address :9001
-```
-
-Cross-compile for a specific target:
-
-```sh
-GOOS=linux GOARCH=arm64 go build -o hanzo-storage .
+git clone https://github.com/hanzoai/s3.git
+cd s3
+go build -o hanzo-s3 .
+./hanzo-s3 server /data --console-address :9001
 ```
 
 ### Verify Connectivity
 
-Use any S3-compatible client. With the S3 Client (`mc`):
+Use any S3-compatible client. With the Hanzo S3 CLI (`s3`):
 
 ```sh
-mc alias set hanzo http://localhost:9000 minioadmin minioadmin
-mc admin info hanzo
-mc mb hanzo/my-bucket
-mc cp ~/data/model.safetensors hanzo/my-bucket/
-mc ls hanzo/my-bucket/
+s3 alias set hanzo http://localhost:9000 admin changeme123
+s3 admin info hanzo
+s3 mb hanzo/my-bucket
+s3 cp ~/data/model.safetensors hanzo/my-bucket/
+s3 ls hanzo/my-bucket/
 ```
 
 ## SDKs
 
-Hanzo Storage is fully S3-compatible. Use any S3 SDK, or the purpose-built S3 SDKs:
+Hanzo S3 is fully S3-compatible. Use any S3 SDK:
 
 | Language | Package |
 |----------|---------|
-| Go       | [`github.com/minio/minio-go/v7`](https://github.com/minio/minio-go) |
-| JavaScript / TypeScript | [`minio`](https://github.com/minio/minio-js) |
-| Python   | [`minio`](https://github.com/minio/minio-py) |
+| Go       | [`@hanzo/s3-go`](https://github.com/hanzos3/go-sdk) |
+| JavaScript / TypeScript | [`@hanzo/s3`](https://github.com/hanzos3/js-sdk) |
+| Python   | [`hanzo-s3`](https://github.com/hanzos3/py-sdk) |
 
 Standard AWS SDKs (`aws-sdk-go`, `boto3`, `@aws-sdk/client-s3`) also work without modification.
 
 ## Documentation
 
-Full documentation is available at [docs.hanzo.ai](https://docs.hanzo.ai).
+Full documentation at [docs.hanzo.ai/storage](https://docs.hanzo.ai/docs/services/s3).
+
+## Demo Server
+
+A public demo server is available at `s3-demo.hanzo.ai` for testing. Data is wiped hourly.
 
 ## Attribution
 
-Based on [S3](https://github.com/minio/minio). See the upstream [LICENSE](LICENSE) for attribution.
+Based on [MinIO](https://github.com/minio/minio). See the upstream [LICENSE](LICENSE) for attribution.
 
 ## License
 

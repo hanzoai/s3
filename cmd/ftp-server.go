@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2023 MinIO, Inc.
+// Copyright (c) 2015-2023 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -139,9 +139,9 @@ func startFTPServer(args []string) {
 		logger.Fatal(fmt.Errorf("invalid TLS arguments provided. force-tls, but missing private key --ftp=\"tls-private-key=path/to/private.key\""), "unable to start FTP server")
 	}
 
-	name := "MinIO FTP Server"
+	name := "Hanzo S3 FTP Server"
 	if tls {
-		name = "MinIO FTP(Secure) Server"
+		name = "Hanzo S3 FTP(Secure) Server"
 	}
 
 	ftpServer, err := ftp.NewServer(&ftp.Options{

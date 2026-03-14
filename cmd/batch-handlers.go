@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2023 MinIO, Inc.
+// Copyright (c) 2015-2023 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -1618,7 +1618,7 @@ func (a adminAPIHandlers) ListBatchJobs(w http.ResponseWriter, r *http.Request) 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	if err := objectAPI.Walk(ctx, minioMetaBucket, batchJobPrefix, resultCh, WalkOptions{}); err != nil {
+	if err := objectAPI.Walk(ctx, s3MetaBucket, batchJobPrefix, resultCh, WalkOptions{}); err != nil {
 		writeErrorResponseJSON(ctx, w, toAPIError(ctx, err), r.URL)
 		return
 	}
@@ -1910,7 +1910,7 @@ func (j *BatchJobPool) cleanupReports(randomWait func() time.Duration) {
 			results := make(chan itemOrErr[ObjectInfo], 100)
 			ctx, cancel := context.WithCancel(j.ctx)
 			defer cancel()
-			if err := j.objLayer.Walk(ctx, minioMetaBucket, batchJobReportsPrefix, results, WalkOptions{}); err != nil {
+			if err := j.objLayer.Walk(ctx, s3MetaBucket, batchJobReportsPrefix, results, WalkOptions{}); err != nil {
 				batchLogIf(j.ctx, err)
 				t.Reset(randomWait())
 				continue
@@ -1941,7 +1941,7 @@ func (j *BatchJobPool) resume(randomWait func() time.Duration) {
 	results := make(chan itemOrErr[ObjectInfo], 100)
 	ctx, cancel := context.WithCancel(j.ctx)
 	defer cancel()
-	if err := j.objLayer.Walk(ctx, minioMetaBucket, batchJobPrefix, results, WalkOptions{}); err != nil {
+	if err := j.objLayer.Walk(ctx, s3MetaBucket, batchJobPrefix, results, WalkOptions{}); err != nil {
 		batchLogIf(j.ctx, err)
 		return
 	}
@@ -2231,7 +2231,7 @@ func (m *batchJobMetrics) init(ctx context.Context, objectAPI ObjectLayer) error
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	if err := objectAPI.Walk(ctx, minioMetaBucket, batchJobReportsPrefix, resultCh, WalkOptions{}); err != nil {
+	if err := objectAPI.Walk(ctx, s3MetaBucket, batchJobReportsPrefix, resultCh, WalkOptions{}); err != nil {
 		return err
 	}
 

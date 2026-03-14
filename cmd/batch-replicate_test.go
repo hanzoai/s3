@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -38,8 +38,8 @@ replicate:
 #    endpoint: "http://127.0.0.1:9000"
 #    # path: "on|off|auto" # "on" enables path-style bucket lookup. "off" enables virtual host (DNS)-style bucket lookup. Defaults to "auto"
 #    credentials:
-#      accessKey: minioadmin # Required
-#      secretKey: minioadmin # Required
+#      accessKey: admin # Required
+#      secretKey: admin # Required
 #    # sessionToken: SESSION-TOKEN # Optional only available when rotating credentials are used
     snowball: # automatically activated if the source is local
       disable: true # optionally turn-off snowball archive transfer
@@ -60,8 +60,8 @@ replicate:
     endpoint: "http://127.0.0.1:9001"
     # path: "on|off|auto" # "on" enables path-style bucket lookup. "off" enables virtual host (DNS)-style bucket lookup. Defaults to "auto"
     credentials:
-      accessKey: minioadmin
-      secretKey: minioadmin
+      accessKey: admin
+      secretKey: admin
     # sessionToken: SESSION-TOKEN # Optional only available when rotating credentials are used
 
   # NOTE: All flags are optional
@@ -116,8 +116,8 @@ replicate:
 #    endpoint: "http://127.0.0.1:9000"
 #    # path: "on|off|auto" # "on" enables path-style bucket lookup. "off" enables virtual host (DNS)-style bucket lookup. Defaults to "auto"
 #    credentials:
-#      accessKey: minioadmin # Required
-#      secretKey: minioadmin # Required
+#      accessKey: admin # Required
+#      secretKey: admin # Required
 #    # sessionToken: SESSION-TOKEN # Optional only available when rotating credentials are used
     snowball: # automatically activated if the source is local
       disable: true # optionally turn-off snowball archive transfer
@@ -138,8 +138,8 @@ replicate:
     endpoint: "http://127.0.0.1:9001"
     # path: "on|off|auto" # "on" enables path-style bucket lookup. "off" enables virtual host (DNS)-style bucket lookup. Defaults to "auto"
     credentials:
-      accessKey: minioadmin
-      secretKey: minioadmin
+      accessKey: admin
+      secretKey: admin
     # sessionToken: SESSION-TOKEN # Optional only available when rotating credentials are used
 
   # NOTE: All flags are optional

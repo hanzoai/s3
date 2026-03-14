@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -35,7 +35,7 @@ import (
 )
 
 // Object was stored with additional erasure codes due to degraded system at upload time
-const minIOErasureUpgraded = "x-minio-internal-erasure-upgraded"
+const minIOErasureUpgraded = "x-hanzo-s3-internal-erasure-upgraded"
 
 const erasureAlgorithm = "rs-vandermonde"
 
@@ -149,7 +149,7 @@ func (fi FileInfo) ToObjectInfo(bucket, object string, versioned bool) ObjectInf
 
 	// etag/md5Sum has already been extracted. We need to
 	// remove to avoid it from appearing as part of
-	// response headers. e.g, X-Minio-* or X-Amz-*.
+	// response headers. e.g, X-Hanzo-S3-* or X-Amz-*.
 	// Tags have also been extracted, we remove that as well.
 	objInfo.UserDefined = cleanMetadata(fi.Metadata)
 

@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -118,7 +118,7 @@ func TestPathTraversalExploit(t *testing.T) {
 }
 
 // testPathTraversal exploit test, exploits path traversal on windows
-// with following object names "\\../.minio.sys/config/iam/${username}/identity.json"
+// with following object names "\\../.s3.sys/config/iam/${username}/identity.json"
 // #16852
 func testPathTraversalExploit(obj ObjectLayer, instanceType, bucketName string, apiRouter http.Handler,
 	credentials auth.Credentials, t *testing.T,
@@ -127,7 +127,7 @@ func testPathTraversalExploit(obj ObjectLayer, instanceType, bucketName string, 
 		t.Fatalf("Initializing config.json failed")
 	}
 
-	objectName := `\../.minio.sys/config/hello.txt`
+	objectName := `\../.s3.sys/config/hello.txt`
 
 	// initialize HTTP NewRecorder, this records any mutations to response writer inside the handler.
 	rec := httptest.NewRecorder()
@@ -154,7 +154,7 @@ func testPathTraversalExploit(obj ObjectLayer, instanceType, bucketName string, 
 	for i := range parts {
 		if errs[i] == nil {
 			if parts[i].Name == objectName {
-				t.Errorf("path traversal allowed to allow writing to minioMetaBucket: %s", instanceType)
+				t.Errorf("path traversal allowed to allow writing to s3MetaBucket: %s", instanceType)
 			}
 		}
 	}
@@ -313,17 +313,17 @@ func TestIsMinioMetaBucketName(t *testing.T) {
 	}{
 		// MinIO meta bucket.
 		{
-			bucket: minioMetaBucket,
+			bucket: s3MetaBucket,
 			result: true,
 		},
 		// MinIO meta bucket.
 		{
-			bucket: minioMetaMultipartBucket,
+			bucket: s3MetaMultipartBucket,
 			result: true,
 		},
 		// MinIO meta bucket.
 		{
-			bucket: minioMetaTmpBucket,
+			bucket: s3MetaTmpBucket,
 			result: true,
 		},
 		// Normal bucket
@@ -449,7 +449,7 @@ func TestIsCompressed(t *testing.T) {
 		0: {
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Minio-Internal-compression": compressionAlgorithmV1,
+					"X-Hanzo-S3-Internal-compression": compressionAlgorithmV1,
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},
@@ -459,7 +459,7 @@ func TestIsCompressed(t *testing.T) {
 		1: {
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Minio-Internal-compression": compressionAlgorithmV2,
+					"X-Hanzo-S3-Internal-compression": compressionAlgorithmV2,
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},
@@ -469,7 +469,7 @@ func TestIsCompressed(t *testing.T) {
 		2: {
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Minio-Internal-compression": "unknown/compression/type",
+					"X-Hanzo-S3-Internal-compression": "unknown/compression/type",
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},
@@ -480,7 +480,7 @@ func TestIsCompressed(t *testing.T) {
 		3: {
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Minio-Internal-compression": compressionAlgorithmV2,
+					"X-Hanzo-S3-Internal-compression": compressionAlgorithmV2,
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 					crypto.MetaIV:                  "yes",
@@ -492,7 +492,7 @@ func TestIsCompressed(t *testing.T) {
 		4: {
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Minio-Internal-XYZ": "klauspost/compress/s2",
+					"X-Hanzo-S3-Internal-XYZ": "klauspost/compress/s2",
 					"content-type":         "application/octet-stream",
 					"etag":                 "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},
@@ -608,7 +608,7 @@ func TestGetActualSize(t *testing.T) {
 		{
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Minio-Internal-compression": "klauspost/compress/s2",
+					"X-Hanzo-S3-Internal-compression": "klauspost/compress/s2",
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},
@@ -629,8 +629,8 @@ func TestGetActualSize(t *testing.T) {
 		{
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Minio-Internal-compression": "klauspost/compress/s2",
-					"X-Minio-Internal-actual-size": "841",
+					"X-Hanzo-S3-Internal-compression": "klauspost/compress/s2",
+					"X-Hanzo-S3-Internal-actual-size": "841",
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},
@@ -642,7 +642,7 @@ func TestGetActualSize(t *testing.T) {
 		{
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Minio-Internal-compression": "klauspost/compress/s2",
+					"X-Hanzo-S3-Internal-compression": "klauspost/compress/s2",
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},

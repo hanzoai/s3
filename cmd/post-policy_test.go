@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -136,7 +136,7 @@ func testPostPolicyReservedBucketExploit(obj ObjectLayer, instanceType string, d
 	apiRouter := initTestAPIEndPoints(obj, []string{"PostPolicy"})
 
 	credentials := globalActiveCred
-	bucketName := minioMetaBucket
+	bucketName := s3MetaBucket
 	objectName := "config/x"
 
 	// This exploit needs browser to be enabled.
@@ -173,7 +173,7 @@ func testPostPolicyReservedBucketExploit(obj ObjectLayer, instanceType string, d
 	for i := range parts {
 		if errs[i] == nil {
 			if parts[i].Name == objectName+"/upload.txt" {
-				t.Errorf("Test %s: Failed to stop post policy handler from writing to minioMetaBucket", instanceType)
+				t.Errorf("Test %s: Failed to stop post policy handler from writing to s3MetaBucket", instanceType)
 			}
 		}
 	}

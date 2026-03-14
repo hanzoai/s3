@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2023 MinIO, Inc.
+// Copyright (c) 2015-2023 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -156,7 +156,7 @@ func veeamSOSAPIGetObject(ctx context.Context, bucket, object string, rs *HTTPRa
 	case systemXMLObject:
 		si := systemInfo{
 			ProtocolVersion: `"1.0"`,
-			ModelName:       "\"MinIO " + ReleaseTag + "\"",
+			ModelName:       "\"Hanzo S3 " + ReleaseTag + "\"",
 		}
 		si.ProtocolCapabilities.CapacityInfo = true
 

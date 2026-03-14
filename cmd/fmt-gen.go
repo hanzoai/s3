@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -111,7 +111,7 @@ func fmtGenMain(ctxt *cli.Context) {
 					//nolint:gocritic
 					log.Fatalf("failed to marshal format.json for %s: %v", drive.String(), err)
 				}
-				fmtJSON := filepath.Join(drive.Host, drive.Path, minioMetaBucket, "format.json")
+				fmtJSON := filepath.Join(drive.Host, drive.Path, s3MetaBucket, "format.json")
 				embedFileInZip(fmtZipW, fmtJSON, fmtBytes, 0o600)
 			}
 		}

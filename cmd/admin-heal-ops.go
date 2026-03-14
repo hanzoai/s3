@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -798,7 +798,7 @@ func (h *healSequence) queueHealTask(source healSource, healType madmin.HealItem
 
 func (h *healSequence) healDiskMeta(objAPI ObjectLayer) error {
 	// Start healing the config prefix.
-	return h.healMinioSysMeta(objAPI, minioConfigPrefix)()
+	return h.healMinioSysMeta(objAPI, s3ConfigPrefix)()
 }
 
 func (h *healSequence) healItems(objAPI ObjectLayer) error {
@@ -837,7 +837,7 @@ func (h *healSequence) healMinioSysMeta(objAPI ObjectLayer, metaPrefix string) f
 		// of any bucket being selected, this is to ensure that
 		// meta are always upto date and correct.
 		h.settings.Recursive = true
-		return objAPI.HealObjects(h.ctx, minioMetaBucket, metaPrefix, h.settings, func(bucket, object, versionID string, scanMode madmin.HealScanMode) error {
+		return objAPI.HealObjects(h.ctx, s3MetaBucket, metaPrefix, h.settings, func(bucket, object, versionID string, scanMode madmin.HealScanMode) error {
 			if h.isQuitting() {
 				return errHealStopSignalled
 			}

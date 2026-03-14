@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2022 MinIO, Inc.
+// Copyright (c) 2015-2022 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -34,7 +34,7 @@ type sharedLock struct {
 
 func (ld sharedLock) backgroundRoutine(ctx context.Context, objAPI ObjectLayer, lockName string) {
 	for {
-		locker := objAPI.NewNSLock(minioMetaBucket, lockName)
+		locker := objAPI.NewNSLock(s3MetaBucket, lockName)
 		lkctx, err := locker.GetLock(ctx, sharedLockTimeout)
 		if err != nil {
 			continue

@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -1274,7 +1274,7 @@ func testListObjectPartsStale(obj ObjectLayer, instanceType string, disks []stri
 
 	erasureDisks := er.getDisks()
 	uploadIDPath := er.getUploadIDDir(bucketNames[0], objectNames[0], uploadIDs[0])
-	dataDirs, err := erasureDisks[0].ListDir(context.Background(), minioMetaMultipartBucket, minioMetaMultipartBucket, uploadIDPath, -1)
+	dataDirs, err := erasureDisks[0].ListDir(context.Background(), s3MetaMultipartBucket, s3MetaMultipartBucket, uploadIDPath, -1)
 	if err != nil {
 		t.Fatalf("%s : %s", instanceType, err.Error())
 	}
@@ -1289,7 +1289,7 @@ func testListObjectPartsStale(obj ObjectLayer, instanceType string, disks []stri
 
 	toDel := (len(erasureDisks) / 2) + 1
 	for _, disk := range erasureDisks[:toDel] {
-		disk.DeleteBulk(context.Background(), minioMetaMultipartBucket, []string{pathJoin(uploadIDPath, dataDir, "part.2")}...)
+		disk.DeleteBulk(context.Background(), s3MetaMultipartBucket, []string{pathJoin(uploadIDPath, dataDir, "part.2")}...)
 	}
 
 	partInfos := []ListPartsInfo{

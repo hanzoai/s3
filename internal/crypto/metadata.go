@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -24,32 +24,32 @@ import (
 const (
 	// MetaMultipart indicates that the object has been uploaded
 	// in multiple parts - via the S3 multipart API.
-	MetaMultipart = "X-Minio-Internal-Encrypted-Multipart"
+	MetaMultipart = "X-Hanzo-S3-Internal-Encrypted-Multipart"
 
 	// MetaIV is the random initialization vector (IV) used for
 	// the MinIO-internal key derivation.
-	MetaIV = "X-Minio-Internal-Server-Side-Encryption-Iv"
+	MetaIV = "X-Hanzo-S3-Internal-Server-Side-Encryption-Iv"
 
 	// MetaAlgorithm is the algorithm used to derive internal keys
 	// and encrypt the objects.
-	MetaAlgorithm = "X-Minio-Internal-Server-Side-Encryption-Seal-Algorithm"
+	MetaAlgorithm = "X-Hanzo-S3-Internal-Server-Side-Encryption-Seal-Algorithm"
 
 	// MetaSealedKeySSEC is the sealed object encryption key in case of SSE-C.
-	MetaSealedKeySSEC = "X-Minio-Internal-Server-Side-Encryption-Sealed-Key"
+	MetaSealedKeySSEC = "X-Hanzo-S3-Internal-Server-Side-Encryption-Sealed-Key"
 	// MetaSealedKeyS3 is the sealed object encryption key in case of SSE-S3
-	MetaSealedKeyS3 = "X-Minio-Internal-Server-Side-Encryption-S3-Sealed-Key"
+	MetaSealedKeyS3 = "X-Hanzo-S3-Internal-Server-Side-Encryption-S3-Sealed-Key"
 	// MetaSealedKeyKMS is the sealed object encryption key in case of SSE-KMS
-	MetaSealedKeyKMS = "X-Minio-Internal-Server-Side-Encryption-Kms-Sealed-Key"
+	MetaSealedKeyKMS = "X-Hanzo-S3-Internal-Server-Side-Encryption-Kms-Sealed-Key"
 
 	// MetaKeyID is the KMS master key ID used to generate/encrypt the data
 	// encryption key (DEK).
-	MetaKeyID = "X-Minio-Internal-Server-Side-Encryption-S3-Kms-Key-Id"
+	MetaKeyID = "X-Hanzo-S3-Internal-Server-Side-Encryption-S3-Kms-Key-Id"
 	// MetaDataEncryptionKey is the sealed data encryption key (DEK) received from
 	// the KMS.
-	MetaDataEncryptionKey = "X-Minio-Internal-Server-Side-Encryption-S3-Kms-Sealed-Key"
+	MetaDataEncryptionKey = "X-Hanzo-S3-Internal-Server-Side-Encryption-S3-Kms-Sealed-Key"
 
 	// MetaSsecCRC is the encrypted checksum of the SSE-C encrypted object.
-	MetaSsecCRC = "X-Minio-Replication-Ssec-Crc"
+	MetaSsecCRC = "X-Hanzo-S3-Replication-Ssec-Crc"
 
 	// MetaContext is the KMS context provided by a client when encrypting an
 	// object with SSE-KMS. A client may not send a context in which case the
@@ -58,7 +58,7 @@ const (
 	// added it. However, when decrypting an object the bucket/object name must
 	// be part of the object. Therefore, the bucket/object name must be added
 	// to the context, if not present, whenever a decryption is performed.
-	MetaContext = "X-Minio-Internal-Server-Side-Encryption-Context"
+	MetaContext = "X-Hanzo-S3-Internal-Server-Side-Encryption-Context"
 
 	// ARNPrefix prefix for "arn:aws:kms"
 	ARNPrefix = "arn:aws:kms:"

@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2022 MinIO, Inc.
+// Copyright (c) 2015-2022 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -50,19 +50,19 @@ var (
 	minioOSARCH = runtime.GOOS + "-" + runtime.GOARCH
 
 	// MinioReleaseBaseURL - release url without os and arch.
-	MinioReleaseBaseURL = "https://dl.hanzo.space/server/minio/release/"
+	MinioReleaseBaseURL = "https://dl.hanzo.ai/server/minio/release/"
 
 	// MinioReleaseURL - release URL.
 	MinioReleaseURL = MinioReleaseBaseURL + minioOSARCH + SlashSeparator
 
 	// MinioStoreName - MinIO store name.
-	MinioStoreName = "MinIO"
+	MinioStoreName = "Hanzo S3"
 
 	// MinioUAName - MinIO user agent name.
-	MinioUAName = "MinIO"
+	MinioUAName = "Hanzo S3"
 
 	// MinioBannerName - MinIO banner name for startup message.
-	MinioBannerName = "MinIO Object Storage Server"
+	MinioBannerName = "Hanzo S3 Object Storage Server"
 
 	// MinioLicense - MinIO server license.
 	MinioLicense = "GNU AGPLv3 - https://www.gnu.org/licenses/agpl-3.0.html"

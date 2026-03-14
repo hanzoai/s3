@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2022 MinIO, Inc.
+// Copyright (c) 2015-2022 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -41,10 +41,10 @@ func hashLogIf(ctx context.Context, err error) {
 }
 
 // MinIOMultipartChecksum is as metadata on multipart uploads to indicate checksum type.
-const MinIOMultipartChecksum = "x-minio-multipart-checksum"
+const MinIOMultipartChecksum = "x-hanzo-s3-multipart-checksum"
 
 // MinIOMultipartChecksumType is as metadata on multipart uploads to indicate checksum type.
-const MinIOMultipartChecksumType = "x-minio-multipart-checksum-type"
+const MinIOMultipartChecksumType = "x-hanzo-s3-multipart-checksum-type"
 
 // ChecksumType contains information about the checksum type.
 type ChecksumType uint32

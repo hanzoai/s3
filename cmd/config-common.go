@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -30,7 +30,7 @@ import (
 var errConfigNotFound = errors.New("config file not found")
 
 func readConfigWithMetadata(ctx context.Context, store objectIO, configFile string, opts ObjectOptions) ([]byte, ObjectInfo, error) {
-	r, err := store.GetObjectNInfo(ctx, minioMetaBucket, configFile, nil, http.Header{}, opts)
+	r, err := store.GetObjectNInfo(ctx, s3MetaBucket, configFile, nil, http.Header{}, opts)
 	if err != nil {
 		if isErrObjectNotFound(err) {
 			return nil, ObjectInfo{}, errConfigNotFound
@@ -60,7 +60,7 @@ type objectDeleter interface {
 }
 
 func deleteConfig(ctx context.Context, objAPI objectDeleter, configFile string) error {
-	_, err := objAPI.DeleteObject(ctx, minioMetaBucket, configFile, ObjectOptions{
+	_, err := objAPI.DeleteObject(ctx, s3MetaBucket, configFile, ObjectOptions{
 		DeletePrefix:       true,
 		DeletePrefixObject: true, // use prefix delete on exact object (this is an optimization to avoid fan-out calls)
 	})
@@ -76,7 +76,7 @@ func saveConfigWithOpts(ctx context.Context, store objectIO, configFile string, 
 		return err
 	}
 
-	_, err = store.PutObject(ctx, minioMetaBucket, configFile, NewPutObjReader(hashReader), opts)
+	_, err = store.PutObject(ctx, s3MetaBucket, configFile, NewPutObjReader(hashReader), opts)
 	return err
 }
 
@@ -85,7 +85,7 @@ func saveConfig(ctx context.Context, store objectIO, configFile string, data []b
 }
 
 func checkConfig(ctx context.Context, objAPI ObjectLayer, configFile string) error {
-	if _, err := objAPI.GetObjectInfo(ctx, minioMetaBucket, configFile, ObjectOptions{}); err != nil {
+	if _, err := objAPI.GetObjectInfo(ctx, s3MetaBucket, configFile, ObjectOptions{}); err != nil {
 		// Treat object not found as config not found.
 		if isErrObjectNotFound(err) {
 			return errConfigNotFound

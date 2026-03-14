@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -351,7 +351,7 @@ func testObjectAPIPutObjectStaleFiles(obj ObjectLayer, instanceType string, disk
 	}
 
 	for _, disk := range disks {
-		tmpMetaDir := path.Join(disk, minioMetaTmpBucket)
+		tmpMetaDir := path.Join(disk, s3MetaTmpBucket)
 		files, err := os.ReadDir(tmpMetaDir)
 		if err != nil {
 			t.Fatal(err)
@@ -364,7 +364,7 @@ func testObjectAPIPutObjectStaleFiles(obj ObjectLayer, instanceType string, disk
 			found = true
 		}
 		if found {
-			t.Fatalf("%s: expected: empty, got: non-empty %#v", minioMetaTmpBucket, files)
+			t.Fatalf("%s: expected: empty, got: non-empty %#v", s3MetaTmpBucket, files)
 		}
 	}
 }
@@ -430,7 +430,7 @@ func testObjectAPIMultipartPutObjectStaleFiles(obj ObjectLayer, instanceType str
 	}
 
 	for _, disk := range disks {
-		tmpMetaDir := path.Join(disk, minioMetaTmpBucket)
+		tmpMetaDir := path.Join(disk, s3MetaTmpBucket)
 		files, err := os.ReadDir(tmpMetaDir)
 		if err != nil {
 			// It's OK to have non-existing tmpMetaDir.

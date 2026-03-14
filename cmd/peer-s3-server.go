@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2022 MinIO, Inc.
+// Copyright (c) 2015-2022 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -57,7 +57,7 @@ func healBucketLocal(ctx context.Context, bucket string, opts madmin.HealOpts) (
 			beforeState[index] = madmin.DriveStateOk
 			afterState[index] = madmin.DriveStateOk
 
-			if bucket == minioReservedBucket {
+			if bucket == s3ReservedBucket {
 				return nil
 			}
 
@@ -229,7 +229,7 @@ func getBucketInfoLocal(ctx context.Context, bucket string, opts BucketOptions) 
 			volInfo, err := localDrives[index].StatVol(ctx, bucket)
 			if err != nil {
 				if opts.Deleted {
-					dvi, derr := localDrives[index].StatVol(ctx, pathJoin(minioMetaBucket, bucketMetaPrefix, deletedBucketsPrefix, bucket))
+					dvi, derr := localDrives[index].StatVol(ctx, pathJoin(s3MetaBucket, bucketMetaPrefix, deletedBucketsPrefix, bucket))
 					if derr != nil {
 						return err
 					}

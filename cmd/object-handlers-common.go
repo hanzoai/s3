@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2023 MinIO, Inc.
+// Copyright (c) 2015-2023 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -135,8 +135,8 @@ func checkCopyObjectPreconditions(ctx context.Context, w http.ResponseWriter, r 
 // Validates the preconditions. Returns true if PUT operation should not proceed.
 // Preconditions supported are:
 //
-//	x-minio-source-mtime
-//	x-minio-source-etag
+//	x-hanzo-s3-source-mtime
+//	x-hanzo-s3-source-etag
 func checkPreconditionsPUT(ctx context.Context, w http.ResponseWriter, r *http.Request, objInfo ObjectInfo, opts ObjectOptions) bool {
 	// Return false for methods other than PUT.
 	if r.Method != http.MethodPut && r.Method != http.MethodPost {

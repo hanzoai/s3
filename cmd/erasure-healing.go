@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -592,7 +592,7 @@ func (er *erasureObjects) healObject(ctx context.Context, bucket string, object 
 
 					writers[i] = newStreamingBitrotWriterBuffer(inlineBuffers[i], DefaultBitrotAlgorithm, erasure.ShardSize())
 				} else {
-					writers[i] = newBitrotWriter(disk, bucket, minioMetaTmpBucket, partPath,
+					writers[i] = newBitrotWriter(disk, bucket, s3MetaTmpBucket, partPath,
 						tillOffset, DefaultBitrotAlgorithm, erasure.ShardSize())
 				}
 			}
@@ -646,7 +646,7 @@ func (er *erasureObjects) healObject(ctx context.Context, bucket string, object 
 		}
 	}
 
-	defer er.deleteAll(context.Background(), minioMetaTmpBucket, tmpID)
+	defer er.deleteAll(context.Background(), s3MetaTmpBucket, tmpID)
 
 	// Rename from tmp location to the actual location.
 	for i, disk := range outDatedDisks {
@@ -660,7 +660,7 @@ func (er *erasureObjects) healObject(ctx context.Context, bucket string, object 
 		// Attempt a rename now from healed data to final location.
 		partsMetadata[i].SetHealing()
 
-		if _, err = disk.RenameData(ctx, minioMetaTmpBucket, tmpID, partsMetadata[i], bucket, object, RenameOptions{}); err != nil {
+		if _, err = disk.RenameData(ctx, s3MetaTmpBucket, tmpID, partsMetadata[i], bucket, object, RenameOptions{}); err != nil {
 			return result, err
 		}
 
