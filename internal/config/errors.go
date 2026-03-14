@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -22,7 +22,7 @@ var (
 	ErrInvalidXLValue = newErrFn(
 		"Invalid drive path",
 		"Please provide a fresh drive for single drive MinIO setup",
-		"MinIO only supports fresh drive paths",
+		"Hanzo S3 only supports fresh drive paths",
 	)
 
 	ErrInvalidBrowserValue = newErrFn(

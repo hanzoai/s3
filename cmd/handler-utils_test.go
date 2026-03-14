@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -124,11 +124,11 @@ func TestExtractMetadataHeaders(t *testing.T) {
 		{
 			header: http.Header{
 				"X-Amz-Meta-Appid":   []string{"amz-meta"},
-				"X-Minio-Meta-Appid": []string{"minio-meta"},
+				"X-Hanzo-S3-Meta-Appid": []string{"minio-meta"},
 			},
 			metadata: map[string]string{
 				"X-Amz-Meta-Appid":   "amz-meta",
-				"X-Minio-Meta-Appid": "minio-meta",
+				"X-Hanzo-S3-Meta-Appid": "minio-meta",
 			},
 			shouldFail: false,
 		},

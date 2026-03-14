@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -33,15 +33,15 @@ import (
 )
 
 func renameAllBucketMetacache(epPath string) error {
-	// Rename all previous `.minio.sys/buckets/<bucketname>/.metacache` to
-	// to `.minio.sys/tmp/` for deletion.
-	return readDirFn(pathJoin(epPath, minioMetaBucket, bucketMetaPrefix), func(name string, typ os.FileMode) error {
+	// Rename all previous `.s3.sys/buckets/<bucketname>/.metacache` to
+	// to `.s3.sys/tmp/` for deletion.
+	return readDirFn(pathJoin(epPath, s3MetaBucket, bucketMetaPrefix), func(name string, typ os.FileMode) error {
 		if typ == os.ModeDir {
-			tmpMetacacheOld := pathutil.Join(epPath, minioMetaTmpDeletedBucket, mustGetUUID())
-			if err := renameAll(pathJoin(epPath, minioMetaBucket, metacachePrefixForID(name, slashSeparator)),
+			tmpMetacacheOld := pathutil.Join(epPath, s3MetaTmpDeletedBucket, mustGetUUID())
+			if err := renameAll(pathJoin(epPath, s3MetaBucket, metacachePrefixForID(name, slashSeparator)),
 				tmpMetacacheOld, epPath); err != nil && err != errFileNotFound {
 				return fmt.Errorf("unable to rename (%s -> %s) %w",
-					pathJoin(epPath, minioMetaBucket+metacachePrefixForID(minioMetaBucket, slashSeparator)),
+					pathJoin(epPath, s3MetaBucket+metacachePrefixForID(s3MetaBucket, slashSeparator)),
 					tmpMetacacheOld,
 					osErrToFileErr(err))
 			}
@@ -374,7 +374,7 @@ func triggerExpiryAndRepl(ctx context.Context, o listPathOptions, obj metaCacheE
 
 func (z *erasureServerPools) listAndSave(ctx context.Context, o *listPathOptions) (entries metaCacheEntriesSorted, err error) {
 	// Use ID as the object name...
-	o.pool = z.getAvailablePoolIdx(ctx, minioMetaBucket, o.ID, 10<<20)
+	o.pool = z.getAvailablePoolIdx(ctx, s3MetaBucket, o.ID, 10<<20)
 	if o.pool < 0 {
 		// No space or similar, don't persist the listing.
 		o.pool = 0

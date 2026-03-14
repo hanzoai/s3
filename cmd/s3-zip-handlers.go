@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -42,11 +42,11 @@ const (
 	archiveExt             = "." + archiveType // ".zip"
 	archiveSeparator       = "/"
 	archivePattern         = archiveExt + archiveSeparator                // ".zip/"
-	archiveTypeMetadataKey = ReservedMetadataPrefixLower + "archive-type" // "x-minio-internal-archive-type"
-	archiveInfoMetadataKey = ReservedMetadataPrefixLower + "archive-info" // "x-minio-internal-archive-info"
+	archiveTypeMetadataKey = ReservedMetadataPrefixLower + "archive-type" // "x-hanzo-s3-internal-archive-type"
+	archiveInfoMetadataKey = ReservedMetadataPrefixLower + "archive-info" // "x-hanzo-s3-internal-archive-info"
 
 	// Peek into a zip archive
-	xMinIOExtract = "x-minio-extract"
+	xMinIOExtract = "x-hanzo-s3-extract"
 )
 
 // splitZipExtensionPath splits the S3 path to the zip file and the path inside the zip:

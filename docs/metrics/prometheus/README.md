@@ -183,7 +183,7 @@ After Prometheus is configured, you can use Grafana to visualize S3 metrics. Ref
 All of these can be accessed via Prometheus dashboard. A sample list of exposed metrics along with their definition is available on our public demo server at
 
 ```sh
-curl https://s3.hanzo.space/minio/v2/metrics/cluster
+curl https://s3-api.hanzo.ai/minio/v2/metrics/cluster
 ```
 
 ### List of metrics reported Cluster and Bucket level

@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -136,7 +136,7 @@ const (
 	healMetricNamespace      MetricNamespace = "s3_heal"
 	interNodeMetricNamespace MetricNamespace = "s3_inter_node"
 	nodeMetricNamespace      MetricNamespace = "s3_node"
-	minioMetricNamespace     MetricNamespace = "minio"
+	minioMetricNamespace     MetricNamespace = "s3"
 	s3MetricNamespace        MetricNamespace = "s3_s3"
 )
 
@@ -1517,7 +1517,7 @@ func getMinIOVersionMD() MetricDescription {
 		Namespace: minioMetricNamespace,
 		Subsystem: softwareSubsystem,
 		Name:      versionInfo,
-		Help:      "MinIO Release tag for the server",
+		Help:      "Hanzo S3 Release tag for the server",
 		Type:      gaugeMetric,
 	}
 }

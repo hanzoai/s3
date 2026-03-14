@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -177,7 +177,7 @@ func testAPIHeadObjectHandler(obj ObjectLayer, instanceType, bucketName string, 
 	// Test for Anonymous/unsigned http request.
 	anonReq, err := newTestRequest(http.MethodHead, getHeadObjectURL("", bucketName, objectName), 0, nil)
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
+		t.Fatalf("Hanzo S3 %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
 			instanceType, bucketName, objectName, err)
 	}
 
@@ -196,7 +196,7 @@ func testAPIHeadObjectHandler(obj ObjectLayer, instanceType, bucketName string, 
 	nilReq, err := newTestSignedRequestV4(http.MethodHead, getGetObjectURL("", nilBucket, nilObject),
 		0, nil, "", "", nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -608,7 +608,7 @@ func testAPIGetObjectHandler(obj ObjectLayer, instanceType, bucketName string, a
 	// Test for Anonymous/unsigned http request.
 	anonReq, err := newTestRequest(http.MethodGet, getGetObjectURL("", bucketName, objectName), 0, nil)
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
+		t.Fatalf("Hanzo S3 %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
 			instanceType, bucketName, objectName, err)
 	}
 
@@ -627,7 +627,7 @@ func testAPIGetObjectHandler(obj ObjectLayer, instanceType, bucketName string, a
 	nilReq, err := newTestSignedRequestV4(http.MethodGet, getGetObjectURL("", nilBucket, nilObject),
 		0, nil, "", "", nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -823,7 +823,7 @@ func testAPIGetObjectWithMPHandler(obj ObjectLayer, instanceType, bucketName str
 	nilReq, err := newTestSignedRequestV4(http.MethodGet, getGetObjectURL("", nilBucket, nilObject),
 		0, nil, "", "", nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -1643,7 +1643,7 @@ func testAPIPutObjectHandler(obj ObjectLayer, instanceType, bucketName string, a
 	anonReq, err := newTestRequest(http.MethodPut, getPutObjectURL("", bucketName, objectName),
 		int64(len("hello")), bytes.NewReader([]byte("hello")))
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
+		t.Fatalf("Hanzo S3 %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
 			instanceType, bucketName, objectName, err)
 	}
 
@@ -1662,7 +1662,7 @@ func testAPIPutObjectHandler(obj ObjectLayer, instanceType, bucketName string, a
 	nilReq, err := newTestSignedRequestV4(http.MethodPut, getPutObjectURL("", nilBucket, nilObject),
 		0, nil, "", "", nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -1870,7 +1870,7 @@ func testAPICopyObjectPartHandler(obj ObjectLayer, instanceType, bucketName stri
 	res, err := obj.NewMultipartUpload(context.Background(), bucketName, testObject, opts)
 	if err != nil {
 		// Failed to create NewMultipartUpload, abort.
-		t.Fatalf("MinIO %s : <ERROR>  %s", instanceType, err)
+		t.Fatalf("Hanzo S3 %s : <ERROR>  %s", instanceType, err)
 	}
 	uploadID := res.UploadID
 
@@ -2138,7 +2138,7 @@ func testAPICopyObjectPartHandler(obj ObjectLayer, instanceType, bucketName stri
 	nilReq, err := newTestSignedRequestV4(http.MethodPut, getCopyObjectPartURL("", nilBucket, nilObject, "0", "0"),
 		0, bytes.NewReader([]byte("testNilObjLayer")), "", "", nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create http request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create http request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 
 	// Below is how CopyObjectPartHandler is registered.
@@ -2648,7 +2648,7 @@ func testAPICopyObjectHandler(obj ObjectLayer, instanceType, bucketName string, 
 	// Its necessary to set the "X-Amz-Copy-Source" header for the request to be accepted by the handler.
 	nilReq.Header.Set("X-Amz-Copy-Source", url.QueryEscape(SlashSeparator+nilBucket+SlashSeparator+nilObject))
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 
 	// execute the object layer set to `nil` test.
@@ -2769,7 +2769,7 @@ func testAPINewMultipartHandler(obj ObjectLayer, instanceType, bucketName string
 	// Test for Anonymous/unsigned http request.
 	anonReq, err := newTestRequest(http.MethodPost, getNewMultipartURL("", bucketName, objectName), 0, nil)
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
+		t.Fatalf("Hanzo S3 %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
 			instanceType, bucketName, objectName, err)
 	}
 
@@ -2788,7 +2788,7 @@ func testAPINewMultipartHandler(obj ObjectLayer, instanceType, bucketName string
 	nilReq, err := newTestSignedRequestV4(http.MethodPost, getNewMultipartURL("", nilBucket, nilObject),
 		0, nil, "", "", nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -2831,7 +2831,7 @@ func testAPINewMultipartHandlerParallel(obj ObjectLayer, instanceType, bucketNam
 			apiRouter.ServeHTTP(rec, req)
 			// Assert the response code with the expected status.
 			if rec.Code != http.StatusOK {
-				t.Errorf("MinIO %s:  Expected the response status to be `%d`, but instead found `%d`", instanceType, http.StatusOK, rec.Code)
+				t.Errorf("Hanzo S3 %s:  Expected the response status to be `%d`, but instead found `%d`", instanceType, http.StatusOK, rec.Code)
 				return
 			}
 			// decode the response body.
@@ -2840,7 +2840,7 @@ func testAPINewMultipartHandlerParallel(obj ObjectLayer, instanceType, bucketNam
 
 			err = decoder.Decode(multipartResponse)
 			if err != nil {
-				t.Errorf("MinIO %s: Error decoding the recorded response Body", instanceType)
+				t.Errorf("Hanzo S3 %s: Error decoding the recorded response Body", instanceType)
 				return
 			}
 			// push the obtained upload ID from the response into the array.
@@ -2883,7 +2883,7 @@ func testAPICompleteMultipartHandler(obj ObjectLayer, instanceType, bucketName s
 		res, err := obj.NewMultipartUpload(context.Background(), bucketName, objectName, opts)
 		if err != nil {
 			// Failed to create NewMultipartUpload, abort.
-			t.Fatalf("MinIO %s : <ERROR>  %s", instanceType, err)
+			t.Fatalf("Hanzo S3 %s : <ERROR>  %s", instanceType, err)
 		}
 
 		uploadIDs = append(uploadIDs, res.UploadID)
@@ -3174,15 +3174,15 @@ func testAPICompleteMultipartHandler(obj ObjectLayer, instanceType, bucketName s
 
 		actualError := &APIErrorResponse{}
 		if err = xml.Unmarshal(actualContent, actualError); err != nil {
-			t.Errorf("MinIO %s: error response failed to parse error XML", instanceType)
+			t.Errorf("Hanzo S3 %s: error response failed to parse error XML", instanceType)
 		}
 
 		if actualError.BucketName != bucketName {
-			t.Errorf("MinIO %s: error response bucket name differs from expected value", instanceType)
+			t.Errorf("Hanzo S3 %s: error response bucket name differs from expected value", instanceType)
 		}
 
 		if actualError.Key != objectName {
-			t.Errorf("MinIO %s: error response object name (%s) differs from expected value (%s)", instanceType, actualError.Key, objectName)
+			t.Errorf("Hanzo S3 %s: error response object name (%s) differs from expected value (%s)", instanceType, actualError.Key, objectName)
 		}
 	}
 
@@ -3201,7 +3201,7 @@ func testAPICompleteMultipartHandler(obj ObjectLayer, instanceType, bucketName s
 	anonReq, err := newTestRequest(http.MethodPost, getCompleteMultipartUploadURL("", bucketName, objectName, uploadIDs[1]),
 		int64(len(completeBytes)), bytes.NewReader(completeBytes))
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
+		t.Fatalf("Hanzo S3 %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
 			instanceType, bucketName, objectName, err)
 	}
 
@@ -3222,7 +3222,7 @@ func testAPICompleteMultipartHandler(obj ObjectLayer, instanceType, bucketName s
 	nilReq, err := newTestSignedRequestV4(http.MethodPost, getCompleteMultipartUploadURL("", nilBucket, nilObject, "dummy-uploadID"),
 		0, nil, "", "", nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -3251,7 +3251,7 @@ func testAPIAbortMultipartHandler(obj ObjectLayer, instanceType, bucketName stri
 		res, err := obj.NewMultipartUpload(context.Background(), bucketName, objectName, opts)
 		if err != nil {
 			// Failed to create NewMultipartUpload, abort.
-			t.Fatalf("MinIO %s : <ERROR>  %s", instanceType, err)
+			t.Fatalf("Hanzo S3 %s : <ERROR>  %s", instanceType, err)
 		}
 
 		uploadIDs = append(uploadIDs, res.UploadID)
@@ -3361,7 +3361,7 @@ func testAPIAbortMultipartHandler(obj ObjectLayer, instanceType, bucketName stri
 	anonReq, err := newTestRequest(http.MethodDelete, getAbortMultipartUploadURL("", bucketName, objectName, uploadIDs[1]),
 		0, nil)
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
+		t.Fatalf("Hanzo S3 %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
 			instanceType, bucketName, objectName, err)
 	}
 
@@ -3382,7 +3382,7 @@ func testAPIAbortMultipartHandler(obj ObjectLayer, instanceType, bucketName stri
 	nilReq, err := newTestSignedRequestV4(http.MethodDelete, getAbortMultipartUploadURL("", nilBucket, nilObject, "dummy-uploadID"),
 		0, nil, "", "", nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -3493,7 +3493,7 @@ func testAPIDeleteObjectHandler(obj ObjectLayer, instanceType, bucketName string
 		apiRouter.ServeHTTP(rec, req)
 		// Assert the response code with the expected status.
 		if rec.Code != testCase.expectedRespStatus {
-			t.Fatalf("MinIO %s: Case %d: Expected the response status to be `%d`, but instead found `%d`", instanceType, i+1, testCase.expectedRespStatus, rec.Code)
+			t.Fatalf("Hanzo S3 %s: Case %d: Expected the response status to be `%d`, but instead found `%d`", instanceType, i+1, testCase.expectedRespStatus, rec.Code)
 		}
 
 		// Verify response of the V2 signed HTTP request.
@@ -3519,7 +3519,7 @@ func testAPIDeleteObjectHandler(obj ObjectLayer, instanceType, bucketName string
 	// Test for Anonymous/unsigned http request.
 	anonReq, err := newTestRequest(http.MethodDelete, getDeleteObjectURL("", bucketName, anonObjectName), 0, nil)
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
+		t.Fatalf("Hanzo S3 %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
 			instanceType, bucketName, anonObjectName, err)
 	}
 
@@ -3538,7 +3538,7 @@ func testAPIDeleteObjectHandler(obj ObjectLayer, instanceType, bucketName string
 	nilReq, err := newTestSignedRequestV4(http.MethodDelete, getDeleteObjectURL("", nilBucket, nilObject),
 		0, nil, "", "", nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -3649,7 +3649,7 @@ func testAPIPutObjectPartHandler(obj ObjectLayer, instanceType, bucketName strin
 	res, err := obj.NewMultipartUpload(context.Background(), bucketName, testObject, opts)
 	if err != nil {
 		// Failed to create NewMultipartUpload, abort.
-		t.Fatalf("MinIO %s : <ERROR>  %s", instanceType, err)
+		t.Fatalf("Hanzo S3 %s : <ERROR>  %s", instanceType, err)
 	}
 	uploadID := res.UploadID
 
@@ -3801,7 +3801,7 @@ func testAPIPutObjectPartHandler(obj ObjectLayer, instanceType, bucketName strin
 
 	for i, test := range testCases {
 		// Using sub-tests introduced in Go 1.7.
-		t.Run(fmt.Sprintf("MinIO-%s-Test-%d.", instanceType, i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Hanzo S3-%s-Test-%d.", instanceType, i), func(t *testing.T) {
 			// collection of input HTTP request, ResponseRecorder and request type.
 			// Used to make a collection of V4 and V4 HTTP request.
 			var reqV4, reqV2 *http.Request
@@ -3922,7 +3922,7 @@ func testAPIPutObjectPartHandler(obj ObjectLayer, instanceType, bucketName strin
 	anonReq, err := newTestRequest(http.MethodPut, getPutObjectPartURL("", bucketName, testObject, uploadIDCopy, "1"),
 		int64(len("hello")), bytes.NewReader([]byte("hello")))
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
+		t.Fatalf("Hanzo S3 %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
 			instanceType, bucketName, testObject, err)
 	}
 
@@ -3941,7 +3941,7 @@ func testAPIPutObjectPartHandler(obj ObjectLayer, instanceType, bucketName strin
 	nilReq, err := newTestSignedRequestV4(http.MethodPut, getPutObjectPartURL("", nilBucket, nilObject, "0", "0"),
 		0, bytes.NewReader([]byte("testNilObjLayer")), "", "", nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create http request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create http request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -4056,7 +4056,7 @@ func testAPIListObjectPartsHandler(obj ObjectLayer, instanceType, bucketName str
 	res, err := obj.NewMultipartUpload(context.Background(), bucketName, testObject, opts)
 	if err != nil {
 		// Failed to create NewMultipartUpload, abort.
-		t.Fatalf("MinIO %s : <ERROR>  %s", instanceType, err)
+		t.Fatalf("Hanzo S3 %s : <ERROR>  %s", instanceType, err)
 	}
 	uploadID := res.UploadID
 	uploadIDCopy := uploadID
@@ -4064,7 +4064,7 @@ func testAPIListObjectPartsHandler(obj ObjectLayer, instanceType, bucketName str
 	// create an object Part, will be used to test list object parts.
 	_, err = obj.PutObjectPart(context.Background(), bucketName, testObject, uploadID, 1, mustGetPutObjReader(t, bytes.NewReader([]byte("hello")), int64(len("hello")), "5d41402abc4b2a76b9719d911017c592", ""), opts)
 	if err != nil {
-		t.Fatalf("MinIO %s : %s.", instanceType, err)
+		t.Fatalf("Hanzo S3 %s : %s.", instanceType, err)
 	}
 
 	// expected error types for invalid inputs to ListObjectParts handler.
@@ -4133,7 +4133,7 @@ func testAPIListObjectPartsHandler(obj ObjectLayer, instanceType, bucketName str
 	for i, test := range testCases {
 		var reqV4, reqV2 *http.Request
 		// Using sub-tests introduced in Go 1.7.
-		t.Run(fmt.Sprintf("MinIO %s: Test case %d failed.", instanceType, i+1), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Hanzo S3 %s: Test case %d failed.", instanceType, i+1), func(t *testing.T) {
 			recV2 := httptest.NewRecorder()
 			recV4 := httptest.NewRecorder()
 
@@ -4221,7 +4221,7 @@ func testAPIListObjectPartsHandler(obj ObjectLayer, instanceType, bucketName str
 	anonReq, err := newTestRequest(http.MethodGet,
 		getListMultipartURLWithParams("", bucketName, testObject, uploadIDCopy, "", "", ""), 0, nil)
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
+		t.Fatalf("Hanzo S3 %s: Failed to create an anonymous request for %s/%s: <ERROR> %v",
 			instanceType, bucketName, testObject, err)
 	}
 
@@ -4241,7 +4241,7 @@ func testAPIListObjectPartsHandler(obj ObjectLayer, instanceType, bucketName str
 		getListMultipartURLWithParams("", nilBucket, nilObject, "dummy-uploadID", "0", "0", ""),
 		0, nil, "", "", nil)
 	if err != nil {
-		t.Errorf("MinIO %s:Failed to create http request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s:Failed to create http request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` sets the Object Layer to `nil` and calls the handler.

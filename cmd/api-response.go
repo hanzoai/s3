@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -490,7 +490,7 @@ func generateListBucketsResponse(buckets []BucketInfo) ListBucketsResponse {
 	data := ListBucketsResponse{}
 	owner := Owner{
 		ID:          globalMinioDefaultOwnerID,
-		DisplayName: "minio",
+		DisplayName: "s3",
 	}
 
 	for _, bucket := range buckets {
@@ -552,7 +552,7 @@ func generateListVersionsResponse(ctx context.Context, bucket, prefix, marker, v
 
 	owner := &Owner{
 		ID:          globalMinioDefaultOwnerID,
-		DisplayName: "minio",
+		DisplayName: "s3",
 	}
 	data := ListVersionsResponse{}
 	var lastObjMetaName string
@@ -639,7 +639,7 @@ func generateListObjectsV1Response(ctx context.Context, bucket, prefix, marker, 
 	contents := make([]Object, 0, len(resp.Objects))
 	owner := &Owner{
 		ID:          globalMinioDefaultOwnerID,
-		DisplayName: "minio",
+		DisplayName: "s3",
 	}
 	data := ListObjectsResponse{}
 
@@ -690,7 +690,7 @@ func generateListObjectsV2Response(ctx context.Context, bucket, prefix, token, n
 	if fetchOwner {
 		owner = &Owner{
 			ID:          globalMinioDefaultOwnerID,
-			DisplayName: "minio",
+			DisplayName: "s3",
 		}
 	}
 

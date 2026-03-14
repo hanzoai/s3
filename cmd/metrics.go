@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -48,9 +48,9 @@ var (
 	)
 	minioVersionInfo = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Namespace: "minio",
+			Namespace: "s3",
 			Name:      "version_info",
-			Help:      "Version of current MinIO server instance",
+			Help:      "Version of current Hanzo S3 server instance",
 		},
 		[]string{
 			// current version
@@ -66,7 +66,7 @@ const (
 	cacheNamespace       = "cache"
 	s3Namespace          = "s3"
 	bucketNamespace      = "bucket"
-	minioNamespace       = "minio"
+	minioNamespace       = "s3"
 	diskNamespace        = "disk"
 	interNodeNamespace   = "internode"
 )

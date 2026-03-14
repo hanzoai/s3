@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -48,7 +48,7 @@ type ReqInfo struct {
 	RemoteHost   string           // Client Host/IP
 	Host         string           // Node Host/IP
 	UserAgent    string           // User Agent
-	DeploymentID string           // x-minio-deployment-id
+	DeploymentID string           // x-hanzo-s3-deployment-id
 	RequestID    string           // x-amz-request-id
 	API          string           // API name - GetObject PutObject NewMultipartUpload etc.
 	BucketName   string           `json:",omitempty"` // Bucket name

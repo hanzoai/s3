@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -194,7 +194,7 @@ func testGetBucketLocationHandler(obj ObjectLayer, instanceType, bucketName stri
 	// ListBucketsHandler doesn't support bucket policies, setting the policies shouldn't make any difference.
 	anonReq, err := newTestRequest(http.MethodGet, getBucketLocationURL("", bucketName), 0, nil)
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request.", instanceType)
+		t.Fatalf("Hanzo S3 %s: Failed to create an anonymous request.", instanceType)
 	}
 
 	// ExecObjectLayerAPIAnonTest - Calls the HTTP API handler using the anonymous request, validates the ErrAccessDeniedResponse,
@@ -210,7 +210,7 @@ func testGetBucketLocationHandler(obj ObjectLayer, instanceType, bucketName stri
 	nilBucket := "dummy-bucket"
 	nilReq, err := newTestRequest(http.MethodGet, getBucketLocationURL("", nilBucket), 0, nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// Executes the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -294,7 +294,7 @@ func testHeadBucketHandler(obj ObjectLayer, instanceType, bucketName string, api
 	// Test for Anonymous/unsigned http request.
 	anonReq, err := newTestRequest(http.MethodHead, getHEADBucketURL("", bucketName), 0, nil)
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for bucket \"%s\": <ERROR> %v",
+		t.Fatalf("Hanzo S3 %s: Failed to create an anonymous request for bucket \"%s\": <ERROR> %v",
 			instanceType, bucketName, err)
 	}
 
@@ -311,7 +311,7 @@ func testHeadBucketHandler(obj ObjectLayer, instanceType, bucketName string, api
 	nilBucket := "dummy-bucket"
 	nilReq, err := newTestRequest(http.MethodHead, getHEADBucketURL("", nilBucket), 0, nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -527,7 +527,7 @@ func testListMultipartUploadsHandler(obj ObjectLayer, instanceType, bucketName s
 	// Test for Anonymous/unsigned http request.
 	anonReq, err := newTestRequest(http.MethodGet, url, 0, nil)
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request for bucket \"%s\": <ERROR> %v",
+		t.Fatalf("Hanzo S3 %s: Failed to create an anonymous request for bucket \"%s\": <ERROR> %v",
 			instanceType, bucketName, err)
 	}
 
@@ -547,7 +547,7 @@ func testListMultipartUploadsHandler(obj ObjectLayer, instanceType, bucketName s
 
 	nilReq, err := newTestRequest(http.MethodGet, url, 0, nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -623,7 +623,7 @@ func testListBucketsHandler(obj ObjectLayer, instanceType, bucketName string, ap
 	// ListBucketsHandler doesn't support bucket policies, setting the policies shouldn't make a difference.
 	anonReq, err := newTestRequest(http.MethodGet, getListBucketURL(""), 0, nil)
 	if err != nil {
-		t.Fatalf("MinIO %s: Failed to create an anonymous request.", instanceType)
+		t.Fatalf("Hanzo S3 %s: Failed to create an anonymous request.", instanceType)
 	}
 
 	// ExecObjectLayerAPIAnonTest - Calls the HTTP API handler using the anonymous request, validates the ErrAccessDeniedResponse,
@@ -638,7 +638,7 @@ func testListBucketsHandler(obj ObjectLayer, instanceType, bucketName string, ap
 
 	nilReq, err := newTestRequest(http.MethodGet, getListBucketURL(""), 0, nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.
@@ -938,7 +938,7 @@ func testAPIDeleteMultipleObjectsHandler(obj ObjectLayer, instanceType, bucketNa
 
 	nilReq, err := newTestSignedRequestV4(http.MethodPost, getDeleteMultipleObjectsURL("", nilBucket), 0, nil, "", "", nil)
 	if err != nil {
-		t.Errorf("MinIO %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
+		t.Errorf("Hanzo S3 %s: Failed to create HTTP request for testing the response when object Layer is set to `nil`.", instanceType)
 	}
 	// execute the object layer set to `nil` test.
 	// `ExecObjectLayerAPINilTest` manages the operation.

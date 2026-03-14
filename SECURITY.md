@@ -2,12 +2,12 @@
 
 ## Supported Versions
 
-We always provide security updates for the [latest release](https://github.com/minio/minio/releases/latest).
+We always provide security updates for the [latest release](https://github.com/hanzoai/s3/releases/latest).
 Whenever there is a security update you just need to upgrade to the latest version.
 
 ## Reporting a Vulnerability
 
-All security bugs in [minio/minio](https://github,com/minio/minio) (or other minio/* repositories)
+All security bugs in [hanzoai/s3](https://github.com/hanzoai/s3) (or other hanzoai/* repositories)
 should be reported by email to security@hanzo.ai. Your email will be acknowledged within 48 hours,
 and you'll receive a more detailed response to your email within 72 hours indicating the next steps
 in handling your report.
@@ -19,13 +19,12 @@ you need access credentials for a successful exploit).
 If you have not received a reply to your email within 48 hours or you have not heard from the security team
 for the past five days please contact the security team directly:
 
-- Primary security coordinator: aead@hanzo.ai
-- Secondary coordinator: harsha@hanzo.ai
+- Primary: security@hanzo.ai
 - If you receive no response: dev@hanzo.ai
 
 ### Disclosure Process
 
-S3 uses the following disclosure process:
+Hanzo S3 uses the following disclosure process:
 
 1. Once the security report is received one member of the security team tries to verify and reproduce
    the issue and determines the impact it has.
@@ -34,8 +33,8 @@ S3 uses the following disclosure process:
 3. Code is audited to find any potential similar problems.
 4. Fixes are prepared for the latest release.
 5. On the date that the fixes are applied a security advisory will be published on <https://blog.hanzo.ai>.
-   Please inform us in your report email whether S3 should mention your contribution w.r.t. fixing
-   the security issue. By default S3 will **not** publish this information to protect your privacy.
+   Please inform us in your report email whether Hanzo S3 should mention your contribution w.r.t. fixing
+   the security issue. By default we will **not** publish this information to protect your privacy.
 
 This process can take some time, especially when coordination is required with maintainers of other projects.
 Every effort will be made to handle the bug in as timely a manner as possible, however it's important that we

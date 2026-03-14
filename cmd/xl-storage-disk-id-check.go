@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -938,17 +938,17 @@ func (p *xlStorageDiskIDCheck) monitorDiskStatus(spent time.Duration, fn string)
 			return
 		}
 
-		err := p.storage.WriteAll(context.Background(), minioMetaTmpBucket, fn, toWrite)
+		err := p.storage.WriteAll(context.Background(), s3MetaTmpBucket, fn, toWrite)
 		if err != nil {
 			continue
 		}
 
-		b, err := p.storage.ReadAll(context.Background(), minioMetaTmpBucket, fn)
+		b, err := p.storage.ReadAll(context.Background(), s3MetaTmpBucket, fn)
 		if err != nil || len(b) != len(toWrite) {
 			continue
 		}
 
-		err = p.storage.Delete(context.Background(), minioMetaTmpBucket, fn, DeleteOptions{
+		err = p.storage.Delete(context.Background(), s3MetaTmpBucket, fn, DeleteOptions{
 			Recursive: false,
 			Immediate: false,
 		})
@@ -1041,14 +1041,14 @@ func (p *xlStorageDiskIDCheck) monitorDiskWritable(ctx context.Context) {
 		func() {
 			defer dcancel()
 
-			err := p.storage.WriteAll(ctx, minioMetaTmpBucket, fn, toWrite)
+			err := p.storage.WriteAll(ctx, s3MetaTmpBucket, fn, toWrite)
 			if err != nil {
 				if osErrToFileErr(err) == errFaultyDisk {
 					goOffline(fmt.Errorf("unable to write: %w", err), 0)
 				}
 				return
 			}
-			b, err := p.storage.ReadAll(context.Background(), minioMetaTmpBucket, fn)
+			b, err := p.storage.ReadAll(context.Background(), s3MetaTmpBucket, fn)
 			if err != nil || len(b) != len(toWrite) {
 				if osErrToFileErr(err) == errFaultyDisk {
 					goOffline(fmt.Errorf("unable to read: %w", err), 0)

@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -22,7 +22,7 @@ import "time"
 const (
 	peerRESTVersion       = "v39" // add more flags to speedtest API
 	peerRESTVersionPrefix = SlashSeparator + peerRESTVersion
-	peerRESTPrefix        = minioReservedBucketPath + "/peer"
+	peerRESTPrefix        = s3ReservedBucketPath + "/peer"
 	peerRESTPath          = peerRESTPrefix + peerRESTVersionPrefix
 )
 

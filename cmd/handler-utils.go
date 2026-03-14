@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -84,32 +84,32 @@ var supportedHeaders = []string{
 	xhttp.AmzObjectTagging,
 	"expires",
 	xhttp.AmzBucketReplicationStatus,
-	"X-Minio-Replication-Server-Side-Encryption-Sealed-Key",
-	"X-Minio-Replication-Server-Side-Encryption-Seal-Algorithm",
-	"X-Minio-Replication-Server-Side-Encryption-Iv",
-	"X-Minio-Replication-Encrypted-Multipart",
-	"X-Minio-Replication-Actual-Object-Size",
+	"X-Hanzo-S3-Replication-Server-Side-Encryption-Sealed-Key",
+	"X-Hanzo-S3-Replication-Server-Side-Encryption-Seal-Algorithm",
+	"X-Hanzo-S3-Replication-Server-Side-Encryption-Iv",
+	"X-Hanzo-S3-Replication-Encrypted-Multipart",
+	"X-Hanzo-S3-Replication-Actual-Object-Size",
 	ReplicationSsecChecksumHeader,
 	// Add more supported headers here.
 }
 
 // mapping of internal headers to allowed replication headers
 var validSSEReplicationHeaders = map[string]string{
-	"X-Minio-Internal-Server-Side-Encryption-Sealed-Key":     "X-Minio-Replication-Server-Side-Encryption-Sealed-Key",
-	"X-Minio-Internal-Server-Side-Encryption-Seal-Algorithm": "X-Minio-Replication-Server-Side-Encryption-Seal-Algorithm",
-	"X-Minio-Internal-Server-Side-Encryption-Iv":             "X-Minio-Replication-Server-Side-Encryption-Iv",
-	"X-Minio-Internal-Encrypted-Multipart":                   "X-Minio-Replication-Encrypted-Multipart",
-	"X-Minio-Internal-Actual-Object-Size":                    "X-Minio-Replication-Actual-Object-Size",
+	"X-Hanzo-S3-Internal-Server-Side-Encryption-Sealed-Key":     "X-Hanzo-S3-Replication-Server-Side-Encryption-Sealed-Key",
+	"X-Hanzo-S3-Internal-Server-Side-Encryption-Seal-Algorithm": "X-Hanzo-S3-Replication-Server-Side-Encryption-Seal-Algorithm",
+	"X-Hanzo-S3-Internal-Server-Side-Encryption-Iv":             "X-Hanzo-S3-Replication-Server-Side-Encryption-Iv",
+	"X-Hanzo-S3-Internal-Encrypted-Multipart":                   "X-Hanzo-S3-Replication-Encrypted-Multipart",
+	"X-Hanzo-S3-Internal-Actual-Object-Size":                    "X-Hanzo-S3-Replication-Actual-Object-Size",
 	// Add more supported headers here.
 }
 
 // mapping of replication headers to internal headers
 var replicationToInternalHeaders = map[string]string{
-	"X-Minio-Replication-Server-Side-Encryption-Sealed-Key":     "X-Minio-Internal-Server-Side-Encryption-Sealed-Key",
-	"X-Minio-Replication-Server-Side-Encryption-Seal-Algorithm": "X-Minio-Internal-Server-Side-Encryption-Seal-Algorithm",
-	"X-Minio-Replication-Server-Side-Encryption-Iv":             "X-Minio-Internal-Server-Side-Encryption-Iv",
-	"X-Minio-Replication-Encrypted-Multipart":                   "X-Minio-Internal-Encrypted-Multipart",
-	"X-Minio-Replication-Actual-Object-Size":                    "X-Minio-Internal-Actual-Object-Size",
+	"X-Hanzo-S3-Replication-Server-Side-Encryption-Sealed-Key":     "X-Hanzo-S3-Internal-Server-Side-Encryption-Sealed-Key",
+	"X-Hanzo-S3-Replication-Server-Side-Encryption-Seal-Algorithm": "X-Hanzo-S3-Internal-Server-Side-Encryption-Seal-Algorithm",
+	"X-Hanzo-S3-Replication-Server-Side-Encryption-Iv":             "X-Hanzo-S3-Internal-Server-Side-Encryption-Iv",
+	"X-Hanzo-S3-Replication-Encrypted-Multipart":                   "X-Hanzo-S3-Internal-Encrypted-Multipart",
+	"X-Hanzo-S3-Replication-Actual-Object-Size":                    "X-Hanzo-S3-Internal-Actual-Object-Size",
 	ReplicationSsecChecksumHeader:                               ReplicationSsecChecksumHeader,
 	// Add more supported headers here.
 }
@@ -137,7 +137,7 @@ func isDirectiveReplace(value string) bool {
 // must be extracted from the header.
 var userMetadataKeyPrefixes = []string{
 	"x-amz-meta-",
-	"x-minio-meta-",
+	"x-hanzo-s3-meta-",
 }
 
 // extractMetadataFromReq extracts metadata from HTTP header and HTTP queryString.
@@ -330,7 +330,7 @@ func collectAPIStats(api string, f http.HandlerFunc) http.HandlerFunc {
 		bucket, _ := path2BucketObject(resource)
 
 		meta, err := globalBucketMetadataSys.Get(bucket) // check if this bucket exists.
-		countBktStat := bucket != "" && bucket != minioReservedBucket && err == nil && !meta.Created.IsZero()
+		countBktStat := bucket != "" && bucket != s3ReservedBucket && err == nil && !meta.Created.IsZero()
 		if countBktStat {
 			globalBucketHTTPStats.updateHTTPStats(bucket, api, nil)
 		}
@@ -367,7 +367,7 @@ func getResource(path string, host string, domains []string) (string, error) {
 	}
 
 	for _, domain := range domains {
-		if xhost.Name == minioReservedBucket+"."+domain {
+		if xhost.Name == s3ReservedBucket+"."+domain {
 			continue
 		}
 		if !strings.HasSuffix(xhost.Name, "."+domain) {

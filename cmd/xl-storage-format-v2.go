@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -969,7 +969,7 @@ func (x *xlMetaV2) loadIndexed(buf xlMetaBuf, data xlMetaInlineData) error {
 		// First search marshaled content for encoded values.
 		// We have bumped metaV to make this check cheaper.
 		if metaV < 3 && ver.header.Type == ObjectType && bytes.Contains(meta, []byte("\xa7PartIdx")) &&
-			bytes.Contains(meta, []byte("\xbcX-Minio-Internal-compression\xc4\x15klauspost/compress/s2")) {
+			bytes.Contains(meta, []byte("\xbcX-Hanzo-S3-Internal-compression\xc4\x15klauspost/compress/s2")) {
 			// Likely candidate...
 			version, err := x.getIdx(i)
 			if err == nil {
@@ -1009,7 +1009,7 @@ func (x *xlMetaV2) loadIndexed(buf xlMetaBuf, data xlMetaInlineData) error {
 			}
 		}
 
-		// Fix inconsistent x-minio-internal-replication-timestamp by loading and reindexing.
+		// Fix inconsistent x-hanzo-s3-internal-replication-timestamp by loading and reindexing.
 		if metaV < 2 && ver.header.Type == DeleteType {
 			// load (and convert) version.
 			version, err := x.getIdx(i)

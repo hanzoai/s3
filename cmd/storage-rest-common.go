@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -22,7 +22,7 @@ package cmd
 const (
 	storageRESTVersion       = "v63" // Introduce RenamePart and ReadParts API
 	storageRESTVersionPrefix = SlashSeparator + storageRESTVersion
-	storageRESTPrefix        = minioReservedBucketPath + "/storage"
+	storageRESTPrefix        = s3ReservedBucketPath + "/storage"
 )
 
 const (

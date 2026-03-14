@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -65,8 +65,8 @@ const (
 // ReservedMetadataPrefix is the prefix of a metadata key which
 // is reserved and for internal use only.
 const (
-	ReservedMetadataPrefix      = "X-Minio-Internal-"
-	ReservedMetadataPrefixLower = "x-minio-internal-"
+	ReservedMetadataPrefix      = "X-Hanzo-S3-Internal-"
+	ReservedMetadataPrefixLower = "x-hanzo-s3-internal-"
 )
 
 // containsReservedMetadata returns true if the http.Header contains
@@ -141,8 +141,8 @@ func setRequestLimitMiddleware(h http.Handler) http.Handler {
 
 // Reserved bucket.
 const (
-	minioReservedBucket     = "minio"
-	minioReservedBucketPath = SlashSeparator + minioReservedBucket
+	s3ReservedBucket     = "s3"
+	s3ReservedBucketPath = SlashSeparator + s3ReservedBucket
 
 	loginPathPrefix = SlashSeparator + "login"
 )
@@ -174,7 +174,7 @@ var redirectPrefixes = map[string]struct{}{
 	"favicon-32x32.png": {},
 	"favicon-96x96.png": {},
 	"index.html":        {},
-	minioReservedBucket: {},
+	s3ReservedBucket: {},
 }
 
 // Fetch redirect location if urlPath satisfies certain
@@ -233,12 +233,12 @@ func guessIsMetricsReq(req *http.Request) bool {
 	}
 	aType := getRequestAuthType(req)
 	return (aType == authTypeAnonymous || aType == authTypeJWT) &&
-		req.URL.Path == minioReservedBucketPath+prometheusMetricsPathLegacy ||
-		req.URL.Path == minioReservedBucketPath+prometheusMetricsV2ClusterPath ||
-		req.URL.Path == minioReservedBucketPath+prometheusMetricsV2NodePath ||
-		req.URL.Path == minioReservedBucketPath+prometheusMetricsV2BucketPath ||
-		req.URL.Path == minioReservedBucketPath+prometheusMetricsV2ResourcePath ||
-		strings.HasPrefix(req.URL.Path, minioReservedBucketPath+metricsV3Path)
+		req.URL.Path == s3ReservedBucketPath+prometheusMetricsPathLegacy ||
+		req.URL.Path == s3ReservedBucketPath+prometheusMetricsV2ClusterPath ||
+		req.URL.Path == s3ReservedBucketPath+prometheusMetricsV2NodePath ||
+		req.URL.Path == s3ReservedBucketPath+prometheusMetricsV2BucketPath ||
+		req.URL.Path == s3ReservedBucketPath+prometheusMetricsV2ResourcePath ||
+		strings.HasPrefix(req.URL.Path, s3ReservedBucketPath+metricsV3Path)
 }
 
 // guessIsRPCReq - returns true if the request is for an RPC endpoint.
@@ -254,7 +254,7 @@ func guessIsRPCReq(req *http.Request) bool {
 	}
 
 	return (req.Method == http.MethodPost || req.Method == http.MethodGet) &&
-		strings.HasPrefix(req.URL.Path, minioReservedBucketPath+SlashSeparator)
+		strings.HasPrefix(req.URL.Path, s3ReservedBucketPath+SlashSeparator)
 }
 
 // Check to allow access to the reserved "bucket" `/minio` for Admin

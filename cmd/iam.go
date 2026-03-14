@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -62,7 +62,7 @@ type UsersSysType string
 // Types of users configured in the server.
 const (
 	// This mode uses the internal users system in MinIO.
-	MinIOUsersSysType UsersSysType = "MinIOUsersSys"
+	MinIOUsersSysType UsersSysType = "Hanzo S3UsersSys"
 
 	// This mode uses users and groups from a configured LDAP
 	// server.
