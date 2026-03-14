@@ -282,8 +282,8 @@ github.com/gorilla/securecookie v1.1.1/go.mod h1:ra0sb63/xPlUeL+yeDciTfxMRAA+MP+
 github.com/gorilla/sessions v1.2.1/go.mod h1:dk2InVEVJ0sfLlnXv9EAgkf6ecYs/i80K/zI+bUmuGM=
 github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=
 github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
-github.com/hanzoai/storage-console v1.7.7-hanzo.1 h1:3tRaqP96LUyZ9YRkP+CrWr0R8vse4l0yCgKXuvKqKLo=
-github.com/hanzoai/storage-console v1.7.7-hanzo.1/go.mod h1:xVIxtFLlAJYx6zMfoeWDHPY9tRf/0C2YGwuwsyWQlaw=
+github.com/hanzoai/storage-console v1.7.7-hanzo.3 h1:mIZbvcYuqANra26r5eDgqDKsOX5ERMqi+GKXatu7Shk=
+github.com/hanzoai/storage-console v1.7.7-hanzo.3/go.mod h1:QAS868K/S38Hn9wqpyyxBUOxUR/d7cVB7+zMSF0Ocmk=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
 github.com/hashicorp/errwrap v1.1.0 h1:OxrOeh75EUXMY8TBjag2fzXGZ40LB6IKw45YeGUDY2I=
 github.com/hashicorp/errwrap v1.1.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
