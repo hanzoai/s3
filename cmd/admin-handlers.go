@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2022 MinIO, Inc.
+// Copyright (c) 2015-2022 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -1523,7 +1523,7 @@ func (a adminAPIHandlers) SitePerfHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	nsLock := objectAPI.NewNSLock(minioMetaBucket, "site-net-perf")
+	nsLock := objectAPI.NewNSLock(s3MetaBucket, "site-net-perf")
 	lkctx, err := nsLock.GetLock(ctx, globalOperationTimeout)
 	if err != nil {
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(toAPIErrorCode(ctx, err)), r.URL)
@@ -1583,7 +1583,7 @@ func (a adminAPIHandlers) ClientDevNull(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	nsLock := objectAPI.NewNSLock(minioMetaBucket, "client-perf")
+	nsLock := objectAPI.NewNSLock(s3MetaBucket, "client-perf")
 	lkctx, err := nsLock.GetLock(ctx, globalOperationTimeout)
 	if err != nil {
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(toAPIErrorCode(ctx, err)), r.URL)
@@ -1630,7 +1630,7 @@ func (a adminAPIHandlers) NetperfHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	nsLock := objectAPI.NewNSLock(minioMetaBucket, "netperf")
+	nsLock := objectAPI.NewNSLock(s3MetaBucket, "netperf")
 	lkctx, err := nsLock.GetLock(ctx, globalOperationTimeout)
 	if err != nil {
 		writeErrorResponseJSON(ctx, w, errorCodes.ToAPIErr(toAPIErrorCode(ctx, err)), r.URL)
@@ -1997,7 +1997,7 @@ func shouldTrace(trcInfo madmin.TraceInfo, opts madmin.ServiceTraceOpts) (should
 	}
 
 	// Check internal path
-	isInternal := isHTTP && HasPrefix(trcInfo.HTTP.ReqInfo.Path, minioReservedBucketPath+SlashSeparator)
+	isInternal := isHTTP && HasPrefix(trcInfo.HTTP.ReqInfo.Path, s3ReservedBucketPath+SlashSeparator)
 	if isInternal && !opts.Internal {
 		return false
 	}
@@ -2271,7 +2271,7 @@ func (a adminAPIHandlers) KMSKeyStatusHandler(w http.ResponseWriter, r *http.Req
 		KeyID: keyID,
 	}
 
-	kmsContext := kms.Context{"MinIO admin API": "KMSKeyStatusHandler"} // Context for a test key operation
+	kmsContext := kms.Context{"Hanzo S3 admin API": "KMSKeyStatusHandler"} // Context for a test key operation
 	// 1. Generate a new key using the KMS.
 	key, err := GlobalKMS.GenerateKey(ctx, &kms.GenerateKeyRequest{
 		Name:           keyID,
@@ -2931,7 +2931,7 @@ func (a adminAPIHandlers) HealthInfoHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	nsLock := objectAPI.NewNSLock(minioMetaBucket, "health-check-in-progress")
+	nsLock := objectAPI.NewNSLock(s3MetaBucket, "health-check-in-progress")
 	lkctx, err := nsLock.GetLock(ctx, newDynamicTimeout(deadline, deadline))
 	if err != nil { // returns a locked lock
 		errResp(err)
@@ -3420,8 +3420,8 @@ func (a adminAPIHandlers) InspectDataHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	// save the format.json as part of inspect by default
-	if volume != minioMetaBucket || file != formatConfigFile {
-		err = o.GetRawData(ctx, minioMetaBucket, formatConfigFile, rawDataFn)
+	if volume != s3MetaBucket || file != formatConfigFile {
+		err = o.GetRawData(ctx, s3MetaBucket, formatConfigFile, rawDataFn)
 	}
 	if !errors.Is(err, errFileNotFound) {
 		adminLogIf(ctx, err)
@@ -3452,7 +3452,7 @@ function main() {
 	echo
 	eval "$START_CMD"
 	S3_SRVR_PID="$!"
-	echo "MinIO Server PID: ${S3_SRVR_PID}"
+	echo "Hanzo S3 Server PID: ${S3_SRVR_PID}"
 	echo
 	echo "Waiting for MinIO instance to get ready!"
 	sleep 10

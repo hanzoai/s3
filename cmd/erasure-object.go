@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -683,8 +683,8 @@ func pickLatestQuorumFilesInfo(ctx context.Context, rawFileInfos []RawFileInfo, 
 //	   err: reduced errs
 //	bucket: the object name in question
 func shouldCheckForDangling(err error, errs []error, bucket string) bool {
-	// Avoid data in .minio.sys for now
-	if bucket == minioMetaBucket {
+	// Avoid data in .s3.sys for now
+	if bucket == s3MetaBucket {
 		return false
 	}
 	switch {
@@ -1132,7 +1132,7 @@ func (er erasureObjects) putMetacacheObject(ctx context.Context, key string, r *
 	// Initialize parts metadata
 	partsMetadata := make([]FileInfo, len(storageDisks))
 
-	fi := newFileInfo(pathJoin(minioMetaBucket, key), dataDrives, parityDrives)
+	fi := newFileInfo(pathJoin(s3MetaBucket, key), dataDrives, parityDrives)
 	fi.DataDir = mustGetUUID()
 
 	// Initialize erasure metadata.
@@ -1146,7 +1146,7 @@ func (er erasureObjects) putMetacacheObject(ctx context.Context, key string, r *
 
 	erasure, err := NewErasure(ctx, fi.Erasure.DataBlocks, fi.Erasure.ParityBlocks, fi.Erasure.BlockSize)
 	if err != nil {
-		return ObjectInfo{}, toObjectErr(err, minioMetaBucket, key)
+		return ObjectInfo{}, toObjectErr(err, s3MetaBucket, key)
 	}
 
 	// Fetch buffer for I/O, returns from the pool if not allocates a new one and returns.
@@ -1183,17 +1183,17 @@ func (er erasureObjects) putMetacacheObject(ctx context.Context, key string, r *
 	n, erasureErr := erasure.Encode(ctx, data, writers, buffer, writeQuorum)
 	closeErrs := closeBitrotWriters(writers)
 	if erasureErr != nil {
-		return ObjectInfo{}, toObjectErr(erasureErr, minioMetaBucket, key)
+		return ObjectInfo{}, toObjectErr(erasureErr, s3MetaBucket, key)
 	}
 
 	if closeErr := reduceWriteQuorumErrs(ctx, closeErrs, objectOpIgnoredErrs, writeQuorum); closeErr != nil {
-		return ObjectInfo{}, toObjectErr(closeErr, minioMetaBucket, key)
+		return ObjectInfo{}, toObjectErr(closeErr, s3MetaBucket, key)
 	}
 
 	// Should return IncompleteBody{} error when reader has fewer bytes
 	// than specified in request header.
 	if n < data.Size() {
-		return ObjectInfo{}, IncompleteBody{Bucket: minioMetaBucket, Object: key}
+		return ObjectInfo{}, IncompleteBody{Bucket: s3MetaBucket, Object: key}
 	}
 	var index []byte
 	if opts.IndexCB != nil {
@@ -1235,11 +1235,11 @@ func (er erasureObjects) putMetacacheObject(ctx context.Context, key string, r *
 		}
 	}
 
-	if _, err = writeUniqueFileInfo(ctx, onlineDisks, "", minioMetaBucket, key, partsMetadata, writeQuorum); err != nil {
-		return ObjectInfo{}, toObjectErr(err, minioMetaBucket, key)
+	if _, err = writeUniqueFileInfo(ctx, onlineDisks, "", s3MetaBucket, key, partsMetadata, writeQuorum); err != nil {
+		return ObjectInfo{}, toObjectErr(err, s3MetaBucket, key)
 	}
 
-	return fi.ToObjectInfo(minioMetaBucket, key, opts.Versioned || opts.VersionSuspended), nil
+	return fi.ToObjectInfo(s3MetaBucket, key, opts.Versioned || opts.VersionSuspended), nil
 }
 
 // PutObject - creates an object upon reading from the input stream
@@ -1393,7 +1393,7 @@ func (er erasureObjects) putObject(ctx context.Context, bucket string, object st
 	partName := "part.1"
 	tempErasureObj := pathJoin(uniqueID, fi.DataDir, partName)
 
-	defer er.deleteAll(context.Background(), minioMetaTmpBucket, tempObj)
+	defer er.deleteAll(context.Background(), s3MetaTmpBucket, tempObj)
 
 	var inlineBuffers []*bytes.Buffer
 	if globalStorageClass.ShouldInline(erasure.ShardFileSize(data.ActualSize()), opts.Versioned) {
@@ -1419,7 +1419,7 @@ func (er erasureObjects) putObject(ctx context.Context, bucket string, object st
 			continue
 		}
 
-		writers[i] = newBitrotWriter(disk, bucket, minioMetaTmpBucket, tempErasureObj, shardFileSize, DefaultBitrotAlgorithm, erasure.ShardSize())
+		writers[i] = newBitrotWriter(disk, bucket, s3MetaTmpBucket, tempErasureObj, shardFileSize, DefaultBitrotAlgorithm, erasure.ShardSize())
 	}
 
 	toEncode := io.Reader(data)
@@ -1561,7 +1561,7 @@ func (er erasureObjects) putObject(ctx context.Context, bucket string, object st
 	}
 
 	// Rename the successfully written temporary object to final location.
-	onlineDisks, versions, oldDataDir, err := renameData(ctx, onlineDisks, minioMetaTmpBucket, tempObj, partsMetadata, bucket, object, writeQuorum)
+	onlineDisks, versions, oldDataDir, err := renameData(ctx, onlineDisks, s3MetaTmpBucket, tempObj, partsMetadata, bucket, object, writeQuorum)
 	if err != nil {
 		if errors.Is(err, errFileNotFound) {
 			// An in-quorum errFileNotFound means that client stream

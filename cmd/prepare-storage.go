@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -73,28 +73,28 @@ var printEndpointError = func() func(Endpoint, error, bool) {
 // Cleans up tmp directory of the local disk.
 func bgFormatErasureCleanupTmp(diskPath string) {
 	// Need to move temporary objects left behind from previous run of minio
-	// server to a unique directory under `minioMetaTmpBucket-old` to clean
-	// up `minioMetaTmpBucket` for the current run.
+	// server to a unique directory under `s3MetaTmpBucket-old` to clean
+	// up `s3MetaTmpBucket` for the current run.
 	//
-	// /disk1/.minio.sys/tmp-old/
+	// /disk1/.s3.sys/tmp-old/
 	//  |__ 33a58b40-aecc-4c9f-a22f-ff17bfa33b62
 	//  |__ e870a2c1-d09c-450c-a69c-6eaa54a89b3e
 	//
 	// In this example, `33a58b40-aecc-4c9f-a22f-ff17bfa33b62` directory contains
 	// temporary objects from one of the previous runs of minio server.
 	tmpID := mustGetUUID()
-	tmpOld := pathJoin(diskPath, minioMetaTmpBucket+"-old", tmpID)
-	if err := renameAll(pathJoin(diskPath, minioMetaTmpBucket),
+	tmpOld := pathJoin(diskPath, s3MetaTmpBucket+"-old", tmpID)
+	if err := renameAll(pathJoin(diskPath, s3MetaTmpBucket),
 		tmpOld, diskPath); err != nil && !errors.Is(err, errFileNotFound) {
 		storageLogIf(GlobalContext, fmt.Errorf("unable to rename (%s -> %s) %w, drive may be faulty, please investigate",
-			pathJoin(diskPath, minioMetaTmpBucket),
+			pathJoin(diskPath, s3MetaTmpBucket),
 			tmpOld,
 			osErrToFileErr(err)))
 	}
 
-	if err := mkdirAll(pathJoin(diskPath, minioMetaTmpDeletedBucket), 0o777, diskPath); err != nil {
+	if err := mkdirAll(pathJoin(diskPath, s3MetaTmpDeletedBucket), 0o777, diskPath); err != nil {
 		storageLogIf(GlobalContext, fmt.Errorf("unable to create (%s) %w, drive may be faulty, please investigate",
-			pathJoin(diskPath, minioMetaTmpBucket),
+			pathJoin(diskPath, s3MetaTmpBucket),
 			err))
 	}
 
@@ -105,7 +105,7 @@ func bgFormatErasureCleanupTmp(diskPath string) {
 	}
 
 	// Remove the entire folder in case there are leftovers that didn't get cleaned up before restart.
-	go removeAll(pathJoin(diskPath, minioMetaTmpBucket+"-old"))
+	go removeAll(pathJoin(diskPath, s3MetaTmpBucket+"-old"))
 
 	// Renames and schedules for purging all bucket metacache.
 	go renameAllBucketMetacache(diskPath)

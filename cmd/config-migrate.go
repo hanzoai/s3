@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -49,7 +49,7 @@ func Load(configFile string, data any) (quick.Config, error) {
 
 func readConfigWithoutMigrate(ctx context.Context, objAPI ObjectLayer) (config.Config, error) {
 	// Construct path to config.json for the given bucket.
-	configFile := path.Join(minioConfigPrefix, minioConfigFile)
+	configFile := path.Join(s3ConfigPrefix, minioConfigFile)
 
 	configFiles := []string{
 		getConfigFile(),
@@ -101,7 +101,7 @@ func readConfigWithoutMigrate(ctx context.Context, objAPI ObjectLayer) (config.C
 			return newCfg, nil
 		}
 
-		// Read older `.minio.sys/config/config.json`, if not
+		// Read older `.s3.sys/config/config.json`, if not
 		// possible just fail.
 		if err = json.Unmarshal(data, cfg); err != nil {
 			// Unable to parse old JSON simply re-initialize a new one.

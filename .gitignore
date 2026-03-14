@@ -2,12 +2,15 @@
 cover.out
 *~
 minio
+hanzo-s3-*
+rebrand-minio.sh
 !*/
 site/
 **/*.test
 **/*.sublime-workspace
 /.idea/
 /Minio.iml
+/S3.iml
 **/access.log
 vendor/
 .DS_Store
@@ -29,6 +32,7 @@ inspect*.zip
 200M*
 hash-set
 minio.RELEASE*
+s3.RELEASE*
 mc
 nancy
 inspects/*

@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2023 MinIO, Inc.
+// Copyright (c) 2015-2023 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -56,11 +56,11 @@ import (
 //   target:
 //     type: "minio"
 //     bucket: "testbucket1"
-//     endpoint: "https://play.hanzo.space"
+//     endpoint: "https://s3-demo.hanzo.ai"
 //     path: "on"
 //     credentials:
-//       accessKey: "minioadmin"
-//       secretKey: "minioadmin"
+//       accessKey: "admin"
+//       secretKey: "admin"
 //       sessionToken: ""
 
 // BatchReplicateFilter holds all the filters currently supported for batch replication

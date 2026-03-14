@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2023 MinIO, Inc.
+// Copyright (c) 2015-2023 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -112,7 +112,7 @@ func (e BatchJobKeyRotateEncryption) Validate() error {
 		}
 		e.kmsContext = kms.Context{}
 		maps.Copy(e.kmsContext, ctx)
-		ctx["MinIO batch API"] = "batchrotate" // Context for a test key operation
+		ctx["Hanzo S3 batch API"] = "batchrotate" // Context for a test key operation
 		if _, err := GlobalKMS.GenerateKey(GlobalContext, &kms.GenerateKeyRequest{Name: e.Key, AssociatedData: ctx}); err != nil {
 			return err
 		}

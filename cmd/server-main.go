@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -854,7 +854,7 @@ func serverMain(ctx *cli.Context) {
 	// Check for updates in non-blocking manner.
 	go func() {
 		if !globalServerCtxt.Quiet && !globalInplaceUpdateDisabled {
-			// Check for new updates from dl.hanzo.space.
+			// Check for new updates from dl.hanzo.ai.
 			bootstrapTrace("checkUpdate", func() {
 				checkUpdate(getMinioMode())
 			})

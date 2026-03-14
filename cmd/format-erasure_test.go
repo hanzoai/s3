@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -116,11 +116,11 @@ func TestFormatErasureMigrate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = os.MkdirAll(pathJoin(rootPath, minioMetaBucket), os.FileMode(0o755)); err != nil {
+	if err = os.MkdirAll(pathJoin(rootPath, s3MetaBucket), os.FileMode(0o755)); err != nil {
 		t.Fatal(err)
 	}
 
-	if err = os.WriteFile(pathJoin(rootPath, minioMetaBucket, formatConfigFile), b, os.FileMode(0o644)); err != nil {
+	if err = os.WriteFile(pathJoin(rootPath, s3MetaBucket, formatConfigFile), b, os.FileMode(0o644)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -138,7 +138,7 @@ func TestFormatErasureMigrate(t *testing.T) {
 		t.Fatalf("expected version: %s, got: %s", formatErasureVersionV3, migratedVersion)
 	}
 
-	b, err = os.ReadFile(pathJoin(rootPath, minioMetaBucket, formatConfigFile))
+	b, err = os.ReadFile(pathJoin(rootPath, s3MetaBucket, formatConfigFile))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +168,7 @@ func TestFormatErasureMigrate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = os.WriteFile(pathJoin(rootPath, minioMetaBucket, formatConfigFile), b, os.FileMode(0o644)); err != nil {
+	if err = os.WriteFile(pathJoin(rootPath, s3MetaBucket, formatConfigFile), b, os.FileMode(0o644)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -188,7 +188,7 @@ func TestFormatErasureMigrate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = os.WriteFile(pathJoin(rootPath, minioMetaBucket, formatConfigFile), b, os.FileMode(0o644)); err != nil {
+	if err = os.WriteFile(pathJoin(rootPath, s3MetaBucket, formatConfigFile), b, os.FileMode(0o644)); err != nil {
 		t.Fatal(err)
 	}
 

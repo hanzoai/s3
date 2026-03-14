@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -84,7 +84,7 @@ func (api objectAPIHandlers) PutBucketEncryptionHandler(w http.ResponseWriter, r
 	}
 	kmsKey := encConfig.KeyID()
 	if kmsKey != "" {
-		kmsContext := kms.Context{"MinIO admin API": "ServerInfoHandler"} // Context for a test key operation
+		kmsContext := kms.Context{"Hanzo S3 admin API": "ServerInfoHandler"} // Context for a test key operation
 		_, err := GlobalKMS.GenerateKey(ctx, &kms.GenerateKeyRequest{Name: kmsKey, AssociatedData: kmsContext})
 		if err != nil {
 			if errors.Is(err, kes.ErrKeyNotFound) {

@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2023 MinIO, Inc.
+// Copyright (c) 2015-2023 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -218,7 +218,7 @@ func ConnectWSWithRoutePath(dial ContextDialer, auth AuthFn, tls *tls.Config, ro
 		}
 		header := make(http.Header, 2)
 		header.Set("Authorization", "Bearer "+auth())
-		header.Set("X-Minio-Time", strconv.FormatInt(time.Now().UnixNano(), 10))
+		header.Set("X-Hanzo-S3-Time", strconv.FormatInt(time.Now().UnixNano(), 10))
 
 		if len(header) > 0 {
 			dialer.Header = ws.HandshakeHeaderHTTP(header)

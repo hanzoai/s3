@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -251,8 +251,8 @@ func driveSpeedTest(ctx context.Context, opts madmin.DriveSpeedTestOpts) madmin.
 	var ignoredPaths []string
 	paths := func() (tmpPaths []string) {
 		for _, lp := range localPaths {
-			if _, err := Lstat(pathJoin(lp, minioMetaBucket, formatConfigFile)); err == nil {
-				tmpPaths = append(tmpPaths, pathJoin(lp, minioMetaTmpBucket))
+			if _, err := Lstat(pathJoin(lp, s3MetaBucket, formatConfigFile)); err == nil {
+				tmpPaths = append(tmpPaths, pathJoin(lp, s3MetaTmpBucket))
 			} else {
 				// Use dperf on only formatted drives.
 				ignoredPaths = append(ignoredPaths, lp)

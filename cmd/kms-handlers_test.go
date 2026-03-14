@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -330,7 +330,7 @@ func TestKMSHandlersAPIs(t *testing.T) {
 			asRoot: true,
 
 			wantStatusCode: http.StatusOK,
-			wantResp:       []string{"MinIO builtin"},
+			wantResp:       []string{"Hanzo S3 builtin"},
 		},
 		{
 			name:   "status as user with no policy want forbidden",
@@ -352,7 +352,7 @@ func TestKMSHandlersAPIs(t *testing.T) {
 				"Resource": ["arn:minio:kms:::does-not-matter-it-is-ignored"]}`,
 
 			wantStatusCode: http.StatusOK,
-			wantResp:       []string{"MinIO builtin"},
+			wantResp:       []string{"Hanzo S3 builtin"},
 		},
 	}
 	for testNum, test := range tests {
@@ -567,7 +567,7 @@ func TestKMSHandlerAdminAPI(t *testing.T) {
 			asRoot: true,
 
 			wantStatusCode: http.StatusOK,
-			wantResp:       []string{"MinIO builtin"},
+			wantResp:       []string{"Hanzo S3 builtin"},
 		},
 		{
 			name:   "status as user with no policy want forbidden",
@@ -589,7 +589,7 @@ func TestKMSHandlerAdminAPI(t *testing.T) {
 				"Resource": ["arn:minio:kms:::does-not-matter-it-is-ignored"] }`,
 
 			wantStatusCode: http.StatusOK,
-			wantResp:       []string{"MinIO builtin"},
+			wantResp:       []string{"Hanzo S3 builtin"},
 		},
 
 		// Key status tests

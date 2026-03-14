@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2023 MinIO, Inc.
+// Copyright (c) 2015-2023 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -352,7 +352,7 @@ func NewRedisTarget(id string, args RedisArgs, loggerOnce logger.LogOnce) (*Redi
 			}
 
 			// Must be done after AUTH
-			if _, err = conn.Do("CLIENT", "SETNAME", "MinIO"); err != nil {
+			if _, err = conn.Do("CLIENT", "SETNAME", "Hanzo S3"); err != nil {
 				conn.Close()
 				return nil, err
 			}

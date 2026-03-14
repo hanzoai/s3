@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -32,7 +32,7 @@ var (
 	// StubCreatedAt is a constant timestamp for testing
 	StubCreatedAt = time.Date(2024, time.January, 1, 15, 0, 0, 0, time.UTC)
 	// StubCreatedBy is a constant created identity for testing
-	StubCreatedBy = "MinIO"
+	StubCreatedBy = "Hanzo S3"
 )
 
 // NewStub returns a stub of KMS for testing

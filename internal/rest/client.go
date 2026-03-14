@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -192,7 +192,7 @@ func (c *Client) newRequest(ctx context.Context, method string, u url.URL, body 
 	if c.auth != nil {
 		req.Header.Set("Authorization", "Bearer "+c.auth())
 	}
-	req.Header.Set("X-Minio-Time", strconv.FormatInt(time.Now().UnixNano(), 10))
+	req.Header.Set("X-Hanzo-S3-Time", strconv.FormatInt(time.Now().UnixNano(), 10))
 
 	if tc, ok := ctx.Value(mcontext.ContextTraceKey).(*mcontext.TraceCtxt); ok {
 		req.Header.Set(xhttp.AmzRequestID, tc.AmzReqID)

@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -94,7 +94,7 @@ func (j *xlMetaV2Version) unmarshalV(v uint8, bts []byte) (o []byte, err error) 
 	}
 	o, err = j.UnmarshalMsg(bts)
 
-	// Fix inconsistent x-minio-internal-replication-timestamp by converting to UTC.
+	// Fix inconsistent x-hanzo-s3-internal-replication-timestamp by converting to UTC.
 	// Fixed in version 2 or later
 	if err == nil && j.Type == DeleteType && v < 2 {
 		if val, ok := j.DeleteMarker.MetaSys[ReservedMetadataPrefixLower+ReplicationTimestamp]; ok {

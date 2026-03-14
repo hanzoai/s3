@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -56,15 +56,15 @@ import (
 
 const (
 	// MinIO meta bucket.
-	minioMetaBucket = ".minio.sys"
+	s3MetaBucket = ".s3.sys"
 	// Multipart meta prefix.
 	mpartMetaPrefix = "multipart"
 	// MinIO Multipart meta prefix.
-	minioMetaMultipartBucket = minioMetaBucket + SlashSeparator + mpartMetaPrefix
+	s3MetaMultipartBucket = s3MetaBucket + SlashSeparator + mpartMetaPrefix
 	// MinIO tmp meta prefix.
-	minioMetaTmpBucket = minioMetaBucket + "/tmp"
+	s3MetaTmpBucket = s3MetaBucket + "/tmp"
 	// MinIO tmp meta prefix for deleted objects.
-	minioMetaTmpDeletedBucket = minioMetaTmpBucket + "/.trash"
+	s3MetaTmpDeletedBucket = s3MetaTmpBucket + "/.trash"
 
 	// DNS separator (period), used for bucket name validation.
 	dnsDelimiter = "."
@@ -95,7 +95,7 @@ func getKeySeparator() string {
 // isMinioBucket returns true if given bucket is a MinIO internal
 // bucket and false otherwise.
 func isMinioMetaBucketName(bucket string) bool {
-	return strings.HasPrefix(bucket, minioMetaBucket)
+	return strings.HasPrefix(bucket, s3MetaBucket)
 }
 
 // IsValidBucketName verifies that a bucket name is in accordance with
@@ -486,14 +486,14 @@ func isReservedOrInvalidBucket(bucketEntry string, strict bool) bool {
 	return isMinioMetaBucket(bucketEntry) || isMinioReservedBucket(bucketEntry)
 }
 
-// Returns true if input bucket is a reserved minio meta bucket '.minio.sys'.
+// Returns true if input bucket is a reserved minio meta bucket '.s3.sys'.
 func isMinioMetaBucket(bucketName string) bool {
-	return bucketName == minioMetaBucket
+	return bucketName == s3MetaBucket
 }
 
 // Returns true if input bucket is a reserved minio bucket 'minio'.
 func isMinioReservedBucket(bucketName string) bool {
-	return bucketName == minioReservedBucket
+	return bucketName == s3ReservedBucket
 }
 
 // returns a slice of hosts by reading a slice of DNS records

@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2023 MinIO, Inc.
+// Copyright (c) 2015-2023 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -119,9 +119,9 @@ func (api objectAPIHandlers) NewMultipartUploadHandler(w http.ResponseWriter, r 
 
 		_, sourceReplReq := r.Header[xhttp.MinIOSourceReplicationRequest]
 		ssecRepHeaders := []string{
-			"X-Minio-Replication-Server-Side-Encryption-Seal-Algorithm",
-			"X-Minio-Replication-Server-Side-Encryption-Sealed-Key",
-			"X-Minio-Replication-Server-Side-Encryption-Iv",
+			"X-Hanzo-S3-Replication-Server-Side-Encryption-Seal-Algorithm",
+			"X-Hanzo-S3-Replication-Server-Side-Encryption-Sealed-Key",
+			"X-Hanzo-S3-Replication-Server-Side-Encryption-Iv",
 		}
 		ssecRep := false
 		for _, header := range ssecRepHeaders {

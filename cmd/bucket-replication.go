@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -78,7 +78,7 @@ const (
 	ObjectLockLegalHoldTimestamp = "objectlock-legalhold-timestamp"
 
 	// ReplicationSsecChecksumHeader - the encrypted checksum of the SSE-C encrypted object.
-	ReplicationSsecChecksumHeader = "X-Minio-Replication-Ssec-Crc"
+	ReplicationSsecChecksumHeader = "X-Hanzo-S3-Replication-Ssec-Crc"
 )
 
 // gets replication config associated to a given bucket name.
@@ -3593,7 +3593,7 @@ func (p *ReplicationPool) persistToDrive(ctx context.Context, v MRFReplicateEntr
 
 	for _, localDrive := range localDrives {
 		r := newReader()
-		err := localDrive.CreateFile(ctx, "", minioMetaBucket, pathJoin(replicationMRFDir, globalLocalNodeNameHex+".bin"), -1, r)
+		err := localDrive.CreateFile(ctx, "", s3MetaBucket, pathJoin(replicationMRFDir, globalLocalNodeNameHex+".bin"), -1, r)
 		r.Close()
 		if err == nil {
 			break
@@ -3659,7 +3659,7 @@ func (p *ReplicationPool) loadMRF() (mrfRec MRFReplicateEntries, err error) {
 	globalLocalDrivesMu.RUnlock()
 
 	for _, localDrive := range localDrives {
-		rc, err := localDrive.ReadFileStream(p.ctx, minioMetaBucket, pathJoin(replicationMRFDir, globalLocalNodeNameHex+".bin"), 0, -1)
+		rc, err := localDrive.ReadFileStream(p.ctx, s3MetaBucket, pathJoin(replicationMRFDir, globalLocalNodeNameHex+".bin"), 0, -1)
 		if err != nil {
 			continue
 		}
@@ -3670,7 +3670,7 @@ func (p *ReplicationPool) loadMRF() (mrfRec MRFReplicateEntries, err error) {
 		}
 
 		// finally delete the file after processing mrf entries
-		localDrive.Delete(p.ctx, minioMetaBucket, pathJoin(replicationMRFDir, globalLocalNodeNameHex+".bin"), DeleteOptions{})
+		localDrive.Delete(p.ctx, s3MetaBucket, pathJoin(replicationMRFDir, globalLocalNodeNameHex+".bin"), DeleteOptions{})
 		break
 	}
 

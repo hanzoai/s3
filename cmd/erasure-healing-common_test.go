@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -660,7 +660,7 @@ func TestCommonParities(t *testing.T) {
 		ModTime:        time.Date(2023, time.March, 15, 11, 18, 4, 989906961, time.UTC),
 		Size:           329289, Mode: 0x0, WrittenByVersion: 0x63c77756,
 		Metadata: map[string]string{
-			"content-type": "application/octet-stream", "etag": "f205307ef9f50594c4b86d9c246bee86", "x-minio-internal-erasure-upgraded": "5->6", "x-minio-internal-inline-data": "true",
+			"content-type": "application/octet-stream", "etag": "f205307ef9f50594c4b86d9c246bee86", "x-hanzo-s3-internal-erasure-upgraded": "5->6", "x-hanzo-s3-internal-inline-data": "true",
 		},
 		Parts: []ObjectPartInfo{
 			{
@@ -697,7 +697,7 @@ func TestCommonParities(t *testing.T) {
 		Size:             329289,
 		Mode:             0x0,
 		WrittenByVersion: 0x63c77756,
-		Metadata:         map[string]string{"content-type": "application/octet-stream", "etag": "f205307ef9f50594c4b86d9c246bee86", "x-minio-internal-inline-data": "true"},
+		Metadata:         map[string]string{"content-type": "application/octet-stream", "etag": "f205307ef9f50594c4b86d9c246bee86", "x-hanzo-s3-internal-inline-data": "true"},
 		Parts: []ObjectPartInfo{
 			{
 				ETag:       "",

@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2023 MinIO, Inc.
+// Copyright (c) 2015-2023 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -263,7 +263,7 @@ func (a kmsAPIHandlers) KMSKeyStatusHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	kmsContext := kms.Context{"MinIO admin API": "KMSKeyStatusHandler"} // Context for a test key operation
+	kmsContext := kms.Context{"Hanzo S3 admin API": "KMSKeyStatusHandler"} // Context for a test key operation
 	// 1. Generate a new key using the KMS.
 	key, err := GlobalKMS.GenerateKey(ctx, &kms.GenerateKeyRequest{Name: keyID, AssociatedData: kmsContext})
 	if err != nil {

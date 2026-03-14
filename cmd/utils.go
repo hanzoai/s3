@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -708,7 +708,7 @@ func ceilFrac(numerator, denominator int64) (ceil int64) {
 func cleanMinioInternalMetadataKeys(metadata map[string]string) map[string]string {
 	newMeta := make(map[string]string, len(metadata))
 	for k, v := range metadata {
-		if strings.HasPrefix(k, "X-Amz-Meta-X-Minio-Internal-") {
+		if strings.HasPrefix(k, "X-Amz-Meta-X-Hanzo-S3-Internal-") {
 			newMeta[strings.TrimPrefix(k, "X-Amz-Meta-")] = v
 		} else {
 			newMeta[k] = v

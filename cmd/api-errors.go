@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2023 MinIO, Inc.
+// Copyright (c) 2015-2023 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -1062,7 +1062,7 @@ var errorCodes = errorCodeMap{
 	},
 	ErrReplicationPermissionCheckError: {
 		Code:           "ReplicationPermissionCheck",
-		Description:    "X-Minio-Source-Replication-Check cannot be specified in request. Request cannot be completed",
+		Description:    "X-Hanzo-S3-Source-Replication-Check cannot be specified in request. Request cannot be completed",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrNoSuchObjectLockConfiguration: {
@@ -1154,7 +1154,7 @@ var errorCodes = errorCodeMap{
 	},
 	ErrUnsupportedNotification: {
 		Code:           "UnsupportedNotification",
-		Description:    "MinIO server does not support Topic or Cloud Function based notifications.",
+		Description:    "Hanzo S3 server does not support Topic or Cloud Function based notifications.",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrInvalidCopyPartRange: {

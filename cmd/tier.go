@@ -1,6 +1,6 @@
 // Copyright (c) 2015-2024 MinIO, Inc
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -81,7 +81,7 @@ const (
 )
 
 // tierConfigPath refers to remote tier config object name
-var tierConfigPath = path.Join(minioConfigPrefix, tierConfigFile)
+var tierConfigPath = path.Join(s3ConfigPrefix, tierConfigFile)
 
 const tierCfgRefreshAtHdr = "X-MinIO-TierCfg-RefreshedAt"
 
@@ -445,7 +445,7 @@ func (config *TierConfigMgr) configReader(ctx context.Context) (*PutObjReader, *
 
 	// Encrypt json encoded tier configurations
 	metadata := make(map[string]string)
-	encBr, oek, err := newEncryptReader(context.Background(), hr, crypto.S3, "", nil, minioMetaBucket, tierConfigPath, metadata, kms.Context{})
+	encBr, oek, err := newEncryptReader(context.Background(), hr, crypto.S3, "", nil, s3MetaBucket, tierConfigPath, metadata, kms.Context{})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -512,7 +512,7 @@ func (config *TierConfigMgr) Save(ctx context.Context, objAPI ObjectLayer) error
 		return err
 	}
 
-	_, err = objAPI.PutObject(ctx, minioMetaBucket, tierConfigPath, pr, *opts)
+	_, err = objAPI.PutObject(ctx, s3MetaBucket, tierConfigPath, pr, *opts)
 	return err
 }
 

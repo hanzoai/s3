@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -29,12 +29,12 @@ const (
 	healthCheckReadinessPath   = "/ready"
 	healthCheckClusterPath     = "/cluster"
 	healthCheckClusterReadPath = "/cluster/read"
-	healthCheckPathPrefix      = minioReservedBucketPath + healthCheckPath
+	healthCheckPathPrefix      = s3ReservedBucketPath + healthCheckPath
 )
 
 // registerHealthCheckRouter - add handler functions for liveness and readiness routes.
 func registerHealthCheckRouter(router *mux.Router) {
-	// Healthcheck router at /minio/health (legacy path)
+	// Healthcheck router at /s3/health
 	healthRouter := router.PathPrefix(healthCheckPathPrefix).Subrouter()
 
 	// Cluster check handler to verify cluster is active
@@ -51,7 +51,7 @@ func registerHealthCheckRouter(router *mux.Router) {
 	healthRouter.Methods(http.MethodGet).Path(healthCheckReadinessPath).HandlerFunc(httpTraceAll(ReadinessCheckHandler))
 	healthRouter.Methods(http.MethodHead).Path(healthCheckReadinessPath).HandlerFunc(httpTraceAll(ReadinessCheckHandler))
 
-	// Also register at /health (short path, no /minio/ prefix)
+	// Also register at /health (short path, no /s3/ prefix)
 	shortHealthRouter := router.PathPrefix(healthCheckPath).Subrouter()
 	shortHealthRouter.Methods(http.MethodGet).Path(healthCheckClusterPath).HandlerFunc(httpTraceAll(ClusterCheckHandler))
 	shortHealthRouter.Methods(http.MethodHead).Path(healthCheckClusterPath).HandlerFunc(httpTraceAll(ClusterCheckHandler))

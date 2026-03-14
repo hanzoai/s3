@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -72,7 +72,7 @@ type formatErasureVersionDetect struct {
 }
 
 // Represents the V1 backend disk structure version
-// under `.minio.sys` and actual data namespace.
+// under `.s3.sys` and actual data namespace.
 // formatErasureV1 - structure holds format config version '1'.
 type formatErasureV1 struct {
 	formatMetaV1
@@ -86,7 +86,7 @@ type formatErasureV1 struct {
 }
 
 // Represents the V2 backend disk structure version
-// under `.minio.sys` and actual data namespace.
+// under `.s3.sys` and actual data namespace.
 // formatErasureV2 - structure holds format config version '2'.
 // The V2 format to support "large bucket" support where a bucket
 // can span multiple erasure sets.
@@ -107,7 +107,7 @@ type formatErasureV2 struct {
 
 // formatErasureV3 struct is same as formatErasureV2 struct except that formatErasureV3.Erasure.Version is "3" indicating
 // the simplified multipart backend which is a flat hierarchy now.
-// In .minio.sys/multipart we have:
+// In .s3.sys/multipart we have:
 // sha256(bucket/object)/uploadID/[xl.meta, part.1, part.2 ....]
 type formatErasureV3 struct {
 	formatMetaV1
@@ -191,7 +191,7 @@ func formatGetBackendErasureVersion(b []byte) (string, error) {
 // this code calls migration in sequence, such as V1 is migrated to V2
 // first before it V2 migrates to V3.n
 func formatErasureMigrate(export string) ([]byte, fs.FileInfo, error) {
-	formatPath := pathJoin(export, minioMetaBucket, formatConfigFile)
+	formatPath := pathJoin(export, s3MetaBucket, formatConfigFile)
 	formatData, formatFi, err := xioutil.ReadFileWithFileInfo(formatPath)
 	if err != nil {
 		return nil, nil, err
@@ -273,11 +273,11 @@ func formatErasureMigrateV2ToV3(data []byte, export, version string) ([]byte, er
 		return nil, err
 	}
 
-	tmpOld := pathJoin(export, minioMetaTmpDeletedBucket, mustGetUUID())
-	if err := renameAll(pathJoin(export, minioMetaMultipartBucket),
+	tmpOld := pathJoin(export, s3MetaTmpDeletedBucket, mustGetUUID())
+	if err := renameAll(pathJoin(export, s3MetaMultipartBucket),
 		tmpOld, export); err != nil && err != errFileNotFound {
 		bootLogIf(GlobalContext, fmt.Errorf("unable to rename (%s -> %s) %w, drive may be faulty please investigate",
-			pathJoin(export, minioMetaMultipartBucket),
+			pathJoin(export, s3MetaMultipartBucket),
 			tmpOld,
 			osErrToFileErr(err)))
 	}
@@ -360,18 +360,18 @@ func saveFormatErasure(disk StorageAPI, format *formatErasureV3, healID string) 
 	tmpFormat := mustGetUUID()
 
 	// Purge any existing temporary file, okay to ignore errors here.
-	defer disk.Delete(context.TODO(), minioMetaBucket, tmpFormat, DeleteOptions{
+	defer disk.Delete(context.TODO(), s3MetaBucket, tmpFormat, DeleteOptions{
 		Recursive: false,
 		Immediate: false,
 	})
 
 	// write to unique file.
-	if err = disk.WriteAll(context.TODO(), minioMetaBucket, tmpFormat, formatData); err != nil {
+	if err = disk.WriteAll(context.TODO(), s3MetaBucket, tmpFormat, formatData); err != nil {
 		return err
 	}
 
 	// Rename file `uuid.json` --> `format.json`.
-	if err = disk.RenameFile(context.TODO(), minioMetaBucket, tmpFormat, minioMetaBucket, formatConfigFile); err != nil {
+	if err = disk.RenameFile(context.TODO(), s3MetaBucket, tmpFormat, s3MetaBucket, formatConfigFile); err != nil {
 		return err
 	}
 
@@ -386,7 +386,7 @@ func saveFormatErasure(disk StorageAPI, format *formatErasureV3, healID string) 
 
 // loadFormatErasure - loads format.json from disk.
 func loadFormatErasure(disk StorageAPI, heal bool) (format *formatErasureV3, err error) {
-	data, err := disk.ReadAll(context.TODO(), minioMetaBucket, formatConfigFile)
+	data, err := disk.ReadAll(context.TODO(), s3MetaBucket, formatConfigFile)
 	if err != nil {
 		// 'file not found' and 'volume not found' as
 		// same. 'volume not found' usually means its a fresh disk.

@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2021 MinIO, Inc.
+// Copyright (c) 2015-2021 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -89,7 +89,7 @@ func (iamOS *IAMObjectStore) saveIAMConfig(ctx context.Context, item any, objPat
 	}
 	if GlobalKMS != nil {
 		data, err = config.EncryptBytes(GlobalKMS, data, kms.Context{
-			minioMetaBucket: path.Join(minioMetaBucket, objPath),
+			s3MetaBucket: path.Join(s3MetaBucket, objPath),
 		})
 		if err != nil {
 			return err
@@ -109,13 +109,13 @@ func decryptData(data []byte, objPath string) ([]byte, error) {
 	}
 	if GlobalKMS != nil {
 		pdata, err = config.DecryptBytes(GlobalKMS, data, kms.Context{
-			minioMetaBucket: path.Join(minioMetaBucket, objPath),
+			s3MetaBucket: path.Join(s3MetaBucket, objPath),
 		})
 		if err == nil {
 			return pdata, nil
 		}
 		pdata, err = config.DecryptBytes(GlobalKMS, data, kms.Context{
-			minioMetaBucket: objPath,
+			s3MetaBucket: objPath,
 		})
 		if err == nil {
 			return pdata, nil
@@ -872,7 +872,7 @@ func (iamOS *IAMObjectStore) deleteGroupInfo(ctx context.Context, name string) e
 	return err
 }
 
-// Lists objects in the minioMetaBucket at the given path prefix. All returned
+// Lists objects in the s3MetaBucket at the given path prefix. All returned
 // items have the pathPrefix removed from their names.
 func listIAMConfigItems(ctx context.Context, objAPI ObjectLayer, pathPrefix string) <-chan itemOrErr[string] {
 	ch := make(chan itemOrErr[string])
@@ -883,7 +883,7 @@ func listIAMConfigItems(ctx context.Context, objAPI ObjectLayer, pathPrefix stri
 		// Allocate new results channel to receive ObjectInfo.
 		objInfoCh := make(chan itemOrErr[ObjectInfo])
 
-		if err := objAPI.Walk(ctx, minioMetaBucket, pathPrefix, objInfoCh, WalkOptions{}); err != nil {
+		if err := objAPI.Walk(ctx, s3MetaBucket, pathPrefix, objInfoCh, WalkOptions{}); err != nil {
 			select {
 			case ch <- itemOrErr[string]{Err: err}:
 			case <-ctx.Done():

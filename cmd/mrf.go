@@ -1,6 +1,6 @@
-// Copyright (c) 2015-2024 MinIO, Inc.
+// Copyright (c) 2015-2024 Hanzo AI, Inc.
 //
-// This file is part of MinIO Object Storage stack
+// This file is part of Hanzo S3 Object Storage stack
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -144,7 +144,7 @@ func (m *mrfState) shutdown() {
 
 	for _, localDrive := range localDrives {
 		r := newReader()
-		err := localDrive.CreateFile(context.Background(), "", minioMetaBucket, pathJoin(healMRFDir, "list.bin"), -1, r)
+		err := localDrive.CreateFile(context.Background(), "", s3MetaBucket, pathJoin(healMRFDir, "list.bin"), -1, r)
 		r.Close()
 		if err == nil {
 			break
@@ -196,7 +196,7 @@ func (m *mrfState) startMRFPersistence() {
 		if localDrive == nil {
 			continue
 		}
-		rc, err := localDrive.ReadFileStream(context.Background(), minioMetaBucket, pathJoin(healMRFDir, "list.bin"), 0, -1)
+		rc, err := localDrive.ReadFileStream(context.Background(), s3MetaBucket, pathJoin(healMRFDir, "list.bin"), 0, -1)
 		if err != nil {
 			continue
 		}
@@ -205,7 +205,7 @@ func (m *mrfState) startMRFPersistence() {
 			continue
 		}
 		// finally delete the file after processing mrf entries
-		localDrive.Delete(GlobalContext, minioMetaBucket, pathJoin(healMRFDir, "list.bin"), DeleteOptions{})
+		localDrive.Delete(GlobalContext, s3MetaBucket, pathJoin(healMRFDir, "list.bin"), DeleteOptions{})
 		break
 	}
 }
@@ -227,8 +227,8 @@ func (m *mrfState) healRoutine(z *erasureServerPools) {
 
 			// We might land at .metacache, .trash, .multipart
 			// no need to heal them skip, only when bucket
-			// is '.minio.sys'
-			if u.Bucket == minioMetaBucket {
+			// is '.s3.sys'
+			if u.Bucket == s3MetaBucket {
 				// No MRF needed for temporary objects
 				if wildcard.Match("buckets/*/.metacache/*", u.Object) {
 					continue
