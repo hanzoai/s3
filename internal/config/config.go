@@ -229,8 +229,7 @@ const (
 	KvSingleQuote      = madmin.KvSingleQuote
 
 	// Env prefix used for all envs in Hanzo S3
-	EnvPrefix        = "S3_"
-	EnvLegacyPrefix  = "MINIO_"
+	EnvPrefix = "S3_"
 	EnvWordDelimiter = madmin.EnvWordDelimiter
 )
 
@@ -1235,14 +1234,6 @@ func (c Config) ResolveConfigParam(subSys, target, cfgParam string, redactSecret
 
 	// Lookup Env var (S3_ prefix).
 	value = env.Get(envVar, "")
-	if value != "" {
-		cs = ValueSourceEnv
-		return value, cs, isRedacted
-	}
-
-	// Fallback: check legacy MINIO_ prefix for backwards compatibility.
-	legacyEnvVar := EnvLegacyPrefix + envVar[len(EnvPrefix):]
-	value = env.Get(legacyEnvVar, "")
 	if value != "" {
 		cs = ValueSourceEnv
 		return value, cs, isRedacted

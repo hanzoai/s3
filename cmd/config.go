@@ -38,10 +38,10 @@ const (
 	kvPrefix          = ".kv"
 
 	// Captures all the previous SetKV operations and allows rollback.
-	minioConfigHistoryPrefix = s3ConfigPrefix + "/history"
+	s3ConfigHistoryPrefix = s3ConfigPrefix + "/history"
 
-	// MinIO configuration file.
-	minioConfigFile = "config.json"
+	// S3 configuration file.
+	s3ConfigFile = "config.json"
 )
 
 func listServerConfigHistory(ctx context.Context, objAPI ObjectLayer, withData bool, count int) (
@@ -52,7 +52,7 @@ func listServerConfigHistory(ctx context.Context, objAPI ObjectLayer, withData b
 	// List all kvs
 	marker := ""
 	for {
-		res, err := objAPI.ListObjects(ctx, s3MetaBucket, minioConfigHistoryPrefix, marker, "", maxObjectList)
+		res, err := objAPI.ListObjects(ctx, s3MetaBucket, s3ConfigHistoryPrefix, marker, "", maxObjectList)
 		if err != nil {
 			return nil, err
 		}
@@ -95,7 +95,7 @@ func listServerConfigHistory(ctx context.Context, objAPI ObjectLayer, withData b
 }
 
 func delServerConfigHistory(ctx context.Context, objAPI ObjectLayer, uuidKV string) error {
-	historyFile := pathJoin(minioConfigHistoryPrefix, uuidKV+kvPrefix)
+	historyFile := pathJoin(s3ConfigHistoryPrefix, uuidKV+kvPrefix)
 	_, err := objAPI.DeleteObject(ctx, s3MetaBucket, historyFile, ObjectOptions{
 		DeletePrefix:       true,
 		DeletePrefixObject: true, // use prefix delete on exact object (this is an optimization to avoid fan-out calls)
@@ -104,7 +104,7 @@ func delServerConfigHistory(ctx context.Context, objAPI ObjectLayer, uuidKV stri
 }
 
 func readServerConfigHistory(ctx context.Context, objAPI ObjectLayer, uuidKV string) ([]byte, error) {
-	historyFile := pathJoin(minioConfigHistoryPrefix, uuidKV+kvPrefix)
+	historyFile := pathJoin(s3ConfigHistoryPrefix, uuidKV+kvPrefix)
 	data, err := readConfig(ctx, objAPI, historyFile)
 	if err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func readServerConfigHistory(ctx context.Context, objAPI ObjectLayer, uuidKV str
 
 func saveServerConfigHistory(ctx context.Context, objAPI ObjectLayer, kv []byte) error {
 	uuidKV := mustGetUUID() + kvPrefix
-	historyFile := pathJoin(minioConfigHistoryPrefix, uuidKV)
+	historyFile := pathJoin(s3ConfigHistoryPrefix, uuidKV)
 
 	if GlobalKMS != nil {
 		var err error
@@ -135,7 +135,7 @@ func saveServerConfig(ctx context.Context, objAPI ObjectLayer, cfg any) error {
 		return err
 	}
 
-	configFile := path.Join(s3ConfigPrefix, minioConfigFile)
+	configFile := path.Join(s3ConfigPrefix, s3ConfigFile)
 	if GlobalKMS != nil {
 		data, err = config.EncryptBytes(GlobalKMS, data, kms.Context{
 			s3MetaBucket: path.Join(s3MetaBucket, configFile),
@@ -152,7 +152,7 @@ func readServerConfig(ctx context.Context, objAPI ObjectLayer, data []byte) (con
 	srvCfg := config.New()
 	var err error
 	if len(data) == 0 {
-		configFile := path.Join(s3ConfigPrefix, minioConfigFile)
+		configFile := path.Join(s3ConfigPrefix, s3ConfigFile)
 		data, err = readConfig(ctx, objAPI, configFile)
 		if err != nil {
 			if errors.Is(err, errConfigNotFound) {

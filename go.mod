@@ -39,7 +39,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/gomodule/redigo v1.9.2
 	github.com/google/uuid v1.6.0
-	github.com/hanzoai/storage-console v1.7.7-hanzo.1
+	github.com/hanzoai/storage-console v1.7.7-hanzo.3
 	github.com/inconshreveable/mousetrap v1.1.0
 	github.com/json-iterator/go v1.1.12
 	github.com/klauspost/compress v1.18.0
