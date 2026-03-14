@@ -49,7 +49,7 @@ func Load(configFile string, data any) (quick.Config, error) {
 
 func readConfigWithoutMigrate(ctx context.Context, objAPI ObjectLayer) (config.Config, error) {
 	// Construct path to config.json for the given bucket.
-	configFile := path.Join(s3ConfigPrefix, minioConfigFile)
+	configFile := path.Join(s3ConfigPrefix, s3ConfigFile)
 
 	configFiles := []string{
 		getConfigFile(),

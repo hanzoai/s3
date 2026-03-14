@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	// Default minio configuration directory where below configuration files/directories are stored.
-	defaultMinioConfigDir = ".hanzo-s3"
+	// Default S3 configuration directory where below configuration files/directories are stored.
+	defaultS3ConfigDir = ".hanzo-s3"
 
 	// Directory contains below files/directories for HTTPS configuration.
 	certsDir = "certs"
@@ -52,7 +52,7 @@ func getDefaultConfigDir() string {
 		return ""
 	}
 
-	return filepath.Join(homeDir, defaultMinioConfigDir)
+	return filepath.Join(homeDir, defaultS3ConfigDir)
 }
 
 func getDefaultCertsDir() string {
@@ -96,7 +96,7 @@ func mkdirAllIgnorePerm(path string) error {
 }
 
 func getConfigFile() string {
-	return filepath.Join(globalConfigDir.Get(), minioConfigFile)
+	return filepath.Join(globalConfigDir.Get(), s3ConfigFile)
 }
 
 func getPublicCertFile() string {

@@ -2778,7 +2778,7 @@ func fetchHealthInfo(healthCtx context.Context, objectAPI ObjectLayer, query *ur
 		}
 	}
 
-	getAndWriteMinioConfig := func() {
+	getAndWriteS3Config := func() {
 		if query.Get("minioconfig") == "true" {
 			config, err := readServerConfig(healthCtx, objectAPI, nil)
 			if err != nil {
@@ -2823,7 +2823,7 @@ func fetchHealthInfo(healthCtx context.Context, objectAPI ObjectLayer, query *ur
 		getAndWriteOSInfo()
 		getAndWriteMemInfo()
 		getAndWriteProcInfo()
-		getAndWriteMinioConfig()
+		getAndWriteS3Config()
 		getAndWriteSysErrors()
 		getAndWriteSysServices()
 		getAndWriteSysConfig()
