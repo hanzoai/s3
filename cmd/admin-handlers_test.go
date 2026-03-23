@@ -32,7 +32,7 @@ import (
 	"time"
 
 	"github.com/minio/madmin-go/v3"
-	"github.com/minio/minio/internal/auth"
+	"github.com/hanzoai/s3/internal/auth"
 	"github.com/minio/mux"
 )
 

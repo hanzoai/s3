@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	xhttp "github.com/minio/minio/internal/http"
+	xhttp "github.com/hanzoai/s3/internal/http"
 )
 
 // Tests - canonicalizeETag()

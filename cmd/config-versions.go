@@ -18,15 +18,15 @@
 package cmd
 
 import (
-	"github.com/minio/minio/internal/auth"
-	"github.com/minio/minio/internal/config"
-	"github.com/minio/minio/internal/config/compress"
-	xldap "github.com/minio/minio/internal/config/identity/ldap"
-	"github.com/minio/minio/internal/config/identity/openid"
-	"github.com/minio/minio/internal/config/notify"
-	"github.com/minio/minio/internal/config/policy/opa"
-	"github.com/minio/minio/internal/config/storageclass"
-	"github.com/minio/minio/internal/logger"
+	"github.com/hanzoai/s3/internal/auth"
+	"github.com/hanzoai/s3/internal/config"
+	"github.com/hanzoai/s3/internal/config/compress"
+	xldap "github.com/hanzoai/s3/internal/config/identity/ldap"
+	"github.com/hanzoai/s3/internal/config/identity/openid"
+	"github.com/hanzoai/s3/internal/config/notify"
+	"github.com/hanzoai/s3/internal/config/policy/opa"
+	"github.com/hanzoai/s3/internal/config/storageclass"
+	"github.com/hanzoai/s3/internal/logger"
 	"github.com/minio/pkg/v3/quick"
 )
 

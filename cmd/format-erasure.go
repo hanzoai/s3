@@ -27,11 +27,11 @@ import (
 	"sync"
 
 	"github.com/dustin/go-humanize"
-	"github.com/minio/minio/internal/color"
-	"github.com/minio/minio/internal/config"
-	"github.com/minio/minio/internal/config/storageclass"
-	xioutil "github.com/minio/minio/internal/ioutil"
-	"github.com/minio/minio/internal/logger"
+	"github.com/hanzoai/s3/internal/color"
+	"github.com/hanzoai/s3/internal/config"
+	"github.com/hanzoai/s3/internal/config/storageclass"
+	xioutil "github.com/hanzoai/s3/internal/ioutil"
+	"github.com/hanzoai/s3/internal/logger"
 	"github.com/minio/pkg/v3/sync/errgroup"
 )
 

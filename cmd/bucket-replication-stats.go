@@ -23,7 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/minio/minio/internal/bucket/replication"
+	"github.com/hanzoai/s3/internal/bucket/replication"
 	"github.com/rcrowley/go-metrics"
 )
 

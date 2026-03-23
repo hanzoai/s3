@@ -31,10 +31,10 @@ import (
 	"time"
 
 	"github.com/beevik/ntp"
-	"github.com/minio/minio/internal/amztime"
-	xhttp "github.com/minio/minio/internal/http"
+	"github.com/hanzoai/s3/internal/amztime"
+	xhttp "github.com/hanzoai/s3/internal/http"
 
-	"github.com/minio/minio/internal/logger"
+	"github.com/hanzoai/s3/internal/logger"
 	"github.com/minio/pkg/v3/env"
 )
 
