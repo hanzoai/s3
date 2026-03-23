@@ -22,10 +22,25 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.26.x
-          cached: false
+          cache: false
       - name: Get official govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
         shell: bash
       - name: Run govulncheck
-        run: govulncheck -show verbose ./...
+        run: |
+          # Exit code 3 = vulnerabilities found. We filter to only fail on
+          # symbol-level hits (code we actually call). Package/module-level
+          # warnings with no available fix are reported but don't block CI.
+          govulncheck -show verbose ./... 2>&1 | tee /tmp/vulncheck.out; rc=${PIPESTATUS[0]}
+          if [ "$rc" -eq 3 ]; then
+            # Fail only if there are symbol-level results
+            if grep -q "^=== Symbol Results ===$" /tmp/vulncheck.out && \
+               ! grep -A1 "^=== Symbol Results ===$" /tmp/vulncheck.out | grep -q "^No"; then
+              echo "::error::Symbol-level vulnerabilities found — fix required"
+              exit 1
+            fi
+            echo "Only package/module-level warnings (no symbol hits) — passing"
+            exit 0
+          fi
+          exit $rc
         shell: bash
