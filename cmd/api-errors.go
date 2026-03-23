@@ -29,25 +29,25 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/minio/minio/internal/ioutil"
+	"github.com/hanzoai/s3/internal/ioutil"
 	"google.golang.org/api/googleapi"
 
 	"github.com/minio/madmin-go/v3"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/tags"
-	"github.com/minio/minio/internal/auth"
-	"github.com/minio/minio/internal/bucket/lifecycle"
-	"github.com/minio/minio/internal/bucket/replication"
-	"github.com/minio/minio/internal/config/dns"
-	"github.com/minio/minio/internal/crypto"
-	"github.com/minio/minio/internal/kms"
-	"github.com/minio/minio/internal/logger"
+	"github.com/hanzoai/s3/internal/auth"
+	"github.com/hanzoai/s3/internal/bucket/lifecycle"
+	"github.com/hanzoai/s3/internal/bucket/replication"
+	"github.com/hanzoai/s3/internal/config/dns"
+	"github.com/hanzoai/s3/internal/crypto"
+	"github.com/hanzoai/s3/internal/kms"
+	"github.com/hanzoai/s3/internal/logger"
 
-	objectlock "github.com/minio/minio/internal/bucket/object/lock"
-	"github.com/minio/minio/internal/bucket/versioning"
-	levent "github.com/minio/minio/internal/config/lambda/event"
-	"github.com/minio/minio/internal/event"
-	"github.com/minio/minio/internal/hash"
+	objectlock "github.com/hanzoai/s3/internal/bucket/object/lock"
+	"github.com/hanzoai/s3/internal/bucket/versioning"
+	levent "github.com/hanzoai/s3/internal/config/lambda/event"
+	"github.com/hanzoai/s3/internal/event"
+	"github.com/hanzoai/s3/internal/hash"
 	"github.com/minio/pkg/v3/policy"
 )
 
@@ -281,7 +281,7 @@ const (
 	ErrInvalidStorageClass
 	ErrBackendDown
 	// Add new extended error codes here.
-	// Please open a https://github.com/minio/minio/issues before adding
+	// Please open a https://github.com/hanzoai/s3/issues before adding
 	// new error codes here.
 
 	ErrMalformedJSON

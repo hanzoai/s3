@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	jwtgo "github.com/golang-jwt/jwt/v4"
-	xjwt "github.com/minio/minio/internal/jwt"
+	xjwt "github.com/hanzoai/s3/internal/jwt"
 )
 
 func getTokenString(accessKey, secretKey string) (string, error) {

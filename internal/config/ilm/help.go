@@ -17,7 +17,7 @@
 
 package ilm
 
-import "github.com/minio/minio/internal/config"
+import "github.com/hanzoai/s3/internal/config"
 
 const (
 	transitionWorkers = "transition_workers"

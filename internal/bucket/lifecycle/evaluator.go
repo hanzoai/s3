@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"time"
 
-	objlock "github.com/minio/minio/internal/bucket/object/lock"
-	"github.com/minio/minio/internal/bucket/replication"
+	objlock "github.com/hanzoai/s3/internal/bucket/object/lock"
+	"github.com/hanzoai/s3/internal/bucket/replication"
 )
 
 // Evaluator - evaluates lifecycle policy on objects for the given lifecycle

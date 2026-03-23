@@ -22,7 +22,7 @@ import (
 	"net/http"
 
 	consoleapi "github.com/hanzoai/storage-console/api"
-	xhttp "github.com/minio/minio/internal/http"
+	xhttp "github.com/hanzoai/s3/internal/http"
 	"github.com/minio/mux"
 	"github.com/minio/pkg/v3/wildcard"
 	"github.com/rs/cors"

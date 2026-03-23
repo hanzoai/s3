@@ -35,8 +35,8 @@ import (
 	"github.com/minio/highwayhash"
 	"github.com/minio/madmin-go/v3"
 	"github.com/minio/madmin-go/v3/logger/log"
-	"github.com/minio/minio/internal/color"
-	xhttp "github.com/minio/minio/internal/http"
+	"github.com/hanzoai/s3/internal/color"
+	xhttp "github.com/hanzoai/s3/internal/http"
 )
 
 // HighwayHash key for logging in anonymous mode
@@ -189,9 +189,9 @@ func Init(goPath string, goRoot string) {
 	// Remove duplicate entries.
 	trimStrings = uniqueEntries(trimStrings)
 
-	// Add "github.com/minio/minio" as the last to cover
-	// paths like "{GOROOT}/src/github.com/minio/minio"
-	// and "{GOPATH}/src/github.com/minio/minio"
+	// Add "github.com/hanzoai/s3" as the last to cover
+	// paths like "{GOROOT}/src/github.com/hanzoai/s3"
+	// and "{GOPATH}/src/github.com/hanzoai/s3"
 	trimStrings = append(trimStrings, filepath.Join("github.com", "minio", "minio")+string(filepath.Separator))
 }
 

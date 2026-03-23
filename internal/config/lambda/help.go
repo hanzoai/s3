@@ -18,8 +18,8 @@
 package lambda
 
 import (
-	"github.com/minio/minio/internal/config"
-	"github.com/minio/minio/internal/event/target"
+	"github.com/hanzoai/s3/internal/config"
+	"github.com/hanzoai/s3/internal/event/target"
 )
 
 // Help template inputs for all lambda targets
