@@ -32,9 +32,9 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/minio/minio/internal/auth"
-	"github.com/minio/minio/internal/hash/sha256"
-	xhttp "github.com/minio/minio/internal/http"
+	"github.com/hanzoai/s3/internal/auth"
+	"github.com/hanzoai/s3/internal/hash/sha256"
+	xhttp "github.com/hanzoai/s3/internal/http"
 )
 
 // Streaming AWS Signature Version '4' constants.

@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/minio/minio/internal/logger"
+	"github.com/hanzoai/s3/internal/logger"
 	"github.com/minio/mux"
 
 	"github.com/minio/pkg/v3/policy"

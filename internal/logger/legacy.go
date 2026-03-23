@@ -18,8 +18,8 @@
 package logger
 
 import (
-	"github.com/minio/minio/internal/config"
-	"github.com/minio/minio/internal/logger/target/http"
+	"github.com/hanzoai/s3/internal/config"
+	"github.com/hanzoai/s3/internal/logger/target/http"
 )
 
 // Legacy envs

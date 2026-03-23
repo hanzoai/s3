@@ -1,7 +1,7 @@
 # LLM.md - Hanzo Storage
 
 ## Overview
-Go module: github.com/minio/minio
+Go module: github.com/hanzoai/s3
 
 ## Tech Stack
 - **Language**: Go
