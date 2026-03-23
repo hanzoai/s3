@@ -42,14 +42,14 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/klauspost/filepathx"
 	"github.com/minio/madmin-go/v3"
-	"github.com/minio/minio/internal/bucket/lifecycle"
-	"github.com/minio/minio/internal/bucket/replication"
-	"github.com/minio/minio/internal/cachevalue"
-	"github.com/minio/minio/internal/config/storageclass"
+	"github.com/hanzoai/s3/internal/bucket/lifecycle"
+	"github.com/hanzoai/s3/internal/bucket/replication"
+	"github.com/hanzoai/s3/internal/cachevalue"
+	"github.com/hanzoai/s3/internal/config/storageclass"
 
-	"github.com/minio/minio/internal/disk"
-	xioutil "github.com/minio/minio/internal/ioutil"
-	"github.com/minio/minio/internal/logger"
+	"github.com/hanzoai/s3/internal/disk"
+	xioutil "github.com/hanzoai/s3/internal/ioutil"
+	"github.com/hanzoai/s3/internal/logger"
 	"github.com/pkg/xattr"
 )
 

@@ -31,10 +31,10 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/minio/minio/internal/event"
-	"github.com/minio/minio/internal/logger"
-	"github.com/minio/minio/internal/once"
-	"github.com/minio/minio/internal/store"
+	"github.com/hanzoai/s3/internal/event"
+	"github.com/hanzoai/s3/internal/logger"
+	"github.com/hanzoai/s3/internal/once"
+	"github.com/hanzoai/s3/internal/store"
 	xnet "github.com/minio/pkg/v3/net"
 )
 

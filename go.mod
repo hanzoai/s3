@@ -1,4 +1,4 @@
-module github.com/minio/minio
+module github.com/hanzoai/s3
 
 go 1.26.1
 

@@ -27,9 +27,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
-	"github.com/minio/minio/internal/crypto"
-	"github.com/minio/minio/internal/hash"
-	xhttp "github.com/minio/minio/internal/http"
+	"github.com/hanzoai/s3/internal/crypto"
+	"github.com/hanzoai/s3/internal/hash"
+	xhttp "github.com/hanzoai/s3/internal/http"
 )
 
 func getDefaultOpts(header http.Header, copySource bool, metadata map[string]string) (opts ObjectOptions, err error) {

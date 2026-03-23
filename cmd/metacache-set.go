@@ -34,12 +34,12 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/minio/minio/internal/bucket/lifecycle"
-	"github.com/minio/minio/internal/bucket/object/lock"
-	"github.com/minio/minio/internal/bucket/versioning"
-	"github.com/minio/minio/internal/color"
-	"github.com/minio/minio/internal/hash"
-	xioutil "github.com/minio/minio/internal/ioutil"
+	"github.com/hanzoai/s3/internal/bucket/lifecycle"
+	"github.com/hanzoai/s3/internal/bucket/object/lock"
+	"github.com/hanzoai/s3/internal/bucket/versioning"
+	"github.com/hanzoai/s3/internal/color"
+	"github.com/hanzoai/s3/internal/hash"
+	xioutil "github.com/hanzoai/s3/internal/ioutil"
 	"github.com/minio/pkg/v3/console"
 )
 

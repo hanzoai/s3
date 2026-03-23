@@ -25,7 +25,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	xioutil "github.com/minio/minio/internal/ioutil"
+	xioutil "github.com/hanzoai/s3/internal/ioutil"
 )
 
 // Reads in parallel from readers.

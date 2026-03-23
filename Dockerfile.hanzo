@@ -11,9 +11,9 @@ ARG COMMIT_ID=""
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -tags kqueue -trimpath \
     -ldflags "-s -w \
-      -X github.com/minio/minio/cmd.Version=${VERSION} \
-      -X github.com/minio/minio/cmd.CopyrightYear=2026 \
-      -X github.com/minio/minio/cmd.CommitID=${COMMIT_ID}" \
+      -X github.com/hanzoai/s3/cmd.Version=${VERSION} \
+      -X github.com/hanzoai/s3/cmd.CopyrightYear=2026 \
+      -X github.com/hanzoai/s3/cmd.CommitID=${COMMIT_ID}" \
     -o /s3 .
 
 FROM alpine:latest

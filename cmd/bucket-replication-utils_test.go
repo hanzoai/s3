@@ -20,7 +20,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/minio/minio/internal/bucket/replication"
+	"github.com/hanzoai/s3/internal/bucket/replication"
 )
 
 var replicatedInfosTests = []struct {

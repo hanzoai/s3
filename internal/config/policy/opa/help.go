@@ -17,7 +17,7 @@
 
 package opa
 
-import "github.com/minio/minio/internal/config"
+import "github.com/hanzoai/s3/internal/config"
 
 // Help template for OPA policy feature.
 var (

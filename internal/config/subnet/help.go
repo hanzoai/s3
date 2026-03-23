@@ -17,7 +17,7 @@
 
 package subnet
 
-import "github.com/minio/minio/internal/config"
+import "github.com/hanzoai/s3/internal/config"
 
 var (
 	defaultHelpPostfix = func(key string) string {
