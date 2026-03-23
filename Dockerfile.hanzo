@@ -16,12 +16,14 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -tags kqueue -trimpat
       -X github.com/minio/minio/cmd.CommitID=${COMMIT_ID}" \
     -o /s3 .
 
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM alpine:latest
 
-COPY --from=build /s3 /usr/bin/s3
+RUN apk add --no-cache curl ca-certificates
+
+COPY --from=build /s3 /usr/bin/minio
 
 VOLUME ["/data"]
 EXPOSE 9000 9001
 
-ENTRYPOINT ["/usr/bin/s3"]
+ENTRYPOINT ["/usr/bin/minio"]
 CMD ["server", "/data", "--console-address", ":9001"]
