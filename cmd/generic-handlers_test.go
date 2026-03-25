@@ -114,7 +114,7 @@ var containsReservedMetadataTests = []struct {
 	shouldFail bool
 }{
 	{
-		header: http.Header{"X-Hanzo-S3-Key": []string{"value"}},
+		header: http.Header{"X-S3-Key": []string{"value"}},
 	},
 	{
 		header:     http.Header{crypto.MetaIV: []string{"iv"}},

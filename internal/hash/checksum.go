@@ -41,10 +41,10 @@ func hashLogIf(ctx context.Context, err error) {
 }
 
 // MinIOMultipartChecksum is as metadata on multipart uploads to indicate checksum type.
-const MinIOMultipartChecksum = "x-hanzo-s3-multipart-checksum"
+const MinIOMultipartChecksum = "x-s3-multipart-checksum"
 
 // MinIOMultipartChecksumType is as metadata on multipart uploads to indicate checksum type.
-const MinIOMultipartChecksumType = "x-hanzo-s3-multipart-checksum-type"
+const MinIOMultipartChecksumType = "x-s3-multipart-checksum-type"
 
 // ChecksumType contains information about the checksum type.
 type ChecksumType uint32

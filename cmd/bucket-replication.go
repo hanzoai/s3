@@ -78,7 +78,7 @@ const (
 	ObjectLockLegalHoldTimestamp = "objectlock-legalhold-timestamp"
 
 	// ReplicationSsecChecksumHeader - the encrypted checksum of the SSE-C encrypted object.
-	ReplicationSsecChecksumHeader = "X-Hanzo-S3-Replication-Ssec-Crc"
+	ReplicationSsecChecksumHeader = "X-S3-Replication-Ssec-Crc"
 )
 
 // gets replication config associated to a given bucket name.

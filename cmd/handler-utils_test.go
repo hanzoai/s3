@@ -124,11 +124,11 @@ func TestExtractMetadataHeaders(t *testing.T) {
 		{
 			header: http.Header{
 				"X-Amz-Meta-Appid":   []string{"amz-meta"},
-				"X-Hanzo-S3-Meta-Appid": []string{"minio-meta"},
+				"X-S3-Meta-Appid": []string{"minio-meta"},
 			},
 			metadata: map[string]string{
 				"X-Amz-Meta-Appid":   "amz-meta",
-				"X-Hanzo-S3-Meta-Appid": "minio-meta",
+				"X-S3-Meta-Appid": "minio-meta",
 			},
 			shouldFail: false,
 		},

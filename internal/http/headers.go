@@ -161,13 +161,13 @@ const (
 	AmzRequestHostID = "x-amz-id-2"
 
 	// Deployment id.
-	MinioDeploymentID = "x-hanzo-s3-deployment-id"
+	MinioDeploymentID = "x-s3-deployment-id"
 
 	// Peer call
-	MinIOPeerCall = "x-hanzo-s3-from-peer"
+	MinIOPeerCall = "x-s3-from-peer"
 
 	// Server-Status
-	MinIOServerStatus = "x-hanzo-s3-server-status"
+	MinIOServerStatus = "x-s3-server-status"
 
 	// Content Checksums
 	AmzChecksumAlgo           = "x-amz-checksum-algorithm"
@@ -189,70 +189,70 @@ const (
 	AmzMetaName = "X-Amz-Meta-Name"
 
 	// Delete special flag to force delete a bucket or a prefix
-	MinIOForceDelete = "x-hanzo-s3-force-delete"
+	MinIOForceDelete = "x-s3-force-delete"
 
 	// Create special flag to force create a bucket
-	MinIOForceCreate = "x-hanzo-s3-force-create"
+	MinIOForceCreate = "x-s3-force-create"
 
 	// Header indicates if the mtime should be preserved by client
-	MinIOSourceMTime = "x-hanzo-s3-source-mtime"
+	MinIOSourceMTime = "x-s3-source-mtime"
 
 	// Header indicates if the etag should be preserved by client
-	MinIOSourceETag = "x-hanzo-s3-source-etag"
+	MinIOSourceETag = "x-s3-source-etag"
 
 	// Writes expected write quorum
-	MinIOWriteQuorum = "x-hanzo-s3-write-quorum"
+	MinIOWriteQuorum = "x-s3-write-quorum"
 
 	// Reads expected read quorum
-	MinIOReadQuorum = "x-hanzo-s3-read-quorum"
+	MinIOReadQuorum = "x-s3-read-quorum"
 
 	// Indicates if we are using default storage class and there was problem loading config
 	// if this header is set to "true"
-	MinIOStorageClassDefaults = "x-hanzo-s3-storage-class-defaults"
+	MinIOStorageClassDefaults = "x-s3-storage-class-defaults"
 
 	// Reports number of drives currently healing
-	MinIOHealingDrives = "x-hanzo-s3-healing-drives"
+	MinIOHealingDrives = "x-s3-healing-drives"
 
 	// Header indicates if the delete marker should be preserved by client
-	MinIOSourceDeleteMarker = "x-hanzo-s3-source-deletemarker"
+	MinIOSourceDeleteMarker = "x-s3-source-deletemarker"
 
 	// Header indicates if the delete marker version needs to be purged.
-	MinIOSourceDeleteMarkerDelete = "x-hanzo-s3-source-deletemarker-delete"
+	MinIOSourceDeleteMarkerDelete = "x-s3-source-deletemarker-delete"
 
 	// Header indicates permanent delete replication status.
-	MinIODeleteReplicationStatus = "X-Hanzo-S3-Replication-Delete-Status"
+	MinIODeleteReplicationStatus = "X-S3-Replication-Delete-Status"
 	// Header indicates delete-marker replication status.
-	MinIODeleteMarkerReplicationStatus = "X-Hanzo-S3-Replication-DeleteMarker-Status"
+	MinIODeleteMarkerReplicationStatus = "X-S3-Replication-DeleteMarker-Status"
 	// Header indicates if its a GET/HEAD proxy request for active-active replication
-	MinIOSourceProxyRequest = "X-Hanzo-S3-Source-Proxy-Request"
+	MinIOSourceProxyRequest = "X-S3-Source-Proxy-Request"
 	// Header indicates that this request is a replication request to create a REPLICA
-	MinIOSourceReplicationRequest = "X-Hanzo-S3-Source-Replication-Request"
+	MinIOSourceReplicationRequest = "X-S3-Source-Replication-Request"
 	// Header checks replication permissions without actually completing replication
-	MinIOSourceReplicationCheck = "X-Hanzo-S3-Source-Replication-Check"
+	MinIOSourceReplicationCheck = "X-S3-Source-Replication-Check"
 	// Header indicates replication reset status.
-	MinIOReplicationResetStatus = "X-Hanzo-S3-Replication-Reset-Status"
+	MinIOReplicationResetStatus = "X-S3-Replication-Reset-Status"
 	// Header indicating target cluster can receive delete marker replication requests because object has been replicated
-	MinIOTargetReplicationReady = "X-Hanzo-S3-Replication-Ready"
+	MinIOTargetReplicationReady = "X-S3-Replication-Ready"
 	// Header asking if cluster can receive delete marker replication request now.
-	MinIOCheckDMReplicationReady = "X-Hanzo-S3-Check-Replication-Ready"
+	MinIOCheckDMReplicationReady = "X-S3-Check-Replication-Ready"
 	// Header indiicates last tag update time on source
-	MinIOSourceTaggingTimestamp = "X-Hanzo-S3-Source-Replication-Tagging-Timestamp"
+	MinIOSourceTaggingTimestamp = "X-S3-Source-Replication-Tagging-Timestamp"
 	// Header indiicates last rtention update time on source
-	MinIOSourceObjectRetentionTimestamp = "X-Hanzo-S3-Source-Replication-Retention-Timestamp"
+	MinIOSourceObjectRetentionTimestamp = "X-S3-Source-Replication-Retention-Timestamp"
 	// Header indiicates last rtention update time on source
-	MinIOSourceObjectLegalHoldTimestamp = "X-Hanzo-S3-Source-Replication-LegalHold-Timestamp"
+	MinIOSourceObjectLegalHoldTimestamp = "X-S3-Source-Replication-LegalHold-Timestamp"
 	// Header indicates a Tag operation was performed on one/more peers successfully, though the
 	// current cluster does not have the object yet. This is in a site/bucket replication scenario.
-	MinIOTaggingProxied = "X-Hanzo-S3-Tagging-Proxied"
+	MinIOTaggingProxied = "X-S3-Tagging-Proxied"
 	// Header indicates the actual replicated object size
 	// In case of SSEC objects getting replicated (multipart) actual size would be needed at target
-	MinIOReplicationActualObjectSize = "X-Hanzo-S3-Replication-Actual-Object-Size"
+	MinIOReplicationActualObjectSize = "X-S3-Replication-Actual-Object-Size"
 
 	// predicted date/time of transition
-	MinIOTransition            = "X-Hanzo-S3-Transition"
-	MinIOLifecycleCfgUpdatedAt = "X-Hanzo-S3-LifecycleConfig-UpdatedAt"
+	MinIOTransition            = "X-S3-Transition"
+	MinIOLifecycleCfgUpdatedAt = "X-S3-LifecycleConfig-UpdatedAt"
 	// MinIOCompressed is returned when object is compressed
-	MinIOCompressed = "X-Hanzo-S3-Compressed"
+	MinIOCompressed = "X-S3-Compressed"
 
 	// SUBNET related
 	SubnetAPIKey = "x-subnet-api-key"
@@ -270,6 +270,6 @@ const (
 // http headers sent to webhook targets
 const (
 	// Reports the version of MinIO server
-	MinIOVersion             = "x-hanzo-s3-version"
-	WebhookEventPayloadCount = "x-hanzo-s3-webhook-payload-count"
+	MinIOVersion             = "x-s3-version"
+	WebhookEventPayloadCount = "x-s3-webhook-payload-count"
 )
