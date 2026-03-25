@@ -2,7 +2,7 @@ name: Publish
 
 on:
   push:
-    branches: [main]
+    branches: [main, test, dev]
     tags: ['v*']
   workflow_dispatch:
 
@@ -48,6 +48,8 @@ jobs:
             ${{ env.REGISTRY }}/hanzoai/s3
             ${{ env.REGISTRY }}/hanzoai/space
           tags: |
+            type=ref,event=branch
+            type=ref,event=pr
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=
             type=semver,pattern=v{{version}}
