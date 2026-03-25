@@ -138,7 +138,7 @@ func storageServerRequestValidate(r *http.Request) error {
 		return err
 	}
 
-	nanoTime, err := strconv.ParseInt(r.Header.Get("X-Hanzo-S3-Time"), 10, 64)
+	nanoTime, err := strconv.ParseInt(r.Header.Get("X-S3-Time"), 10, 64)
 	if err != nil {
 		return errMalformedAuth
 	}

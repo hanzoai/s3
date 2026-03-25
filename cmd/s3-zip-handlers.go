@@ -42,11 +42,11 @@ const (
 	archiveExt             = "." + archiveType // ".zip"
 	archiveSeparator       = "/"
 	archivePattern         = archiveExt + archiveSeparator                // ".zip/"
-	archiveTypeMetadataKey = ReservedMetadataPrefixLower + "archive-type" // "x-hanzo-s3-internal-archive-type"
-	archiveInfoMetadataKey = ReservedMetadataPrefixLower + "archive-info" // "x-hanzo-s3-internal-archive-info"
+	archiveTypeMetadataKey = ReservedMetadataPrefixLower + "archive-type" // "x-s3-internal-archive-type"
+	archiveInfoMetadataKey = ReservedMetadataPrefixLower + "archive-info" // "x-s3-internal-archive-info"
 
 	// Peek into a zip archive
-	xMinIOExtract = "x-hanzo-s3-extract"
+	xMinIOExtract = "x-s3-extract"
 )
 
 // splitZipExtensionPath splits the S3 path to the zip file and the path inside the zip:

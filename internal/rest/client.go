@@ -192,7 +192,7 @@ func (c *Client) newRequest(ctx context.Context, method string, u url.URL, body 
 	if c.auth != nil {
 		req.Header.Set("Authorization", "Bearer "+c.auth())
 	}
-	req.Header.Set("X-Hanzo-S3-Time", strconv.FormatInt(time.Now().UnixNano(), 10))
+	req.Header.Set("X-S3-Time", strconv.FormatInt(time.Now().UnixNano(), 10))
 
 	if tc, ok := ctx.Value(mcontext.ContextTraceKey).(*mcontext.TraceCtxt); ok {
 		req.Header.Set(xhttp.AmzRequestID, tc.AmzReqID)
