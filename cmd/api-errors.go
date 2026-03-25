@@ -1062,7 +1062,7 @@ var errorCodes = errorCodeMap{
 	},
 	ErrReplicationPermissionCheckError: {
 		Code:           "ReplicationPermissionCheck",
-		Description:    "X-Hanzo-S3-Source-Replication-Check cannot be specified in request. Request cannot be completed",
+		Description:    "X-S3-Source-Replication-Check cannot be specified in request. Request cannot be completed",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrNoSuchObjectLockConfiguration: {

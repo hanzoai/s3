@@ -218,7 +218,7 @@ func ConnectWSWithRoutePath(dial ContextDialer, auth AuthFn, tls *tls.Config, ro
 		}
 		header := make(http.Header, 2)
 		header.Set("Authorization", "Bearer "+auth())
-		header.Set("X-Hanzo-S3-Time", strconv.FormatInt(time.Now().UnixNano(), 10))
+		header.Set("X-S3-Time", strconv.FormatInt(time.Now().UnixNano(), 10))
 
 		if len(header) > 0 {
 			dialer.Header = ws.HandshakeHeaderHTTP(header)

@@ -65,8 +65,8 @@ const (
 // ReservedMetadataPrefix is the prefix of a metadata key which
 // is reserved and for internal use only.
 const (
-	ReservedMetadataPrefix      = "X-Hanzo-S3-Internal-"
-	ReservedMetadataPrefixLower = "x-hanzo-s3-internal-"
+	ReservedMetadataPrefix      = "X-S3-Internal-"
+	ReservedMetadataPrefixLower = "x-s3-internal-"
 )
 
 // containsReservedMetadata returns true if the http.Header contains

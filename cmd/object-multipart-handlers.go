@@ -119,9 +119,9 @@ func (api objectAPIHandlers) NewMultipartUploadHandler(w http.ResponseWriter, r 
 
 		_, sourceReplReq := r.Header[xhttp.MinIOSourceReplicationRequest]
 		ssecRepHeaders := []string{
-			"X-Hanzo-S3-Replication-Server-Side-Encryption-Seal-Algorithm",
-			"X-Hanzo-S3-Replication-Server-Side-Encryption-Sealed-Key",
-			"X-Hanzo-S3-Replication-Server-Side-Encryption-Iv",
+			"X-S3-Replication-Server-Side-Encryption-Seal-Algorithm",
+			"X-S3-Replication-Server-Side-Encryption-Sealed-Key",
+			"X-S3-Replication-Server-Side-Encryption-Iv",
 		}
 		ssecRep := false
 		for _, header := range ssecRepHeaders {

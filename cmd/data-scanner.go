@@ -566,7 +566,7 @@ func (f *folderScanner) scanFolder(ctx context.Context, folder cachedFolder, int
 				Bucket:  f.root,
 				Object:  prefixName,
 				Tags: map[string]string{
-					"x-hanzo-s3-prefixes-total": strconv.Itoa(totalFolders),
+					"x-s3-prefixes-total": strconv.Itoa(totalFolders),
 				},
 			})
 		}
@@ -983,7 +983,7 @@ func (i *scannerItem) alertExcessiveVersions(remainingVersions int, cumulativeSi
 			},
 			UserAgent:    "Scanner",
 			Host:         globalLocalNodeName,
-			RespElements: map[string]string{"x-hanzo-s3-versions": strconv.Itoa(remainingVersions)},
+			RespElements: map[string]string{"x-s3-versions": strconv.Itoa(remainingVersions)},
 		})
 
 		auditLogInternal(context.Background(), AuditLogOptions{
@@ -992,7 +992,7 @@ func (i *scannerItem) alertExcessiveVersions(remainingVersions int, cumulativeSi
 			Bucket:  i.bucket,
 			Object:  i.objectPath(),
 			Tags: map[string]string{
-				"x-hanzo-s3-versions": strconv.Itoa(remainingVersions),
+				"x-s3-versions": strconv.Itoa(remainingVersions),
 			},
 		})
 	}
@@ -1009,8 +1009,8 @@ func (i *scannerItem) alertExcessiveVersions(remainingVersions int, cumulativeSi
 			UserAgent: "Scanner",
 			Host:      globalLocalNodeName,
 			RespElements: map[string]string{
-				"x-hanzo-s3-versions-count": strconv.Itoa(remainingVersions),
-				"x-hanzo-s3-versions-size":  strconv.FormatInt(cumulativeSize, 10),
+				"x-s3-versions-count": strconv.Itoa(remainingVersions),
+				"x-s3-versions-size":  strconv.FormatInt(cumulativeSize, 10),
 			},
 		})
 
@@ -1020,8 +1020,8 @@ func (i *scannerItem) alertExcessiveVersions(remainingVersions int, cumulativeSi
 			Bucket:  i.bucket,
 			Object:  i.objectPath(),
 			Tags: map[string]string{
-				"x-hanzo-s3-versions-count": strconv.Itoa(remainingVersions),
-				"x-hanzo-s3-versions-size":  strconv.FormatInt(cumulativeSize, 10),
+				"x-s3-versions-count": strconv.Itoa(remainingVersions),
+				"x-s3-versions-size":  strconv.FormatInt(cumulativeSize, 10),
 			},
 		})
 	}

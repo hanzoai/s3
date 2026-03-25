@@ -84,32 +84,32 @@ var supportedHeaders = []string{
 	xhttp.AmzObjectTagging,
 	"expires",
 	xhttp.AmzBucketReplicationStatus,
-	"X-Hanzo-S3-Replication-Server-Side-Encryption-Sealed-Key",
-	"X-Hanzo-S3-Replication-Server-Side-Encryption-Seal-Algorithm",
-	"X-Hanzo-S3-Replication-Server-Side-Encryption-Iv",
-	"X-Hanzo-S3-Replication-Encrypted-Multipart",
-	"X-Hanzo-S3-Replication-Actual-Object-Size",
+	"X-S3-Replication-Server-Side-Encryption-Sealed-Key",
+	"X-S3-Replication-Server-Side-Encryption-Seal-Algorithm",
+	"X-S3-Replication-Server-Side-Encryption-Iv",
+	"X-S3-Replication-Encrypted-Multipart",
+	"X-S3-Replication-Actual-Object-Size",
 	ReplicationSsecChecksumHeader,
 	// Add more supported headers here.
 }
 
 // mapping of internal headers to allowed replication headers
 var validSSEReplicationHeaders = map[string]string{
-	"X-Hanzo-S3-Internal-Server-Side-Encryption-Sealed-Key":     "X-Hanzo-S3-Replication-Server-Side-Encryption-Sealed-Key",
-	"X-Hanzo-S3-Internal-Server-Side-Encryption-Seal-Algorithm": "X-Hanzo-S3-Replication-Server-Side-Encryption-Seal-Algorithm",
-	"X-Hanzo-S3-Internal-Server-Side-Encryption-Iv":             "X-Hanzo-S3-Replication-Server-Side-Encryption-Iv",
-	"X-Hanzo-S3-Internal-Encrypted-Multipart":                   "X-Hanzo-S3-Replication-Encrypted-Multipart",
-	"X-Hanzo-S3-Internal-Actual-Object-Size":                    "X-Hanzo-S3-Replication-Actual-Object-Size",
+	"X-S3-Internal-Server-Side-Encryption-Sealed-Key":     "X-S3-Replication-Server-Side-Encryption-Sealed-Key",
+	"X-S3-Internal-Server-Side-Encryption-Seal-Algorithm": "X-S3-Replication-Server-Side-Encryption-Seal-Algorithm",
+	"X-S3-Internal-Server-Side-Encryption-Iv":             "X-S3-Replication-Server-Side-Encryption-Iv",
+	"X-S3-Internal-Encrypted-Multipart":                   "X-S3-Replication-Encrypted-Multipart",
+	"X-S3-Internal-Actual-Object-Size":                    "X-S3-Replication-Actual-Object-Size",
 	// Add more supported headers here.
 }
 
 // mapping of replication headers to internal headers
 var replicationToInternalHeaders = map[string]string{
-	"X-Hanzo-S3-Replication-Server-Side-Encryption-Sealed-Key":     "X-Hanzo-S3-Internal-Server-Side-Encryption-Sealed-Key",
-	"X-Hanzo-S3-Replication-Server-Side-Encryption-Seal-Algorithm": "X-Hanzo-S3-Internal-Server-Side-Encryption-Seal-Algorithm",
-	"X-Hanzo-S3-Replication-Server-Side-Encryption-Iv":             "X-Hanzo-S3-Internal-Server-Side-Encryption-Iv",
-	"X-Hanzo-S3-Replication-Encrypted-Multipart":                   "X-Hanzo-S3-Internal-Encrypted-Multipart",
-	"X-Hanzo-S3-Replication-Actual-Object-Size":                    "X-Hanzo-S3-Internal-Actual-Object-Size",
+	"X-S3-Replication-Server-Side-Encryption-Sealed-Key":     "X-S3-Internal-Server-Side-Encryption-Sealed-Key",
+	"X-S3-Replication-Server-Side-Encryption-Seal-Algorithm": "X-S3-Internal-Server-Side-Encryption-Seal-Algorithm",
+	"X-S3-Replication-Server-Side-Encryption-Iv":             "X-S3-Internal-Server-Side-Encryption-Iv",
+	"X-S3-Replication-Encrypted-Multipart":                   "X-S3-Internal-Encrypted-Multipart",
+	"X-S3-Replication-Actual-Object-Size":                    "X-S3-Internal-Actual-Object-Size",
 	ReplicationSsecChecksumHeader:                               ReplicationSsecChecksumHeader,
 	// Add more supported headers here.
 }
@@ -137,7 +137,7 @@ func isDirectiveReplace(value string) bool {
 // must be extracted from the header.
 var userMetadataKeyPrefixes = []string{
 	"x-amz-meta-",
-	"x-hanzo-s3-meta-",
+	"x-s3-meta-",
 }
 
 // extractMetadataFromReq extracts metadata from HTTP header and HTTP queryString.

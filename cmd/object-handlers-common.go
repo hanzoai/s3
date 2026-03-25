@@ -135,8 +135,8 @@ func checkCopyObjectPreconditions(ctx context.Context, w http.ResponseWriter, r 
 // Validates the preconditions. Returns true if PUT operation should not proceed.
 // Preconditions supported are:
 //
-//	x-hanzo-s3-source-mtime
-//	x-hanzo-s3-source-etag
+//	x-s3-source-mtime
+//	x-s3-source-etag
 func checkPreconditionsPUT(ctx context.Context, w http.ResponseWriter, r *http.Request, objInfo ObjectInfo, opts ObjectOptions) bool {
 	// Return false for methods other than PUT.
 	if r.Method != http.MethodPut && r.Method != http.MethodPost {

@@ -364,7 +364,7 @@ func (fi FileInfo) IsCompressed() bool {
 // InlineData returns true if object contents are inlined alongside its metadata.
 func (fi FileInfo) InlineData() bool {
 	_, ok := fi.Metadata[ReservedMetadataPrefixLower+"inline-data"]
-	// Earlier MinIO versions didn't reset "x-hanzo-s3-internal-inline-data"
+	// Earlier MinIO versions didn't reset "x-s3-internal-inline-data"
 	// from fi.Metadata when the object was tiered. So, tiered objects
 	// would return true for InlineData() in these versions even though the
 	// object isn't inlined in xl.meta
