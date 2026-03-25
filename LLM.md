@@ -20,12 +20,6 @@ storage/
   CONTRIBUTING.md
   CREDITS
   Dockerfile
-  Dockerfile.cicd
-  Dockerfile.hanzo
-  Dockerfile.hotfix
-  Dockerfile.release
-  Dockerfile.release.old_cpu
-  Dockerfile.scratch
   LICENSE
   LLM.md
   Makefile

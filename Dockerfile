@@ -1,18 +1,29 @@
-FROM minio/minio:latest
+FROM golang:1.26-bookworm AS build
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
 
 ARG TARGETARCH
-ARG RELEASE
+ARG VERSION=""
+ARG COMMIT_ID=""
 
-RUN chmod -R 777 /usr/bin
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -tags kqueue -trimpath \
+    -ldflags "-s -w \
+      -X github.com/hanzoai/s3/cmd.Version=${VERSION} \
+      -X github.com/hanzoai/s3/cmd.CopyrightYear=2026 \
+      -X github.com/hanzoai/s3/cmd.CommitID=${COMMIT_ID}" \
+    -o /s3 .
 
-COPY ./minio-${TARGETARCH}.${RELEASE} /usr/bin/minio
-COPY ./minio-${TARGETARCH}.${RELEASE}.minisig /usr/bin/minio.minisig
-COPY ./minio-${TARGETARCH}.${RELEASE}.sha256sum /usr/bin/minio.sha256sum
+FROM alpine:latest
 
-COPY dockerscripts/docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
+RUN apk add --no-cache curl ca-certificates
 
-ENTRYPOINT ["/usr/bin/docker-entrypoint.sh"]
+COPY --from=build /s3 /usr/bin/minio
 
 VOLUME ["/data"]
+EXPOSE 9000 9001
 
-CMD ["minio"]
+ENTRYPOINT ["/usr/bin/minio"]
+CMD ["server", "/data", "--console-address", ":9001"]
