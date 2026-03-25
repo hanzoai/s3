@@ -172,7 +172,7 @@ func (args eventArgs) ToEvent(escape bool) event.Event {
 	respElements := map[string]string{
 		"x-amz-request-id": args.RespElements["requestId"],
 		"x-amz-id-2":       args.RespElements["nodeId"],
-		"x-hanzo-s3-origin-endpoint": func() string {
+		"x-s3-origin-endpoint": func() string {
 			if globalMinioEndpoint != "" {
 				return globalMinioEndpoint
 			}
@@ -181,7 +181,7 @@ func (args eventArgs) ToEvent(escape bool) event.Event {
 	}
 
 	// Add deployment as part of response elements.
-	respElements["x-hanzo-s3-deployment-id"] = globalDeploymentID()
+	respElements["x-s3-deployment-id"] = globalDeploymentID()
 	if args.RespElements["content-length"] != "" {
 		respElements["content-length"] = args.RespElements["content-length"]
 	}

@@ -48,7 +48,7 @@ type ReqInfo struct {
 	RemoteHost   string           // Client Host/IP
 	Host         string           // Node Host/IP
 	UserAgent    string           // User Agent
-	DeploymentID string           // x-hanzo-s3-deployment-id
+	DeploymentID string           // x-s3-deployment-id
 	RequestID    string           // x-amz-request-id
 	API          string           // API name - GetObject PutObject NewMultipartUpload etc.
 	BucketName   string           `json:",omitempty"` // Bucket name

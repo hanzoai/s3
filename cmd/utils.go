@@ -708,7 +708,7 @@ func ceilFrac(numerator, denominator int64) (ceil int64) {
 func cleanMinioInternalMetadataKeys(metadata map[string]string) map[string]string {
 	newMeta := make(map[string]string, len(metadata))
 	for k, v := range metadata {
-		if strings.HasPrefix(k, "X-Amz-Meta-X-Hanzo-S3-Internal-") {
+		if strings.HasPrefix(k, "X-Amz-Meta-X-S3-Internal-") {
 			newMeta[strings.TrimPrefix(k, "X-Amz-Meta-")] = v
 		} else {
 			newMeta[k] = v

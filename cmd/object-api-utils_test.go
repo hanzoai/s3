@@ -449,7 +449,7 @@ func TestIsCompressed(t *testing.T) {
 		0: {
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Hanzo-S3-Internal-compression": compressionAlgorithmV1,
+					"X-S3-Internal-compression": compressionAlgorithmV1,
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},
@@ -459,7 +459,7 @@ func TestIsCompressed(t *testing.T) {
 		1: {
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Hanzo-S3-Internal-compression": compressionAlgorithmV2,
+					"X-S3-Internal-compression": compressionAlgorithmV2,
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},
@@ -469,7 +469,7 @@ func TestIsCompressed(t *testing.T) {
 		2: {
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Hanzo-S3-Internal-compression": "unknown/compression/type",
+					"X-S3-Internal-compression": "unknown/compression/type",
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},
@@ -480,7 +480,7 @@ func TestIsCompressed(t *testing.T) {
 		3: {
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Hanzo-S3-Internal-compression": compressionAlgorithmV2,
+					"X-S3-Internal-compression": compressionAlgorithmV2,
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 					crypto.MetaIV:                  "yes",
@@ -492,7 +492,7 @@ func TestIsCompressed(t *testing.T) {
 		4: {
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Hanzo-S3-Internal-XYZ": "klauspost/compress/s2",
+					"X-S3-Internal-XYZ": "klauspost/compress/s2",
 					"content-type":         "application/octet-stream",
 					"etag":                 "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},
@@ -608,7 +608,7 @@ func TestGetActualSize(t *testing.T) {
 		{
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Hanzo-S3-Internal-compression": "klauspost/compress/s2",
+					"X-S3-Internal-compression": "klauspost/compress/s2",
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},
@@ -629,8 +629,8 @@ func TestGetActualSize(t *testing.T) {
 		{
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Hanzo-S3-Internal-compression": "klauspost/compress/s2",
-					"X-Hanzo-S3-Internal-actual-size": "841",
+					"X-S3-Internal-compression": "klauspost/compress/s2",
+					"X-S3-Internal-actual-size": "841",
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},
@@ -642,7 +642,7 @@ func TestGetActualSize(t *testing.T) {
 		{
 			objInfo: ObjectInfo{
 				UserDefined: map[string]string{
-					"X-Hanzo-S3-Internal-compression": "klauspost/compress/s2",
+					"X-S3-Internal-compression": "klauspost/compress/s2",
 					"content-type":                 "application/octet-stream",
 					"etag":                         "b3ff3ef3789147152fbfbc50efba4bfd-2",
 				},

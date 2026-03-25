@@ -71,8 +71,8 @@ const (
 	bucketTaggingConfig     = "tagging.xml"
 	bucketReplicationConfig = "replication.xml"
 
-	xMinIOErrCodeHeader = "x-hanzo-s3-error-code"
-	xMinIOErrDescHeader = "x-hanzo-s3-error-desc"
+	xMinIOErrCodeHeader = "x-s3-error-code"
+	xMinIOErrDescHeader = "x-s3-error-desc"
 
 	postPolicyBucketTagging = "tagging"
 )
@@ -1013,7 +1013,7 @@ func (api objectAPIHandlers) PostPolicyBucketHandler(w http.ResponseWriter, r *h
 
 		headerLen += int64(len(name)) + int64(len(fileName))
 		if name != "file" {
-			if http.CanonicalHeaderKey(name) == http.CanonicalHeaderKey("x-hanzo-s3-fanout-list") {
+			if http.CanonicalHeaderKey(name) == http.CanonicalHeaderKey("x-s3-fanout-list") {
 				dec := json.NewDecoder(part)
 
 				// while the array contains values
