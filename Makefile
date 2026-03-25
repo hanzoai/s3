@@ -204,13 +204,6 @@ hotfix-push: hotfix
 	@scp -q -r minio-release/$(GOOS)-$(GOARCH)/* minio@dl-1.minio.io:~/releases/server/minio/hotfixes/linux-$(GOOS)/archive
 	@echo "Published new hotfix binaries at https://dl.min.io/server/minio/hotfixes/linux-$(GOOS)/archive/minio.$(VERSION)"
 
-docker-hotfix-push: docker-hotfix
-	@docker push -q $(TAG) && echo "Published new container $(TAG)"
-
-docker-hotfix: hotfix-push checks ## builds minio docker container with hotfix tags
-	@echo "Building minio docker image '$(TAG)'"
-	@docker build -q --no-cache -t $(TAG) --build-arg RELEASE=$(VERSION) . -f Dockerfile.hotfix
-
 docker: build ## builds minio docker container
 	@echo "Building minio docker image '$(TAG)'"
 	@docker build -q --no-cache -t $(TAG) . -f Dockerfile
