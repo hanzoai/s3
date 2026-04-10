@@ -48,6 +48,7 @@ require (
 	github.com/klauspost/reedsolomon v1.12.4
 	github.com/lib/pq v1.10.9
 	github.com/lithammer/shortuuid/v4 v4.2.0
+	github.com/luxfi/zap v0.2.0
 	github.com/miekg/dns v1.1.65
 	github.com/minio/cli v1.24.2
 	github.com/minio/csvparser v1.0.0
@@ -129,6 +130,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/charmbracelet/bubbles v0.20.0 // indirect
 	github.com/charmbracelet/bubbletea v1.3.4 // indirect
 	github.com/charmbracelet/lipgloss v1.0.0 // indirect
@@ -177,6 +179,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/grandcat/zeroconf v1.0.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
@@ -200,6 +203,7 @@ require (
 	github.com/lestrrat-go/option v1.0.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20250317134145-8bc96cf8fc35 // indirect
+	github.com/luxfi/mdns v0.1.0 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-ieproxy v0.0.12 // indirect
