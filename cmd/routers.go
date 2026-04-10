@@ -106,6 +106,9 @@ func configureServerHandler(endpointServerPools EndpointServerPools) (http.Handl
 	// Add KMS router
 	registerKMSRouter(router)
 
+	// Add management routes (/v1/s3/*)
+	registerManagementRouter(router)
+
 	// Add API router
 	registerAPIRouter(router)
 

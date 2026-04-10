@@ -1035,6 +1035,11 @@ func serverMain(ctx *cli.Context) {
 				go startSFTPServer(globalServerCtxt.SFTP)
 			})
 		}
+
+		// Start ZAP transport for inter-service object operations
+		bootstrapTrace("go startZAPServer", func() {
+			go startZAPServer()
+		})
 	}()
 
 	go func() {
