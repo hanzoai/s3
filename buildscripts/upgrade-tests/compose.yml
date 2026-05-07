@@ -45,7 +45,7 @@ services:
       - data4-3:/data3
 
   ingress:
-    image: ghcr.io/hanzoai/ingress:latest
+    image: ghcr.io/hanzoai/ingress:1.7.41
     volumes:
       - ./ingress.conf:/etc/ingress/config.yml:ro
     ports:
