@@ -3,6 +3,8 @@
 ## Overview
 Go module: github.com/hanzoai/s3
 
+**Upstream**: [MinIO](https://github.com/minio/minio) (AGPL-3.0). Internal name **Hanzo S3** / Hanzo Storage.
+
 ## Tech Stack
 - **Language**: Go
 
