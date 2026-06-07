@@ -48,7 +48,6 @@ require (
 	github.com/klauspost/reedsolomon v1.12.4
 	github.com/lib/pq v1.10.9
 	github.com/lithammer/shortuuid/v4 v4.2.0
-	github.com/zap-proto/go v0.2.0
 	github.com/miekg/dns v1.1.65
 	github.com/minio/cli v1.24.2
 	github.com/minio/csvparser v1.0.0
@@ -90,6 +89,7 @@ require (
 	github.com/tinylib/msgp v1.4.0
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/xdg/scram v1.0.5
+	github.com/zap-proto/go v1.0.0-rc1
 	github.com/zeebo/xxh3 v1.0.2
 	go.etcd.io/etcd/api/v3 v3.5.21
 	go.etcd.io/etcd/client/v3 v3.5.21
