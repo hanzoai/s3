@@ -23,14 +23,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
+	metric "github.com/luxfi/metric"
 )
 
 func TestGetHistogramMetrics_BucketCount(t *testing.T) {
 	histBuckets := []float64{0.05, 0.1, 0.25, 0.5, 0.75}
 	labels := []string{"GetObject", "PutObject", "CopyObject", "CompleteMultipartUpload"}
-	ttfbHist := prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
+	ttfbHist := metric.NewHistogramVec(
+		metric.HistogramOpts{
 			Name:    "s3_ttfb_seconds",
 			Help:    "Time taken by requests served by current MinIO server instance",
 			Buckets: histBuckets,
@@ -77,7 +77,7 @@ func TestGetHistogramMetrics_BucketCount(t *testing.T) {
 		// observations. This is to test the channel based
 		// synchronization used internally.
 		<-ticker.C
-		ttfbHist.With(prometheus.Labels{"api": obs.label}).Observe(obs.val)
+		ttfbHist.With(metric.Labels{"api": obs.label}).Observe(obs.val)
 	}
 
 	metrics := getHistogramMetrics(ttfbHist, getBucketTTFBDistributionMD(), false, false)
@@ -96,8 +96,8 @@ func TestGetHistogramMetrics_BucketCount(t *testing.T) {
 func TestGetHistogramMetrics_Values(t *testing.T) {
 	histBuckets := []float64{0.50, 5.00}
 	labels := []string{"PutObject", "CopyObject"}
-	ttfbHist := prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
+	ttfbHist := metric.NewHistogramVec(
+		metric.HistogramOpts{
 			Name:    "s3_ttfb_seconds",
 			Help:    "Time taken by requests served by current MinIO server instance",
 			Buckets: histBuckets,
@@ -136,7 +136,7 @@ func TestGetHistogramMetrics_Values(t *testing.T) {
 		// observations. This is to test the channel based
 		// synchronization used internally.
 		<-ticker.C
-		ttfbHist.With(prometheus.Labels{"api": obs.label}).Observe(obs.val)
+		ttfbHist.With(metric.Labels{"api": obs.label}).Observe(obs.val)
 	}
 
 	// Accumulate regular-cased API label metrics for 'PutObject' for deeper verification

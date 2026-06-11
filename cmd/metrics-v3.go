@@ -21,7 +21,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/prometheus/client_golang/prometheus"
+	metric "github.com/luxfi/metric"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
@@ -71,12 +71,12 @@ type metricsV3Collection struct {
 	bucketMGMap map[collectorPath]*MetricsGroup
 
 	// Gatherers for non-bucket MetricsGroup's
-	mgGatherers map[collectorPath]prometheus.Gatherer
+	mgGatherers map[collectorPath]metric.Gatherer
 
 	collectorPaths []collectorPath
 }
 
-func newMetricGroups(r *prometheus.Registry) *metricsV3Collection {
+func newMetricGroups(r *metric.Registry) *metricsV3Collection {
 	// Create all metric groups.
 	apiRequestsMG := NewMetricsGroup(apiRequestsCollectorPath,
 		[]MetricDescriptor{
@@ -451,7 +451,7 @@ func newMetricGroups(r *prometheus.Registry) *metricsV3Collection {
 	// we also have standard collectors like `GoCollector`.
 
 	// Create all Non-`MetricGroup` collectors here.
-	collectors := map[collectorPath]prometheus.Collector{
+	collectors := map[collectorPath]metric.Collector{
 		debugGoCollectorPath: collectors.NewGoCollector(),
 	}
 
@@ -461,8 +461,8 @@ func newMetricGroups(r *prometheus.Registry) *metricsV3Collection {
 	}
 
 	// Helper function to register a collector and return a gatherer for it.
-	mustRegister := func(c ...prometheus.Collector) prometheus.Gatherer {
-		subRegistry := prometheus.NewRegistry()
+	mustRegister := func(c ...metric.Collector) metric.Gatherer {
+		subRegistry := metric.NewRegistry()
 		for _, col := range c {
 			subRegistry.MustRegister(col)
 		}
@@ -471,7 +471,7 @@ func newMetricGroups(r *prometheus.Registry) *metricsV3Collection {
 	}
 
 	// Register all collectors and create gatherers for them.
-	gatherers := make(map[collectorPath]prometheus.Gatherer, len(collectors))
+	gatherers := make(map[collectorPath]metric.Gatherer, len(collectors))
 	collectorPaths := make([]collectorPath, 0, len(collectors))
 	for path, collector := range collectors {
 		gatherers[path] = mustRegister(collector)
