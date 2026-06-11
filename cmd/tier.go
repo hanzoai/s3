@@ -32,11 +32,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/minio/madmin-go/v3"
 	"github.com/hanzoai/s3/internal/crypto"
 	"github.com/hanzoai/s3/internal/hash"
 	"github.com/hanzoai/s3/internal/kms"
-	"github.com/prometheus/client_golang/prometheus"
+	metric "github.com/luxfi/metric"
+	"github.com/minio/madmin-go/v3"
 )
 
 //go:generate msgp -file $GOFILE
@@ -100,7 +100,7 @@ type tierMetrics struct {
 		success int64
 		failure int64
 	}
-	histogram *prometheus.HistogramVec
+	histogram *metric.HistogramVec
 }
 
 var globalTierMetrics = tierMetrics{
@@ -108,7 +108,7 @@ var globalTierMetrics = tierMetrics{
 		success int64
 		failure int64
 	}),
-	histogram: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+	histogram: metric.NewHistogramVec(metric.HistogramOpts{
 		Name:    "tier_ttlb_seconds",
 		Help:    "Time taken by requests served by warm tier",
 		Buckets: []float64{0.01, 0.1, 1, 2, 5, 10, 60, 5 * 60, 15 * 60, 30 * 60},
@@ -116,7 +116,7 @@ var globalTierMetrics = tierMetrics{
 }
 
 func (t *tierMetrics) Observe(tier string, dur time.Duration) {
-	t.histogram.With(prometheus.Labels{"tier": tier}).Observe(dur.Seconds())
+	t.histogram.With(metric.Labels{"tier": tier}).Observe(dur.Seconds())
 }
 
 func (t *tierMetrics) logSuccess(tier string) {

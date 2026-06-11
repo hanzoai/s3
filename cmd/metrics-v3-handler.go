@@ -27,10 +27,9 @@ import (
 
 	"github.com/hanzoai/s3/internal/config"
 	"github.com/hanzoai/s3/internal/mcontext"
+	metric "github.com/luxfi/metric"
 	"github.com/minio/mux"
 	"github.com/minio/pkg/v3/env"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type promLogger struct{}
@@ -40,8 +39,8 @@ func (p promLogger) Println(v ...any) {
 }
 
 type metricsV3Server struct {
-	registry *prometheus.Registry
-	opts     promhttp.HandlerOpts
+	registry *metric.Registry
+	opts     metric.HandlerOpts
 	auth     func(http.Handler) http.Handler
 
 	metricsData *metricsV3Collection
@@ -53,16 +52,16 @@ var (
 )
 
 func newMetricsV3Server(auth func(h http.Handler) http.Handler) *metricsV3Server {
-	registry := prometheus.NewRegistry()
+	registry := metric.NewRegistry()
 	metricGroups := newMetricGroups(registry)
 	globalMetricsV3Once.Do(func() {
 		globalMetricsV3CollectorPaths = metricGroups.collectorPaths
 	})
 	return &metricsV3Server{
 		registry: registry,
-		opts: promhttp.HandlerOpts{
+		opts: metric.HandlerOpts{
 			ErrorLog:            promLogger{},
-			ErrorHandling:       promhttp.ContinueOnError,
+			ErrorHandling:       metric.ContinueOnError,
 			Registry:            registry,
 			MaxRequestsInFlight: 2,
 			EnableOpenMetrics:   env.Get(EnvPrometheusOpenMetrics, config.EnableOff) == config.EnableOn,
@@ -183,7 +182,7 @@ func (h *metricsV3Server) handle(path string, isListingRequest bool, buckets []s
 	// by /api/a/b and /api/a/c (and any other matching descendant collector
 	// paths).
 
-	var gatherers []prometheus.Gatherer
+	var gatherers []metric.Gatherer
 	for _, collectorPath := range h.metricsData.collectorPaths {
 		if collectorPath.isDescendantOf(path) {
 			gatherer := h.metricsData.mgGatherers[collectorPath]
@@ -206,7 +205,7 @@ func (h *metricsV3Server) handle(path string, isListingRequest bool, buckets []s
 		return notFoundHandler
 	}
 
-	return promhttp.HandlerFor(prometheus.Gatherers(gatherers), h.opts)
+	return metric.NewHTTPHandler(metric.Gatherers(gatherers), h.opts)
 }
 
 // ServeHTTP - implements http.Handler interface.

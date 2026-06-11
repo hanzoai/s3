@@ -24,10 +24,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/minio/minio-go/v7/pkg/set"
 	"github.com/hanzoai/s3/internal/logger"
+	metric "github.com/luxfi/metric"
+	"github.com/minio/minio-go/v7/pkg/set"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 type collectorPath string
@@ -91,14 +91,14 @@ func (mt MetricType) String() string {
 	}
 }
 
-func (mt MetricType) toProm() prometheus.ValueType {
+func (mt MetricType) toProm() metric.ValueType {
 	switch mt {
 	case CounterMT:
-		return prometheus.CounterValue
+		return metric.CounterValue
 	case GaugeMT:
-		return prometheus.GaugeValue
+		return metric.GaugeValue
 	case HistogramMT:
-		return prometheus.CounterValue
+		return metric.CounterValue
 	default:
 		panic(fmt.Sprintf("unknown metric type: %d", mt))
 	}
@@ -127,11 +127,11 @@ func (md *MetricDescriptor) getLabelSet() map[string]struct{} {
 }
 
 func (md *MetricDescriptor) toPromName(namePrefix string) string {
-	return prometheus.BuildFQName(namePrefix, "", string(md.Name))
+	return metric.BuildFQName(namePrefix, "", string(md.Name))
 }
 
-func (md *MetricDescriptor) toPromDesc(namePrefix string, extraLabels map[string]string) *prometheus.Desc {
-	return prometheus.NewDesc(
+func (md *MetricDescriptor) toPromDesc(namePrefix string, extraLabels map[string]string) *metric.Desc {
+	return metric.NewDesc(
 		md.toPromName(namePrefix),
 		md.Help,
 		md.VariableLabels, extraLabels,
@@ -181,8 +181,8 @@ func newMetricValues(d map[MetricName]MetricDescriptor) MetricValues {
 // adding the given name prefix. The extraLabels are added to each metric as
 // constant labels.
 func (m *MetricValues) ToPromMetrics(namePrefix string, extraLabels map[string]string,
-) []prometheus.Metric {
-	metrics := make([]prometheus.Metric, 0, len(m.values))
+) []metric.Metric {
+	metrics := make([]metric.Metric, 0, len(m.values))
 	for metricName, mv := range m.values {
 		desc := m.descriptors[metricName]
 		promDesc := desc.toPromDesc(namePrefix, extraLabels)
@@ -194,7 +194,7 @@ func (m *MetricValues) ToPromMetrics(namePrefix string, extraLabels map[string]s
 				labelValues = append(labelValues, v.Labels[k])
 			}
 			metrics = append(metrics,
-				prometheus.MustNewConstMetric(promDesc, desc.Type.toProm(), v.Value,
+				metric.MustNewConstMetric(promDesc, desc.Type.toProm(), v.Value,
 					labelValues...))
 		}
 	}
@@ -259,7 +259,7 @@ func (m *MetricValues) Set(name MetricName, value float64, labels ...string) {
 //
 // `extraLabels` are additional labels to add to each metric. They are ordered
 // label name and value pairs.
-func (m *MetricValues) SetHistogram(name MetricName, hist *prometheus.HistogramVec,
+func (m *MetricValues) SetHistogram(name MetricName, hist *metric.HistogramVec,
 	filterByLabels map[string]set.StringSet, renameLabels map[string]string, bucketFilter []string,
 	extraLabels ...string,
 ) {
@@ -354,10 +354,10 @@ func JoinBucketLoaders(loaders ...BucketMetricsLoaderFn) BucketMetricsLoaderFn {
 // For metrics with a `bucket` dimension, a list of buckets argument is required
 // to collect the metrics.
 //
-// It implements the prometheus.Collector interface for metric groups without a
+// It implements the metric.Collector interface for metric groups without a
 // bucket dimension. For metric groups with a bucket dimension, use the
 // `GetBucketCollector` method to get a `BucketCollector` that implements the
-// prometheus.Collector interface.
+// metric.Collector interface.
 type MetricsGroup struct {
 	// Path (relative to the Metrics v3 base endpoint) at which this group of
 	// metrics is served. This value is converted into a metric name prefix
@@ -442,15 +442,15 @@ func (mg *MetricsGroup) IsBucketMetricsGroup() bool {
 	return mg.bucketLoader != nil
 }
 
-// Describe - implements prometheus.Collector interface.
-func (mg *MetricsGroup) Describe(ch chan<- *prometheus.Desc) {
+// Describe - implements metric.Collector interface.
+func (mg *MetricsGroup) Describe(ch chan<- *metric.Desc) {
 	for _, desc := range mg.Descriptors {
 		ch <- desc.toPromDesc(mg.CollectorPath.metricPrefix(), mg.ExtraLabels)
 	}
 }
 
-// Collect - implements prometheus.Collector interface.
-func (mg *MetricsGroup) Collect(ch chan<- prometheus.Metric) {
+// Collect - implements metric.Collector interface.
+func (mg *MetricsGroup) Collect(ch chan<- metric.Metric) {
 	metricValues := newMetricValues(mg.descriptorMap)
 
 	var err error
