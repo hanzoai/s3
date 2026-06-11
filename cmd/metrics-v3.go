@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	metric "github.com/luxfi/metric"
-	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
 // Collector paths.
@@ -452,7 +451,7 @@ func newMetricGroups(r *metric.Registry) *metricsV3Collection {
 
 	// Create all Non-`MetricGroup` collectors here.
 	collectors := map[collectorPath]metric.Collector{
-		debugGoCollectorPath: collectors.NewGoCollector(),
+		debugGoCollectorPath: metric.NewGoCollector(),
 	}
 
 	// Add all `MetricGroup` collectors to the map.
