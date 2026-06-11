@@ -30,15 +30,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/minio/kms-go/kes"
-	"github.com/minio/madmin-go/v3"
 	"github.com/hanzoai/s3/internal/bucket/lifecycle"
 	"github.com/hanzoai/s3/internal/cachevalue"
 	xioutil "github.com/hanzoai/s3/internal/ioutil"
 	"github.com/hanzoai/s3/internal/logger"
 	"github.com/hanzoai/s3/internal/mcontext"
 	"github.com/hanzoai/s3/internal/rest"
-	"github.com/prometheus/client_golang/prometheus"
+	metric "github.com/luxfi/metric"
+	"github.com/minio/kms-go/kes"
+	"github.com/minio/madmin-go/v3"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/prometheus/procfs"
@@ -1843,8 +1843,8 @@ func getGoMetrics() *MetricsGroupV2 {
 //
 // The toLowerAPILabels parameter is added for compatibility,
 // if set, it lowercases the `api` label values.
-func getHistogramMetrics(hist *prometheus.HistogramVec, desc MetricDescription, toLowerAPILabels, limitBuckets bool) []MetricV2 {
-	ch := make(chan prometheus.Metric)
+func getHistogramMetrics(hist *metric.HistogramVec, desc MetricDescription, toLowerAPILabels, limitBuckets bool) []MetricV2 {
+	ch := make(chan metric.Metric)
 	go func() {
 		defer xioutil.SafeClose(ch)
 		// Collects prometheus metrics from hist and sends it over ch
@@ -4027,22 +4027,22 @@ func getKMSMetrics(opts MetricsGroupOpts) *MetricsGroupV2 {
 	return mg
 }
 
-func collectMetric(metric MetricV2, labels []string, values []string, metricName string, out chan<- prometheus.Metric) {
+func collectMetric(metric MetricV2, labels []string, values []string, metricName string, out chan<- metric.Metric) {
 	if metric.Description.Type == histogramMetric {
 		if metric.Histogram == nil {
 			return
 		}
 		for k, v := range metric.Histogram {
-			pmetric, err := prometheus.NewConstMetric(
-				prometheus.NewDesc(
-					prometheus.BuildFQName(string(metric.Description.Namespace),
+			pmetric, err := metric.NewConstMetric(
+				metric.NewDesc(
+					metric.BuildFQName(string(metric.Description.Namespace),
 						string(metric.Description.Subsystem),
 						string(metric.Description.Name)),
 					metric.Description.Help,
 					append(labels, metric.HistogramBucketLabel),
 					metric.StaticLabels,
 				),
-				prometheus.GaugeValue,
+				metric.GaugeValue,
 				float64(v),
 				append(values, k)...)
 			if err != nil {
@@ -4056,13 +4056,13 @@ func collectMetric(metric MetricV2, labels []string, values []string, metricName
 		}
 		return
 	}
-	metricType := prometheus.GaugeValue
+	metricType := metric.GaugeValue
 	if metric.Description.Type == counterMetric {
-		metricType = prometheus.CounterValue
+		metricType = metric.CounterValue
 	}
-	pmetric, err := prometheus.NewConstMetric(
-		prometheus.NewDesc(
-			prometheus.BuildFQName(string(metric.Description.Namespace),
+	pmetric, err := metric.NewConstMetric(
+		metric.NewDesc(
+			metric.BuildFQName(string(metric.Description.Namespace),
 				string(metric.Description.Subsystem),
 				string(metric.Description.Name)),
 			metric.Description.Help,
@@ -4085,23 +4085,23 @@ func collectMetric(metric MetricV2, labels []string, values []string, metricName
 //msgp:ignore minioBucketCollector
 type minioBucketCollector struct {
 	metricsGroups []*MetricsGroupV2
-	desc          *prometheus.Desc
+	desc          *metric.Desc
 }
 
 func newMinioBucketCollector(metricsGroups []*MetricsGroupV2) *minioBucketCollector {
 	return &minioBucketCollector{
 		metricsGroups: metricsGroups,
-		desc:          prometheus.NewDesc("s3_bucket_stats", "Statistics exposed by MinIO server cluster wide per bucket", nil, nil),
+		desc:          metric.NewDesc("s3_bucket_stats", "Statistics exposed by MinIO server cluster wide per bucket", nil, nil),
 	}
 }
 
 // Describe sends the super-set of all possible descriptors of metrics
-func (c *minioBucketCollector) Describe(ch chan<- *prometheus.Desc) {
+func (c *minioBucketCollector) Describe(ch chan<- *metric.Desc) {
 	ch <- c.desc
 }
 
 // Collect is called by the Prometheus registry when collecting metrics.
-func (c *minioBucketCollector) Collect(out chan<- prometheus.Metric) {
+func (c *minioBucketCollector) Collect(out chan<- metric.Metric) {
 	var wg sync.WaitGroup
 	publish := func(in <-chan MetricV2) {
 		defer wg.Done()
@@ -4121,23 +4121,23 @@ func (c *minioBucketCollector) Collect(out chan<- prometheus.Metric) {
 //msgp:ignore minioClusterCollector
 type minioClusterCollector struct {
 	metricsGroups []*MetricsGroupV2
-	desc          *prometheus.Desc
+	desc          *metric.Desc
 }
 
 func newMinioClusterCollector(metricsGroups []*MetricsGroupV2) *minioClusterCollector {
 	return &minioClusterCollector{
 		metricsGroups: metricsGroups,
-		desc:          prometheus.NewDesc("s3_stats", "Statistics exposed by MinIO server per cluster", nil, nil),
+		desc:          metric.NewDesc("s3_stats", "Statistics exposed by MinIO server per cluster", nil, nil),
 	}
 }
 
 // Describe sends the super-set of all possible descriptors of metrics
-func (c *minioClusterCollector) Describe(ch chan<- *prometheus.Desc) {
+func (c *minioClusterCollector) Describe(ch chan<- *metric.Desc) {
 	ch <- c.desc
 }
 
 // Collect is called by the Prometheus registry when collecting metrics.
-func (c *minioClusterCollector) Collect(out chan<- prometheus.Metric) {
+func (c *minioClusterCollector) Collect(out chan<- metric.Metric) {
 	var wg sync.WaitGroup
 	publish := func(in <-chan MetricV2) {
 		defer wg.Done()
@@ -4182,11 +4182,11 @@ func ReportMetrics(ctx context.Context, metricsGroups []*MetricsGroupV2) <-chan 
 //msgp:ignore minioNodeCollector
 type minioNodeCollector struct {
 	metricsGroups []*MetricsGroupV2
-	desc          *prometheus.Desc
+	desc          *metric.Desc
 }
 
 // Describe sends the super-set of all possible descriptors of metrics
-func (c *minioNodeCollector) Describe(ch chan<- *prometheus.Desc) {
+func (c *minioNodeCollector) Describe(ch chan<- *metric.Desc) {
 	ch <- c.desc
 }
 
@@ -4205,7 +4205,7 @@ func populateAndPublish(metricsGroups []*MetricsGroupV2, publish func(m MetricV2
 }
 
 // Collect is called by the Prometheus registry when collecting metrics.
-func (c *minioNodeCollector) Collect(ch chan<- prometheus.Metric) {
+func (c *minioNodeCollector) Collect(ch chan<- metric.Metric) {
 	// Expose MinIO's version information
 	minioVersionInfo.WithLabelValues(Version, CommitID).Set(1.0)
 
@@ -4221,29 +4221,29 @@ func (c *minioNodeCollector) Collect(ch chan<- prometheus.Metric) {
 			for k, v := range metric.Histogram {
 				labels = append(labels, metric.HistogramBucketLabel)
 				values = append(values, k)
-				ch <- prometheus.MustNewConstMetric(
-					prometheus.NewDesc(
-						prometheus.BuildFQName(string(metric.Description.Namespace),
+				ch <- metric.MustNewConstMetric(
+					metric.NewDesc(
+						metric.BuildFQName(string(metric.Description.Namespace),
 							string(metric.Description.Subsystem),
 							string(metric.Description.Name)),
 						metric.Description.Help,
 						labels,
 						metric.StaticLabels,
 					),
-					prometheus.GaugeValue,
+					metric.GaugeValue,
 					float64(v),
 					values...)
 			}
 			return true
 		}
 
-		metricType := prometheus.GaugeValue
+		metricType := metric.GaugeValue
 		if metric.Description.Type == counterMetric {
-			metricType = prometheus.CounterValue
+			metricType = metric.CounterValue
 		}
-		ch <- prometheus.MustNewConstMetric(
-			prometheus.NewDesc(
-				prometheus.BuildFQName(string(metric.Description.Namespace),
+		ch <- metric.MustNewConstMetric(
+			metric.NewDesc(
+				metric.BuildFQName(string(metric.Description.Namespace),
 					string(metric.Description.Subsystem),
 					string(metric.Description.Name)),
 				metric.Description.Help,
@@ -4274,18 +4274,18 @@ func getOrderedLabelValueArrays(labelsWithValue map[string]string) (labels, valu
 func newMinioCollectorNode(metricsGroups []*MetricsGroupV2) *minioNodeCollector {
 	return &minioNodeCollector{
 		metricsGroups: metricsGroups,
-		desc:          prometheus.NewDesc("s3_stats", "Statistics exposed by MinIO server per node", nil, nil),
+		desc:          metric.NewDesc("s3_stats", "Statistics exposed by MinIO server per node", nil, nil),
 	}
 }
 
-func metricsHTTPHandler(c prometheus.Collector, funcName string) http.Handler {
-	registry := prometheus.NewRegistry()
+func metricsHTTPHandler(c metric.Collector, funcName string) http.Handler {
+	registry := metric.NewRegistry()
 
 	// Report all other metrics
 	logger.CriticalIf(GlobalContext, registry.Register(c))
 
 	// DefaultGatherers include golang metrics and process metrics.
-	gatherers := prometheus.Gatherers{
+	gatherers := metric.Gatherers{
 		registry,
 	}
 
@@ -4324,13 +4324,13 @@ func metricsBucketHandler() http.Handler {
 }
 
 func metricsServerHandler() http.Handler {
-	registry := prometheus.NewRegistry()
+	registry := metric.NewRegistry()
 
 	// Report all other metrics
 	logger.CriticalIf(GlobalContext, registry.Register(clusterCollector))
 
 	// DefaultGatherers include golang metrics and process metrics.
-	gatherers := prometheus.Gatherers{
+	gatherers := metric.Gatherers{
 		registry,
 	}
 
@@ -4365,19 +4365,19 @@ func metricsServerHandler() http.Handler {
 }
 
 func metricsNodeHandler() http.Handler {
-	registry := prometheus.NewRegistry()
+	registry := metric.NewRegistry()
 
 	logger.CriticalIf(GlobalContext, registry.Register(nodeCollector))
-	if err := registry.Register(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{
+	if err := registry.Register(metric.NewProcessCollector(metric.ProcessCollectorOpts{
 		Namespace:    minioNamespace,
 		ReportErrors: true,
 	})); err != nil {
 		logger.CriticalIf(GlobalContext, err)
 	}
-	if err := registry.Register(prometheus.NewGoCollector()); err != nil {
+	if err := registry.Register(metric.NewGoCollector()); err != nil {
 		logger.CriticalIf(GlobalContext, err)
 	}
-	gatherers := prometheus.Gatherers{
+	gatherers := metric.Gatherers{
 		registry,
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

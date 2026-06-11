@@ -24,7 +24,7 @@ import (
 	"sync/atomic"
 
 	xhttp "github.com/hanzoai/s3/internal/http"
-	"github.com/prometheus/client_golang/prometheus"
+	metric "github.com/luxfi/metric"
 )
 
 // connStats - Network statistics
@@ -130,7 +130,7 @@ func (bh *bucketHTTPStats) updateHTTPStats(bucket, api string, w *xhttp.Response
 
 	if w != nil {
 		// Increment the prometheus http request response histogram with API, Bucket
-		bucketHTTPRequestsDuration.With(prometheus.Labels{
+		bucketHTTPRequestsDuration.With(metric.Labels{
 			"api":    api,
 			"bucket": bucket,
 		}).Observe(w.TTFB().Seconds())
@@ -433,7 +433,7 @@ func (st *HTTPStats) updateStats(api string, w *xhttp.ResponseRecorder) {
 	st.totalS3Requests.Inc(api)
 
 	// Increment the prometheus http request response histogram with appropriate label
-	httpRequestsDuration.With(prometheus.Labels{"api": api}).Observe(w.TTFB().Seconds())
+	httpRequestsDuration.With(metric.Labels{"api": api}).Observe(w.TTFB().Seconds())
 
 	code := w.StatusCode
 
