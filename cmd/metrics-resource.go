@@ -25,8 +25,8 @@ import (
 	"sync"
 	"time"
 
+	metric "github.com/luxfi/metric"
 	"github.com/minio/madmin-go/v3"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -381,16 +381,16 @@ func startResourceMetricsCollection() {
 // minioResourceCollector is the Collector for resource metrics
 type minioResourceCollector struct {
 	metricsGroups []*MetricsGroupV2
-	desc          *prometheus.Desc
+	desc          *metric.Desc
 }
 
 // Describe sends the super-set of all possible descriptors of metrics
-func (c *minioResourceCollector) Describe(ch chan<- *prometheus.Desc) {
+func (c *minioResourceCollector) Describe(ch chan<- *metric.Desc) {
 	ch <- c.desc
 }
 
 // Collect is called by the Prometheus registry when collecting metrics.
-func (c *minioResourceCollector) Collect(out chan<- prometheus.Metric) {
+func (c *minioResourceCollector) Collect(out chan<- metric.Metric) {
 	var wg sync.WaitGroup
 	publish := func(in <-chan MetricV2) {
 		defer wg.Done()
@@ -414,7 +414,7 @@ func (c *minioResourceCollector) Collect(out chan<- prometheus.Metric) {
 func newMinioResourceCollector(metricsGroups []*MetricsGroupV2) *minioResourceCollector {
 	return &minioResourceCollector{
 		metricsGroups: metricsGroups,
-		desc:          prometheus.NewDesc("s3_resource_stats", "Resource statistics exposed by MinIO server", nil, nil),
+		desc:          metric.NewDesc("s3_resource_stats", "Resource statistics exposed by MinIO server", nil, nil),
 	}
 }
 
