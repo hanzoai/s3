@@ -1,4 +1,4 @@
-# LLM.md - Hanzo Storage
+# Hanzo Storage
 
 ## Overview
 Go module: github.com/hanzoai/s3
