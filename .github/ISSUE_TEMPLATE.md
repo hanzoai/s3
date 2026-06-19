@@ -2,50 +2,34 @@
 name: Bug report
 about: Create a report to help us improve
 title: ''
-labels: community, triage
+labels: ''
 assignees: ''
 
 ---
 
-## NOTE
-All GitHub issues are addressed on a best-effort basis at Hanzo's sole discretion. There are no Service Level Agreements (SLA) or Objectives (SLO). Remember our [Code of Conduct](https://github.com/hanzoai/storage/blob/main/code_of_conduct.md) when engaging with Hanzo Engineers and the larger community.
+Sponsors SeaweedFS via Patreon https://www.patreon.com/seaweedfs
+Report issues here. Ask questions here https://stackoverflow.com/questions/tagged/seaweedfs
+Please ask questions in https://github.com/seaweedfs/seaweedfs/discussions
 
-For urgent issues (e.g. production down, etc.), visit [Hanzo Support](https://hanzo.ai/pricing) for direct to engineering support.
- 
-<!--- Provide a general summary of the issue in the Title above -->
+example of a good issue report:
+https://github.com/seaweedfs/seaweedfs/issues/1005
+example of a bad issue report:
+https://github.com/seaweedfs/seaweedfs/issues/1008
 
-## Expected Behavior
-<!--- If you're describing a bug, tell us what should happen -->
-<!--- If you're suggesting a change/improvement, tell us how it should work -->
+**Describe the bug**
+A clear and concise description of what the bug is.
 
-## Current Behavior
-<!--- If describing a bug, tell us what happens instead of the expected behavior -->
-<!--- If suggesting a change/improvement, explain the difference from current behavior -->
+**System Setup**
+- List the command line to start "weed master", "weed volume", "weed filer", "weed s3", "weed mount".
+- OS version
+- output of `weed version`
+- if using filer, show the content of `filer.toml`
 
-## Possible Solution
-<!--- Not obligatory, but suggest a fix/reason for the bug, -->
-<!--- or ideas how to implement the addition or change -->
+**Expected behavior**
+A clear and concise description of what you expected to happen.
 
-## Steps to Reproduce (for bugs)
-<!--- Provide a link to a live example, or an unambiguous set of steps to -->
-<!--- reproduce this bug. Include code to reproduce, if relevant -->
-<!--- and make sure you have followed https://github.com/minio/minio/tree/release/docs/debugging to capture relevant logs -->
+**Screenshots**
+If applicable, add screenshots to help explain your problem.
 
-1.
-2.
-3.
-4.
-
-## Context
-<!--- How has this issue affected you? What are you trying to accomplish? -->
-<!--- Providing context helps us come up with a solution that is most useful in the real world -->
-
-## Regression
-<!-- Is this issue a regression? (Yes / No) -->
-<!-- If Yes, optionally please include minio version or commit id or PR# that caused this regression, if you have these details. -->
-
-## Your Environment
-<!--- Include as many relevant details about the environment you experienced the bug in -->
-* Version used (`minio --version`):
-* Server setup and configuration:
-* Operating System and version (`uname -a`):
+**Additional context**
+Add any other context about the problem here.

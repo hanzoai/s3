@@ -1,9 +1,20 @@
-MinIO Project, (C) 2015-2023 MinIO, Inc.
+Hanzo S3
+Copyright 2026 Hanzo AI, Inc.
 
-This product includes software developed at MinIO, Inc.
-(https://min.io/).
+This product is a fork of SeaweedFS and includes software developed by the
+SeaweedFS project and its contributors.
 
-The MinIO project contains unmodified/modified subcomponents too with
-separate copyright notices and license terms. Your use of the source
-code for these subcomponents is subject to the terms and conditions
-of GNU Affero General Public License 3.0.
+    SeaweedFS
+    Copyright 2025 Chris Lu and the SeaweedFS contributors
+    https://github.com/seaweedfs/seaweedfs
+
+SeaweedFS is licensed under the Apache License, Version 2.0 (the "License");
+you may not use this software except in compliance with the License. A copy
+of the License is distributed with this software in the LICENSE file, and is
+also available at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Hanzo S3 packages the upstream Go modules under their original import paths
+(github.com/seaweedfs/seaweedfs/...) and rebrands only the user-facing command
+line interface (the `weed` binary is shipped as `s3`) and related branding.

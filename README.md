@@ -1,82 +1,69 @@
 # Hanzo S3
 
-[![GitHub Stars](https://img.shields.io/github/stars/hanzoai/s3?style=flat-square)](https://github.com/hanzoai/s3)
-[![License](https://img.shields.io/badge/license-AGPL%20v3-blue?style=flat-square)](https://github.com/hanzoai/s3/blob/main/LICENSE)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/hanzoai/s3?style=flat-square)](https://github.com/hanzoai/s3)
+Hanzo S3 is Hanzo AI's S3-compatible object store: a fast, simple, scalable
+distributed storage system with a built-in S3 gateway, Filer, and FUSE mount.
 
-High-performance, S3-compatible object storage for AI workloads, optimized for the Hanzo ecosystem.
+It is an Apache-2.0 fork of [SeaweedFS](https://github.com/seaweedfs/seaweedfs).
+The only differences from upstream are branding: the command-line binary is
+shipped as `s3` (instead of `weed`), and user-facing help/branding reads
+"Hanzo S3". All internal Go packages keep their upstream import paths, so the
+fork tracks SeaweedFS with minimal divergence.
 
-## Features
+## Why this exists
 
-- **S3 API Compatible** -- Drop-in replacement for Amazon S3; works with any S3 client or SDK
-- **Built for AI & Analytics** -- Optimized for large-scale model artifacts, training datasets, and data pipelines
-- **High Performance** -- Designed to saturate modern NVMe and network hardware
-- **Erasure Coding** -- Data protection with configurable redundancy across drives and nodes
-- **Bucket Policies** -- Fine-grained access control with S3-compatible policy documents
-- **Object Lifecycle Management** -- Automated expiration, transition, and tiering rules
-- **Encryption** -- Server-side encryption (SSE-S3, SSE-KMS) for data at rest and in transit
-- **Multi-Tenancy** -- Isolated namespaces and access boundaries for teams and services
+The previous `hanzoai/s3` was an AGPL-3.0 MinIO fork. AGPL's network-copyleft
+makes it impractical to embed and resell as part of a managed offering.
+SeaweedFS is Apache-2.0, so Hanzo S3 can be embedded, modified, and offered as
+a service without copyleft obligations.
 
-## Quick Start
+## Build
 
-### Docker
+Requires Go 1.25+.
 
-```sh
-docker run -p 9000:9000 -p 9001:9001 \
-  -e S3_ROOT_USER=admin \
-  -e S3_ROOT_PASSWORD=changeme123 \
-  ghcr.io/hanzoai/s3:latest server /data --console-address :9001
+```bash
+make            # builds ./s3 at the repo root
+# or
+go build -o s3 ./weed
 ```
 
-Console: `http://127.0.0.1:9001` -- change the default credentials immediately in production.
+Full build with optional backends (elastic, sqlite, tikv, ydb, tarantool, rclone, gocdk):
 
-### Install from Source
-
-Requires Go 1.24 or later.
-
-```sh
-git clone https://github.com/hanzoai/s3.git
-cd s3
-go build -o hanzo-s3 .
-./hanzo-s3 server /data --console-address :9001
+```bash
+make full_install
 ```
 
-### Verify Connectivity
+## Usage
 
-Use any S3-compatible client. With the Hanzo S3 CLI (`s3`):
+The binary is `s3`. Common commands:
 
-```sh
-s3 alias set hanzo http://localhost:9000 admin changeme123
-s3 admin info hanzo
-s3 mb hanzo/my-bucket
-s3 cp ~/data/model.safetensors hanzo/my-bucket/
-s3 ls hanzo/my-bucket/
+```bash
+s3 server -s3 -filer -dir=/data    # all-in-one: master + volume + filer + S3 gateway
+s3 master                          # start a master server
+s3 volume -dir=/data -max=5        # start a volume server
+s3 filer -master=localhost:9333    # start the Filer
+s3 s3 -filer=localhost:8888        # start the S3 API gateway
+s3 mount -filer=localhost:8888 -dir=/mnt/s3   # FUSE mount
+s3 mini                            # single-process setup for S3 beginners / dev
+s3 -h                              # full command list
+s3 help <command>                  # help for a specific command
+s3 version
 ```
 
-## SDKs
-
-Hanzo S3 is fully S3-compatible. Use any S3 SDK:
-
-| Language | Package |
-|----------|---------|
-| Go       | [`@hanzo/s3-go`](https://github.com/hanzos3/go-sdk) |
-| JavaScript / TypeScript | [`@hanzo/s3`](https://github.com/hanzos3/js-sdk) |
-| Python   | [`hanzo-s3`](https://github.com/hanzos3/py-sdk) |
-
-Standard AWS SDKs (`aws-sdk-go`, `boto3`, `@aws-sdk/client-s3`) also work without modification.
+The S3 gateway speaks the AWS S3 API; point any S3 SDK or `aws s3` client at it.
 
 ## Documentation
 
-Full documentation at [docs.hanzo.ai/storage](https://docs.hanzo.ai/docs/services/s3).
+Hanzo S3 is API- and behavior-compatible with upstream SeaweedFS, so the
+upstream documentation applies directly:
 
-## Demo Server
+- SeaweedFS Wiki: https://github.com/seaweedfs/seaweedfs/wiki
+- S3 API reference: https://github.com/seaweedfs/seaweedfs/wiki/Amazon-S3-API
 
-A public demo server is available at `s3-demo.hanzo.ai` for testing. Data is wiped hourly.
-
-## Attribution
-
-Based on [MinIO](https://github.com/minio/minio). See the upstream [LICENSE](LICENSE) for attribution.
+Wherever the upstream docs say `weed`, run `s3` instead.
 
 ## License
 
-Copyright (c) Hanzo AI Inc. Licensed under the [GNU Affero General Public License v3.0](LICENSE).
+Apache License 2.0 — see [LICENSE](./LICENSE).
+
+This is a fork of SeaweedFS (Copyright Chris Lu and the SeaweedFS
+contributors). See [NOTICE](./NOTICE) for attribution.
