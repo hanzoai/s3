@@ -1,0 +1,466 @@
+package shell
+
+import (
+	"fmt"
+	"testing"
+
+	"github.com/seaweedfs/seaweedfs/weed/storage/types"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/seaweedfs/seaweedfs/weed/pb/master_pb"
+	"github.com/seaweedfs/seaweedfs/weed/storage/super_block"
+)
+
+type testMoveCase struct {
+	name           string
+	replication    string
+	replicas       []*VolumeReplica
+	sourceLocation location
+	targetLocation location
+	expected       bool
+}
+
+func TestIsGoodMove(t *testing.T) {
+
+	var tests = []testMoveCase{
+
+		{
+			name:        "test 100 move to wrong data centers",
+			replication: "100",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+				},
+				{
+					location: &location{"dc2", "r2", &master_pb.DataNodeInfo{Id: "dn2"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+			targetLocation: location{"dc2", "r3", &master_pb.DataNodeInfo{Id: "dn3"}},
+			expected:       false,
+		},
+
+		{
+			name:        "test 100 move to spread into proper data centers",
+			replication: "100",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+				},
+				{
+					location: &location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn2"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn2"}},
+			targetLocation: location{"dc2", "r2", &master_pb.DataNodeInfo{Id: "dn3"}},
+			expected:       true,
+		},
+
+		{
+			name:        "test move to the same node",
+			replication: "001",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+				},
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn2"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn2"}},
+			targetLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn2"}},
+			expected:       false,
+		},
+
+		{
+			name:        "test move to the same rack, but existing node",
+			replication: "001",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+				},
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn2"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn2"}},
+			targetLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+			expected:       false,
+		},
+
+		{
+			name:        "test move to the same rack, a new node",
+			replication: "001",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+				},
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn2"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn2"}},
+			targetLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn3"}},
+			expected:       true,
+		},
+
+		{
+			name:        "test 010 move all to the same rack",
+			replication: "010",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+				},
+				{
+					location: &location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn2"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn2"}},
+			targetLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn3"}},
+			expected:       false,
+		},
+
+		{
+			name:        "test 010 move to spread racks",
+			replication: "010",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+				},
+				{
+					location: &location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn2"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn2"}},
+			targetLocation: location{"dc1", "r3", &master_pb.DataNodeInfo{Id: "dn3"}},
+			expected:       true,
+		},
+
+		{
+			name:        "test 010 move to spread racks",
+			replication: "010",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+				},
+				{
+					location: &location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn2"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn2"}},
+			targetLocation: location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn3"}},
+			expected:       true,
+		},
+
+		{
+			name:        "test 011 switch which rack has more replicas",
+			replication: "011",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+				},
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn2"}},
+				},
+				{
+					location: &location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn3"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+			targetLocation: location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn4"}},
+			expected:       true,
+		},
+
+		{
+			name:        "test 011 move the lonely replica to another racks",
+			replication: "011",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+				},
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn2"}},
+				},
+				{
+					location: &location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn3"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn3"}},
+			targetLocation: location{"dc1", "r3", &master_pb.DataNodeInfo{Id: "dn4"}},
+			expected:       true,
+		},
+
+		{
+			name:        "test 011 move to wrong racks",
+			replication: "011",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+				},
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn2"}},
+				},
+				{
+					location: &location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn3"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+			targetLocation: location{"dc1", "r3", &master_pb.DataNodeInfo{Id: "dn4"}},
+			expected:       false,
+		},
+
+		{
+			name:        "test 011 move all to the same rack",
+			replication: "011",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn1"}},
+				},
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn2"}},
+				},
+				{
+					location: &location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn3"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r2", &master_pb.DataNodeInfo{Id: "dn3"}},
+			targetLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "dn4"}},
+			expected:       false,
+		},
+
+		{
+			// rep 001 allows two copies in one rack; replica-placement alone would
+			// permit this, but the target shares a host with another replica, so the
+			// machine anti-affinity must reject it.
+			name:        "test 001 reject move onto a machine already holding a replica",
+			replication: "001",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "10.0.0.1:8080"}},
+				},
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "10.0.0.2:8080"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "10.0.0.2:8080"}},
+			targetLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "10.0.0.1:8081"}},
+			expected:       false,
+		},
+
+		{
+			name:        "test 001 allow move onto a different machine in the rack",
+			replication: "001",
+			replicas: []*VolumeReplica{
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "10.0.0.1:8080"}},
+				},
+				{
+					location: &location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "10.0.0.2:8080"}},
+				},
+			},
+			sourceLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "10.0.0.2:8080"}},
+			targetLocation: location{"dc1", "r1", &master_pb.DataNodeInfo{Id: "10.0.0.3:8080"}},
+			expected:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		replicaPlacement, _ := super_block.NewReplicaPlacementFromString(tt.replication)
+		println("replication:", tt.replication, "expected", tt.expected, "name:", tt.name)
+		sourceNode := &Node{
+			info: tt.sourceLocation.dataNode,
+			dc:   tt.sourceLocation.dc,
+			rack: tt.sourceLocation.rack,
+		}
+		targetNode := &Node{
+			info: tt.targetLocation.dataNode,
+			dc:   tt.targetLocation.dc,
+			rack: tt.targetLocation.rack,
+		}
+		if isGoodMove(replicaPlacement, tt.replicas, sourceNode, targetNode) != tt.expected {
+			t.Errorf("%s: expect %v move from %v to %s, replication:%v",
+				tt.name, tt.expected, tt.sourceLocation, tt.targetLocation, tt.replication)
+		}
+	}
+
+}
+
+func TestBalance(t *testing.T) {
+	topologyInfo := parseOutput(topoData)
+	volumeServers := collectVolumeServersByDcRackNode(topologyInfo, "", "", "")
+	volumeReplicas, _ := collectVolumeReplicaLocations(topologyInfo)
+	diskTypes := collectVolumeDiskTypes(topologyInfo)
+	c := &commandVolumeBalance{}
+	if err := c.balanceVolumeServers(diskTypes, volumeReplicas, volumeServers, nil, "ALL_COLLECTIONS"); err != nil {
+		t.Errorf("balance: %v", err)
+	}
+
+}
+
+// Regression test: a freshly added empty volume server must end up sharing the
+// data roughly evenly, not having every volume drained onto it. Before the fix,
+// adjustAfterMove never updated the per-disk VolumeInfos that the density-based
+// capacity function reads, so the planner saw a stale topology and moved every
+// volume from the full node onto the empty one.
+func TestBalanceDoesNotDrainOntoOneNode(t *testing.T) {
+	const mb = 1024 * 1024
+	volumeSizeLimitMb := uint64(100)
+
+	makeNode := func(id string, volumes []*master_pb.VolumeInformationMessage) *Node {
+		return &Node{
+			info: &master_pb.DataNodeInfo{
+				Id: id,
+				DiskInfos: map[string]*master_pb.DiskInfo{
+					"": {
+						MaxVolumeCount: 10,
+						VolumeCount:    int64(len(volumes)),
+						VolumeInfos:    volumes,
+					},
+				},
+			},
+			dc:   "dc1",
+			rack: "rack1",
+		}
+	}
+
+	var fullVolumes []*master_pb.VolumeInformationMessage
+	for id := uint32(1); id <= 6; id++ {
+		fullVolumes = append(fullVolumes, &master_pb.VolumeInformationMessage{Id: id, Size: 95 * mb})
+	}
+	fullNode := makeNode("full", fullVolumes)
+	emptyNode := makeNode("empty", nil)
+	nodes := []*Node{fullNode, emptyNode}
+
+	volumeReplicas := map[uint32][]*VolumeReplica{}
+	for _, v := range fullVolumes {
+		loc := newLocation("dc1", "rack1", fullNode.info)
+		volumeReplicas[v.Id] = []*VolumeReplica{{location: &loc, info: v}}
+	}
+
+	for _, n := range nodes {
+		n.selectVolumes(func(v *master_pb.VolumeInformationMessage) bool { return true })
+	}
+
+	if err := balanceSelectedVolume(nil, types.HardDriveType, volumeReplicas, nodes, sortWritableVolumes, volumeSizeLimitMb, false); err != nil {
+		t.Fatalf("balanceSelectedVolume: %v", err)
+	}
+
+	fullCount := len(fullNode.info.DiskInfos[""].VolumeInfos)
+	emptyCount := len(emptyNode.info.DiskInfos[""].VolumeInfos)
+	if fullCount == 0 || emptyCount == 0 {
+		t.Fatalf("expected volumes spread across both nodes, got full=%d empty=%d", fullCount, emptyCount)
+	}
+	if diff := fullCount - emptyCount; diff > 1 || diff < -1 {
+		t.Fatalf("expected balanced distribution within one volume, got full=%d empty=%d", fullCount, emptyCount)
+	}
+}
+
+func TestVolumeSelection(t *testing.T) {
+	topologyInfo := parseOutput(topoData)
+
+	vids, err := collectVolumeIdsForTierChange(topologyInfo, 1000, types.ToDiskType(types.HddType), "", "", 20.0, 0)
+	if err != nil {
+		t.Errorf("collectVolumeIdsForTierChange: %v", err)
+	}
+	assert.Equal(t, 378, len(vids))
+
+}
+
+func TestDeleteEmptySelection(t *testing.T) {
+	topologyInfo := parseOutput(topoData)
+
+	eachDataNode(topologyInfo, func(dc DataCenterId, rack RackId, dn *master_pb.DataNodeInfo) {
+		for _, diskInfo := range dn.DiskInfos {
+			for _, v := range diskInfo.VolumeInfos {
+				if v.Size <= super_block.SuperBlockSize && v.ModifiedAtSecond > 0 {
+					fmt.Printf("empty volume %d from %s\n", v.Id, dn.Id)
+				}
+			}
+		}
+	})
+
+}
+
+func TestSplitCSVSet(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want map[string]bool
+	}{
+		{"empty input is empty set (no filter)", "", map[string]bool{}},
+		{"whitespace only is empty set (no filter)", "   ", map[string]bool{}},
+		{"commas only is empty set (no filter)", ",,,", map[string]bool{}},
+		{"whitespace and commas only is empty set (no filter)", " , , ", map[string]bool{}},
+		{"single", "rack1", map[string]bool{"rack1": true}},
+		{"multi", "rack1,rack2", map[string]bool{"rack1": true, "rack2": true}},
+		{"trims whitespace", " rack1 , rack2 ", map[string]bool{"rack1": true, "rack2": true}},
+		{"skips empty items", "rack1,,rack2,", map[string]bool{"rack1": true, "rack2": true}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, splitCSVSet(tc.in))
+		})
+	}
+}
+
+// Regression test for the rack/node filter that previously used
+// strings.Contains, which falsely matched any id that was a substring of the
+// user-supplied flag value (e.g. -racks=rack10 also matched rack1).
+func TestCollectVolumeServersByDcRackNode_RackFilter(t *testing.T) {
+	topo := &master_pb.TopologyInfo{
+		DataCenterInfos: []*master_pb.DataCenterInfo{{
+			Id: "dc1",
+			RackInfos: []*master_pb.RackInfo{
+				{Id: "rack1", DataNodeInfos: []*master_pb.DataNodeInfo{{Id: "n1"}}},
+				{Id: "rack10", DataNodeInfos: []*master_pb.DataNodeInfo{{Id: "n10"}}},
+				{Id: "rack2", DataNodeInfos: []*master_pb.DataNodeInfo{{Id: "n2"}}},
+			},
+		}},
+	}
+
+	got := collectVolumeServersByDcRackNode(topo, "", "rack10", "")
+	if assert.Len(t, got, 1, "-racks=rack10 should not match rack1") {
+		assert.Equal(t, "rack10", got[0].rack)
+	}
+
+	got = collectVolumeServersByDcRackNode(topo, "", "rack1,rack2", "")
+	racks := map[string]bool{}
+	for _, n := range got {
+		racks[n.rack] = true
+	}
+	assert.Equal(t, map[string]bool{"rack1": true, "rack2": true}, racks,
+		"-racks=rack1,rack2 should match exactly those two, not rack10")
+}
+
+// Regression test for the -nodes filter, mirroring the rack-filter case.
+// Uses bare ids (no :port suffix) so that "node1" is a true substring of
+// "node10": under the old strings.Contains implementation,
+// -nodes=node10 wrongly included node1 as well.
+func TestCollectVolumeServersByDcRackNode_NodeFilter(t *testing.T) {
+	topo := &master_pb.TopologyInfo{
+		DataCenterInfos: []*master_pb.DataCenterInfo{{
+			Id: "dc1",
+			RackInfos: []*master_pb.RackInfo{{
+				Id: "rack1",
+				DataNodeInfos: []*master_pb.DataNodeInfo{
+					{Id: "node1"},
+					{Id: "node10"},
+					{Id: "node2"},
+				},
+			}},
+		}},
+	}
+
+	got := collectVolumeServersByDcRackNode(topo, "", "", "node10")
+	if assert.Len(t, got, 1, "-nodes=node10 should not match node1") {
+		assert.Equal(t, "node10", got[0].info.Id)
+	}
+
+	got = collectVolumeServersByDcRackNode(topo, "", "", "node1,node2")
+	nodes := map[string]bool{}
+	for _, n := range got {
+		nodes[n.info.Id] = true
+	}
+	assert.Equal(t, map[string]bool{"node1": true, "node2": true}, nodes,
+		"-nodes=node1,node2 should match exactly those two, not node10")
+}
