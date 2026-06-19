@@ -1,8 +1,0 @@
-blank_issues_enabled: false
-contact_links:
-  - name: Hanzo Community Support
-    url: https://hanzo.ai/discord
-    about: Community support via Discord - for questions and discussions
-  - name: Hanzo Enterprise Support
-    url: https://hanzo.ai/pricing
-    about: Enterprise support with SLA - for production deployments and feature requests
