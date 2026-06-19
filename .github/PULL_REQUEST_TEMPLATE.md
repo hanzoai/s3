@@ -1,26 +1,19 @@
-## Community Contribution License
-All community contributions in this pull request are licensed to the project maintainers
-under the terms of the [Apache 2 license](https://www.apache.org/licenses/LICENSE-2.0). 
-By creating this pull request I represent that I have the right to license the 
-contributions to the project maintainers under the Apache 2 license.
-
-## Description
+# What problem are we solving?
 
 
-## Motivation and Context
+
+# How are we solving the problem?
 
 
-## How to test this PR?
+# How is the PR tested?
 
 
-## Types of changes
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Optimization (provides speedup with no functional changes)
-- [ ] Breaking change (fix or feature that would cause existing functionality to change)
 
-## Checklist:
-- [ ] Fixes a regression (If yes, please add `commit-id` or `PR #` here)
-- [ ] Unit tests added/updated
-- [ ] Internal documentation updated
-- [ ] Create a documentation update request [here](https://github.com/minio/docs/issues/new?label=doc-change,title=Doc+Updated+Needed+For+PR+github.com%2fminio%2fminio%2fpull%2fNNNNN)
+# Checks
+- [ ] I have added unit tests if possible.
+- [ ] I will add related wiki document changes and link to this PR after merging.
+- [ ] All AI code review comments have been addressed. No more comments to fix if reviewed again. Reviewer may request additional gemini and copilot reviews.
+
+# Checks for AI generated PRs
+- [ ] I have reviewed every line of code.
+- [ ] The PR is kept as minimum as possible. Large PRs would not be accepted.
