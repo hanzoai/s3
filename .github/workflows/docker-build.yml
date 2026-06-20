@@ -1,0 +1,21 @@
+name: Build
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+jobs:
+  s3:
+    uses: hanzoai/.github/.github/workflows/docker-build.yml@main
+    with:
+      image: ghcr.io/hanzoai/s3
+      dockerfile: Dockerfile
+      context: .
+      platforms: linux/amd64
+    secrets: inherit
