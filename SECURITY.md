@@ -1,41 +1,78 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-We always provide security updates for the [latest release](https://github.com/hanzoai/s3/releases/latest).
-Whenever there is a security update you just need to upgrade to the latest version.
+Security fixes land in the latest release. Please reproduce against a recent
+release or `master` before reporting; issues that only reproduce on old,
+unsupported versions are not eligible for a fix or an advisory.
 
-## Reporting a Vulnerability
+## Reporting a vulnerability
 
-All security bugs in [hanzoai/s3](https://github.com/hanzoai/s3) (or other hanzoai/* repositories)
-should be reported by email to security@hanzo.ai. Your email will be acknowledged within 48 hours,
-and you'll receive a more detailed response to your email within 72 hours indicating the next steps
-in handling your report.
+Report privately through GitHub private vulnerability reporting (the "Report a
+vulnerability" button under the repository's Security tab). This keeps the
+report, the fix, and any CVE in one place. Do not open a public issue.
 
-Please, provide a detailed explanation of the issue. In particular, outline the type of the security
-issue (DoS, authentication bypass, information disclose, ...) and the assumptions you're making (e.g. do
-you need access credentials for a successful exploit).
+### What a report must include
 
-If you have not received a reply to your email within 48 hours or you have not heard from the security team
-for the past five days please contact the security team directly:
+We can only act on reports that show real impact. Please include:
 
-- Primary: security@hanzo.ai
-- If you receive no response: dev@hanzo.ai
+- Affected version (a release tag or `master` commit you reproduced on)
+- The exact deployment and configuration: which components are running
+  (master, volume, filer, S3, admin), which ports are reachable by the
+  attacker, and what authentication is enabled
+- The attacker's starting position: unauthenticated, a valid S3 user, an admin,
+  or someone with access to the internal cluster network
+- The trust boundary that is crossed (e.g. an unauthenticated client reading
+  another tenant's data, an S3 user escalating to admin)
+- A minimal, working reproduction or proof of concept
+- Expected vs. actual behavior
 
-### Disclosure Process
+A report without a working reproduction and a clear trust boundary is a
+hardening suggestion, not a vulnerability. We are glad to receive those, but
+they are handled on the normal issue tracker, not as security advisories.
 
-Hanzo S3 uses the following disclosure process:
+### Automated and AI-assisted reports
 
-1. Once the security report is received one member of the security team tries to verify and reproduce
-   the issue and determines the impact it has.
-2. A member of the security team will respond and either confirm or reject the security report.
-   If the report is rejected the response explains why.
-3. Code is audited to find any potential similar problems.
-4. Fixes are prepared for the latest release.
-5. On the date that the fixes are applied a security advisory will be published on <https://blog.hanzo.ai>.
-   Please inform us in your report email whether Hanzo S3 should mention your contribution w.r.t. fixing
-   the security issue. By default we will **not** publish this information to protect your privacy.
+Output from static analysis, dependency scanners, fuzzers, or LLMs is welcome
+only when you have manually validated it and can supply a working reproduction
+against a supported version, per the requirements above. Raw tool output,
+speculative findings, or generated reports without a demonstrated exploit will
+be closed as hardening suggestions.
 
-This process can take some time, especially when coordination is required with maintainers of other projects.
-Every effort will be made to handle the bug in as timely a manner as possible, however it's important that we
-follow the process described above to ensure that disclosures are handled consistently.
+## Trust model
+
+SeaweedFS is built to run with its cluster components (master, volume servers,
+and the raw filer API) on a trusted network. Those internal APIs are not an
+authentication boundary unless you explicitly enable a control (for example
+volume JWT or filer authentication) and that control is bypassed. Exposing an
+internal port directly to untrusted clients is a deployment mistake, not a
+vulnerability in SeaweedFS.
+
+Reports are in scope when they cross a boundary SeaweedFS is meant to enforce,
+for example:
+
+- Unauthenticated access to data or operations that require authentication
+- One S3 identity reading, writing, or deleting another identity's data
+- Privilege escalation from a normal S3 user to administrative capability
+- Bypass of Object Lock / retention where it is configured
+- Remotely triggered data corruption or loss
+
+Reports are generally out of scope when they require:
+
+- Direct access to an internal cluster port that is meant to be private
+- Full master, filer, or volume server access (already a full compromise)
+- An insecure example configuration rather than a documented secure setup
+- Local-only impact on a host the attacker already controls
+
+## CVE assignment
+
+When a report is confirmed, we publish an advisory and request the CVE through
+GitHub. CVEs assigned by third parties without coordinating with us, or for
+issues that do not cross a boundary described above, may be disputed.
+
+## Response and disclosure
+
+- We aim to acknowledge a valid report within a few business days.
+- We will investigate, work on a fix, and coordinate a disclosure timeline
+  with you.
+- Please allow time for a fix before any public disclosure.
