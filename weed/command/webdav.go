@@ -73,7 +73,7 @@ func runWebDav(cmd *Command, args []string) bool {
 	util.LoadSecurityConfiguration()
 
 	listenAddress := fmt.Sprintf("%s:%d", *webDavStandaloneOptions.ipBind, *webDavStandaloneOptions.port)
-	glog.V(0).Infof("Starting Seaweed WebDav Server %s at %s", version.Version(), listenAddress)
+	glog.V(0).Infof("Starting Hanzo S3 WebDav Server %s at %s", version.Version(), listenAddress)
 
 	return webDavStandaloneOptions.startWebDav()
 
@@ -161,7 +161,7 @@ func (wo *WebDavOption) startWebDav() bool {
 	}
 
 	if *wo.tlsPrivateKey != "" {
-		glog.V(0).Infof("Start Seaweed WebDav Server %s at https %s", version.Version(), listenAddress)
+		glog.V(0).Infof("Start Hanzo S3 WebDav Server %s at https %s", version.Version(), listenAddress)
 		getCert, certProvider, err := security.NewReloadingServerCertificate(*wo.tlsCertificate, *wo.tlsPrivateKey)
 		if err != nil {
 			glog.Fatalf("WebDav Server failed to load TLS certificate: %v", err)
@@ -172,7 +172,7 @@ func (wo *WebDavOption) startWebDav() bool {
 			glog.Fatalf("WebDav Server Fail to serve: %v", err)
 		}
 	} else {
-		glog.V(0).Infof("Start Seaweed WebDav Server %s at http %s", version.Version(), listenAddress)
+		glog.V(0).Infof("Start Hanzo S3 WebDav Server %s at http %s", version.Version(), listenAddress)
 		if err = httpS.Serve(webDavListener); err != nil && err != http.ErrServerClosed {
 			glog.Fatalf("WebDav Server Fail to serve: %v", err)
 		}
