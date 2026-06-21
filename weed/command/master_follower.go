@@ -42,7 +42,7 @@ func init() {
 	mf.metricsIntervalSec = aws.Int(0)
 	mf.raftResumeState = aws.Bool(false)
 	mf.maxParallelVacuumPerServer = aws.Int(1)
-	mf.telemetryUrl = aws.String("https://telemetry.seaweedfs.com/api/collect")
+	mf.telemetryUrl = aws.String("")
 	mf.telemetryEnabled = aws.Bool(false)
 }
 
@@ -129,7 +129,7 @@ func startMasterFollower(masterOptions MasterOptions) {
 	r := mux.NewRouter()
 	ms := weed_server.NewMasterServer(r, option, masters)
 	listeningAddress := util.JoinHostPort(*masterOptions.ipBind, *masterOptions.port)
-	glog.V(0).Infof("Start Seaweed Master %s at %s", version.Version(), listeningAddress)
+	glog.V(0).Infof("Start Hanzo S3 Master %s at %s", version.Version(), listeningAddress)
 	masterListener, masterLocalListener, e := util.NewIpAndLocalListeners(*masterOptions.ipBind, *masterOptions.port, 0)
 	if e != nil {
 		glog.Fatalf("Master startup error: %v", e)
@@ -144,7 +144,7 @@ func startMasterFollower(masterOptions MasterOptions) {
 	grpcS := pb.NewGrpcServer(security.LoadServerTLS(util.GetViper(), "grpc.master"))
 	master_pb.RegisterSeaweedServer(grpcS, ms)
 	reflection.Register(grpcS)
-	glog.V(0).Infof("Start Seaweed Master %s grpc server at %s:%d", version.Version(), *masterOptions.ip, grpcPort)
+	glog.V(0).Infof("Start Hanzo S3 Master %s grpc server at %s:%d", version.Version(), *masterOptions.ip, grpcPort)
 	if grpcLocalL != nil {
 		go grpcS.Serve(grpcLocalL)
 	}

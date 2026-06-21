@@ -107,7 +107,7 @@ func runMqKafkaGateway(cmd *Command, args []string) bool {
 	} else {
 		glog.V(0).Infof("Starting MQ Kafka Gateway on %s", listenAddr)
 	}
-	glog.V(0).Infof("Using SeaweedMQ brokers from masters: %s", *mqKafkaGatewayOptions.master)
+	glog.V(0).Infof("Using Hanzo MQ brokers from masters: %s", *mqKafkaGatewayOptions.master)
 
 	// Start HTTP profiling server if enabled
 	if *mqKafkaGatewayOptions.pprofPort > 0 {

@@ -301,7 +301,7 @@ func triggerMiniClientsShutdown(timeout time.Duration) {
 		// Switch the progress board from startup mode to shutdown mode. All
 		// services start as "stopping"; each goroutine's defer reportMiniStopped
 		// flips its own row to "stopped" when it actually drains.
-		fmt.Println("\n  Shutting down SeaweedFS Mini ...")
+		fmt.Println("\n  Shutting down Hanzo S3 Mini ...")
 		miniProgressBoard.reset(miniStartupServices(), "stopping")
 	}
 	glog.V(0).Infof("Shutting down admin/s3/webdav ...")
@@ -432,7 +432,7 @@ func initMiniMasterFlags() {
 	miniMasterOptions.electionTimeout = cmdMini.Flag.Duration("master.electionTimeout", 10*time.Second, "election timeout of master servers")
 	miniMasterOptions.raftHashicorp = cmdMini.Flag.Bool("master.raftHashicorp", false, "use hashicorp raft")
 	miniMasterOptions.raftBootstrap = cmdMini.Flag.Bool("master.raftBootstrap", false, "whether to bootstrap the Raft cluster")
-	miniMasterOptions.telemetryUrl = cmdMini.Flag.String("master.telemetry.url", "https://telemetry.seaweedfs.com/api/collect", "telemetry server URL")
+	miniMasterOptions.telemetryUrl = cmdMini.Flag.String("master.telemetry.url", "", "telemetry server URL")
 	miniMasterOptions.telemetryEnabled = cmdMini.Flag.Bool("master.telemetry", false, "enable telemetry reporting")
 }
 
@@ -1307,7 +1307,7 @@ func runMini(cmd *Command, args []string) bool {
 
 	// Start all services with proper dependency coordination
 	// This channel will be closed when all services are fully ready
-	fmt.Println("\n  Starting SeaweedFS Mini ...")
+	fmt.Println("\n  Starting Hanzo S3 Mini ...")
 	miniProgressBoard = newMiniProgress(miniStartupServices())
 	allServicesReady := make(chan struct{})
 	startMiniServices(miniWhiteList, allServicesReady)
@@ -1823,7 +1823,7 @@ func printWelcomeMessage() {
 	var sb strings.Builder
 
 	sb.WriteString("╔═══════════════════════════════════════════════════════════════════════════════╗\n")
-	sb.WriteString("║                      SeaweedFS Mini - All-in-One Mode                         ║\n")
+	sb.WriteString("║                      Hanzo S3 Mini - All-in-One Mode                         ║\n")
 	sb.WriteString("╚═══════════════════════════════════════════════════════════════════════════════╝\n\n")
 	sb.WriteString("  All enabled components are running and ready to use:\n\n")
 	fmt.Fprintf(&sb, "    Master UI:       http://%s:%d\n", *miniIp, *miniMasterOptions.port)
