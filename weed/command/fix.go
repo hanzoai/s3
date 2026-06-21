@@ -30,7 +30,7 @@ func init() {
 var cmdFix = &Command{
 	UsageLine: "fix [-remoteFile=false] [-volumeId=234] [-collection=bigData] /tmp",
 	Short:     "run weed tool fix on files or whole folders to recreate index file(s) if corrupted",
-	Long: `Fix runs the SeaweedFS fix command on local dat files ( or remote files) or whole folders to re-create the index .idx file. If fixing remote files, you need to synchronize master.toml to the same directory on the current node as on the master node.
+	Long: `Fix runs the Hanzo S3 fix command on local dat files ( or remote files) or whole folders to re-create the index .idx file. If fixing remote files, you need to synchronize master.toml to the same directory on the current node as on the master node.
   You Need to stop the volume server when running this command.
   Use -ecx to rebuild a lost EC index (.ecx) — and the .vif when missing — from the local .ec## shards.
 `,

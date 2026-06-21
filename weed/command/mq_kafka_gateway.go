@@ -32,7 +32,7 @@ func init() {
 	mqKafkaGatewayOptions.ipBind = cmdMqKafkaGateway.Flag.String("ip.bind", "", "Kafka gateway bind address (default: same as -ip)")
 	mqKafkaGatewayOptions.port = cmdMqKafkaGateway.Flag.Int("port", 9092, "Kafka gateway listen port")
 	mqKafkaGatewayOptions.pprofPort = cmdMqKafkaGateway.Flag.Int("port.pprof", 0, "HTTP profiling port (0 to disable)")
-	mqKafkaGatewayOptions.master = cmdMqKafkaGateway.Flag.String("master", "localhost:9333", "comma-separated SeaweedFS master servers")
+	mqKafkaGatewayOptions.master = cmdMqKafkaGateway.Flag.String("master", "localhost:9333", "comma-separated Hanzo S3 master servers")
 	mqKafkaGatewayOptions.filerGroup = cmdMqKafkaGateway.Flag.String("filerGroup", "", "filer group name")
 	mqKafkaGatewayOptions.schemaRegistryURL = cmdMqKafkaGateway.Flag.String("schema-registry-url", "", "Schema Registry URL (required for schema management)")
 	mqKafkaGatewayOptions.defaultPartitions = cmdMqKafkaGateway.Flag.Int("default-partitions", 4, "Default number of partitions for auto-created topics")
@@ -40,10 +40,10 @@ func init() {
 
 var cmdMqKafkaGateway = &Command{
 	UsageLine: "mq.kafka.gateway [-ip=<host>] [-ip.bind=<bind_addr>] [-port=9092] [-master=<master_servers>] [-filerGroup=<group>] [-default-partitions=4] -schema-registry-url=<url>",
-	Short:     "start a Kafka wire-protocol gateway for SeaweedMQ with schema management",
-	Long: `Start a Kafka wire-protocol gateway translating Kafka client requests to SeaweedMQ.
+	Short:     "start a Kafka wire-protocol gateway for Hanzo MQ with schema management",
+	Long: `Start a Kafka wire-protocol gateway translating Kafka client requests to Hanzo MQ.
 
-Connects to SeaweedFS master servers to discover available brokers and integrates with
+Connects to Hanzo S3 master servers to discover available brokers and integrates with
 Schema Registry for schema-aware topic management.
 
 Options:

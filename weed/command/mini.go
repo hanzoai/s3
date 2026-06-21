@@ -332,8 +332,8 @@ func init() {
 
 var cmdMini = &Command{
 	UsageLine: "mini -dir=/tmp",
-	Short:     "start a complete SeaweedFS setup optimized for S3 beginners and small/dev use cases",
-	Long: `start a complete SeaweedFS setup with all components optimized for small/dev use cases
+	Short:     "start a complete Hanzo S3 setup optimized for S3 beginners and small/dev use cases",
+	Long: `start a complete Hanzo S3 setup with all components optimized for small/dev use cases
 
 This command starts all components in one process (master, volume, filer,
 S3 gateway, WebDAV gateway, and Admin UI).
@@ -346,7 +346,7 @@ All settings are optimized for small/dev use cases:
 
 This is perfect for:
 - Development and testing
-- Learning SeaweedFS
+- Learning Hanzo S3
 - Small deployments
 - Local S3-compatible storage
 
