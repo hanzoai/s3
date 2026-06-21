@@ -83,8 +83,8 @@ func init() {
 
 var cmdAdmin = &Command{
 	UsageLine: "admin -port=23646 -master=localhost:9333 [-port.grpc=33646] [-dataDir=/path/to/data]",
-	Short:     "start SeaweedFS web admin interface",
-	Long: `Start a web admin interface for SeaweedFS cluster management.
+	Short:     "start Hanzo S3 web admin interface",
+	Long: `Start a web admin interface for Hanzo S3 cluster management.
 
   The admin interface provides a modern web interface for:
   - Cluster topology visualization and monitoring

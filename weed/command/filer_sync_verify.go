@@ -35,8 +35,8 @@ var syncVerifyOptions SyncVerifyOptions
 
 func init() {
 	cmdFilerSyncVerify.Run = runFilerSyncVerify // break init cycle
-	syncVerifyOptions.filerA = cmdFilerSyncVerify.Flag.String("a", "", "filer A in one SeaweedFS cluster")
-	syncVerifyOptions.filerB = cmdFilerSyncVerify.Flag.String("b", "", "filer B in the other SeaweedFS cluster")
+	syncVerifyOptions.filerA = cmdFilerSyncVerify.Flag.String("a", "", "filer A in one Hanzo S3 cluster")
+	syncVerifyOptions.filerB = cmdFilerSyncVerify.Flag.String("b", "", "filer B in the other Hanzo S3 cluster")
 	syncVerifyOptions.aPath = cmdFilerSyncVerify.Flag.String("a.path", "/", "directory to verify on filer A")
 	syncVerifyOptions.bPath = cmdFilerSyncVerify.Flag.String("b.path", "/", "directory to verify on filer B")
 	syncVerifyOptions.aSecurity = cmdFilerSyncVerify.Flag.String("a.security", "", "security.toml file for filer A when clusters use different certificates")
