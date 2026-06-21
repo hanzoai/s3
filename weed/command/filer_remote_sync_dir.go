@@ -365,7 +365,7 @@ func syncDeleteMarker(
 
 // isVersionedPath returns true if the dir/name refers to an internal
 // versioning path (.versions directory or a version file inside it).
-// These paths are SeaweedFS-internal and must not be synced to remote
+// These paths are Hanzo S3-internal and must not be synced to remote
 // storage as-is, because the remote S3 endpoint may apply its own
 // versioning, leading to double-versioned paths.
 //
@@ -386,7 +386,7 @@ func isVersionedPath(dir string, name string, isDir bool) bool {
 
 // rewriteVersionedSourcePath rewrites an internal versioning path to the
 // original S3 object key. When a file is uploaded to a versioned bucket,
-// SeaweedFS stores it internally as:
+// Hanzo S3 stores it internally as:
 //
 //	/buckets/{bucket}/{key}.versions/v_{versionId}
 //
