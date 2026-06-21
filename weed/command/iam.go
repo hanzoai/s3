@@ -122,7 +122,7 @@ func (iamopt *IamOptions) startIamServer() bool {
 		glog.Fatalf("IAM API Server listener on %s error: %v", listenAddress, err)
 	}
 
-	glog.V(0).Infof("Start Seaweed IAM API Server %s at http port %d", version.Version(), *iamopt.port)
+	glog.V(0).Infof("Start Hanzo S3 IAM API Server %s at http port %d", version.Version(), *iamopt.port)
 	if iamApiLocalListener != nil {
 		go func() {
 			if err = newHttpServer(router, nil).Serve(iamApiLocalListener); err != nil {
