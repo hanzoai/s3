@@ -260,7 +260,7 @@ func runAdmin(cmd *Command, args []string) bool {
 		fmt.Println("WARNING: Admin interface is running without authentication!")
 		fmt.Println("         Set -adminPassword for production use")
 	}
-	fmt.Printf("Starting SeaweedFS Admin Interface on port %d\n", *a.port)
+	fmt.Printf("Starting Hanzo S3 Admin Interface on port %d\n", *a.port)
 	fmt.Printf("Worker gRPC server will run on port %d\n", *a.grpcPort)
 	fmt.Printf("Masters: %s\n", *a.master)
 	fmt.Printf("Filers will be discovered automatically from masters\n")
@@ -479,10 +479,10 @@ func startAdminServer(ctx context.Context, options AdminOptions, enableUI bool, 
 	// and not forwarded.
 	serveErrCh := make(chan error, 1)
 	go func() {
-		glog.Infof("Starting SeaweedFS Admin Server on port %d", *options.port)
+		glog.Infof("Starting Hanzo S3 Admin Server on port %d", *options.port)
 		var serveErr error
 		if useTLS {
-			glog.Infof("Starting SeaweedFS Admin Server with TLS on port %d", *options.port)
+			glog.Infof("Starting Hanzo S3 Admin Server with TLS on port %d", *options.port)
 			serveErr = server.ListenAndServeTLS("", "")
 		} else {
 			serveErr = server.ListenAndServe()

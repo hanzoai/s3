@@ -205,7 +205,7 @@ func (sftpOpt *SftpOptions) startSftpServer() bool {
 		glog.Fatalf("SFTP server listener on %s error: %v", listenAddress, err)
 	}
 
-	glog.V(0).Infof("Start Seaweed SFTP Server %s at %s", version.Version(), listenAddress)
+	glog.V(0).Infof("Start Hanzo S3 SFTP Server %s at %s", version.Version(), listenAddress)
 
 	if sftpLocalListener != nil {
 		go func() {
