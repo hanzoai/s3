@@ -89,8 +89,8 @@ var (
 func init() {
 	cmdFilerSynchronize.Run = runFilerSynchronize // break init cycle
 	syncOptions.isActivePassive = cmdFilerSynchronize.Flag.Bool("isActivePassive", false, "one directional follow from A to B if true")
-	syncOptions.filerA = cmdFilerSynchronize.Flag.String("a", "", "filer A in one SeaweedFS cluster")
-	syncOptions.filerB = cmdFilerSynchronize.Flag.String("b", "", "filer B in the other SeaweedFS cluster")
+	syncOptions.filerA = cmdFilerSynchronize.Flag.String("a", "", "filer A in one Hanzo S3 cluster")
+	syncOptions.filerB = cmdFilerSynchronize.Flag.String("b", "", "filer B in the other Hanzo S3 cluster")
 	syncOptions.aPath = cmdFilerSynchronize.Flag.String("a.path", "/", "directory to sync on filer A")
 	syncOptions.aExcludePaths = cmdFilerSynchronize.Flag.String("a.excludePaths", "", "exclude directories to sync on filer A")
 	syncOptions.bPath = cmdFilerSynchronize.Flag.String("b.path", "/", "directory to sync on filer B")
@@ -126,7 +126,7 @@ func init() {
 
 var cmdFilerSynchronize = &Command{
 	UsageLine: "filer.sync -a=<oneFilerHost>:<oneFilerPort> -b=<otherFilerHost>:<otherFilerPort>",
-	Short:     "resumable continuous synchronization between two active-active or active-passive SeaweedFS clusters",
+	Short:     "resumable continuous synchronization between two active-active or active-passive Hanzo S3 clusters",
 	Long: `resumable continuous synchronization for file changes between two active-active or active-passive filers
 
 	filer.sync listens on filer notifications. If any file is updated, it will fetch the updated content,

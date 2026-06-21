@@ -50,7 +50,7 @@ var (
 
 func init() {
 	cmdFilerBackup.Run = runFilerBackup // break init cycle
-	filerBackupOptions.filer = cmdFilerBackup.Flag.String("filer", "localhost:8888", "filer of one SeaweedFS cluster")
+	filerBackupOptions.filer = cmdFilerBackup.Flag.String("filer", "localhost:8888", "filer of one Hanzo S3 cluster")
 	filerBackupOptions.path = cmdFilerBackup.Flag.String("filerPath", "/", "directory to sync on filer")
 	filerBackupOptions.excludePaths = cmdFilerBackup.Flag.String("filerExcludePaths", "", "exclude directories to sync on filer")
 	filerBackupOptions.excludeFileName = cmdFilerBackup.Flag.String("filerExcludeFileName", "", "[DEPRECATED: use -filerExcludeFileNames] exclude file names that match the regexp")
@@ -68,8 +68,8 @@ func init() {
 
 var cmdFilerBackup = &Command{
 	UsageLine: "filer.backup -filer=<filerHost>:<filerPort> ",
-	Short:     "resume-able continuously replicate files from a SeaweedFS cluster to another location defined in replication.toml",
-	Long: `resume-able continuously replicate files from a SeaweedFS cluster to another location defined in replication.toml
+	Short:     "resume-able continuously replicate files from a Hanzo S3 cluster to another location defined in replication.toml",
+	Long: `resume-able continuously replicate files from a Hanzo S3 cluster to another location defined in replication.toml
 
 	filer.backup listens on filer notifications. If any file is updated, it will fetch the updated content,
 	and write to the destination. This is to replace filer.replicate command since additional message queue is not needed.

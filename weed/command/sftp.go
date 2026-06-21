@@ -47,12 +47,12 @@ type SftpOptions struct {
 // cmdSftp defines the SFTP command similar to the S3 command.
 var cmdSftp = &Command{
 	UsageLine: "sftp [-port=2022] [-filer=<ip:port>] [-sshPrivateKey=</path/to/private_key>]",
-	Short:     "start an SFTP server that is backed by a SeaweedFS filer",
-	Long: `Start an SFTP server that leverages the SeaweedFS filer service to handle file operations.
+	Short:     "start an SFTP server that is backed by a Hanzo S3 filer",
+	Long: `Start an SFTP server that leverages the Hanzo S3 filer service to handle file operations.
 
 Instead of reading from or writing to a local filesystem, all file operations
 are routed through the filer (filer_pb) gRPC API. This allows you to centralize
-your file management in SeaweedFS.
+your file management in Hanzo S3.
 	`,
 }
 
@@ -82,7 +82,7 @@ func init() {
 // runSftp is the command entry point.
 func runSftp(cmd *Command, args []string) bool {
 	sftpOptionsStandalone.resolvePaths()
-	// Load security configuration as done in other SeaweedFS services.
+	// Load security configuration as done in other Hanzo S3 services.
 	util.LoadSecurityConfiguration()
 
 	// Configure metrics

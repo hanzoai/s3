@@ -75,7 +75,7 @@ func init() {
 var cmdBenchmark = &Command{
 	UsageLine: "benchmark -master=localhost:9333 -c=10 -n=100000",
 	Short:     "benchmark by writing millions of files and reading them out",
-	Long: `benchmark on an empty SeaweedFS file system.
+	Long: `benchmark on an empty Hanzo S3 file system.
 
   Two tests during benchmark:
   1) write lots of small files to the system
