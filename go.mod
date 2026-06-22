@@ -1,6 +1,6 @@
 module github.com/hanzoai/s3
 
-go 1.25.0
+go 1.26.4
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
@@ -98,7 +98,7 @@ require (
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sys v0.45.0
 	golang.org/x/text v0.37.0 // indirect
-	golang.org/x/tools v0.44.0 // indirect
+	golang.org/x/tools v0.45.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/api v0.278.0
 	google.golang.org/genproto v0.0.0-20260319201613-d00831a3d3e7 // indirect
@@ -187,6 +187,7 @@ require (
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
 	github.com/boombuler/barcode v1.1.0 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
+	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/cockroachdb/apd/v3 v3.2.1 // indirect
@@ -215,6 +216,7 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/gookit/color v1.5.4 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
+	github.com/grandcat/zeroconf v1.0.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hamba/avro/v2 v2.31.0 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
@@ -235,7 +237,12 @@ require (
 	github.com/lib/pq v1.12.0 // indirect
 	github.com/lithammer/fuzzysearch v1.1.8 // indirect
 	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
+	github.com/luxfi/accel v1.1.9 // indirect
+	github.com/luxfi/crypto v1.19.17 // indirect
+	github.com/luxfi/mdns v0.1.1 // indirect
+	github.com/luxfi/zap v0.8.9 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
+	github.com/miekg/dns v1.1.72 // indirect
 	github.com/minio/asm2plan9s v0.0.0-20200509001527-cdd76441f9d8 // indirect
 	github.com/minio/c2goasm v0.0.0-20190812172519-36a3d3bbc4f3 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
@@ -279,11 +286,11 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.42.0 // indirect
 	go.opentelemetry.io/otel/exporters/zipkin v1.36.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
-	go.uber.org/mock v0.5.2 // indirect
+	go.uber.org/mock v0.6.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/mod v0.35.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260409153401-be6f6cb8b1fa // indirect
+	golang.org/x/mod v0.36.0 // indirect
+	golang.org/x/telemetry v0.0.0-20260508192327-42602be52be6 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
 )
 
