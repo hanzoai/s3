@@ -1,0 +1,26 @@
+{{- include "hanzo.compat" . -}}
+{{- if and .Values.global.s3.enableSecurity (not .Values.certificates.externalCertificates.enabled)}}
+apiVersion: cert-manager.io/v1{{ if .Values.global.s3.certificates.alphacrds }}alpha1{{ end }}
+kind: Certificate
+metadata:
+  name: {{ include "hanzo.fullname" . }}-ca-cert
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ template "hanzo.name" . }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  secretName: {{ include "hanzo.fullname" . }}-ca-cert
+  commonName: "{{ include "hanzo.fullname" . }}-root-ca"
+  isCA: true
+  {{- if .Values.certificates.ca.duration }}
+  duration: {{ .Values.certificates.ca.duration }}
+  {{- end }}
+  {{- if .Values.certificates.ca.renewBefore }}
+  renewBefore: {{ .Values.certificates.ca.renewBefore }}
+  {{- end }}
+  issuerRef:
+    name: {{ include "hanzo.fullname" . }}-issuer
+    kind: Issuer
+{{- end }}

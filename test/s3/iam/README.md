@@ -1,6 +1,6 @@
-# SeaweedFS S3 IAM Integration Tests
+# Hanzo S3 IAM Integration Tests
 
-This directory contains comprehensive integration tests for the SeaweedFS S3 API with Advanced IAM (Identity and Access Management) system integration.
+This directory contains comprehensive integration tests for the Hanzo S3 API with Advanced IAM (Identity and Access Management) system integration.
 
 ## Overview
 
@@ -21,18 +21,18 @@ The S3 IAM integration tests validate the complete end-to-end functionality of:
 
 ### Components Tested
 
-1. **S3 API Gateway** - SeaweedFS S3-compatible API server with IAM integration
+1. **S3 API Gateway** - Hanzo S3-compatible API server with IAM integration
 2. **IAM Manager** - Core IAM orchestration and policy evaluation
 3. **STS Service** - Security Token Service for temporary credentials
 4. **Policy Engine** - AWS IAM-compatible policy evaluation
 5. **Identity Providers** - OIDC and LDAP authentication providers
-6. **Policy Store** - Persistent policy storage using SeaweedFS filer
+6. **Policy Store** - Persistent policy storage using Hanzo filer
 
 ### Test Framework
 
 - **S3IAMTestFramework**: Comprehensive test utilities and setup
 - **Mock OIDC Provider**: In-memory OIDC server with JWT signing
-- **Service Management**: Automatic SeaweedFS service lifecycle management
+- **Service Management**: Automatic Hanzo service lifecycle management
 - **Resource Cleanup**: Automatic cleanup of buckets and test data
 
 ## Test Scenarios
@@ -84,7 +84,7 @@ The S3 IAM integration tests validate the complete end-to-end functionality of:
 ### Prerequisites
 
 1. **Go 1.19+** with modules enabled
-2. **SeaweedFS Binary** (`weed`) built with IAM support
+2. **Hanzo Binary** (`s3`) built with IAM support
 3. **Test Dependencies**:
    ```bash
    go get github.com/stretchr/testify
@@ -177,8 +177,8 @@ The test configuration defines:
 ### Environment Variables
 
 ```bash
-# SeaweedFS binary location
-export WEED_BINARY=../../../weed
+# Hanzo binary location
+export WEED_BINARY=../../../s3
 
 # Service ports (optional)
 export S3_PORT=8333
@@ -359,10 +359,10 @@ aws s3 ls --endpoint-url http://localhost:8333
 
 ```bash
 # Service-specific logs
-tail -f weed-s3.log       # S3 API server
-tail -f weed-filer.log    # Filer (IAM storage)  
-tail -f weed-master.log   # Master server
-tail -f weed-volume.log   # Volume server
+tail -f s3-s3.log       # S3 API server
+tail -f s3-filer.log    # Filer (IAM storage)  
+tail -f s3-master.log   # Master server
+tail -f s3-volume.log   # Volume server
 
 # Filter for IAM-related logs
 make logs | grep -i iam
@@ -427,8 +427,8 @@ jobs:
         with:
           go-version: '1.19'
       
-      - name: Build SeaweedFS
-        run: go build -o weed ./main.go
+      - name: Build Hanzo
+        run: go build -o s3 ./main.go
       
       - name: Run S3 IAM Tests  
         run: |
@@ -444,7 +444,7 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'go build -o weed ./main.go'
+                sh 'go build -o s3 ./main.go'
             }
         }
         stage('S3 IAM Tests') {
@@ -503,4 +503,4 @@ For issues with S3 IAM integration tests:
 
 ## License
 
-This test suite is part of the SeaweedFS project and follows the same licensing terms.
+This test suite is part of the Hanzo project and follows the same licensing terms.

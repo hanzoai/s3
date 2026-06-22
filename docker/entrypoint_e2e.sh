@@ -35,7 +35,7 @@ case "$1" in
   'master')
   	ARGS="-mdir=/data -volumeSizeLimitMB=1024"
   	shift
-  	exec /usr/bin/weed -logtostderr=true master $ARGS "$@"
+  	exec /usr/bin/s3 -logtostderr=true master $ARGS "$@"
 	;;
 
   'volume')
@@ -44,7 +44,7 @@ case "$1" in
   	  ARGS="-dir=/data"
   	fi
   	shift
-  	exec /usr/bin/weed -logtostderr=true volume $ARGS "$@"
+  	exec /usr/bin/s3 -logtostderr=true volume $ARGS "$@"
 	;;
 
   'server')
@@ -53,34 +53,34 @@ case "$1" in
   	  ARGS="-dir=/data -master.volumeSizeLimitMB=1024"
   	fi
  	shift
-  	exec /usr/bin/weed -logtostderr=true server $ARGS "$@"
+  	exec /usr/bin/s3 -logtostderr=true server $ARGS "$@"
   	;;
 
   'filer')
   	ARGS=""
   	shift
-  	exec /usr/bin/weed -logtostderr=true filer $ARGS "$@"
+  	exec /usr/bin/s3 -logtostderr=true filer $ARGS "$@"
 	;;
 
   's3')
   	ARGS="-domainName=$S3_DOMAIN_NAME -key.file=$S3_KEY_FILE -cert.file=$S3_CERT_FILE"
   	shift
-  	exec /usr/bin/weed -logtostderr=true s3 $ARGS "$@"
+  	exec /usr/bin/s3 -logtostderr=true s3 $ARGS "$@"
 	;;
 
   'mount')
   	shift
-  	exec /usr/bin/weed -logtostderr=true mount "$@"
+  	exec /usr/bin/s3 -logtostderr=true mount "$@"
 	;;
 
   'shell')
   	ARGS="-cluster=$SHELL_CLUSTER -filer=$SHELL_FILER -filerGroup=$SHELL_FILER_GROUP -master=$SHELL_MASTER -options=$SHELL_OPTIONS"
   	shift
-  	exec echo "$@" | /usr/bin/weed -logtostderr=true shell $ARGS
+  	exec echo "$@" | /usr/bin/s3 -logtostderr=true shell $ARGS
   ;;
 
   *)
-  	exec /usr/bin/weed "$@"
+  	exec /usr/bin/s3 "$@"
 	;;
 esac
 

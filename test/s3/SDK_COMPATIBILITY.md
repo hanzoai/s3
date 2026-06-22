@@ -1,6 +1,6 @@
 # S3 SDK Compatibility Testing
 
-This document describes the SDK versions tested against SeaweedFS S3 API and known compatibility considerations.
+This document describes the SDK versions tested against Hanzo S3 API and known compatibility considerations.
 
 ## Validated SDK Versions
 
@@ -38,7 +38,7 @@ AWS SDK v2 for Java includes strict ETag validation in `ChecksumsEnabledValidato
 java.lang.IllegalArgumentException: Invalid base 16 character: '-'
 ```
 
-**Resolution**: SeaweedFS now correctly returns:
+**Resolution**: Hanzo now correctly returns:
 - **PutObject**: Pure MD5 hex ETag (32 characters) regardless of internal chunking
 - **CompleteMultipartUpload**: Composite ETag (`<md5>-<partcount>`)
 
@@ -55,7 +55,7 @@ java.lang.IllegalArgumentException: Invalid base 16 character: '-'
 
 ### Large File Handling
 
-SeaweedFS auto-chunks files larger than **8MB** for efficient storage. This is transparent to clients, but previously affected ETag format. The current implementation ensures:
+Hanzo auto-chunks files larger than **8MB** for efficient storage. This is transparent to clients, but previously affected ETag format. The current implementation ensures:
 
 1. Regular `PutObject` (any size): Returns pure MD5 ETag
 2. Multipart upload: Returns composite ETag per AWS S3 specification
@@ -116,7 +116,7 @@ Some very old SDK versions (e.g., AWS SDK v1 for Java < 1.11.x) may have differe
 
 ### Issue: Custom Checksum Algorithms
 
-AWS SDK v2 supports SHA-256 and CRC32 checksums in addition to MD5. SeaweedFS currently returns MD5-based ETags. For checksums other than MD5, use the `x-amz-checksum-*` headers.
+AWS SDK v2 supports SHA-256 and CRC32 checksums in addition to MD5. Hanzo currently returns MD5-based ETags. For checksums other than MD5, use the `x-amz-checksum-*` headers.
 
 ## References
 

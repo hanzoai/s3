@@ -17,11 +17,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/glog"
-	"github.com/hanzoai/s3/weed/pb"
-	"github.com/hanzoai/s3/weed/pb/filer_pb"
-	"github.com/hanzoai/s3/weed/security"
-	"github.com/hanzoai/s3/weed/util"
+	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/security"
+	"github.com/hanzoai/s3/s3/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -36,14 +36,14 @@ func TestMetadataSubscribeBasic(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	testDir, err := os.MkdirTemp("", "seaweedfs_metadata_subscribe_test_")
+	testDir, err := os.MkdirTemp("", "hanzo_metadata_subscribe_test_")
 	require.NoError(t, err)
 	defer os.RemoveAll(testDir)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	cluster, err := startSeaweedFSCluster(ctx, testDir)
+	cluster, err := startHanzoCluster(ctx, testDir)
 	require.NoError(t, err)
 	defer cluster.Stop()
 
@@ -52,7 +52,7 @@ func TestMetadataSubscribeBasic(t *testing.T) {
 	require.NoError(t, waitForHTTPServer("http://127.0.0.1:8080", 30*time.Second))
 	require.NoError(t, waitForHTTPServer("http://127.0.0.1:8888", 30*time.Second))
 
-	t.Logf("SeaweedFS cluster started successfully")
+	t.Logf("Hanzo cluster started successfully")
 
 	t.Run("subscribe_and_receive_events", func(t *testing.T) {
 		// Create a channel to receive events
@@ -132,14 +132,14 @@ func TestMetadataSubscribeSingleFilerNoStall(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	testDir, err := os.MkdirTemp("", "seaweedfs_single_filer_test_")
+	testDir, err := os.MkdirTemp("", "hanzo_single_filer_test_")
 	require.NoError(t, err)
 	defer os.RemoveAll(testDir)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
 
-	cluster, err := startSeaweedFSCluster(ctx, testDir)
+	cluster, err := startHanzoCluster(ctx, testDir)
 	require.NoError(t, err)
 	defer cluster.Stop()
 
@@ -278,14 +278,14 @@ func TestMetadataSubscribeResumeFromDisk(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	testDir, err := os.MkdirTemp("", "seaweedfs_resume_test_")
+	testDir, err := os.MkdirTemp("", "hanzo_resume_test_")
 	require.NoError(t, err)
 	defer os.RemoveAll(testDir)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	cluster, err := startSeaweedFSCluster(ctx, testDir)
+	cluster, err := startHanzoCluster(ctx, testDir)
 	require.NoError(t, err)
 	defer cluster.Stop()
 
@@ -358,14 +358,14 @@ func TestMetadataSubscribeConcurrentWrites(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	testDir, err := os.MkdirTemp("", "seaweedfs_concurrent_writes_test_")
+	testDir, err := os.MkdirTemp("", "hanzo_concurrent_writes_test_")
 	require.NoError(t, err)
 	defer os.RemoveAll(testDir)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
 
-	cluster, err := startSeaweedFSCluster(ctx, testDir)
+	cluster, err := startHanzoCluster(ctx, testDir)
 	require.NoError(t, err)
 	defer cluster.Stop()
 
@@ -493,14 +493,14 @@ func TestMetadataSubscribeMillionUpdates(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	testDir, err := os.MkdirTemp("", "seaweedfs_million_updates_test_")
+	testDir, err := os.MkdirTemp("", "hanzo_million_updates_test_")
 	require.NoError(t, err)
 	defer os.RemoveAll(testDir)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
-	cluster, err := startSeaweedFSCluster(ctx, testDir)
+	cluster, err := startHanzoCluster(ctx, testDir)
 	require.NoError(t, err)
 	defer cluster.Stop()
 
@@ -563,7 +563,7 @@ func TestMetadataSubscribeMillionUpdates(t *testing.T) {
 				defer createWg.Done()
 				grpcDialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
 
-				err := pb.WithFilerClient(false, 0, pb.ServerAddress("127.0.0.1:8888"), grpcDialOption, func(client filer_pb.SeaweedFilerClient) error {
+				err := pb.WithFilerClient(false, 0, pb.ServerAddress("127.0.0.1:8888"), grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
 					for i := 0; i < entriesPerWorker; i++ {
 						dir := fmt.Sprintf("/million/bucket%d", workerId%100)
 						name := fmt.Sprintf("entry_%d_%d", workerId, i)
@@ -688,14 +688,14 @@ func TestMetadataSubscribeSlowConsumerKeepsProgressing(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	testDir, err := os.MkdirTemp("", "seaweedfs_slow_consumer_test_")
+	testDir, err := os.MkdirTemp("", "hanzo_slow_consumer_test_")
 	require.NoError(t, err)
 	defer os.RemoveAll(testDir)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
-	cluster, err := startSeaweedFSCluster(ctx, testDir)
+	cluster, err := startHanzoCluster(ctx, testDir)
 	require.NoError(t, err)
 	defer cluster.Stop()
 
@@ -809,10 +809,10 @@ func (c *TestCluster) Stop() {
 	}
 }
 
-func startSeaweedFSCluster(ctx context.Context, dataDir string) (*TestCluster, error) {
-	weedBinary := findWeedBinary()
-	if weedBinary == "" {
-		return nil, fmt.Errorf("weed binary not found")
+func startHanzoCluster(ctx context.Context, dataDir string) (*TestCluster, error) {
+	s3Binary := findS3Binary()
+	if s3Binary == "" {
+		return nil, fmt.Errorf("s3 binary not found")
 	}
 
 	cluster := &TestCluster{testDir: dataDir}
@@ -832,7 +832,7 @@ func startSeaweedFSCluster(ctx context.Context, dataDir string) (*TestCluster, e
 	}
 
 	// Start master server
-	masterCmd := exec.CommandContext(ctx, weedBinary, "master",
+	masterCmd := exec.CommandContext(ctx, s3Binary, "master",
 		"-port", "9333",
 		"-mdir", masterDir,
 		"-volumeSizeLimitMB", "10",
@@ -853,7 +853,7 @@ func startSeaweedFSCluster(ctx context.Context, dataDir string) (*TestCluster, e
 	time.Sleep(2 * time.Second)
 
 	// Start volume server
-	volumeCmd := exec.CommandContext(ctx, weedBinary, "volume",
+	volumeCmd := exec.CommandContext(ctx, s3Binary, "volume",
 		"-port", "8080",
 		"-dir", volumeDir,
 		"-max", "10",
@@ -876,7 +876,7 @@ func startSeaweedFSCluster(ctx context.Context, dataDir string) (*TestCluster, e
 	time.Sleep(2 * time.Second)
 
 	// Start filer server
-	filerCmd := exec.CommandContext(ctx, weedBinary, "filer",
+	filerCmd := exec.CommandContext(ctx, s3Binary, "filer",
 		"-port", "8888",
 		"-master", "127.0.0.1:9333",
 		"-ip", "127.0.0.1",
@@ -899,19 +899,19 @@ func startSeaweedFSCluster(ctx context.Context, dataDir string) (*TestCluster, e
 	return cluster, nil
 }
 
-func findWeedBinary() string {
+func findS3Binary() string {
 	candidates := []string{
-		"../../../weed/weed",
-		"../../weed/weed",
-		"./weed",
-		"weed",
+		"../../../s3/s3",
+		"../../s3/s3",
+		"./s3",
+		"s3",
 	}
 	for _, candidate := range candidates {
 		if _, err := os.Stat(candidate); err == nil {
 			return candidate
 		}
 	}
-	if path, err := exec.LookPath("weed"); err == nil {
+	if path, err := exec.LookPath("s3"); err == nil {
 		return path
 	}
 	return ""
@@ -989,7 +989,7 @@ func subscribeToMetadataWithOptions(ctx context.Context, filerGrpcAddress, pathP
 		grpcDialOption = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
-	return pb.WithFilerClient(false, 0, pb.ServerAddress(filerGrpcAddress), grpcDialOption, func(client filer_pb.SeaweedFilerClient) error {
+	return pb.WithFilerClient(false, 0, pb.ServerAddress(filerGrpcAddress), grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
 		stream, err := client.SubscribeMetadata(ctx, &filer_pb.SubscribeMetadataRequest{
 			ClientName: "integration_test",
 			PathPrefix: pathPrefix,
@@ -1072,7 +1072,7 @@ func createMetadataEntries(ctx context.Context, filerGrpcAddress string, startIn
 		go func(workerID int) {
 			defer wg.Done()
 
-			err := pb.WithFilerClient(false, 0, pb.ServerAddress(filerGrpcAddress), grpcDialOption, func(client filer_pb.SeaweedFilerClient) error {
+			err := pb.WithFilerClient(false, 0, pb.ServerAddress(filerGrpcAddress), grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
 				for idx := startIndex + workerID; idx < startIndex+total; idx += workers {
 					select {
 					case <-ctx.Done():

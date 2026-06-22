@@ -1,33 +1,33 @@
 #!/bin/sh
 
-echo "🧪 SeaweedFS Vacuum Task Testing Demo"
+echo "🧪 Hanzo Vacuum Task Testing Demo"
 echo "======================================"
 echo ""
 
-# Check if SeaweedFS is running
-echo "📋 Checking SeaweedFS status..."
+# Check if Hanzo is running
+echo "📋 Checking Hanzo status..."
 MASTER_URL="${MASTER_HOST:-master:9333}"
 ADMIN_URL="${ADMIN_HOST:-admin:23646}"
 
 if ! curl -s http://$MASTER_URL/cluster/status > /dev/null; then
-    echo "❌ SeaweedFS master not running at $MASTER_URL"
+    echo "❌ Hanzo master not running at $MASTER_URL"
     echo "   Please ensure Docker cluster is running: make start"
     exit 1
 fi
 
 if ! curl -s http://volume1:8080/status > /dev/null; then
-    echo "❌ SeaweedFS volume servers not running"
+    echo "❌ Hanzo volume servers not running"
     echo "   Please ensure Docker cluster is running: make start"
     exit 1
 fi
 
 if ! curl -s http://$ADMIN_URL/ > /dev/null; then
-    echo "❌ SeaweedFS admin server not running at $ADMIN_URL"
+    echo "❌ Hanzo admin server not running at $ADMIN_URL"
     echo "   Please ensure Docker cluster is running: make start"
     exit 1
 fi
 
-echo "✅ All SeaweedFS components are running"
+echo "✅ All Hanzo components are running"
 echo ""
 
 # Phase 1: Create test data

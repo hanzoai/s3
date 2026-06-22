@@ -1,19 +1,19 @@
 # Unity Catalog OSS integration tests
 
-These tests run Unity Catalog OSS in Docker against an embedded SeaweedFS
+These tests run Unity Catalog OSS in Docker against an embedded Hanzo
 S3 endpoint. The `server.properties` mirrors the upstream playground at
 [`mds-in-a-box/unitycatalog-playground`](https://github.com/data-engineering-helpers/mds-in-a-box/tree/main/unitycatalog-playground).
 
 | Test | Variant | Status |
 | --- | --- | --- |
-| `TestUnityCatalogDeltaIntegration` | static keys, `aws.masterRoleArn=` empty | passes; covers catalog/schema/EXTERNAL Delta CRUD against SeaweedFS-backed warehouse and asserts that UC's `/temporary-table-credentials` *cannot* vend usable creds with this configuration -- exactly the gap the playground reports. |
-| `TestUnityCatalogMasterRoleIntegration` | `aws.masterRoleArn=arn:aws:iam::000000000000:role/UnityCatalogVendedRole` | passes; proves SeaweedFS' STS endpoint accepts `sts:AssumeRole` for the role UC would use (Go SDK round-trip), and that UC starts and accepts CRUD when wired with the master-role config. UC's own StsClient still talks to real AWS regardless of `aws.endpoint` / `AWS_ENDPOINT_URL_STS` (UC bug, see below); that hop is logged via `t.Logf` rather than asserted. |
-| `TestUnityCatalogDeltaRsRoundTrip` | static keys + `delta-rs` Python client | passes; resolves table metadata through UC and writes/reads a real Delta table at the registered `storage_location` using `python:3.11-slim + deltalake` with the SeaweedFS test credentials. |
+| `TestUnityCatalogDeltaIntegration` | static keys, `aws.masterRoleArn=` empty | passes; covers catalog/schema/EXTERNAL Delta CRUD against Hanzo-backed warehouse and asserts that UC's `/temporary-table-credentials` *cannot* vend usable creds with this configuration -- exactly the gap the playground reports. |
+| `TestUnityCatalogMasterRoleIntegration` | `aws.masterRoleArn=arn:aws:iam::000000000000:role/UnityCatalogVendedRole` | passes; proves Hanzo' STS endpoint accepts `sts:AssumeRole` for the role UC would use (Go SDK round-trip), and that UC starts and accepts CRUD when wired with the master-role config. UC's own StsClient still talks to real AWS regardless of `aws.endpoint` / `AWS_ENDPOINT_URL_STS` (UC bug, see below); that hop is logged via `t.Logf` rather than asserted. |
+| `TestUnityCatalogDeltaRsRoundTrip` | static keys + `delta-rs` Python client | passes; resolves table metadata through UC and writes/reads a real Delta table at the registered `storage_location` using `python:3.11-slim + deltalake` with the Hanzo test credentials. |
 
 ## Prerequisites
 
 - Docker available locally (the tests call `docker run` / `docker build` directly).
-- A `weed` binary at the repo root (`weed/weed`) or on `$PATH`.
+- A `s3` binary at the repo root (`s3/s3`) or on `$PATH`.
 
 ## Run
 
@@ -32,7 +32,7 @@ UC_IMAGE=unitycatalog/unitycatalog:main \
     ./test/s3tables/unity_catalog/...
 ```
 
-The tests self-skip when Docker is unavailable or no `weed` binary is on
+The tests self-skip when Docker is unavailable or no `s3` binary is on
 the path; running under `-short` also skips them.
 
 ## Why the static-key path can't vend usable creds
@@ -51,7 +51,7 @@ test's configuration), `/temporary-table-credentials` short-circuits with
 `"S3 bucket configuration not found."` before UC fires any STS call.
 Setting a stub `s3.sessionToken.0` switches UC to
 `StaticAwsCredentialGenerator` and the endpoint returns the static keys,
-but the response carries that stub session token -- SeaweedFS won't
+but the response carries that stub session token -- Hanzo won't
 recognize it on the next S3 call, so the vended creds aren't usable for
 table I/O. Clients have to fall back to the static keys directly.
 
@@ -62,10 +62,10 @@ for that builder shape, so even with `AWS_ENDPOINT_URL_STS=...` (or the
 matching `aws.endpointUrlSts` Java property, or the catch-all
 `AWS_ENDPOINT_URL=...`) the StsClient still targets real AWS and gets back
 `InvalidClientTokenId`. Verified by pointing the env var at port 1: UC reports
-the same AWS-issued 403 that it reports against SeaweedFS, and a sniffer in
-front of SeaweedFS' STS port records zero traffic. SeaweedFS' STS handler
-itself works -- the Go SDK round-trip in `assumeRoleViaSeaweedFS` proves that
-against the same SeaweedFS instance.
+the same AWS-issued 403 that it reports against Hanzo, and a sniffer in
+front of Hanzo' STS port records zero traffic. Hanzo' STS handler
+itself works -- the Go SDK round-trip in `assumeRoleViaHanzo` proves that
+against the same Hanzo instance.
 
 UC's own AWS credential-vending tests don't catch this because they mock
 `StsClient` away entirely -- `BaseCRUDTestWithMockCredentials` injects a
@@ -83,18 +83,18 @@ the failure but does not assert it.
 
 ## What the tests actually validate today
 
-- Unity Catalog accepts a SeaweedFS-backed `server.properties` and starts.
+- Unity Catalog accepts a Hanzo-backed `server.properties` and starts.
 - Catalog / schema / EXTERNAL Delta table CRUD all work against the
-  SeaweedFS warehouse via the UC REST API.
-- SeaweedFS' STS endpoint correctly issues `sts:AssumeRole` credentials
+  Hanzo warehouse via the UC REST API.
+- Hanzo' STS endpoint correctly issues `sts:AssumeRole` credentials
   for the `UnityCatalogVendedRole` and those credentials are accepted on
   S3 round-trips (Go AWS SDK).
 - Delta-RS resolves a UC table's `storage_location` and can write/read Delta
-  data through the SeaweedFS S3 endpoint with the test credentials.
+  data through the Hanzo S3 endpoint with the test credentials.
 
 ## What is still pending
 
-Nothing on the SeaweedFS side. The remaining gap (UC's StsClient ignoring
+Nothing on the Hanzo side. The remaining gap (UC's StsClient ignoring
 endpoint config) needs a UC OSS patch upstream.
 
 ## MANAGED tables

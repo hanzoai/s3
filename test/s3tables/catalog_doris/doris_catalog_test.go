@@ -1,5 +1,5 @@
 // Package catalog_doris provides integration tests for Apache Doris with the
-// SeaweedFS Iceberg REST Catalog.
+// Hanzo Iceberg REST Catalog.
 package catalog_doris
 
 import (
@@ -32,8 +32,8 @@ const (
 )
 
 type TestEnvironment struct {
-	seaweedDir         string
-	weedBinary         string
+	hanzoDir         string
+	s3Binary         string
 	dataDir            string
 	bindIP             string
 	s3Port             int
@@ -45,26 +45,26 @@ type TestEnvironment struct {
 	filerGrpcPort      int
 	volumePort         int
 	volumeGrpcPort     int
-	weedProcess        *exec.Cmd
-	weedCancel         context.CancelFunc
+	s3Process        *exec.Cmd
+	s3Cancel         context.CancelFunc
 	dorisContainer     string
 	dorisHostQueryPort int
 	accessKey          string
 	secretKey          string
 }
 
-// TestDorisIcebergCatalog brings up SeaweedFS + Doris and validates that
-// Doris can discover catalog metadata served by SeaweedFS's Iceberg REST API
+// TestDorisIcebergCatalog brings up Hanzo + Doris and validates that
+// Doris can discover catalog metadata served by Hanzo's Iceberg REST API
 // and read both empty and populated tables through the standard data path.
 //
 // Subtests:
 //   - BasicSelect: Doris is alive and answering SQL.
-//   - CatalogVisible: SHOW CATALOGS lists the SeaweedFS-backed catalog.
+//   - CatalogVisible: SHOW CATALOGS lists the Hanzo-backed catalog.
 //   - DatabaseVisible: the seeded namespace is visible as a database.
 //   - TableVisible: the seeded table is listed under the namespace.
 //   - CountEmptyTable: Doris resolves the table and scans an empty Iceberg snapshot.
 //   - ColumnProjection: Doris parsed the schema and accepts column-name projection
-//     (a column-not-found here means the schema returned by SeaweedFS was rejected).
+//     (a column-not-found here means the schema returned by Hanzo was rejected).
 //   - ReadWrittenDataCount / ReadWrittenDataValues: a separate table is populated
 //     by a PyIceberg writer container before Doris connects; Doris then reads the
 //     three rows back, exercising the actual data path (not just metadata).
@@ -74,9 +74,9 @@ func TestDorisIcebergCatalog(t *testing.T) {
 	env := NewTestEnvironment(t)
 	defer env.Cleanup(t)
 
-	fmt.Printf(">>> Starting SeaweedFS...\n")
-	env.StartSeaweedFS(t)
-	fmt.Printf(">>> SeaweedFS started.\n")
+	fmt.Printf(">>> Starting Hanzo...\n")
+	env.StartHanzo(t)
+	fmt.Printf(">>> Hanzo started.\n")
 
 	tableBucket := "iceberg-tables"
 	fmt.Printf(">>> Creating table bucket: %s\n", tableBucket)
@@ -232,40 +232,40 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 		t.Fatalf("Failed to get working directory: %v", err)
 	}
 
-	seaweedDir := wd
+	hanzoDir := wd
 	for i := 0; i < 6; i++ {
-		if _, err := os.Stat(filepath.Join(seaweedDir, "go.mod")); err == nil {
+		if _, err := os.Stat(filepath.Join(hanzoDir, "go.mod")); err == nil {
 			break
 		}
-		seaweedDir = filepath.Dir(seaweedDir)
+		hanzoDir = filepath.Dir(hanzoDir)
 	}
 
-	weedBinary := filepath.Join(seaweedDir, "weed", "weed")
-	info, err := os.Stat(weedBinary)
+	s3Binary := filepath.Join(hanzoDir, "s3", "s3")
+	info, err := os.Stat(s3Binary)
 	if err != nil || info.IsDir() {
-		weedBinary = filepath.Join(seaweedDir, "weed", "weed", "weed")
-		info, err = os.Stat(weedBinary)
+		s3Binary = filepath.Join(hanzoDir, "s3", "s3", "s3")
+		info, err = os.Stat(s3Binary)
 		if err != nil || info.IsDir() {
-			weedBinary = "weed"
-			if _, err := exec.LookPath(weedBinary); err != nil {
-				t.Skip("weed binary not found, skipping integration test")
+			s3Binary = "s3"
+			if _, err := exec.LookPath(s3Binary); err != nil {
+				t.Skip("s3 binary not found, skipping integration test")
 			}
 		}
 	}
 
-	dataDir, err := os.MkdirTemp("", "seaweed-doris-test-*")
+	dataDir, err := os.MkdirTemp("", "hanzo-doris-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
 	bindIP := testutil.FindBindIP()
-	// 9 ports for the seaweed mini cluster, plus one for the Doris MySQL
+	// 9 ports for the hanzo mini cluster, plus one for the Doris MySQL
 	// query port mapped on the host.
 	ports := testutil.MustAllocatePorts(t, 10)
 
 	env := &TestEnvironment{
-		seaweedDir:         seaweedDir,
-		weedBinary:         weedBinary,
+		hanzoDir:         hanzoDir,
+		s3Binary:         s3Binary,
 		dataDir:            dataDir,
 		bindIP:             bindIP,
 		masterPort:         ports[0],
@@ -286,8 +286,8 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 	return env
 }
 
-// StartSeaweedFS starts a SeaweedFS mini instance with the Iceberg REST API.
-func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
+// StartHanzo starts a Hanzo mini instance with the Iceberg REST API.
+func (env *TestEnvironment) StartHanzo(t *testing.T) {
 	t.Helper()
 
 	iamConfigPath, err := testutil.WriteIAMConfig(env.dataDir, env.accessKey, env.secretKey)
@@ -301,9 +301,9 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	env.weedCancel = cancel
+	env.s3Cancel = cancel
 
-	cmd := exec.CommandContext(ctx, env.weedBinary, "mini",
+	cmd := exec.CommandContext(ctx, env.s3Binary, "mini",
 		"-master.port", fmt.Sprintf("%d", env.masterPort),
 		"-master.port.grpc", fmt.Sprintf("%d", env.masterGrpcPort),
 		"-volume.port", fmt.Sprintf("%d", env.volumePort),
@@ -330,9 +330,9 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 	)
 
 	if err := cmd.Start(); err != nil {
-		t.Fatalf("Failed to start SeaweedFS: %v", err)
+		t.Fatalf("Failed to start Hanzo: %v", err)
 	}
-	env.weedProcess = cmd
+	env.s3Process = cmd
 
 	icebergURL := fmt.Sprintf("http://%s:%d/v1/config", env.bindIP, env.icebergPort)
 	if !env.waitForService(icebergURL, 30*time.Second) {
@@ -348,7 +348,7 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 	}
 }
 
-// Cleanup stops Doris, SeaweedFS, and removes temporary state.
+// Cleanup stops Doris, Hanzo, and removes temporary state.
 func (env *TestEnvironment) Cleanup(t *testing.T) {
 	t.Helper()
 
@@ -356,13 +356,13 @@ func (env *TestEnvironment) Cleanup(t *testing.T) {
 		_ = exec.Command("docker", "rm", "-f", env.dorisContainer).Run()
 	}
 
-	if env.weedCancel != nil {
-		env.weedCancel()
+	if env.s3Cancel != nil {
+		env.s3Cancel()
 	}
 
-	if env.weedProcess != nil {
+	if env.s3Process != nil {
 		time.Sleep(2 * time.Second)
-		_ = env.weedProcess.Wait()
+		_ = env.s3Process.Wait()
 	}
 
 	if env.dataDir != "" {
@@ -427,7 +427,7 @@ func testIcebergRestAPI(t *testing.T, env *TestEnvironment) {
 func (env *TestEnvironment) startDorisContainer(t *testing.T) {
 	t.Helper()
 
-	containerName := "seaweed-doris-" + randomString(8)
+	containerName := "hanzo-doris-" + randomString(8)
 	env.dorisContainer = containerName
 
 	cmd := exec.Command("docker", "run", "-d",
@@ -590,7 +590,7 @@ func (env *TestEnvironment) connectDoris(t *testing.T) *sql.DB {
 }
 
 // createDorisIcebergCatalog registers a Doris EXTERNAL CATALOG of type=iceberg
-// pointing at the SeaweedFS REST endpoint. Doris reuses Iceberg's standard
+// pointing at the Hanzo REST endpoint. Doris reuses Iceberg's standard
 // REST client, so OAuth2 client credentials are passed via "credential".
 func (env *TestEnvironment) createDorisIcebergCatalog(t *testing.T, db *sql.DB, warehouseBucket string) {
 	t.Helper()
@@ -706,7 +706,7 @@ func dorisObjectName(parts ...string) string {
 }
 
 // requestIcebergOAuthToken requests an OAuth2 client_credentials token from
-// the SeaweedFS Iceberg REST catalog. Used to seed the catalog with a
+// the Hanzo Iceberg REST catalog. Used to seed the catalog with a
 // namespace and table directly through the REST API before Doris connects.
 func requestIcebergOAuthToken(t *testing.T, env *TestEnvironment) string {
 	t.Helper()
@@ -767,7 +767,7 @@ func createIcebergNamespaceLevels(t *testing.T, env *TestEnvironment, token, buc
 
 // createIcebergTableInLevels creates a table inside the given namespace levels.
 // The namespace path component is encoded with the unit-separator (0x1F)
-// convention used by the SeaweedFS Iceberg REST API.
+// convention used by the Hanzo Iceberg REST API.
 func createIcebergTableInLevels(t *testing.T, env *TestEnvironment, token, bucketName string, levels []string, tableName string) {
 	t.Helper()
 
@@ -787,7 +787,7 @@ func createIcebergTableInLevels(t *testing.T, env *TestEnvironment, token, bucke
 		}, http.StatusOK)
 }
 
-const dorisWriterImage = "seaweedfs-doris-writer"
+const dorisWriterImage = "hanzo-doris-writer"
 
 // buildDorisWriterImage builds the local PyIceberg writer image. Layer caching
 // makes repeat invocations cheap; the first build pulls python:3.11-slim and
@@ -884,11 +884,11 @@ func doIcebergJSONRequest(t *testing.T, env *TestEnvironment, token, method, pat
 	return ""
 }
 
-// createTableBucket creates an S3 table bucket using `weed shell`, which
+// createTableBucket creates an S3 table bucket using `s3 shell`, which
 // talks to the master over gRPC and bypasses the S3 SigV4 path so the test
-// works whether IAM is enabled or not. The `-master` flag uses SeaweedFS's
+// works whether IAM is enabled or not. The `-master` flag uses Hanzo's
 // canonical `host:port.grpcPort` ServerAddress format produced by
-// pb.NewServerAddress (see weed/pb/server_address.go) — the dot is the
+// pb.NewServerAddress (see s3/pb/server_address.go) — the dot is the
 // separator between the HTTP port and the gRPC port and is required, not
 // a typo. Replacing it with a colon would make the parser treat the gRPC
 // port as the HTTP port and synthesize the wrong gRPC port.
@@ -898,13 +898,13 @@ func createTableBucket(t *testing.T, env *TestEnvironment, bucketName string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, env.weedBinary, "shell",
+	cmd := exec.CommandContext(ctx, env.s3Binary, "shell",
 		fmt.Sprintf("-master=%s:%d.%d", env.bindIP, env.masterPort, env.masterGrpcPort),
 	)
 	cmd.Stdin = strings.NewReader(fmt.Sprintf("s3tables.bucket -create -name %s -account 000000000000\nexit\n", bucketName))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("Failed to create table bucket %s via weed shell: %v\nOutput: %s", bucketName, err, string(output))
+		t.Fatalf("Failed to create table bucket %s via s3 shell: %v\nOutput: %s", bucketName, err, string(output))
 	}
 	t.Logf("Created table bucket: %s", bucketName)
 }

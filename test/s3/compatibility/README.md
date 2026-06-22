@@ -1,4 +1,4 @@
-# Running S3 Compatibility tests against SeaweedFS
+# Running S3 Compatibility tests against Hanzo
 
 This is using [the tests from CephFS][s3-tests].
 
@@ -33,12 +33,12 @@ DEBUG=y ./run.sh
 > [!WARNING]
 >
 > If your output does *not* look like the content in [`results.summary.txt`](./results.summary.txt)
-> and it is full of HTTP level exceptions, there is likely an error contacting the `weed` server from
+> and it is full of HTTP level exceptions, there is likely an error contacting the `s3` server from
 > the container that is runnin the S3 compatibility tests.
 >
 > There are at least a couple ways to solve this:
 >
-> - Modify your `docker` setup to ensure `host.docker.internal` is connected to your host running `weed`
+> - Modify your `docker` setup to ensure `host.docker.internal` is connected to your host running `s3`
 > - Use `--net=host` and modify `host` in `s3tests.conf` to `localhost`
 >
 > The `--net=host` solution is potentially *unsafe*, as the container running [s3-tests][s3-tests] could

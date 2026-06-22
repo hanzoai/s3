@@ -1,7 +1,7 @@
 // Reproduction tests for https://github.com/hanzoai/s3/issues/9103
 //
 // The issue reports two distinct failure modes when using DuckDB against the
-// SeaweedFS Iceberg REST catalog:
+// Hanzo Iceberg REST catalog:
 //
 //  1. `ATTACH 's3://test/' AS cat (TYPE 'ICEBERG', ...); SELECT * FROM cat.ovirt.disk;`
 //     fails with "Table with name 'ovirt.disk' does not exist because schema
@@ -39,7 +39,7 @@ import (
 // calls GET /v1/config?warehouse=s3://<bucket>/ and expects the server to
 // return an `overrides.prefix` that identifies the catalog namespace for
 // subsequent requests. Without it the client falls back to unprefixed paths
-// like /v1/namespaces, which on SeaweedFS resolve to the hard-coded default
+// like /v1/namespaces, which on Hanzo resolve to the hard-coded default
 // bucket ("warehouse") and therefore do not list the user's namespaces.
 //
 // Currently the handler ignores the warehouse query parameter and returns
@@ -136,7 +136,7 @@ func TestIssue9103_BareNamespacesListMissesNamespaceInAttachedBucket(t *testing.
 
 // TestIssue9103_DuckDBAttachCannotResolveNamespace is the end-to-end
 // reproduction of the issue using DuckDB in Docker, mirroring the exact
-// sequence of commands from the bug report. It runs under its own weed
+// sequence of commands from the bug report. It runs under its own s3
 // mini with IAM configured so the OAuth2 client_credentials flow that
 // DuckDB's iceberg extension requires actually works (the shared env has
 // no credentials registered). Gated on Docker availability.

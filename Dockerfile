@@ -1,5 +1,5 @@
-# Hanzo S3 — S3-compatible object storage (SeaweedFS engine).
-# Builds the `s3` binary from github.com/hanzoai/s3 (rebranded SeaweedFS).
+# Hanzo S3 — S3-compatible object storage (Hanzo engine).
+# Builds the `s3` binary from github.com/hanzoai/s3 (rebranded Hanzo).
 FROM golang:1.26-alpine AS build
 RUN apk add --no-cache git
 WORKDIR /src
@@ -9,14 +9,14 @@ COPY . .
 ARG VERSION=dev
 ARG COMMIT=unknown
 RUN CGO_ENABLED=0 go build -trimpath \
-      -ldflags "-s -w -X github.com/hanzoai/s3/weed/util/version.COMMIT=${COMMIT}" \
-      -o /out/s3 ./weed
+      -ldflags "-s -w -X github.com/hanzoai/s3/s3/util/version.COMMIT=${COMMIT}" \
+      -o /out/s3 ./s3
 
 FROM alpine:3.21
 RUN apk add --no-cache ca-certificates fuse3 curl && mkdir -p /data
 COPY --from=build /out/s3 /usr/bin/s3
 LABEL org.opencontainers.image.title="Hanzo S3" \
-      org.opencontainers.image.description="S3-compatible object storage (SeaweedFS engine)" \
+      org.opencontainers.image.description="S3-compatible object storage (Hanzo engine)" \
       org.opencontainers.image.source="https://github.com/hanzoai/s3" \
       org.opencontainers.image.vendor="Hanzo AI" \
       org.opencontainers.image.licenses="Apache-2.0"

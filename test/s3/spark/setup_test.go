@@ -50,10 +50,10 @@ func clearMiniProcess(cmd *exec.Cmd) {
 
 type TestEnvironment struct {
 	dockerAvailable  bool
-	weedBinary       string
-	seaweedfsDataDir string
-	weedLogPath      string
-	weedLogFile      *os.File
+	s3Binary       string
+	hanzoDataDir string
+	s3LogPath      string
+	s3LogFile      *os.File
 	masterPort       int
 	filerPort        int
 	s3Port           int
@@ -72,24 +72,24 @@ func NewTestEnvironment() *TestEnvironment {
 	cmd := exec.Command("docker", "version")
 	env.dockerAvailable = cmd.Run() == nil
 
-	if weedPath, err := exec.LookPath("weed"); err == nil {
-		env.weedBinary = weedPath
+	if s3Path, err := exec.LookPath("s3"); err == nil {
+		env.s3Binary = s3Path
 	}
 
 	return env
 }
 
-func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
+func (env *TestEnvironment) StartHanzo(t *testing.T) {
 	t.Helper()
 
-	if env.weedBinary == "" {
-		t.Skip("weed binary not found in PATH, skipping Spark S3 integration test")
+	if env.s3Binary == "" {
+		t.Skip("s3 binary not found in PATH, skipping Spark S3 integration test")
 	}
 
 	stopPreviousMini()
 
 	var err error
-	env.seaweedfsDataDir, err = os.MkdirTemp("", "seaweed-s3-spark-test-")
+	env.hanzoDataDir, err = os.MkdirTemp("", "hanzo-s3-spark-test-")
 	if err != nil {
 		t.Fatalf("failed to create temp directory: %v", err)
 	}
@@ -100,48 +100,48 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 	env.s3Port = ports[2]
 
 	bindIP := testutil.FindBindIP()
-	iamConfigPath, err := testutil.WriteIAMConfig(env.seaweedfsDataDir, env.accessKey, env.secretKey)
+	iamConfigPath, err := testutil.WriteIAMConfig(env.hanzoDataDir, env.accessKey, env.secretKey)
 	if err != nil {
 		t.Fatalf("failed to create IAM config: %v", err)
 	}
 
 	env.masterProcess = exec.Command(
-		env.weedBinary, "mini",
+		env.s3Binary, "mini",
 		"-ip", bindIP,
 		"-ip.bind", "0.0.0.0",
 		"-master.port", fmt.Sprintf("%d", env.masterPort),
 		"-filer.port", fmt.Sprintf("%d", env.filerPort),
 		"-s3.port", fmt.Sprintf("%d", env.s3Port),
 		"-s3.config", iamConfigPath,
-		"-dir", env.seaweedfsDataDir,
+		"-dir", env.hanzoDataDir,
 	)
-	weedLogPath := filepath.Join(env.seaweedfsDataDir, "weed-mini.log")
-	weedLogFile, err := os.Create(weedLogPath)
+	s3LogPath := filepath.Join(env.hanzoDataDir, "s3-mini.log")
+	s3LogFile, err := os.Create(s3LogPath)
 	if err != nil {
-		t.Fatalf("failed to create weed log file: %v", err)
+		t.Fatalf("failed to create s3 log file: %v", err)
 	}
-	env.weedLogPath = weedLogPath
-	env.weedLogFile = weedLogFile
-	env.masterProcess.Stdout = weedLogFile
-	env.masterProcess.Stderr = weedLogFile
+	env.s3LogPath = s3LogPath
+	env.s3LogFile = s3LogFile
+	env.masterProcess.Stdout = s3LogFile
+	env.masterProcess.Stderr = s3LogFile
 	env.masterProcess.Env = append(os.Environ(),
 		"AWS_ACCESS_KEY_ID="+env.accessKey,
 		"AWS_SECRET_ACCESS_KEY="+env.secretKey,
 	)
 
 	if err := env.masterProcess.Start(); err != nil {
-		t.Fatalf("failed to start weed mini: %v", err)
+		t.Fatalf("failed to start s3 mini: %v", err)
 	}
 	registerMiniProcess(env.masterProcess)
 
-	if !testutil.WaitForPort(env.masterPort, testutil.SeaweedMiniStartupTimeout) {
-		t.Fatalf("weed mini failed to start - master port %d not listening", env.masterPort)
+	if !testutil.WaitForPort(env.masterPort, testutil.HanzoMiniStartupTimeout) {
+		t.Fatalf("s3 mini failed to start - master port %d not listening", env.masterPort)
 	}
-	if !testutil.WaitForPort(env.filerPort, testutil.SeaweedMiniStartupTimeout) {
-		t.Fatalf("weed mini failed to start - filer port %d not listening", env.filerPort)
+	if !testutil.WaitForPort(env.filerPort, testutil.HanzoMiniStartupTimeout) {
+		t.Fatalf("s3 mini failed to start - filer port %d not listening", env.filerPort)
 	}
-	if !testutil.WaitForService(fmt.Sprintf("http://127.0.0.1:%d/status", env.s3Port), testutil.SeaweedMiniStartupTimeout) {
-		t.Fatalf("weed mini failed to start - s3 endpoint http://127.0.0.1:%d/status not responding", env.s3Port)
+	if !testutil.WaitForService(fmt.Sprintf("http://127.0.0.1:%d/status", env.s3Port), testutil.HanzoMiniStartupTimeout) {
+		t.Fatalf("s3 mini failed to start - s3 endpoint http://127.0.0.1:%d/status not responding", env.s3Port)
 	}
 }
 
@@ -177,14 +177,14 @@ func (env *TestEnvironment) Cleanup(t *testing.T) {
 		_ = env.masterProcess.Wait()
 	}
 	clearMiniProcess(env.masterProcess)
-	if env.weedLogFile != nil {
-		_ = env.weedLogFile.Close()
+	if env.s3LogFile != nil {
+		_ = env.s3LogFile.Close()
 	}
 
-	if t.Failed() && os.Getenv("CI") != "" && env.weedLogPath != "" {
-		logData, err := os.ReadFile(env.weedLogPath)
+	if t.Failed() && os.Getenv("CI") != "" && env.s3LogPath != "" {
+		logData, err := os.ReadFile(env.s3LogPath)
 		if err != nil {
-			t.Logf("failed to read weed mini log file %s: %v", env.weedLogPath, err)
+			t.Logf("failed to read s3 mini log file %s: %v", env.s3LogPath, err)
 		} else {
 			// Print the tail to keep CI output manageable while preserving failure context.
 			const maxTailBytes = 64 * 1024
@@ -192,7 +192,7 @@ func (env *TestEnvironment) Cleanup(t *testing.T) {
 			if len(logData) > maxTailBytes {
 				start = len(logData) - maxTailBytes
 			}
-			t.Logf("weed mini logs (tail, %d bytes):\n%s", len(logData)-start, string(logData[start:]))
+			t.Logf("s3 mini logs (tail, %d bytes):\n%s", len(logData)-start, string(logData[start:]))
 		}
 	}
 
@@ -202,8 +202,8 @@ func (env *TestEnvironment) Cleanup(t *testing.T) {
 		_ = env.sparkContainer.Terminate(ctx)
 	}
 
-	if env.seaweedfsDataDir != "" {
-		_ = os.RemoveAll(env.seaweedfsDataDir)
+	if env.hanzoDataDir != "" {
+		_ = os.RemoveAll(env.hanzoDataDir)
 	}
 }
 
@@ -237,7 +237,7 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder
     .master("local[2]")
-    .appName("SeaweedFS S3 Spark Issue 8234 Repro")
+    .appName("Hanzo S3 Spark Issue 8234 Repro")
     .config("spark.sql.catalogImplementation", "hive")
     .config("spark.executor.extraJavaOptions", "-Djdk.tls.client.protocols=TLSv1")
     .config("spark.sql.parquet.int96RebaseModeInRead", "CORRECTED")

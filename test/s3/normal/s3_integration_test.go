@@ -26,9 +26,9 @@ import (
 
 	"github.com/hanzoai/s3/test/testutil"
 	"github.com/hanzoai/s3/test/volume_server/framework"
-	"github.com/hanzoai/s3/weed/command"
-	"github.com/hanzoai/s3/weed/glog"
-	flag "github.com/hanzoai/s3/weed/util/fla9"
+	"github.com/hanzoai/s3/s3/command"
+	"github.com/hanzoai/s3/s3/glog"
+	flag "github.com/hanzoai/s3/s3/util/fla9"
 )
 
 const (
@@ -37,7 +37,7 @@ const (
 	testSecretKey = "admin"
 )
 
-// TestCluster manages the weed mini instance for integration testing
+// TestCluster manages the s3 mini instance for integration testing
 type TestCluster struct {
 	dataDir       string
 	ctx           context.Context
@@ -54,7 +54,7 @@ type TestCluster struct {
 	rustVolumeCmd *exec.Cmd
 }
 
-// TestS3Integration demonstrates basic S3 operations against a running weed mini instance
+// TestS3Integration demonstrates basic S3 operations against a running s3 mini instance
 func TestS3Integration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -113,10 +113,10 @@ func TestS3Integration(t *testing.T) {
 
 // findAvailablePort finds an available port by binding to port 0
 
-// startMiniCluster starts a weed mini instance directly without exec.
+// startMiniCluster starts a s3 mini instance directly without exec.
 // Extra flags (e.g. "-s3.allowDeleteBucketNotEmpty=false") can be appended via extraArgs.
 func startMiniCluster(t *testing.T, extraArgs ...string) (*TestCluster, error) {
-	// Allocate non-colliding ports (including gRPC offsets) for weed mini.
+	// Allocate non-colliding ports (including gRPC offsets) for s3 mini.
 	ports := testutil.MustFreeMiniPorts(t, []string{"Master", "Volume", "Filer", "S3"})
 	masterPort := ports[0]
 	volumePort := ports[1]
@@ -160,7 +160,7 @@ func startMiniCluster(t *testing.T, extraArgs ...string) (*TestCluster, error) {
 		t.Setenv("AWS_SECRET_ACCESS_KEY", "admin")
 	}
 
-	// Start weed mini in a goroutine by calling the command directly
+	// Start s3 mini in a goroutine by calling the command directly
 	cluster.wg.Add(1)
 	go func() {
 		defer cluster.wg.Done()
@@ -178,9 +178,9 @@ func startMiniCluster(t *testing.T, extraArgs ...string) (*TestCluster, error) {
 
 		// Configure args for mini command
 		// Note: When running via 'go test', os.Args[0] is the test binary
-		// We need to make it look like we're running 'weed mini'
+		// We need to make it look like we're running 's3 mini'
 		os.Args = append([]string{
-			"weed",
+			"s3",
 			"-dir=" + testDir,
 			"-master.port=" + strconv.Itoa(masterPort),
 			"-volume.port=" + strconv.Itoa(volumePort),
@@ -202,7 +202,7 @@ func startMiniCluster(t *testing.T, extraArgs ...string) (*TestCluster, error) {
 		for _, cmd := range command.Commands {
 			if cmd.Name() == "mini" && cmd.Run != nil {
 				// Parse the flags for the mini command
-				// Don't include "weed" in the args
+				// Don't include "s3" in the args
 				cmd.Flag.Parse(os.Args[1:])
 				args := cmd.Flag.Args()
 				cmd.Run(cmd, args)
@@ -217,7 +217,7 @@ func startMiniCluster(t *testing.T, extraArgs ...string) (*TestCluster, error) {
 		return nil, fmt.Errorf("S3 service failed to start at %s", cluster.s3Endpoint)
 	}
 
-	// If VOLUME_SERVER_IMPL=rust, start a Rust volume server alongside weed mini
+	// If VOLUME_SERVER_IMPL=rust, start a Rust volume server alongside s3 mini
 	if os.Getenv("VOLUME_SERVER_IMPL") == "rust" {
 		if err := cluster.startRustVolumeServer(t); err != nil {
 			cancel()
@@ -367,7 +367,7 @@ func testCreateBucket(t *testing.T, cluster *TestCluster) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Verify bucket exists by trying to head it
-	// Note: ListBuckets may not immediately show new buckets in SeaweedFS
+	// Note: ListBuckets may not immediately show new buckets in Hanzo
 	_, err = cluster.s3Client.HeadBucket(&s3.HeadBucketInput{
 		Bucket: aws.String(bucketName),
 	})
@@ -379,7 +379,7 @@ func testCreateBucket(t *testing.T, cluster *TestCluster) {
 func testPutObject(t *testing.T, cluster *TestCluster) {
 	bucketName := "test-put-" + randomString(8)
 	objectKey := "test-object.txt"
-	objectData := "Hello, SeaweedFS S3!"
+	objectData := "Hello, Hanzo S3!"
 
 	// Create bucket
 	_, err := cluster.s3Client.CreateBucket(&s3.CreateBucketInput{
@@ -437,7 +437,7 @@ func generateSSECKey() (keyRaw, keyMD5B64 string) {
 func testPutObjectWithChecksum(t *testing.T, cluster *TestCluster) {
 	bucketName := createTestBucket(t, cluster, "test-put-checksum-")
 	objectKey := "test-checksummed-object.txt"
-	objectData := "Hello, SeaweedFS S3!"
+	objectData := "Hello, Hanzo S3!"
 
 	correctMD5 := calculateMd5(objectData)
 	incorrectMD5 := calculateMd5(objectData + "incorrect")
@@ -495,7 +495,7 @@ func headObjectSSEC(client *s3.S3, input *s3.HeadObjectInput) (*s3.HeadObjectOut
 func testPutObjectWithChecksumAndSSEC(t *testing.T, cluster *TestCluster) {
 	bucketName := createTestBucket(t, cluster, "test-put-checksum-ssec-")
 	objectKey := "test-checksummed-ssec-object.txt"
-	objectData := "Hello, SeaweedFS S3 with SSE-C!"
+	objectData := "Hello, Hanzo S3 with SSE-C!"
 
 	correctMD5 := calculateMd5(objectData)
 	incorrectMD5 := calculateMd5(objectData + "incorrect")
@@ -545,7 +545,7 @@ func testPutObjectWithChecksumAndSSEC(t *testing.T, cluster *TestCluster) {
 func testUploadPartWithChecksum(t *testing.T, cluster *TestCluster) {
 	bucketName := createTestBucket(t, cluster, "test-upload-part-checksum-")
 	objectKey := "test-multipart-checksum.txt"
-	objectData := "Hello, SeaweedFS S3 Multipart!"
+	objectData := "Hello, Hanzo S3 Multipart!"
 
 	// Initiate multipart upload
 	initResp, err := cluster.s3Client.CreateMultipartUpload(&s3.CreateMultipartUploadInput{
@@ -611,7 +611,7 @@ func testPutPartWithChecksum(t *testing.T, cluster *TestCluster) {
 	bucketName := createTestBucket(t, cluster, "test-put-checksum-")
 	objectKey := "test-checksummed-part.txt"
 
-	partData := "Hello, SeaweedFS S3!"
+	partData := "Hello, Hanzo S3!"
 
 	correctMD5 := calculateMd5(partData)
 	incorrectMD5 := calculateMd5(partData + "incorrect")

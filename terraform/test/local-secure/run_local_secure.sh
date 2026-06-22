@@ -8,8 +8,8 @@ set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 export PATH="/opt/homebrew/bin:$PATH"
 TOFU="${TOFU:-tofu}"
-WEED="${WEED:-$(go env GOPATH 2>/dev/null || echo "$HOME/go")/bin/weed}"
-WORKDIR="${WORKDIR:-/tmp/seaweedfs-tftest-secure}"
+WEED="${WEED:-$(go env GOPATH 2>/dev/null || echo "$HOME/go")/bin/s3}"
+WORKDIR="${WORKDIR:-/tmp/hanzo-tftest-secure}"
 LOGDIR="$WORKDIR/logs"
 RUNDIR="$WORKDIR/run"
 
@@ -31,14 +31,14 @@ cleanup() {
 info "cleaning $WORKDIR"
 case "$WORKDIR" in "" | "/" | "$HOME") echo "refusing to delete '$WORKDIR'" >&2; exit 2 ;; esac
 rm -rf "$WORKDIR"
-mkdir -p "$LOGDIR" "$RUNDIR" "$WORKDIR/.seaweedfs"
-[ -x "$WEED" ] || { echo "weed not found at $WEED" >&2; exit 2; }
+mkdir -p "$LOGDIR" "$RUNDIR" "$WORKDIR/.s3"
+[ -x "$WEED" ] || { echo "s3 not found at $WEED" >&2; exit 2; }
 
 info "generating certs + rendering config with OpenTofu"
 cd "$HERE"
 "$TOFU" init -backend=false -input=false -no-color >/dev/null 2>&1 || { echo "tofu init failed"; exit 2; }
 if ! "$TOFU" apply -auto-approve -input=false -no-color \
-       -var "weed_binary=$WEED" -var "workdir=$WORKDIR" >"$LOGDIR/tofu.log" 2>&1; then
+       -var "s3_binary=$WEED" -var "workdir=$WORKDIR" >"$LOGDIR/tofu.log" 2>&1; then
   echo "tofu apply failed"; tail -30 "$LOGDIR/tofu.log"; exit 2
 fi
 
@@ -49,8 +49,8 @@ fi
   echo "$c" | jq -r '.content' > "$p"
   chmod "$m" "$p"
 done
-# place security.toml where weed searches ($HOME/.seaweedfs)
-"$TOFU" output -raw security_toml > "$WORKDIR/.seaweedfs/security.toml"
+# place security.toml where s3 searches ($HOME/.s3)
+"$TOFU" output -raw security_toml > "$WORKDIR/.s3/security.toml"
 info "security.toml + $(ls "$WORKDIR"/certs | wc -l | tr -d ' ') cert dirs written"
 
 OUT="$("$TOFU" output -json cluster)"
@@ -63,11 +63,11 @@ busy=""
 for p in $(echo "$OUT" | jq -r '.[].http_port'); do
   lsof -nP -iTCP:"$p" -sTCP:LISTEN >/dev/null 2>&1 && busy="$busy $p"
 done
-[ -n "$busy" ] && { echo "Required port(s) already in use:$busy -- is another SeaweedFS running?" >&2; exit 3; }
+[ -n "$busy" ] && { echo "Required port(s) already in use:$busy -- is another Hanzo running?" >&2; exit 3; }
 
 [ "${KEEP:-0}" = "1" ] || trap cleanup EXIT INT TERM
 
-# launch a node with HOME pointed at $WORKDIR so weed loads security.toml
+# launch a node with HOME pointed at $WORKDIR so s3 loads security.toml
 launch() {
   n="$1"
   for d in $(echo "$OUT" | jq -r --arg n "$n" '.[$n].data_dirs[]?'); do mkdir -p "$d"; done

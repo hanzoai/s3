@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Kafka Client Load Test Runner Script
-# This script helps run various load test scenarios against SeaweedFS Kafka Gateway
+# This script helps run various load test scenarios against Hanzo Kafka Gateway
 
 set -euo pipefail
 
@@ -240,7 +240,7 @@ check_service_health() {
 
 # Start the load test infrastructure
 start_services() {
-    log_info "Starting SeaweedFS Kafka load test infrastructure..."
+    log_info "Starting Hanzo Kafka load test infrastructure..."
     
     # Set environment variables
     export TEST_MODE="$TEST_MODE"
@@ -254,10 +254,10 @@ start_services() {
     
     # Start core services
     $DOCKER_COMPOSE -f "$DOCKER_COMPOSE_FILE" up -d \
-        seaweedfs-master \
-        seaweedfs-volume \
-        seaweedfs-filer \
-        seaweedfs-mq-broker \
+        hanzo-master \
+        hanzo-volume \
+        hanzo-filer \
+        hanzo-mq-broker \
         kafka-gateway \
         schema-registry
     
@@ -339,7 +339,7 @@ clean_all() {
         $DOCKER_COMPOSE -f "$DOCKER_COMPOSE_FILE" --profile loadtest --profile monitoring down -v --remove-orphans
         
         # Remove any remaining volumes
-        docker volume ls -q | grep -E "(kafka-client-loadtest|seaweedfs)" | xargs -r docker volume rm
+        docker volume ls -q | grep -E "(kafka-client-loadtest|hanzo)" | xargs -r docker volume rm
         
         # Remove networks
         docker network ls -q | grep -E "kafka-client-loadtest" | xargs -r docker network rm

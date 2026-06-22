@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/filer"
-	"github.com/hanzoai/s3/weed/pb/filer_pb"
-	"github.com/hanzoai/s3/weed/util"
+	"github.com/hanzoai/s3/s3/filer"
+	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/util"
 )
 
 // MockFoundationDBStore provides a simple mock implementation for testing

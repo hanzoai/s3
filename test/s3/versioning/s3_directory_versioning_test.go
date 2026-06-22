@@ -908,7 +908,7 @@ func setupS3Client(t *testing.T) *s3.Client {
 
 	// Default test configuration - should match s3tests.conf
 	defaultConfig := &S3TestConfig{
-		Endpoint:      "http://localhost:8333", // Default SeaweedFS S3 port
+		Endpoint:      "http://localhost:8333", // Default Hanzo S3 port
 		AccessKey:     "some_access_key1",
 		SecretKey:     "some_secret_key1",
 		Region:        "us-east-1",
@@ -936,7 +936,7 @@ func setupS3Client(t *testing.T) *s3.Client {
 	require.NoError(t, err)
 
 	return s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.UsePathStyle = true // Important for SeaweedFS
+		o.UsePathStyle = true // Important for Hanzo
 	})
 }
 

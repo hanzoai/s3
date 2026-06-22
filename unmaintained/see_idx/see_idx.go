@@ -7,12 +7,12 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/hanzoai/s3/weed/util"
+	"github.com/hanzoai/s3/s3/util"
 
-	"github.com/hanzoai/s3/weed/glog"
-	"github.com/hanzoai/s3/weed/storage/idx"
-	"github.com/hanzoai/s3/weed/storage/types"
-	util_http "github.com/hanzoai/s3/weed/util/http"
+	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/storage/idx"
+	"github.com/hanzoai/s3/s3/storage/types"
+	util_http "github.com/hanzoai/s3/s3/util/http"
 )
 
 var (

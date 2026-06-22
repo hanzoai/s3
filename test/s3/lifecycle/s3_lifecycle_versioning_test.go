@@ -14,8 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/hanzoai/s3/weed/pb/filer_pb"
-	"github.com/hanzoai/s3/weed/s3api/s3_constants"
+	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/stretchr/testify/require"
 )
 
@@ -64,7 +64,7 @@ func putNoncurrentExpirationLifecycle(t *testing.T, c *s3.Client, bucket, prefix
 // makes the lifecycle engine fall back to the sibling-mtime derivation,
 // which is what these tests were originally written against. Production
 // PUTs always write a stamp; this is a test-only escape hatch.
-func backdateVersionedMtime(t *testing.T, fc filer_pb.SeaweedFilerClient, bucket, key, versionID string, daysOld int) {
+func backdateVersionedMtime(t *testing.T, fc filer_pb.HanzoFilerClient, bucket, key, versionID string, daysOld int) {
 	t.Helper()
 	dir := bucketsPath + "/" + bucket + "/" + key + ".versions"
 	name := "v_" + versionID
@@ -117,7 +117,7 @@ func TestLifecycleVersionedBucketCreatesDeleteMarker(t *testing.T) {
 
 	// Look up the version we just created so we can backdate it. The bare
 	// filer entry under <bucket>/<key> is the latest-version pointer in
-	// SeaweedFS's versioned layout.
+	// Hanzo's versioned layout.
 	headOut, err := c.HeadObject(context.Background(), &s3.HeadObjectInput{
 		Bucket: aws.String(bucket), Key: aws.String(key),
 	})

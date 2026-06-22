@@ -1,36 +1,36 @@
 #!/bin/bash
 
-# Script to test SeaweedFS MQ broker startup locally
+# Script to test Hanzo MQ broker startup locally
 # This helps debug broker startup issues before running CI
 
 set -e
 
-echo "=== Testing SeaweedFS MQ Broker Startup ==="
+echo "=== Testing Hanzo MQ Broker Startup ==="
 
-# Build weed binary
-echo "Building weed binary..."
+# Build s3 binary
+echo "Building s3 binary..."
 cd "$(dirname "$0")/../../.."
-go build -o /tmp/weed ./weed
+go build -o /tmp/s3 ./s3
 
 # Setup data directory
-WEED_DATA_DIR="/tmp/seaweedfs-broker-test-$$"
+WEED_DATA_DIR="/tmp/hanzo-broker-test-$$"
 mkdir -p "$WEED_DATA_DIR"
 echo "Using data directory: $WEED_DATA_DIR"
 
 # Cleanup function
 cleanup() {
     echo "Cleaning up..."
-    pkill -f "weed.*server" || true
-    pkill -f "weed.*mq.broker" || true
+    pkill -f "s3.*server" || true
+    pkill -f "s3.*mq.broker" || true
     sleep 2
     rm -rf "$WEED_DATA_DIR"
-    rm -f /tmp/weed-*.log
+    rm -f /tmp/s3-*.log
 }
 trap cleanup EXIT
 
-# Start SeaweedFS server  
-echo "Starting SeaweedFS server..."
-/tmp/weed -v 1 server \
+# Start Hanzo server  
+echo "Starting Hanzo server..."
+/tmp/s3 -v 1 server \
   -ip="127.0.0.1" \
   -ip.bind="0.0.0.0" \
   -dir="$WEED_DATA_DIR" \
@@ -40,7 +40,7 @@ echo "Starting SeaweedFS server..."
   -filer.port=8888 \
   -filer=true \
   -metricsPort=9325 \
-  > /tmp/weed-server-test.log 2>&1 &
+  > /tmp/s3-server-test.log 2>&1 &
 
 SERVER_PID=$!
 echo "Server PID: $SERVER_PID"
@@ -69,11 +69,11 @@ done
 
 # Start MQ broker  
 echo "Starting MQ broker..."
-/tmp/weed -v 2 mq.broker \
+/tmp/s3 -v 2 mq.broker \
   -master="127.0.0.1:9333" \
   -ip="127.0.0.1" \
   -port=17777 \
-  > /tmp/weed-mq-broker-test.log 2>&1 &
+  > /tmp/s3-mq-broker-test.log 2>&1 &
 
 BROKER_PID=$!
 echo "Broker PID: $BROKER_PID"
@@ -95,10 +95,10 @@ if [ "$broker_ready" = false ]; then
   echo "❌ MQ broker failed to start"
   echo
   echo "=== Server logs ==="
-  cat /tmp/weed-server-test.log
+  cat /tmp/s3-server-test.log
   echo
   echo "=== Broker logs ==="
-  cat /tmp/weed-mq-broker-test.log
+  cat /tmp/s3-mq-broker-test.log
   exit 1
 fi
 
@@ -107,5 +107,5 @@ echo "✓ Broker started successfully and accepting connections"
 
 echo
 echo "[OK] All tests passed!"
-echo "Server logs: /tmp/weed-server-test.log"  
-echo "Broker logs: /tmp/weed-mq-broker-test.log"
+echo "Server logs: /tmp/s3-server-test.log"  
+echo "Broker logs: /tmp/s3-mq-broker-test.log"

@@ -16,8 +16,8 @@ import (
 )
 
 // FuseTestFramework provides utilities for FUSE integration testing.
-// It starts a single "weed mini" process (master+volume+filer in one)
-// and a separate "weed mount" process for the FUSE filesystem.
+// It starts a single "s3 mini" process (master+volume+filer in one)
+// and a separate "s3 mount" process for the FUSE filesystem.
 type FuseTestFramework struct {
 	t            *testing.T
 	tempDir      string
@@ -28,7 +28,7 @@ type FuseTestFramework struct {
 	mountProcess *os.Process
 	filerAddr    string
 	filerPort    int
-	weedBinary   string
+	s3Binary   string
 	isSetup      bool
 }
 
@@ -64,7 +64,7 @@ func NewFuseTestFramework(t *testing.T, config *TestConfig) *FuseTestFramework {
 		config = DefaultTestConfig()
 	}
 
-	tempDir, err := os.MkdirTemp("", "seaweedfs_fuse_test_")
+	tempDir, err := os.MkdirTemp("", "hanzo_fuse_test_")
 	require.NoError(t, err)
 
 	filerPort := freePort(t)
@@ -77,7 +77,7 @@ func NewFuseTestFramework(t *testing.T, config *TestConfig) *FuseTestFramework {
 		logDir:     filepath.Join(tempDir, "logs"),
 		filerPort:  filerPort,
 		filerAddr:  fmt.Sprintf("127.0.0.1:%d", filerPort),
-		weedBinary: findWeedBinary(),
+		s3Binary: findS3Binary(),
 		isSetup:    false,
 	}
 }
@@ -86,7 +86,7 @@ func NewFuseTestFramework(t *testing.T, config *TestConfig) *FuseTestFramework {
 // offset (port + 10000) won't collide with well-known ports.
 // Stay below the Linux ephemeral floor (32768) so the kernel does not
 // reuse the chosen port for an outbound connection between close() here
-// and re-bind in the child "weed mini" process.
+// and re-bind in the child "s3 mini" process.
 func freePort(t *testing.T) int {
 	t.Helper()
 	const (
@@ -111,7 +111,7 @@ func freePort(t *testing.T) int {
 	return 0
 }
 
-// Setup starts "weed mini" and mounts the FUSE filesystem.
+// Setup starts "s3 mini" and mounts the FUSE filesystem.
 func (f *FuseTestFramework) Setup(config *TestConfig) error {
 	if f.isSetup {
 		return fmt.Errorf("framework already setup")
@@ -124,15 +124,15 @@ func (f *FuseTestFramework) Setup(config *TestConfig) error {
 		}
 	}
 
-	// Start weed mini (master + volume + filer in one process)
+	// Start s3 mini (master + volume + filer in one process)
 	if err := f.startMini(config); err != nil {
-		return fmt.Errorf("failed to start weed mini: %v", err)
+		return fmt.Errorf("failed to start s3 mini: %v", err)
 	}
 
 	// Wait for filer to be ready (mini starts all services on filerPort)
 	if err := f.waitForService(f.filerAddr, 30*time.Second); err != nil {
 		f.dumpLog("mini")
-		return fmt.Errorf("weed mini not ready: %v", err)
+		return fmt.Errorf("s3 mini not ready: %v", err)
 	}
 
 	// Mount FUSE filesystem
@@ -176,7 +176,7 @@ func (f *FuseTestFramework) Cleanup() {
 	}
 }
 
-// DumpLogs prints the tail of all SeaweedFS process logs to test output.
+// DumpLogs prints the tail of all Hanzo process logs to test output.
 func (f *FuseTestFramework) DumpLogs() {
 	for _, name := range []string{"mini", "mount"} {
 		f.dumpLog(name)
@@ -193,14 +193,14 @@ func (f *FuseTestFramework) GetFilerAddr() string {
 	return f.filerAddr
 }
 
-// startProcess is a helper that starts a weed sub-command with output captured
+// startProcess is a helper that starts a s3 sub-command with output captured
 // to a log file in f.logDir.
 func (f *FuseTestFramework) startProcess(name string, args []string) (*os.Process, error) {
 	logFile, err := os.Create(filepath.Join(f.logDir, name+".log"))
 	if err != nil {
 		return nil, fmt.Errorf("create log file: %v", err)
 	}
-	cmd := exec.Command(f.weedBinary, args...)
+	cmd := exec.Command(f.s3Binary, args...)
 	cmd.Dir = f.tempDir
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
@@ -229,10 +229,10 @@ func (f *FuseTestFramework) dumpLog(name string) {
 	f.t.Logf("[%s log tail (%d bytes)]\n%s", name, len(data), string(data))
 }
 
-// copyLogsForCI copies SeaweedFS process logs to /tmp/seaweedfs-fuse-logs/
+// copyLogsForCI copies Hanzo process logs to /tmp/hanzo-fuse-logs/
 // so the CI workflow can upload them as artifacts.
 func (f *FuseTestFramework) copyLogsForCI() {
-	ciLogDir := "/tmp/seaweedfs-fuse-logs"
+	ciLogDir := "/tmp/hanzo-fuse-logs"
 	os.MkdirAll(ciLogDir, 0755)
 	for _, name := range []string{"mini", "mount"} {
 		src := filepath.Join(f.logDir, name+".log")
@@ -244,7 +244,7 @@ func (f *FuseTestFramework) copyLogsForCI() {
 	}
 }
 
-// startMini starts "weed mini" which runs master+volume+filer in one process.
+// startMini starts "s3 mini" which runs master+volume+filer in one process.
 func (f *FuseTestFramework) startMini(config *TestConfig) error {
 	args := []string{
 		"mini",
@@ -268,7 +268,7 @@ func (f *FuseTestFramework) startMini(config *TestConfig) error {
 	return nil
 }
 
-// mountFuse mounts the SeaweedFS FUSE filesystem
+// mountFuse mounts the Hanzo FUSE filesystem
 func (f *FuseTestFramework) mountFuse(config *TestConfig) error {
 	args := []string{
 		"mount",
@@ -347,16 +347,16 @@ func (f *FuseTestFramework) waitForMount(timeout time.Duration) error {
 	return fmt.Errorf("mount point not ready within timeout")
 }
 
-// findWeedBinary locates the weed binary.
-func findWeedBinary() string {
-	if p, err := exec.LookPath("weed"); err == nil {
+// findS3Binary locates the s3 binary.
+func findS3Binary() string {
+	if p, err := exec.LookPath("s3"); err == nil {
 		return p
 	}
 
 	candidates := []string{
-		"../../weed/weed",
-		"./weed",
-		"../weed",
+		"../../s3/s3",
+		"./s3",
+		"../s3",
 	}
 	for _, candidate := range candidates {
 		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
@@ -365,7 +365,7 @@ func findWeedBinary() string {
 		}
 	}
 
-	return "weed"
+	return "s3"
 }
 
 // Helper functions for test assertions

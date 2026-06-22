@@ -21,28 +21,28 @@ scrape_configs:
     scrape_interval: 5s
     metrics_path: '/metrics'
 
-  # Scrape SeaweedFS Master metrics
-  - job_name: 'seaweedfs-master'
+  # Scrape Hanzo Master metrics
+  - job_name: 'hanzo-master'
     static_configs:
-      - targets: ['seaweedfs-master:9333']
+      - targets: ['hanzo-master:9333']
     metrics_path: '/metrics'
 
-  # Scrape SeaweedFS Volume metrics  
-  - job_name: 'seaweedfs-volume'
+  # Scrape Hanzo Volume metrics  
+  - job_name: 'hanzo-volume'
     static_configs:
-      - targets: ['seaweedfs-volume:8080']
+      - targets: ['hanzo-volume:8080']
     metrics_path: '/metrics'
 
-  # Scrape SeaweedFS Filer metrics
-  - job_name: 'seaweedfs-filer'
+  # Scrape Hanzo Filer metrics
+  - job_name: 'hanzo-filer'
     static_configs:
-      - targets: ['seaweedfs-filer:8888']
+      - targets: ['hanzo-filer:8888']
     metrics_path: '/metrics'
 
-  # Scrape SeaweedFS MQ Broker metrics (if available)
-  - job_name: 'seaweedfs-mq-broker'
+  # Scrape Hanzo MQ Broker metrics (if available)
+  - job_name: 'hanzo-mq-broker'
     static_configs:
-      - targets: ['seaweedfs-mq-broker:17777']
+      - targets: ['hanzo-mq-broker:17777']
     metrics_path: '/metrics'
     scrape_interval: 10s
 

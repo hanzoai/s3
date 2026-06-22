@@ -40,8 +40,8 @@ func cleanup() {
 	}
 }
 
-func startWeed(t *testing.T, name string, args ...string) *exec.Cmd {
-	cmd := exec.Command("./weed_bin", args...)
+func startS3(t *testing.T, name string, args ...string) *exec.Cmd {
+	cmd := exec.Command("./s3_bin", args...)
 
 	// Create logs dir in local ./tmp
 	wd, _ := os.Getwd()
@@ -58,13 +58,13 @@ func startWeed(t *testing.T, name string, args ...string) *exec.Cmd {
 	// Set Cwd to test directory so it finds local ./tmp
 	cmd.Dir = wd
 
-	// assume "weed_bin" binary is in project root.
+	// assume "s3_bin" binary is in project root.
 	rootDir := filepath.Dir(filepath.Dir(filepath.Dir(wd)))
-	cmd.Path = filepath.Join(rootDir, "weed_bin")
+	cmd.Path = filepath.Join(rootDir, "s3_bin")
 
 	err = cmd.Start()
 	if err != nil {
-		t.Fatalf("Failed to start weed %v: %v", args, err)
+		t.Fatalf("Failed to start s3 %v: %v", args, err)
 	}
 	runningCmdsLock.Lock()
 	runningCmds = append(runningCmds, cmd)
@@ -72,7 +72,7 @@ func startWeed(t *testing.T, name string, args ...string) *exec.Cmd {
 	return cmd
 }
 
-func stopWeed(t *testing.T, cmd *exec.Cmd) {
+func stopS3(t *testing.T, cmd *exec.Cmd) {
 	if cmd != nil && cmd.Process != nil {
 		t.Logf("Stopping process %d", cmd.Process.Pid)
 		cmd.Process.Kill()
@@ -89,18 +89,18 @@ func stopWeed(t *testing.T, cmd *exec.Cmd) {
 }
 
 func ensureEnvironment(t *testing.T) {
-	// 1. Build weed binary
+	// 1. Build s3 binary
 	wd, _ := os.Getwd()
 	rootDir := filepath.Dir(filepath.Dir(filepath.Dir(wd))) // Up 3 levels
 
-	buildCmd := exec.Command("go", "build", "-o", "weed_bin", "./weed")
+	buildCmd := exec.Command("go", "build", "-o", "s3_bin", "./s3")
 	buildCmd.Dir = rootDir
 	buildCmd.Stdout = os.Stdout
 	buildCmd.Stderr = os.Stderr
 	if err := buildCmd.Run(); err != nil {
-		t.Fatalf("Failed to build weed: %v", err)
+		t.Fatalf("Failed to build s3: %v", err)
 	}
-	t.Log("Successfully built weed binary")
+	t.Log("Successfully built s3 binary")
 
 	// 2. Start Master
 	// Use local ./tmp/master
@@ -110,14 +110,14 @@ func ensureEnvironment(t *testing.T) {
 		t.Fatalf("Failed to create tmp dir: %v", err)
 	}
 
-	startWeed(t, "master", "master", "-mdir=./tmp/master", "-port=9333", "-ip=localhost", "-peers=none", "-volumeSizeLimitMB=100")
+	startS3(t, "master", "master", "-mdir=./tmp/master", "-port=9333", "-ip=localhost", "-peers=none", "-volumeSizeLimitMB=100")
 
 	// Wait for master
 	waitForUrl(t, MasterUrl+"/cluster/status", 10)
 
 	// 3. Start Volume Server (Worker)
 	// Start 14 volume servers to verify RS(10,4) default EC. Fork/exec in
-	// parallel because startWeed is non-blocking and the per-process fork +
+	// parallel because startS3 is non-blocking and the per-process fork +
 	// mkdir + log-file-open overhead stacks up sequentially on cold CI
 	// disks, eating most of the admin /health wait budget further down.
 	var volWg sync.WaitGroup
@@ -129,14 +129,14 @@ func ensureEnvironment(t *testing.T) {
 			port := 8080 + i - 1
 			dir := filepath.Join("tmp", volName)
 			os.MkdirAll(dir, 0755)
-			startWeed(t, volName, "volume", "-dir="+dir, "-mserver=localhost:9333", fmt.Sprintf("-port=%d", port), "-ip=localhost")
+			startS3(t, volName, "volume", "-dir="+dir, "-mserver=localhost:9333", fmt.Sprintf("-port=%d", port), "-ip=localhost")
 		}(i)
 	}
 	volWg.Wait()
 
 	// 4. Start Filer
 	os.MkdirAll(filepath.Join("tmp", "filer"), 0755)
-	startWeed(t, "filer", "filer", "-defaultStoreDir=./tmp/filer", "-master=localhost:9333", "-port=8888", "-ip=localhost")
+	startS3(t, "filer", "filer", "-defaultStoreDir=./tmp/filer", "-master=localhost:9333", "-port=8888", "-ip=localhost")
 	waitForUrl(t, FilerUrl+"/", 60)
 
 	// 5. Start Workers (Maintenance)
@@ -147,13 +147,13 @@ func ensureEnvironment(t *testing.T) {
 		debugPort := 6060 + i
 		dir, _ := filepath.Abs(filepath.Join("tmp", workerName))
 		os.MkdirAll(dir, 0755)
-		startWeed(t, workerName, "worker", "-admin=localhost:23646", "-workingDir="+dir, fmt.Sprintf("-metricsPort=%d", metricsPort), fmt.Sprintf("-debug.port=%d", debugPort))
+		startS3(t, workerName, "worker", "-admin=localhost:23646", "-workingDir="+dir, fmt.Sprintf("-metricsPort=%d", metricsPort), fmt.Sprintf("-debug.port=%d", debugPort))
 	}
 
 	// 6. Start Admin
 	os.RemoveAll(filepath.Join("tmp", "admin"))
 	os.MkdirAll(filepath.Join("tmp", "admin"), 0755)
-	startWeed(t, "admin", "admin", "-master=localhost:9333", "-port=23646", "-dataDir=./tmp/admin")
+	startS3(t, "admin", "admin", "-master=localhost:9333", "-port=23646", "-dataDir=./tmp/admin")
 	// Admin is started after master, 14 volume servers, filer and 2 workers,
 	// so under cold CI conditions the wait here has to absorb the tail of
 	// every earlier subprocess coming up. 60s is too tight and has flaked;

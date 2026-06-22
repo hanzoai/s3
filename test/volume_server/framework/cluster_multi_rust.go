@@ -16,12 +16,12 @@ import (
 
 // RustMultiVolumeCluster wraps a Go master + multiple Rust volume servers
 // for integration testing. It mirrors MultiVolumeCluster but uses the Rust
-// volume binary instead of the Go weed binary for volume servers.
+// volume binary instead of the Go s3 binary for volume servers.
 type RustMultiVolumeCluster struct {
 	testingTB testing.TB
 	profile   matrix.Profile
 
-	weedBinary       string // Go weed binary (for the master)
+	s3Binary       string // Go s3 binary (for the master)
 	rustVolumeBinary string // Rust volume binary
 
 	baseDir           string
@@ -52,9 +52,9 @@ func StartRustMultiVolumeCluster(t testing.TB, profile matrix.Profile, serverCou
 		t.Fatalf("serverCount must be at least 1, got %d", serverCount)
 	}
 
-	weedBinary, err := FindOrBuildWeedBinary()
+	s3Binary, err := FindOrBuildS3Binary()
 	if err != nil {
-		t.Fatalf("resolve weed binary: %v", err)
+		t.Fatalf("resolve s3 binary: %v", err)
 	}
 
 	rustBinary, err := FindOrBuildRustBinary()
@@ -103,7 +103,7 @@ func StartRustMultiVolumeCluster(t testing.TB, profile matrix.Profile, serverCou
 	c := &RustMultiVolumeCluster{
 		testingTB:         t,
 		profile:           profile,
-		weedBinary:        weedBinary,
+		s3Binary:        s3Binary,
 		rustVolumeBinary:  rustBinary,
 		baseDir:           baseDir,
 		configDir:         configDir,
@@ -207,7 +207,7 @@ func (c *RustMultiVolumeCluster) startMaster(dataDir string) error {
 		"-defaultReplication=000",
 	}
 
-	c.masterCmd = exec.Command(c.weedBinary, args...)
+	c.masterCmd = exec.Command(c.s3Binary, args...)
 	c.masterCmd.Dir = c.baseDir
 	c.masterCmd.Stdout = logFile
 	c.masterCmd.Stderr = logFile

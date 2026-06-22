@@ -23,78 +23,78 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - seaweedfs-sse-test
+      - hanzo-sse-test
 
-  # SeaweedFS Master
-  seaweedfs-master:
-    image: chrislusf/seaweedfs:latest
+  # Hanzo Master
+  hanzo-master:
+    image: chrislusf/hanzo:latest
     ports:
       - "9333:9333"
       - "19333:19333"
     command: 
       - master
-      - -ip=seaweedfs-master
+      - -ip=hanzo-master
       - -port=9333
       - -port.grpc=19333
       - -volumeSizeLimitMB=50
       - -mdir=/data
     volumes:
-      - seaweedfs-master-data:/data
+      - hanzo-master-data:/data
     networks:
-      - seaweedfs-sse-test
+      - hanzo-sse-test
 
-  # SeaweedFS Volume Server
-  seaweedfs-volume:
-    image: chrislusf/seaweedfs:latest
+  # Hanzo Volume Server
+  hanzo-volume:
+    image: chrislusf/hanzo:latest
     ports:
       - "8080:8080"
     command:
       - volume
-      - -master=seaweedfs-master:9333
+      - -master=hanzo-master:9333
       - -port=8080
-      - -ip=seaweedfs-volume
-      - -publicUrl=seaweedfs-volume:8080
+      - -ip=hanzo-volume
+      - -publicUrl=hanzo-volume:8080
       - -dir=/data
       - -max=100
     depends_on:
-      - seaweedfs-master
+      - hanzo-master
     volumes:
-      - seaweedfs-volume-data:/data
+      - hanzo-volume-data:/data
     networks:
-      - seaweedfs-sse-test
+      - hanzo-sse-test
 
-  # SeaweedFS Filer with S3 API and KMS configuration
-  seaweedfs-filer:
-    image: chrislusf/seaweedfs:latest
+  # Hanzo Filer with S3 API and KMS configuration
+  hanzo-filer:
+    image: chrislusf/hanzo:latest
     ports:
       - "8888:8888"  # Filer HTTP
       - "18888:18888" # Filer gRPC  
       - "8333:8333"  # S3 API
     command:
       - filer
-      - -master=seaweedfs-master:9333
+      - -master=hanzo-master:9333
       - -port=8888
       - -port.grpc=18888
-      - -ip=seaweedfs-filer
+      - -ip=hanzo-filer
       - -s3
       - -s3.port=8333
-      - -s3.config=/etc/seaweedfs/s3.json
+      - -s3.config=/etc/hanzo/s3.json
     depends_on:
-      - seaweedfs-master
-      - seaweedfs-volume
+      - hanzo-master
+      - hanzo-volume
       - openbao
     volumes:
-      - ./s3_kms.json:/etc/seaweedfs/s3.json
-      - seaweedfs-filer-data:/data
+      - ./s3_kms.json:/etc/hanzo/s3.json
+      - hanzo-filer-data:/data
     networks:
-      - seaweedfs-sse-test
+      - hanzo-sse-test
 
 volumes:
   openbao-data:
-  seaweedfs-master-data:
-  seaweedfs-volume-data:
-  seaweedfs-filer-data:
+  hanzo-master-data:
+  hanzo-volume-data:
+  hanzo-filer-data:
 
 networks:
-  seaweedfs-sse-test:
-    name: seaweedfs-sse-test
+  hanzo-sse-test:
+    name: hanzo-sse-test

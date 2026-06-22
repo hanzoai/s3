@@ -54,7 +54,7 @@ func clearMiniProcess(cmd *exec.Cmd) {
 type TestEnvironment struct {
 	t                   *testing.T
 	dockerAvailable     bool
-	seaweedfsDataDir    string
+	hanzoDataDir    string
 	masterPort          int
 	filerPort           int
 	s3Port              int
@@ -102,13 +102,13 @@ func (env *TestEnvironment) dockerIcebergEndpoint() string {
 	return fmt.Sprintf("http://host.docker.internal:%d", env.icebergRestPort)
 }
 
-func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
+func (env *TestEnvironment) StartHanzo(t *testing.T) {
 	t.Helper()
 
 	stopPreviousMini()
 
 	var err error
-	env.seaweedfsDataDir, err = os.MkdirTemp("", "seaweed-risingwave-test-")
+	env.hanzoDataDir, err = os.MkdirTemp("", "hanzo-risingwave-test-")
 	if err != nil {
 		t.Fatalf("failed to create temp directory: %v", err)
 	}
@@ -121,21 +121,21 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 
 	env.bindIP = testutil.FindBindIP()
 
-	iamConfigPath, err := testutil.WriteIAMConfig(env.seaweedfsDataDir, env.accessKey, env.secretKey)
+	iamConfigPath, err := testutil.WriteIAMConfig(env.hanzoDataDir, env.accessKey, env.secretKey)
 	if err != nil {
 		t.Fatalf("failed to create IAM config: %v", err)
 	}
 
-	// Create log file for SeaweedFS
-	logFile, err := os.Create(filepath.Join(env.seaweedfsDataDir, "seaweedfs.log"))
+	// Create log file for Hanzo
+	logFile, err := os.Create(filepath.Join(env.hanzoDataDir, "hanzo.log"))
 	if err != nil {
 		t.Fatalf("failed to create log file: %v", err)
 	}
 	env.logFile = logFile
 
-	// Start SeaweedFS using weed mini (all-in-one including Iceberg REST)
+	// Start Hanzo using s3 mini (all-in-one including Iceberg REST)
 	env.masterProcess = exec.Command(
-		"weed", "mini",
+		"s3", "mini",
 		"-ip", env.bindIP,
 		"-ip.bind", "0.0.0.0",
 		"-master.port", fmt.Sprintf("%d", env.masterPort),
@@ -143,7 +143,7 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 		"-s3.port", fmt.Sprintf("%d", env.s3Port),
 		"-s3.port.iceberg", fmt.Sprintf("%d", env.icebergRestPort),
 		"-s3.config", iamConfigPath,
-		"-dir", env.seaweedfsDataDir,
+		"-dir", env.hanzoDataDir,
 	)
 	env.masterProcess.Stdout = logFile
 	env.masterProcess.Stderr = logFile
@@ -154,29 +154,29 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 		"S3TABLES_DEFAULT_BUCKET=iceberg-tables",
 	)
 	if err := env.masterProcess.Start(); err != nil {
-		t.Fatalf("failed to start weed mini: %v", err)
+		t.Fatalf("failed to start s3 mini: %v", err)
 	}
 	registerMiniProcess(env.masterProcess)
 
 	// Wait for all services to be ready
-	if !testutil.WaitForPort(env.masterPort, testutil.SeaweedMiniStartupTimeout) {
-		t.Fatalf("weed mini failed to start - master port %d not listening", env.masterPort)
+	if !testutil.WaitForPort(env.masterPort, testutil.HanzoMiniStartupTimeout) {
+		t.Fatalf("s3 mini failed to start - master port %d not listening", env.masterPort)
 	}
-	if !testutil.WaitForPort(env.filerPort, testutil.SeaweedMiniStartupTimeout) {
-		t.Fatalf("weed mini failed to start - filer port %d not listening", env.filerPort)
+	if !testutil.WaitForPort(env.filerPort, testutil.HanzoMiniStartupTimeout) {
+		t.Fatalf("s3 mini failed to start - filer port %d not listening", env.filerPort)
 	}
-	if !testutil.WaitForService(fmt.Sprintf("http://127.0.0.1:%d/status", env.s3Port), testutil.SeaweedMiniStartupTimeout) {
-		t.Fatalf("weed mini failed to start - s3 endpoint http://127.0.0.1:%d/status not responding", env.s3Port)
+	if !testutil.WaitForService(fmt.Sprintf("http://127.0.0.1:%d/status", env.s3Port), testutil.HanzoMiniStartupTimeout) {
+		t.Fatalf("s3 mini failed to start - s3 endpoint http://127.0.0.1:%d/status not responding", env.s3Port)
 	}
-	if !testutil.WaitForService(fmt.Sprintf("http://127.0.0.1:%d/v1/config", env.icebergRestPort), testutil.SeaweedMiniStartupTimeout) {
-		t.Fatalf("weed mini failed to start - iceberg rest endpoint http://127.0.0.1:%d/v1/config not responding", env.icebergRestPort)
+	if !testutil.WaitForService(fmt.Sprintf("http://127.0.0.1:%d/v1/config", env.icebergRestPort), testutil.HanzoMiniStartupTimeout) {
+		t.Fatalf("s3 mini failed to start - iceberg rest endpoint http://127.0.0.1:%d/v1/config not responding", env.icebergRestPort)
 	}
 }
 
 func (env *TestEnvironment) StartRisingWave(t *testing.T) {
 	t.Helper()
 
-	containerName := "seaweed-risingwave-" + randomString(8)
+	containerName := "hanzo-risingwave-" + randomString(8)
 	env.risingwaveContainer = containerName
 
 	cmd := exec.Command("docker", "run", "-d",
@@ -195,7 +195,7 @@ func (env *TestEnvironment) StartRisingWave(t *testing.T) {
 	}
 
 	// Start a sidecar postgres container for running psql commands
-	sidecarName := "seaweed-risingwave-sidecar-" + randomString(8)
+	sidecarName := "hanzo-risingwave-sidecar-" + randomString(8)
 	env.postgresSidecar = sidecarName
 	sidecarCmd := exec.Command("docker", "run", "-d", "--rm",
 		"--name", sidecarName,
@@ -266,10 +266,10 @@ func (env *TestEnvironment) Cleanup(t *testing.T) {
 		_ = exec.Command("docker", "rm", "-f", env.postgresSidecar).Run()
 	}
 
-	if env.seaweedfsDataDir != "" && t.Failed() {
-		logPath := filepath.Join(env.seaweedfsDataDir, "seaweedfs.log")
+	if env.hanzoDataDir != "" && t.Failed() {
+		logPath := filepath.Join(env.hanzoDataDir, "hanzo.log")
 		if content, err := os.ReadFile(logPath); err == nil {
-			env.t.Logf(">>> SeaweedFS Logs:\n%s\n", string(content))
+			env.t.Logf(">>> Hanzo Logs:\n%s\n", string(content))
 		}
 		env.t.Logf(">>> Filer Contents:\n")
 		listFilerContents(t, env, "/")
@@ -281,11 +281,11 @@ func (env *TestEnvironment) Cleanup(t *testing.T) {
 	}
 	clearMiniProcess(env.masterProcess)
 
-	if env.seaweedfsDataDir != "" {
+	if env.hanzoDataDir != "" {
 		if env.logFile != nil {
 			env.logFile.Close()
 		}
-		_ = os.RemoveAll(env.seaweedfsDataDir)
+		_ = os.RemoveAll(env.hanzoDataDir)
 	}
 }
 
@@ -305,13 +305,13 @@ func createTableBucket(t *testing.T, env *TestEnvironment, bucketName string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "weed", "shell",
+	cmd := exec.CommandContext(ctx, "s3", "shell",
 		fmt.Sprintf("-master=%s", env.hostMasterAddress()),
 	)
 	cmd.Stdin = strings.NewReader(fmt.Sprintf("s3tables.bucket -create -name %s -account 000000000000\nexit\n", bucketName))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("failed to create table bucket %s via weed shell: %v\nOutput: %s", bucketName, err, string(output))
+		t.Fatalf("failed to create table bucket %s via s3 shell: %v\nOutput: %s", bucketName, err, string(output))
 	}
 }
 
@@ -411,12 +411,12 @@ func createIcebergTable(t *testing.T, env *TestEnvironment, bucketName, namespac
 func listFilerContents(t *testing.T, env *TestEnvironment, path string) {
 	t.Helper()
 
-	// Bound diagnostic listing so a hung weed shell during cleanup can't
+	// Bound diagnostic listing so a hung s3 shell during cleanup can't
 	// burn the whole 20-minute test timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, "weed", "shell",
+	cmd := exec.CommandContext(ctx, "s3", "shell",
 		fmt.Sprintf("-master=%s", env.hostMasterAddress()),
 	)
 	cmd.Stdin = strings.NewReader(fmt.Sprintf("fs.ls -R %s\nexit\n", path))

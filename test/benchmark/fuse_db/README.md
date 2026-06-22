@@ -1,6 +1,6 @@
 # FUSE database load / durability / performance benchmark
 
-Runs **MySQL (InnoDB)** and **SQLite** with their data files on a SeaweedFS **FUSE mount**,
+Runs **MySQL (InnoDB)** and **SQLite** with their data files on a Hanzo **FUSE mount**,
 with ~1 GB datasets, and answers two questions:
 
 1. **Durability** — does any committed data get lost across normal shutdown, an unexpected
@@ -12,7 +12,7 @@ Each row carries a CRC32 of an incompressible (so ~1 GB actually hits the volume
 deterministic payload; verification checks `integrity_check`/`CHECK TABLE`, exact row count,
 contiguous-id prefix, and a per-row CRC recompute.
 
-## Results (single node, macOS arm64 + macFUSE, weed 4.34, local NVMe, 2026-06-15)
+## Results (single node, macOS arm64 + macFUSE, s3 4.34, local NVMe, 2026-06-15)
 
 ### Durability — 6/6 PASS, no committed data lost, no corruption
 | scenario | what | SQLite | MySQL |
@@ -57,14 +57,14 @@ commit.
 `kill -9` terminates the **processes** while the OS keeps running, so everything that reached
 the OS page cache (all fsync'd data) survives — this faithfully tests process/daemon crashes
 and is what passed 6/6. It does **not** simulate true **power loss** (page cache lost). The
-FUSE mount uploads chunks **without** `fsync=true` (`weed/mount/weedfs_write.go` builds
+FUSE mount uploads chunks **without** `fsync=true` (`s3/mount/s3fs_write.go` builds
 `UploadOption` with no `Fsync`), so the volume does not fsync `.dat` per upload and the filer
 leveldb likely does not sync per write; under a real power cut, recently-"committed" data that
 only reached the page cache could be lost. A VM hard-reset / power-loss test on real hardware
 is the follow-up to close that gap.
 
 ## Requirements
-- `weed` on `$PATH` (or set `WEED=/path/to/weed`)
+- `s3` on `$PATH` (or set `WEED=/path/to/s3`)
 - macFUSE (macOS) or libfuse (Linux)
 - `python3`, `sqlite3`
 - MySQL/MariaDB install; set `MYSQL_BASE` to its prefix (default macOS Homebrew
@@ -73,7 +73,7 @@ is the follow-up to close that gap.
 
 ## Run
 Runtime artifacts (cluster, mount, logs) go to `$SEAWEED_BENCH_WORK`
-(default `/tmp/seaweedfs_fuse_db_bench`), kept out of the repo.
+(default `/tmp/hanzo_fuse_db_bench`), kept out of the repo.
 
     cd test/benchmark/fuse_db
     bash bin/run_sqlite.sh   > results/sqlite.log   2>&1   # SQLite durability suite
@@ -81,7 +81,7 @@ Runtime artifacts (cluster, mount, logs) go to `$SEAWEED_BENCH_WORK`
     bash bin/compare.sh      > results/compare.log  2>&1   # FUSE vs host performance
 
 The harness manages only its own processes (via pidfiles) on non-default ports
-(9555/9560/9565, mysqld 3308); it never runs `pkill weed`, so other SeaweedFS instances on
+(9555/9560/9565, mysqld 3308); it never runs `pkill s3`, so other Hanzo instances on
 the box are untouched.
 
 ## Files

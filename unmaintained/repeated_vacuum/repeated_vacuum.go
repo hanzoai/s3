@@ -8,11 +8,11 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/hanzoai/s3/weed/operation"
-	"github.com/hanzoai/s3/weed/pb"
-	"github.com/hanzoai/s3/weed/security"
-	"github.com/hanzoai/s3/weed/util"
-	util_http "github.com/hanzoai/s3/weed/util/http"
+	"github.com/hanzoai/s3/s3/operation"
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/security"
+	"github.com/hanzoai/s3/s3/util"
+	util_http "github.com/hanzoai/s3/s3/util/http"
 	"google.golang.org/grpc"
 )
 

@@ -110,7 +110,7 @@ func deleteBucket(ctx context.Context, client *s3.Client, bucket string) {
 // issue #9559: Spark / Hadoop s3a does a ListObjectsV2 against bucket
 // "buckets" via AWS SDK V2, which fails with
 // "Could not parse XML response. ... Unexpected character '{' (code 123)
-// in prolog" when SeaweedFS routes the request to the JSON-returning
+// in prolog" when Hanzo routes the request to the JSON-returning
 // ListTableBuckets handler. The SDK's response deserializer is the
 // real assertion here — a JSON body produces an SDK error before we
 // reach require.NoError.

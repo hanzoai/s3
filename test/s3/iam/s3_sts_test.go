@@ -50,7 +50,7 @@ func TestAssumeRoleWithWebIdentityValidation(t *testing.T) {
 	}
 
 	if !isSTSEndpointRunning(t) {
-		t.Skip("SeaweedFS STS endpoint is not running at", TestSTSEndpoint)
+		t.Skip("Hanzo STS endpoint is not running at", TestSTSEndpoint)
 	}
 
 	t.Run("missing_web_identity_token", func(t *testing.T) {
@@ -155,7 +155,7 @@ func TestAssumeRoleWithWebIdentityWithMockJWT(t *testing.T) {
 	}
 
 	if !isSTSEndpointRunning(t) {
-		t.Skip("SeaweedFS STS endpoint is not running at", TestSTSEndpoint)
+		t.Skip("Hanzo STS endpoint is not running at", TestSTSEndpoint)
 	}
 
 	// Create a test framework to get valid JWT tokens
@@ -256,7 +256,7 @@ func callSTSAPI(t *testing.T, params url.Values) (*http.Response, error) {
 	return client.Do(req)
 }
 
-// isSTSEndpointRunning checks if SeaweedFS STS endpoint is running
+// isSTSEndpointRunning checks if Hanzo STS endpoint is running
 func isSTSEndpointRunning(t *testing.T) bool {
 	client := &http.Client{Timeout: 2 * time.Second}
 	resp, err := client.Get(TestSTSEndpoint + "/status")

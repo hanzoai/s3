@@ -6,12 +6,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/hanzoai/s3/weed/glog"
-	"github.com/hanzoai/s3/weed/storage"
-	"github.com/hanzoai/s3/weed/storage/backend"
-	"github.com/hanzoai/s3/weed/storage/needle"
-	"github.com/hanzoai/s3/weed/storage/super_block"
-	util_http "github.com/hanzoai/s3/weed/util/http"
+	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/storage"
+	"github.com/hanzoai/s3/s3/storage/backend"
+	"github.com/hanzoai/s3/s3/storage/needle"
+	"github.com/hanzoai/s3/s3/storage/super_block"
+	util_http "github.com/hanzoai/s3/s3/util/http"
 )
 
 var (

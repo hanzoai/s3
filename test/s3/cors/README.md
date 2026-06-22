@@ -1,6 +1,6 @@
-# CORS Integration Tests for SeaweedFS S3 API
+# CORS Integration Tests for Hanzo S3 API
 
-This directory contains comprehensive integration tests for the CORS (Cross-Origin Resource Sharing) functionality in SeaweedFS S3 API.
+This directory contains comprehensive integration tests for the CORS (Cross-Origin Resource Sharing) functionality in Hanzo S3 API.
 
 ## Overview
 
@@ -14,13 +14,13 @@ The CORS integration tests validate the complete CORS implementation including:
 
 ## Prerequisites
 
-1. **Go 1.19+**: For building SeaweedFS and running tests
+1. **Go 1.19+**: For building Hanzo and running tests
 2. **Network Access**: Tests use `localhost:8333` by default
 3. **System Dependencies**: `curl` and `netstat` for health checks
 
 ## Quick Start
 
-The tests now automatically start their own SeaweedFS server, so you don't need to manually start one.
+The tests now automatically start their own Hanzo server, so you don't need to manually start one.
 
 ### 1. Run All Tests with Managed Server
 
@@ -68,7 +68,7 @@ make test-error-handling       # Error handling
 
 ## Test Server Management
 
-The tests use a comprehensive server management system similar to other SeaweedFS integration tests:
+The tests use a comprehensive server management system similar to other Hanzo integration tests:
 
 ### Server Configuration
 
@@ -78,12 +78,12 @@ The tests use a comprehensive server management system similar to other SeaweedF
 - **Filer Port**: 8888
 - **Metrics Port**: 9324
 - **Data Directory**: `./test-volume-data` (auto-created)
-- **Log File**: `weed-test.log`
+- **Log File**: `s3-test.log`
 
 ### Server Lifecycle
 
-1. **Build**: Automatically builds `../../../weed/weed_binary`
-2. **Start**: Launches SeaweedFS with S3 API enabled
+1. **Build**: Automatically builds `../../../s3/s3_binary`
+2. **Start**: Launches Hanzo with S3 API enabled
 3. **Health Check**: Waits up to 90 seconds for server to be ready
 4. **Test**: Runs the requested tests
 5. **Stop**: Gracefully shuts down the server
@@ -93,8 +93,8 @@ The tests use a comprehensive server management system similar to other SeaweedF
 
 ```bash
 # Server management
-make start-server              # Start SeaweedFS server
-make stop-server               # Stop SeaweedFS server
+make start-server              # Start Hanzo server
+make stop-server               # Stop Hanzo server
 make health-check              # Check server health
 make logs                      # View server logs
 
@@ -107,7 +107,7 @@ make test-cors-comprehensive   # Run all tests
 # Development
 make dev-start                 # Start server for development
 make dev-test                  # Run development tests
-make build-weed                # Build SeaweedFS binary
+make build-s3                # Build Hanzo binary
 make check-deps                # Check dependencies
 
 # Maintenance
@@ -124,7 +124,7 @@ make lint                      # Run linter
 The tests use these default settings (configurable via environment variables):
 
 ```bash
-WEED_BINARY=../../../weed/weed_binary
+WEED_BINARY=../../../s3/s3_binary
 S3_PORT=8333
 TEST_TIMEOUT=10m
 TEST_PATTERN=TestCORS
@@ -199,7 +199,7 @@ assert.Len(t, getResp.CORSRules, 1)
    curl -s http://localhost:8333
    
    # Check server logs
-   tail -f weed-test.log
+   tail -f s3-test.log
    ```
 
 ### Performance Issues
@@ -351,12 +351,12 @@ make coverage
 - Server startup typically takes 15-30 seconds
 - Tests run in parallel where possible for efficiency
 
-## Integration with SeaweedFS
+## Integration with Hanzo
 
 These tests validate the CORS implementation in:
-- `weed/s3api/cors/` - Core CORS package
-- `weed/s3api/s3api_bucket_cors_handlers.go` - HTTP handlers
-- `weed/s3api/s3api_server.go` - Router integration
-- `weed/s3api/s3api_bucket_config.go` - Configuration management
+- `s3/s3api/cors/` - Core CORS package
+- `s3/s3api/s3api_bucket_cors_handlers.go` - HTTP handlers
+- `s3/s3api/s3api_server.go` - Router integration
+- `s3/s3api/s3api_bucket_config.go` - Configuration management
 
 The tests ensure AWS S3 API compatibility and proper CORS behavior across all supported scenarios. 

@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/filer"
-	"github.com/hanzoai/s3/weed/filer/foundationdb"
-	"github.com/hanzoai/s3/weed/pb/filer_pb"
-	"github.com/hanzoai/s3/weed/util"
+	"github.com/hanzoai/s3/s3/filer"
+	"github.com/hanzoai/s3/s3/filer/foundationdb"
+	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/util"
 )
 
 func TestFoundationDBStore_BasicOperations(t *testing.T) {
@@ -357,7 +357,7 @@ func createTestStore(t *testing.T) *foundationdb.FoundationDBStore {
 	config.Set("foundationdb.api_version", 740)
 	config.Set("foundationdb.timeout", "10s")
 	config.Set("foundationdb.max_retry_delay", "2s")
-	config.Set("foundationdb.directory_prefix", fmt.Sprintf("seaweedfs_test_%d", time.Now().UnixNano()))
+	config.Set("foundationdb.directory_prefix", fmt.Sprintf("hanzo_test_%d", time.Now().UnixNano()))
 
 	store := &foundationdb.FoundationDBStore{}
 	err := store.Initialize(config, "foundationdb.")

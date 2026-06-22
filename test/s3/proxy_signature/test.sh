@@ -13,7 +13,7 @@
 #   docker compose down
 #
 # This script tests S3 operations through an nginx reverse proxy to verify
-# that signature verification works correctly when SeaweedFS is configured
+# that signature verification works correctly when Hanzo is configured
 # with -s3.externalUrl=http://localhost:9000.
 #
 set -euo pipefail
@@ -48,7 +48,7 @@ export AWS_SECRET_ACCESS_KEY="$SECRET_KEY"
 echo "=== S3 Proxy Signature Verification Test ==="
 echo ""
 echo "Testing S3 access through nginx reverse proxy at $PROXY_ENDPOINT"
-echo "SeaweedFS configured with -s3.externalUrl=http://localhost:9000"
+echo "Hanzo configured with -s3.externalUrl=http://localhost:9000"
 echo "AWS CLI signs requests with Host: localhost:9000"
 echo ""
 

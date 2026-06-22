@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Integration test: git clone & pull on a SeaweedFS FUSE mount.
+# Integration test: git clone & pull on a Hanzo FUSE mount.
 #
 # Verifies that the mount correctly supports git's file operations by:
 #   1. Creating a bare repo on the mount (acts as a remote)
@@ -110,8 +110,8 @@ echo "--- Phase 2: Clone locally, make initial commits, push ---"
 LOCAL_CLONE="$LOCAL_DIR/clone1"
 git clone "$BARE_REPO" "$LOCAL_CLONE" >/dev/null 2>&1
 cd "$LOCAL_CLONE"
-git config user.email "test@seaweedfs.test"
-git config user.name "SeaweedFS Test"
+git config user.email "test@hanzo.test"
+git config user.name "Hanzo Test"
 
 # Commit 1: initial files
 echo "hello world" > README.md

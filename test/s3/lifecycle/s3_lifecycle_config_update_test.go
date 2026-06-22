@@ -15,7 +15,7 @@ import (
 // lifecycle rule between two shell-driven sweeps. The second sweep
 // must respect the NEW rule, not a cached version of the old one.
 //
-// Each `runLifecycleShard` invocation spawns a fresh `weed shell`
+// Each `runLifecycleShard` invocation spawns a fresh `s3 shell`
 // subprocess, so cached engine state from a previous sweep doesn't
 // persist across runs. This test pins that the freshly-loaded config
 // actually changes routing — under the new prefix only matching

@@ -4,7 +4,7 @@ These tests verify that S3 bucket operations work correctly when a filer group i
 
 ## Background
 
-When SeaweedFS is configured with a filer group (via `-filer.group` option), collections are named with the filer group prefix:
+When Hanzo is configured with a filer group (via `-filer.group` option), collections are named with the filer group prefix:
 
 ```text
 Collection name = {filerGroup}_{bucketName}
@@ -23,7 +23,7 @@ This test suite was created to verify the fix for a bug where:
 
 ### Prerequisites
 
-1. SeaweedFS servers must be running with a filer group configured
+1. Hanzo servers must be running with a filer group configured
 2. The S3 gateway must be accessible
 3. Master server must be accessible for collection verification
 

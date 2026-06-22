@@ -8,13 +8,13 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/hanzoai/s3/weed/glog"
-	"github.com/hanzoai/s3/weed/storage/backend"
-	"github.com/hanzoai/s3/weed/storage/needle"
-	"github.com/hanzoai/s3/weed/storage/super_block"
-	"github.com/hanzoai/s3/weed/storage/types"
-	"github.com/hanzoai/s3/weed/util"
-	util_http "github.com/hanzoai/s3/weed/util/http"
+	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/storage/backend"
+	"github.com/hanzoai/s3/s3/storage/needle"
+	"github.com/hanzoai/s3/s3/storage/super_block"
+	"github.com/hanzoai/s3/s3/storage/types"
+	"github.com/hanzoai/s3/s3/util"
+	util_http "github.com/hanzoai/s3/s3/util/http"
 )
 
 var (
@@ -32,8 +32,8 @@ The .idx has all correct offsets.
     go run fix_dat.go -volumeId=9 -dir=/Users/chrislu/Downloads
  2. move the original .dat and .idx files to some backup folder, and rename .dat_fixed to .dat file
     mv 9.dat_fixed 9.dat
- 3. fix the .idx file with the "weed fix"
-    weed fix -volumeId=9 -dir=/Users/chrislu/Downloads
+ 3. fix the .idx file with the "s3 fix"
+    s3 fix -volumeId=9 -dir=/Users/chrislu/Downloads
 */
 func main() {
 	flag.Parse()

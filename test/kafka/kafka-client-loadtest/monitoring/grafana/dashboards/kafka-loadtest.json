@@ -2,7 +2,7 @@
   "dashboard": {
     "id": null,
     "title": "Kafka Client Load Test Dashboard",
-    "tags": ["kafka", "loadtest", "seaweedfs"],
+    "tags": ["kafka", "loadtest", "hanzo"],
     "timezone": "browser",
     "panels": [
       {

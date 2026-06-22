@@ -19,9 +19,9 @@ func TestRisingWaveIcebergDML(t *testing.T) {
 		t.Skip("Docker not available, skipping RisingWave integration test")
 	}
 
-	t.Log(">>> Starting SeaweedFS...")
-	env.StartSeaweedFS(t)
-	t.Log(">>> SeaweedFS started.")
+	t.Log(">>> Starting Hanzo...")
+	env.StartHanzo(t)
+	t.Log(">>> Hanzo started.")
 
 	tableBucket := "iceberg-tables"
 	t.Logf(">>> Creating table bucket: %s", tableBucket)

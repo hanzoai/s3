@@ -21,7 +21,7 @@ func TestRemoteCopyLocalBasic(t *testing.T) {
 	// Use remote.copy.local to copy it to remote
 	t.Log("Copying local file to remote...")
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.copy.local failed")
 	t.Logf("Copy output: %s", output)
 
@@ -44,7 +44,7 @@ func TestRemoteCopyLocalDryRun(t *testing.T) {
 	// Run in dry-run mode
 	t.Log("Running remote.copy.local in dry-run mode...")
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -dryRun=true", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err)
 	t.Logf("Dry-run output: %s", output)
 
@@ -66,7 +66,7 @@ func TestRemoteCopyLocalWithInclude(t *testing.T) {
 	// Copy only PDF files
 	t.Log("Copying only PDF files to remote...")
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -include=*.pdf", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.copy.local with include failed")
 	t.Logf("Copy output: %s", output)
 
@@ -89,7 +89,7 @@ func TestRemoteCopyLocalWithExclude(t *testing.T) {
 	// Copy excluding .tmp files
 	t.Log("Copying excluding .tmp files...")
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -exclude=*.tmp", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.copy.local with exclude failed")
 	t.Logf("Copy output: %s", output)
 
@@ -107,7 +107,7 @@ func TestRemoteCopyLocalForceUpdate(t *testing.T) {
 	// Create and copy file to remote
 	originalData := createTestFile(t, testKey, 1024)
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -include=%s", testBucket, testKey)
-	_, err := runWeedShellWithOutput(t, cmd)
+	_, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "initial copy failed")
 
 	// Modify the file locally (simulate local change)
@@ -118,7 +118,7 @@ func TestRemoteCopyLocalForceUpdate(t *testing.T) {
 	// Copy again with force update
 	t.Log("Copying with force update...")
 	cmd = fmt.Sprintf("remote.copy.local -dir=/buckets/%s -include=%s -forceUpdate=true", testBucket, testKey)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.copy.local with forceUpdate failed")
 	t.Logf("Force update output: %s", output)
 
@@ -153,7 +153,7 @@ func TestRemoteCopyLocalConcurrency(t *testing.T) {
 	// Copy with high concurrency
 	t.Log("Copying with concurrency=8...")
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -concurrent=8", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.copy.local with concurrency failed")
 	t.Logf("Copy output: %s", output)
 
@@ -171,7 +171,7 @@ func TestRemoteCopyLocalEmptyDirectory(t *testing.T) {
 	// (all files are already synced to remote)
 	t.Log("Testing copy from directory with no local-only files...")
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 
 	// Should not error, just report nothing to copy
 	require.NoError(t, err, "remote.copy.local should handle empty directory gracefully")
@@ -191,7 +191,7 @@ func TestRemoteCopyLocalLargeFile(t *testing.T) {
 	// Copy to remote
 	t.Log("Copying large file to remote...")
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -include=%s", testBucket, testKey)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.copy.local large file failed")
 	t.Logf("Large file copy output: %s", output)
 
@@ -214,13 +214,13 @@ func TestRemoteCopyLocalAlreadyExists(t *testing.T) {
 	// First copy
 	t.Log("First copy to remote...")
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -include=%s", testBucket, testKey)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "first copy failed")
 	t.Logf("First copy output: %s", output)
 
 	// Second copy without forceUpdate - should skip
 	t.Log("Second copy (should skip)...")
-	output, err = runWeedShellWithOutput(t, cmd)
+	output, err = runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "second copy failed")
 	t.Logf("Second copy output: %s", output)
 
@@ -237,7 +237,7 @@ func TestRemoteCopyLocalNotMounted(t *testing.T) {
 
 	t.Log("Testing copy from non-mounted directory...")
 	cmd := fmt.Sprintf("remote.copy.local -dir=%s", notMountedDir)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 
 	// Should fail or show error
 	hasError := err != nil || strings.Contains(strings.ToLower(output), "not mounted") || strings.Contains(strings.ToLower(output), "error")
@@ -261,7 +261,7 @@ func TestRemoteCopyLocalMinMaxSize(t *testing.T) {
 	// Copy only files between 1KB and 10KB
 	t.Log("Copying files between 1KB and 10KB...")
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -minSize=1024 -maxSize=10240", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.copy.local with size filters failed")
 	t.Logf("Size filter output: %s", output)
 

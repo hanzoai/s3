@@ -1,18 +1,18 @@
 # Kafka Gateway Tests with SMQ Integration
 
-This directory contains tests for the SeaweedFS Kafka Gateway with full SeaweedMQ (SMQ) integration.
+This directory contains tests for the Hanzo Kafka Gateway with full HanzoMQ (SMQ) integration.
 
 ## Test Types
 
 ### **Unit Tests** (`./unit/`)
 - Basic gateway functionality
 - Protocol compatibility 
-- No SeaweedFS backend required
+- No Hanzo backend required
 - Uses mock handlers
 
 ### **Integration Tests** (`./integration/`)
 - **Mock Mode** (default): Uses in-memory handlers for protocol testing
-- **SMQ Mode** (with `SEAWEEDFS_MASTERS`): Uses real SeaweedFS backend for full integration
+- **SMQ Mode** (with `SEAWEEDFS_MASTERS`): Uses real Hanzo backend for full integration
 
 ### **E2E Tests** (`./e2e/`)
 - End-to-end workflows
@@ -32,15 +32,15 @@ go test -v ./integration/ -run TestClientCompatibility
 ```
 
 ### Full Integration Testing (SMQ Mode)
-Requires running SeaweedFS instance:
+Requires running Hanzo instance:
 
-1. **Start SeaweedFS with MQ support:**
+1. **Start Hanzo with MQ support:**
 ```bash
-# Terminal 1: Start SeaweedFS server
-weed server -ip="127.0.0.1" -ip.bind="0.0.0.0" -dir=/tmp/seaweedfs-data -master.port=9333 -volume.port=8081 -filer.port=8888 -filer=true -master.peers=none
+# Terminal 1: Start Hanzo server
+s3 server -ip="127.0.0.1" -ip.bind="0.0.0.0" -dir=/tmp/hanzo-data -master.port=9333 -volume.port=8081 -filer.port=8888 -filer=true -master.peers=none
 
 # Terminal 2: Start MQ broker  
-weed mq.broker -master="127.0.0.1:9333" -ip="127.0.0.1" -port=17777
+s3 mq.broker -master="127.0.0.1:9333" -ip="127.0.0.1" -port=17777
 ```
 
 2. **Run tests with SMQ backend:**
@@ -65,7 +65,7 @@ If you're having broker startup issues:
 
 1. **Unit Tests** - Fast protocol tests with mock backend
 2. **Integration Tests** - Mock mode by default  
-3. **E2E Tests (with SMQ)** - Full SeaweedFS + MQ broker stack
+3. **E2E Tests (with SMQ)** - Full Hanzo + MQ broker stack
 4. **Client Compatibility (with SMQ)** - Tests different Kafka clients against real backend
 5. **Consumer Group Tests (with SMQ)** - Tests consumer group persistence
 6. **SMQ Integration Tests** - Dedicated SMQ-specific functionality tests
@@ -74,9 +74,9 @@ If you're having broker startup issues:
 
 When `SEAWEEDFS_MASTERS` is available, tests exercise:
 
-- **Real Message Persistence** - Messages stored in SeaweedFS volumes  
-- **Offset Persistence** - Consumer group offsets stored in SeaweedFS filer  
-- **Topic Persistence** - Topic metadata persisted in SeaweedFS filer  
+- **Real Message Persistence** - Messages stored in Hanzo volumes  
+- **Offset Persistence** - Consumer group offsets stored in Hanzo filer  
+- **Topic Persistence** - Topic metadata persisted in Hanzo filer  
 - **Consumer Group Coordination** - Distributed coordinator assignment  
 - **Cross-Client Compatibility** - Sarama, kafka-go with real backend  
 - **Broker Discovery** - Gateway discovers MQ brokers via masters  
@@ -106,14 +106,14 @@ Gateway creation includes timeout protection to prevent CI hanging:
 ## Debugging Failed Tests
 
 ### CI Logs to Check
-1. **"SeaweedFS master is up"** - Master started successfully
-2. **"SeaweedFS filer is up"** - Filer ready  
-3. **"SeaweedFS MQ broker is up"** - Broker started successfully
+1. **"Hanzo master is up"** - Master started successfully
+2. **"Hanzo filer is up"** - Filer ready  
+3. **"Hanzo MQ broker is up"** - Broker started successfully
 4. **Broker/Server logs** - Shown on broker startup failure
 
 ### Local Debugging
 1. Run `./scripts/test-broker-startup.sh` to test broker startup
-2. Check logs at `/tmp/weed-*.log` 
+2. Check logs at `/tmp/s3-*.log` 
 3. Test individual components:
    ```bash
    # Test master
@@ -135,22 +135,22 @@ Gateway creation includes timeout protection to prevent CI hanging:
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Kafka Client  │───▶│  Kafka Gateway  │───▶│ SeaweedMQ Broker│
+│   Kafka Client  │───▶│  Kafka Gateway  │───▶│ HanzoMQ Broker│
 │   (Sarama,      │    │   (Protocol     │    │   (Message      │
 │    kafka-go)    │    │    Handler)     │    │   Persistence)  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                                 │                      │
                                 ▼                      ▼
                        ┌─────────────────┐    ┌─────────────────┐
-                       │ SeaweedFS Filer │    │ SeaweedFS Master│
+                       │ Hanzo Filer │    │ Hanzo Master│
                        │ (Offset Storage)│    │ (Coordination)  │
                        └─────────────────┘    └─────────────────┘
                                 │                      │
                                 ▼                      ▼  
                        ┌─────────────────────────────────────────┐
-                       │        SeaweedFS Volumes                │
+                       │        Hanzo Volumes                │
                        │      (Message Storage)                  │
                        └─────────────────────────────────────────┘
 ```
 
-This architecture ensures full integration testing of the entire Kafka → SeaweedFS message path.
+This architecture ensures full integration testing of the entire Kafka → Hanzo message path.

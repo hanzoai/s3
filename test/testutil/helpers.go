@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const SeaweedMiniStartupTimeout = 45 * time.Second
+const HanzoMiniStartupTimeout = 45 * time.Second
 
 func HasDocker() bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

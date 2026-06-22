@@ -36,39 +36,39 @@ type telemetryData struct {
 func NewPrometheusStorage() *PrometheusStorage {
 	return &PrometheusStorage{
 		totalClusters: promauto.NewGauge(prometheus.GaugeOpts{
-			Name: "seaweedfs_telemetry_total_clusters",
-			Help: "Total number of unique SeaweedFS clusters (last 30 days)",
+			Name: "hanzo_telemetry_total_clusters",
+			Help: "Total number of unique Hanzo clusters (last 30 days)",
 		}),
 		activeClusters: promauto.NewGauge(prometheus.GaugeOpts{
-			Name: "seaweedfs_telemetry_active_clusters",
-			Help: "Number of active SeaweedFS clusters (last 7 days)",
+			Name: "hanzo_telemetry_active_clusters",
+			Help: "Number of active Hanzo clusters (last 7 days)",
 		}),
 		volumeServerCount: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "seaweedfs_telemetry_volume_servers",
+			Name: "hanzo_telemetry_volume_servers",
 			Help: "Number of volume servers per cluster",
 		}, []string{"cluster_id", "version", "os"}),
 		totalDiskBytes: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "seaweedfs_telemetry_disk_bytes",
+			Name: "hanzo_telemetry_disk_bytes",
 			Help: "Total disk usage in bytes per cluster",
 		}, []string{"cluster_id", "version", "os"}),
 		totalVolumeCount: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "seaweedfs_telemetry_volume_count",
+			Name: "hanzo_telemetry_volume_count",
 			Help: "Total number of volumes per cluster",
 		}, []string{"cluster_id", "version", "os"}),
 		filerCount: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "seaweedfs_telemetry_filer_count",
+			Name: "hanzo_telemetry_filer_count",
 			Help: "Number of filer servers per cluster",
 		}, []string{"cluster_id", "version", "os"}),
 		brokerCount: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "seaweedfs_telemetry_broker_count",
+			Name: "hanzo_telemetry_broker_count",
 			Help: "Number of broker servers per cluster",
 		}, []string{"cluster_id", "version", "os"}),
 		clusterInfo: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "seaweedfs_telemetry_cluster_info",
+			Name: "hanzo_telemetry_cluster_info",
 			Help: "Cluster information (always 1, labels contain metadata)",
 		}, []string{"cluster_id", "version", "os"}),
 		telemetryReceived: promauto.NewCounter(prometheus.CounterOpts{
-			Name: "seaweedfs_telemetry_reports_received_total",
+			Name: "hanzo_telemetry_reports_received_total",
 			Help: "Total number of telemetry reports received",
 		}),
 		instances: make(map[string]*telemetryData),

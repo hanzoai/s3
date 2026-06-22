@@ -9,7 +9,7 @@ import (
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/hanzoai/s3/test/volume_server/framework"
 	"github.com/hanzoai/s3/test/volume_server/matrix"
-	"github.com/hanzoai/s3/weed/security"
+	"github.com/hanzoai/s3/s3/security"
 )
 
 func TestJWTAuthForWriteAndRead(t *testing.T) {
@@ -404,7 +404,7 @@ func TestJWTTokenSourcePrecedenceQueryOverCookie(t *testing.T) {
 
 func mustGenExpiredToken(t testing.TB, key []byte, fid string) string {
 	t.Helper()
-	claims := security.SeaweedFileIdClaims{
+	claims := security.HanzoFileIdClaims{
 		Fid: fid,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-1 * time.Minute)),

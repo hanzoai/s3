@@ -2,7 +2,7 @@
 # so arm64/arm/386 targets skip QEMU emulation of the whole compile.
 FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
 RUN apk add git g++ fuse
-RUN mkdir -p /go/src/github.com/seaweedfs/
+RUN mkdir -p /go/src/github.com/hanzo/
 ARG BRANCH=${BRANCH:-master}
 # Clone with full history and all tags to ensure all commits are available
 RUN git clone --no-single-branch --tags https://github.com/hanzoai/s3 /go/src/github.com/hanzoai/s3
@@ -15,26 +15,26 @@ RUN cd /go/src/github.com/hanzoai/s3 && \
      (echo "ERROR: Branch/commit $BRANCH not found in repository" && \
       echo "Available branches:" && git branch -a && exit 1))
 ARG TARGETOS TARGETARCH TARGETVARIANT
-RUN cd /go/src/github.com/hanzoai/s3/weed \
-  && export LDFLAGS="-X github.com/hanzoai/s3/weed/util/version.COMMIT=$(git rev-parse --short HEAD)" \
+RUN cd /go/src/github.com/hanzoai/s3/s3 \
+  && export LDFLAGS="-X github.com/hanzoai/s3/s3/util/version.COMMIT=$(git rev-parse --short HEAD)" \
   && export GOOS=$TARGETOS GOARCH=$TARGETARCH \
   && case "$TARGETARCH" in arm) export GOARM="${TARGETVARIANT#v}";; esac \
-  && CGO_ENABLED=0 go build -tags "$TAGS" -ldflags "-extldflags -static ${LDFLAGS}" -o /go/bin/weed .
+  && CGO_ENABLED=0 go build -tags "$TAGS" -ldflags "-extldflags -static ${LDFLAGS}" -o /go/bin/s3 .
 
 # Rust volume server: use pre-built binary from CI when available (placed in
-# weed-volume-prebuilt/ by the build-rust-binaries job), otherwise compile
+# s3-volume-prebuilt/ by the build-rust-binaries job), otherwise compile
 # from source.  Pre-building avoids a multi-hour QEMU-emulated cargo build
 # for non-native architectures.
 FROM alpine:3.23 as rust_builder
 ARG TARGETARCH
 ARG TAGS
-COPY weed-volume-prebuilt/ /prebuilt/
-COPY --from=builder /go/src/github.com/hanzoai/s3/seaweed-volume /build/seaweed-volume
-COPY --from=builder /go/src/github.com/hanzoai/s3/weed /build/weed
-WORKDIR /build/seaweed-volume
-RUN if [ -f "/prebuilt/weed-volume-${TARGETARCH}" ]; then \
+COPY s3-volume-prebuilt/ /prebuilt/
+COPY --from=builder /go/src/github.com/hanzoai/s3/hanzo-volume /build/hanzo-volume
+COPY --from=builder /go/src/github.com/hanzoai/s3/s3 /build/s3
+WORKDIR /build/hanzo-volume
+RUN if [ -f "/prebuilt/s3-volume-${TARGETARCH}" ]; then \
       echo "Using pre-built Rust binary for ${TARGETARCH}" && \
-      cp "/prebuilt/weed-volume-${TARGETARCH}" /weed-volume; \
+      cp "/prebuilt/s3-volume-${TARGETARCH}" /s3-volume; \
     elif [ "$TARGETARCH" = "amd64" ] || [ "$TARGETARCH" = "arm64" ]; then \
       apk add --no-cache musl-dev openssl-dev protobuf-dev git rust cargo; \
       if [ "$TAGS" = "5BytesOffset" ]; then \
@@ -42,23 +42,23 @@ RUN if [ -f "/prebuilt/weed-volume-${TARGETARCH}" ]; then \
       else \
         cargo build --release --no-default-features; \
       fi && \
-      cp target/release/weed-volume /weed-volume; \
+      cp target/release/s3-volume /s3-volume; \
     else \
       echo "Skipping Rust build for $TARGETARCH (unsupported)" && \
-      touch /weed-volume; \
+      touch /s3-volume; \
     fi
 # Pre-built binaries arrive via GitHub Actions artifacts, which drop the
 # executable bit, so the copied file is 0644 and exec fails with "Permission
 # denied". Restore it (no-op for the empty placeholder, which stays size 0).
-RUN chmod 0755 /weed-volume
+RUN chmod 0755 /s3-volume
 
 FROM alpine AS final
 LABEL author="Chris Lu"
-COPY --from=builder /go/bin/weed /usr/bin/
+COPY --from=builder /go/bin/s3 /usr/bin/
 # Copy Rust volume server binary (real binary on amd64/arm64, empty placeholder on other platforms)
-COPY --from=rust_builder /weed-volume /usr/bin/weed-volume
-RUN mkdir -p /etc/seaweedfs
-COPY --from=builder /go/src/github.com/hanzoai/s3/docker/filer.toml /etc/seaweedfs/filer.toml
+COPY --from=rust_builder /s3-volume /usr/bin/s3-volume
+RUN mkdir -p /etc/hanzo
+COPY --from=builder /go/src/github.com/hanzoai/s3/docker/filer.toml /etc/hanzo/filer.toml
 COPY --from=builder /go/src/github.com/hanzoai/s3/docker/entrypoint.sh /entrypoint.sh
 
 # FIPS 140-3 mode is ON by default (Go 1.24+)
@@ -67,8 +67,8 @@ COPY --from=builder /go/src/github.com/hanzoai/s3/docker/entrypoint.sh /entrypoi
 # Install dependencies and create non-root user
 RUN apk upgrade --no-cache && \
     apk add --no-cache fuse curl su-exec libgcc libcrypto3 libssl3 && \
-    addgroup -g 1000 seaweed && \
-    adduser -D -u 1000 -G seaweed seaweed
+    addgroup -g 1000 hanzo && \
+    adduser -D -u 1000 -G hanzo hanzo
 
 # volume server gprc port
 EXPOSE 18080
@@ -87,10 +87,10 @@ EXPOSE 8333
 # webdav server http port
 EXPOSE 7333
 
-# Create data directory and set proper ownership for seaweed user
+# Create data directory and set proper ownership for hanzo user
 RUN mkdir -p /data/filerldb2 && \
-    chown -R seaweed:seaweed /data && \
-    chown -R seaweed:seaweed /etc/seaweedfs && \
+    chown -R hanzo:hanzo /data && \
+    chown -R hanzo:hanzo /etc/hanzo && \
     chmod 755 /entrypoint.sh
 
 VOLUME /data

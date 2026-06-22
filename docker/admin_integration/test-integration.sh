@@ -2,7 +2,7 @@
 
 set -e
 
-echo "🧪 Testing SeaweedFS Admin-Worker Integration"
+echo "🧪 Testing Hanzo Admin-Worker Integration"
 echo "============================================="
 
 # Colors for output
@@ -65,7 +65,7 @@ echo "  make logs     # View logs"
 echo "  make stop     # Stop all services"
 echo ""
 echo -e "${BLUE}Key features verified:${NC}"
-echo "  ✅ Official SeaweedFS images are used"
+echo "  ✅ Official Hanzo images are used"
 echo "  ✅ Worker working directories are configured"
 echo "  ✅ Admin-worker communication on correct ports"
 echo "  ✅ Task-specific directories will be created"

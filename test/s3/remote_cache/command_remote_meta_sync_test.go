@@ -17,7 +17,7 @@ func TestRemoteMetaSyncBasic(t *testing.T) {
 	// Sync metadata from remote
 	t.Log("Syncing metadata from remote...")
 	cmd := fmt.Sprintf("remote.meta.sync -dir=/buckets/%s", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.meta.sync failed")
 	t.Logf("Meta sync output: %s", output)
 
@@ -34,7 +34,7 @@ func TestRemoteMetaSyncNewFiles(t *testing.T) {
 
 	// Copy to remote
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -include=%s", testBucket, testKey)
-	_, err := runWeedShellWithOutput(t, cmd)
+	_, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to copy file to remote")
 
 	// Uncache to remove local chunks
@@ -44,7 +44,7 @@ func TestRemoteMetaSyncNewFiles(t *testing.T) {
 	// Sync metadata - should detect the file
 	t.Log("Syncing metadata to detect new file...")
 	cmd = fmt.Sprintf("remote.meta.sync -dir=/buckets/%s", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.meta.sync failed")
 	t.Logf("Meta sync output: %s", output)
 
@@ -59,7 +59,7 @@ func TestRemoteMetaSyncSubdirectory(t *testing.T) {
 	// Sync just the mounted directory
 	t.Log("Syncing subdirectory metadata...")
 	cmd := fmt.Sprintf("remote.meta.sync -dir=/buckets/%s", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.meta.sync subdirectory failed")
 	t.Logf("Subdirectory sync output: %s", output)
 }
@@ -73,7 +73,7 @@ func TestRemoteMetaSyncNotMounted(t *testing.T) {
 
 	t.Log("Testing sync on non-mounted directory...")
 	cmd := fmt.Sprintf("remote.meta.sync -dir=%s", notMountedDir)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 
 	// Should fail or show error
 	hasError := err != nil || strings.Contains(strings.ToLower(output), "not mounted") || strings.Contains(strings.ToLower(output), "error")
@@ -89,7 +89,7 @@ func TestRemoteMetaSyncRepeated(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		t.Logf("Running sync iteration %d...", i+1)
 		cmd := fmt.Sprintf("remote.meta.sync -dir=/buckets/%s", testBucket)
-		output, err := runWeedShellWithOutput(t, cmd)
+		output, err := runS3ShellWithOutput(t, cmd)
 		require.NoError(t, err, "remote.meta.sync iteration %d failed", i+1)
 		t.Logf("Iteration %d output: %s", i+1, output)
 		time.Sleep(500 * time.Millisecond)
@@ -105,12 +105,12 @@ func TestRemoteMetaSyncAfterRemoteChange(t *testing.T) {
 	// Create and sync file
 	originalData := createTestFile(t, testKey, 1024)
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -include=%s", testBucket, testKey)
-	_, err := runWeedShellWithOutput(t, cmd)
+	_, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to copy file to remote")
 
 	// First sync
 	cmd = fmt.Sprintf("remote.meta.sync -dir=/buckets/%s", testBucket)
-	_, err = runWeedShellWithOutput(t, cmd)
+	_, err = runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "first sync failed")
 
 	// Simulate remote change by updating the file and copying again
@@ -119,13 +119,13 @@ func TestRemoteMetaSyncAfterRemoteChange(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	cmd = fmt.Sprintf("remote.copy.local -dir=/buckets/%s -include=%s -forceUpdate=true", testBucket, testKey)
-	_, err = runWeedShellWithOutput(t, cmd)
+	_, err = runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to update remote file")
 
 	// Sync again - should detect the change
 	t.Log("Syncing after remote change...")
 	cmd = fmt.Sprintf("remote.meta.sync -dir=/buckets/%s", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "sync after change failed")
 	t.Logf("Sync after change output: %s", output)
 
@@ -141,8 +141,8 @@ func TestRemoteMetaSyncEmptyRemote(t *testing.T) {
 	testDir := fmt.Sprintf("/buckets/testempty%d", time.Now().UnixNano()%1000000)
 
 	// Mount the remote bucket to new directory
-	cmd := fmt.Sprintf("remote.mount -dir=%s -remote=seaweedremote/remotesourcebucket -nonempty=true", testDir)
-	_, err := runWeedShellWithOutput(t, cmd)
+	cmd := fmt.Sprintf("remote.mount -dir=%s -remote=hanzoremote/remotesourcebucket -nonempty=true", testDir)
+	_, err := runS3ShellWithOutput(t, cmd)
 	if err != nil {
 		t.Skip("Could not create test mount for empty remote test")
 	}
@@ -150,13 +150,13 @@ func TestRemoteMetaSyncEmptyRemote(t *testing.T) {
 	// Sync metadata
 	t.Log("Syncing metadata from potentially empty remote...")
 	cmd = fmt.Sprintf("remote.meta.sync -dir=%s", testDir)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "sync on empty remote failed")
 	t.Logf("Empty remote sync output: %s", output)
 
 	// Clean up
 	cmd = fmt.Sprintf("remote.unmount -dir=%s", testDir)
-	_, err = runWeedShellWithOutput(t, cmd)
+	_, err = runS3ShellWithOutput(t, cmd)
 	if err != nil {
 		t.Logf("Warning: failed to unmount test directory: %v", err)
 	}

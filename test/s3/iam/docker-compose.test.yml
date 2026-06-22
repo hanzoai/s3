@@ -1,9 +1,9 @@
-# Docker Compose for SeaweedFS S3 IAM Integration Tests
+# Docker Compose for Hanzo S3 IAM Integration Tests
 services:
-  # SeaweedFS Master
-  seaweedfs-master:
-    image: chrislusf/seaweedfs:latest
-    container_name: seaweedfs-master-test
+  # Hanzo Master
+  hanzo-master:
+    image: chrislusf/hanzo:latest
+    container_name: hanzo-master-test
     command: master -mdir=/data -defaultReplication=000 -port=9333
     ports:
       - "9333:9333"
@@ -15,19 +15,19 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - seaweedfs-test
+      - hanzo-test
 
-  # SeaweedFS Volume  
-  seaweedfs-volume:
-    image: chrislusf/seaweedfs:latest
-    container_name: seaweedfs-volume-test
-    command: volume -dir=/data -port=8083 -master=seaweedfs-master:9333
+  # Hanzo Volume  
+  hanzo-volume:
+    image: chrislusf/hanzo:latest
+    container_name: hanzo-volume-test
+    command: volume -dir=/data -port=8083 -master=hanzo-master:9333
     ports:
       - "8083:8083"
     volumes:
       - volume-data:/data
     depends_on:
-      seaweedfs-master:
+      hanzo-master:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/status"]
@@ -35,21 +35,21 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - seaweedfs-test
+      - hanzo-test
 
-  # SeaweedFS Filer
-  seaweedfs-filer:
-    image: chrislusf/seaweedfs:latest
-    container_name: seaweedfs-filer-test
-    command: filer -port=8888 -master=seaweedfs-master:9333 -defaultStoreDir=/data
+  # Hanzo Filer
+  hanzo-filer:
+    image: chrislusf/hanzo:latest
+    container_name: hanzo-filer-test
+    command: filer -port=8888 -master=hanzo-master:9333 -defaultStoreDir=/data
     ports:
       - "8888:8888"
     volumes:
       - filer-data:/data
     depends_on:
-      seaweedfs-master:
+      hanzo-master:
         condition: service_healthy
-      seaweedfs-volume:
+      hanzo-volume:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8888/status"]
@@ -57,19 +57,19 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - seaweedfs-test
+      - hanzo-test
 
-  # SeaweedFS S3 API
-  seaweedfs-s3:
-    image: chrislusf/seaweedfs:latest
-    container_name: seaweedfs-s3-test
-    command: s3 -port=8333 -filer=seaweedfs-filer:8888 -config=/config/test_config.json
+  # Hanzo S3 API
+  hanzo-s3:
+    image: chrislusf/hanzo:latest
+    container_name: hanzo-s3-test
+    command: s3 -port=8333 -filer=hanzo-filer:8888 -config=/config/test_config.json
     ports:
       - "8333:8333"
     volumes:
       - ./test_config.json:/config/test_config.json:ro
     depends_on:
-      seaweedfs-filer:
+      hanzo-filer:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8333/"]
@@ -77,16 +77,16 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - seaweedfs-test
+      - hanzo-test
 
   # Test Runner
   integration-tests:
     build:
       context: ../../../
       dockerfile: test/s3/iam/Dockerfile.s3
-    container_name: seaweedfs-s3-iam-tests
+    container_name: hanzo-s3-iam-tests
     environment:
-      - WEED_BINARY=weed
+      - WEED_BINARY=s3
       - S3_PORT=8333
       - FILER_PORT=8888
       - MASTER_PORT=9333
@@ -94,13 +94,13 @@ services:
       - TEST_TIMEOUT=30m
       - LOG_LEVEL=2
     depends_on:
-      seaweedfs-s3:
+      hanzo-s3:
         condition: service_healthy
     volumes:
       - .:/app/test/s3/iam
       - test-results:/app/test-results
     networks:
-      - seaweedfs-test
+      - hanzo-test
     command: ["make", "test"]
 
   # Optional: Mock LDAP Server for LDAP testing
@@ -122,7 +122,7 @@ services:
       - ldap-data:/var/lib/ldap
       - ldap-config:/etc/ldap/slapd.d
     networks:
-      - seaweedfs-test
+      - hanzo-test
 
   # Optional: LDAP Admin UI
   ldap-admin:
@@ -136,7 +136,7 @@ services:
     depends_on:
       - ldap-server
     networks:
-      - seaweedfs-test
+      - hanzo-test
 
 volumes:
   master-data:
@@ -153,7 +153,7 @@ volumes:
     driver: local
 
 networks:
-  seaweedfs-test:
+  hanzo-test:
     driver: bridge
     ipam:
       config:

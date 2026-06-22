@@ -1,20 +1,20 @@
-# Shared config + helpers for the SeaweedFS FUSE load/durability test.
+# Shared config + helpers for the Hanzo FUSE load/durability test.
 # IMPORTANT: this harness manages ONLY its own processes via pidfiles and its own
-# (non-default) ports. It never runs `pkill weed`, so any other SeaweedFS instances
+# (non-default) ports. It never runs `pkill s3`, so any other Hanzo instances
 # on the box (e.g. default ports 9333/8888) are safe.
 #
 # Config via env:
 #   SEAWEED_BENCH_WORK  runtime dir for cluster/mount/logs (default /tmp/...; kept out of the repo)
-#   WEED                path to the weed binary (default: from $PATH)
+#   WEED                path to the s3 binary (default: from $PATH)
 #   MYSQL_BASE          MySQL install prefix (default macOS Homebrew; on Linux e.g. /usr)
 
 set -u
 
-WORK="${SEAWEED_BENCH_WORK:-/tmp/seaweedfs_fuse_db_bench}"
-WEED="${WEED:-$(command -v weed || echo weed)}"
+WORK="${SEAWEED_BENCH_WORK:-/tmp/hanzo_fuse_db_bench}"
+WEED="${WEED:-$(command -v s3 || echo s3)}"
 RUN=$WORK
-CLUSTER=$RUN/cluster        # weed server -dir (master+volume+filer state) -- local disk
-MNT=$RUN/mnt                # FUSE mount point (the SeaweedFS filesystem under test)
+CLUSTER=$RUN/cluster        # s3 server -dir (master+volume+filer state) -- local disk
+MNT=$RUN/mnt                # FUSE mount point (the Hanzo filesystem under test)
 LOGS=$RUN/logs
 LOCAL=$RUN/local            # non-FUSE scratch: pidfiles, mysql socket, references
 PIDS=$LOCAL/pids
@@ -57,7 +57,7 @@ cluster_start() {
   if ! wait_port_free "$MASTER_PORT" 30; then
     say "ERROR master port $MASTER_PORT still busy (pid $(lsof -ti TCP:$MASTER_PORT|tr '\n' ' ')); not starting"; return 1
   fi
-  say "starting weed server (master:$MASTER_PORT volume:$VOLUME_PORT filer:$FILER_PORT)"
+  say "starting s3 server (master:$MASTER_PORT volume:$VOLUME_PORT filer:$FILER_PORT)"
   "$WEED" server -ip=127.0.0.1 -dir="$CLUSTER" \
     -master.port=$MASTER_PORT -volume.port=$VOLUME_PORT \
     -filer -filer.port=$FILER_PORT \

@@ -1,8 +1,8 @@
 package example
 
 import (
-	"github.com/hanzoai/s3/weed/mq/schema"
-	"github.com/hanzoai/s3/weed/pb/schema_pb"
+	"github.com/hanzoai/s3/s3/mq/schema"
+	"github.com/hanzoai/s3/s3/pb/schema_pb"
 )
 
 type MyRecord struct {

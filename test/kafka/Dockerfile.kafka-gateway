@@ -16,9 +16,9 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the weed binaries with Kafka gateway support
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o weed ./weed
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o weed-sql ./cmd/weed-sql
+# Build the s3 binaries with Kafka gateway support
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o s3 ./s3
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o s3-sql ./cmd/s3-sql
 
 # Final stage
 FROM alpine:latest
@@ -27,25 +27,25 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates wget curl netcat-openbsd sqlite
 
 # Create non-root user
-RUN addgroup -g 1000 seaweedfs && \
-    adduser -D -s /bin/sh -u 1000 -G seaweedfs seaweedfs
+RUN addgroup -g 1000 hanzo && \
+    adduser -D -s /bin/sh -u 1000 -G hanzo hanzo
 
 # Set working directory
 WORKDIR /usr/bin
 
 # Copy binaries from builder
-COPY --from=builder /app/weed .
-COPY --from=builder /app/weed-sql .
+COPY --from=builder /app/s3 .
+COPY --from=builder /app/s3-sql .
 
 # Create data directory
-RUN mkdir -p /data && chown seaweedfs:seaweedfs /data
+RUN mkdir -p /data && chown hanzo:hanzo /data
 
 # Copy startup script
 COPY test/kafka/scripts/kafka-gateway-start.sh /usr/bin/kafka-gateway-start.sh
 RUN chmod +x /usr/bin/kafka-gateway-start.sh
 
 # Switch to non-root user
-USER seaweedfs
+USER hanzo
 
 # Expose Kafka protocol port and pprof port
 EXPOSE 9093 10093

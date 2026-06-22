@@ -22,7 +22,7 @@ import (
 // -encryptVolumeData=true for the test to verify encryption is working.
 //
 // To run this test:
-// 1. Start SeaweedFS: weed server -s3 -s3.encryptVolumeData=true
+// 1. Start Hanzo: s3 server -s3 -s3.encryptVolumeData=true
 // 2. Run: go test -v -run TestS3VolumeEncryptionRoundtrip
 func TestS3VolumeEncryptionRoundtrip(t *testing.T) {
 	svc := getS3Client(t)
@@ -53,7 +53,7 @@ func TestS3VolumeEncryptionRoundtrip(t *testing.T) {
 		{
 			name:    "medium file",
 			key:     "medium.txt",
-			content: strings.Repeat("SeaweedFS volume encryption test content. ", 1000),
+			content: strings.Repeat("Hanzo volume encryption test content. ", 1000),
 		},
 		{
 			name: "binary content",

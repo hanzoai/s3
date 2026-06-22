@@ -1,6 +1,6 @@
 # S3 Server-Side Encryption (SSE) Integration Tests
 
-This directory contains comprehensive integration tests for SeaweedFS S3 API Server-Side Encryption functionality. These tests validate the complete end-to-end encryption/decryption pipeline from S3 API requests through filer metadata storage.
+This directory contains comprehensive integration tests for Hanzo S3 API Server-Side Encryption functionality. These tests validate the complete end-to-end encryption/decryption pipeline from S3 API requests through filer metadata storage.
 
 ## Overview
 
@@ -22,7 +22,7 @@ See [README_KMS.md](README_KMS.md) for detailed KMS integration documentation.
 
 ## Why Integration Tests Matter
 
-These integration tests were created to address a **critical gap in test coverage** that previously existed. While the SeaweedFS codebase had comprehensive unit tests for SSE components, it lacked integration tests that validated the complete request flow:
+These integration tests were created to address a **critical gap in test coverage** that previously existed. While the Hanzo codebase had comprehensive unit tests for SSE components, it lacked integration tests that validated the complete request flow:
 
 ```
 Client Request → S3 API → Filer Storage → Metadata Persistence → Retrieval → Decryption
@@ -73,9 +73,9 @@ A critical bug was discovered where:
 
 ### Prerequisites
 
-1. **Build SeaweedFS**: Ensure the `weed` binary is built and available in PATH
+1. **Build Hanzo**: Ensure the `s3` binary is built and available in PATH
    ```bash
-   cd /path/to/seaweedfs
+   cd /path/to/hanzo
    make
    ```
 
@@ -124,7 +124,7 @@ make clean-kms             # Clean up KMS environment
 ### Development Testing
 
 ```bash
-make manual-start   # Start SeaweedFS for manual testing
+make manual-start   # Start Hanzo for manual testing
 # ... run manual tests ...
 make manual-stop    # Stop and cleanup
 ```
@@ -150,7 +150,7 @@ S3_PORT=8444 FILER_PORT=8889 make test
 ### Test Environment
 
 Each test run:
-1. Starts a complete SeaweedFS cluster (master, volume, filer, s3)
+1. Starts a complete Hanzo cluster (master, volume, filer, s3)
 2. Configures KMS support for SSE-KMS tests
 3. Creates temporary buckets with unique names
 4. Runs tests with real HTTP requests
@@ -210,7 +210,7 @@ make debug-status   # Show process and port status
 
 ### Manual Testing
 ```bash
-make manual-start   # Start SeaweedFS
+make manual-start   # Start Hanzo
 # Test with S3 clients, curl, etc.
 make manual-stop    # Cleanup
 ```
@@ -222,7 +222,7 @@ These integration tests provide:
 1. **End-to-End Validation**: Complete request pipeline testing
 2. **Metadata Persistence**: Validates filer storage/retrieval of encryption metadata
 3. **Real Network Communication**: Uses actual HTTP requests and responses
-4. **Production-Like Environment**: Full SeaweedFS cluster with all components
+4. **Production-Like Environment**: Full Hanzo cluster with all components
 5. **Regression Protection**: Prevents critical integration bugs
 6. **Performance Baselines**: Benchmarking for performance monitoring
 
@@ -239,7 +239,7 @@ make stress         # Stress testing for stability validation
 | Aspect | Unit Tests | Integration Tests |
 |--------|------------|------------------|
 | **Scope** | Individual functions | Complete request pipeline |
-| **Dependencies** | Mocked/simulated | Real SeaweedFS cluster |
+| **Dependencies** | Mocked/simulated | Real Hanzo cluster |
 | **Network** | None | Real HTTP requests |
 | **Storage** | In-memory | Real filer database |
 | **Metadata** | Manual simulation | Actual storage/retrieval |
@@ -248,6 +248,6 @@ make stress         # Stress testing for stability validation
 
 ## Conclusion
 
-These integration tests ensure that SeaweedFS SSE functionality works correctly in production-like environments. They complement the existing unit tests by validating that all components work together properly, providing confidence that encryption/decryption operations will succeed for real users.
+These integration tests ensure that Hanzo SSE functionality works correctly in production-like environments. They complement the existing unit tests by validating that all components work together properly, providing confidence that encryption/decryption operations will succeed for real users.
 
 **Most importantly**, these tests would have immediately caught the critical filer metadata storage bug that was previously undetected, demonstrating the crucial importance of integration testing for distributed systems.

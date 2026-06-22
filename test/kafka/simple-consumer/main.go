@@ -14,7 +14,7 @@ import (
 
 func main() {
 	// Configuration
-	brokerAddress := "localhost:9093" // Kafka gateway port (not SeaweedMQ broker port 17777)
+	brokerAddress := "localhost:9093" // Kafka gateway port (not HanzoMQ broker port 17777)
 	topicName := "_raw_messages"      // Topic with "_" prefix - should skip schema validation
 	groupID := "raw-message-consumer"
 

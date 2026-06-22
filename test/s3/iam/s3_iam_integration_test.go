@@ -18,7 +18,7 @@ const (
 	testRegion     = "us-west-2"
 	testBucket     = "test-iam-bucket"
 	testObjectKey  = "test-object.txt"
-	testObjectData = "Hello, SeaweedFS IAM Integration!"
+	testObjectData = "Hello, Hanzo IAM Integration!"
 )
 
 // TestS3IAMAuthentication tests S3 API authentication with IAM JWT tokens
@@ -371,7 +371,7 @@ func TestS3IAMBucketPolicyIntegration(t *testing.T) {
 		//
 		// TODO: Uncomment this test once the action mapping is refactored to use
 		// specific S3 action strings throughout the S3 API handlers.
-		// See: weed/s3api/s3api_bucket_policy_engine.go lines 135-146
+		// See: s3/s3api/s3api_bucket_policy_engine.go lines 135-146
 		//
 		// _, err = adminClient.DeleteObject(&s3.DeleteObjectInput{
 		// 	Bucket: aws.String(bucketName),
@@ -447,7 +447,7 @@ func TestS3IAMPresignedURLIntegration(t *testing.T) {
 		// - Access Key ID and Secret Access Key for signing
 		// - Query parameter-based authentication in the URL
 		//
-		// SeaweedFS JWT authentication uses:
+		// Hanzo JWT authentication uses:
 		// - Bearer tokens in the Authorization header
 		// - Stateless JWT validation without AWS-style signing
 		//
