@@ -197,7 +197,7 @@ func TestPresignedPutWithChecksumSHA256(t *testing.T) {
 	defer cleanupBucket(t, client, bucket)
 
 	key := "presigned-sha256.txt"
-	body := []byte("hello seaweedfs checksum")
+	body := []byte("hello hanzo checksum")
 	sha256Sum := sha256.Sum256(body)
 	expected := base64.StdEncoding.EncodeToString(sha256Sum[:])
 

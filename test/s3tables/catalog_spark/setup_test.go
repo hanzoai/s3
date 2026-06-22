@@ -53,7 +53,7 @@ func clearMiniProcess(cmd *exec.Cmd) {
 type TestEnvironment struct {
 	t                *testing.T
 	dockerAvailable  bool
-	seaweedfsDataDir string
+	hanzoDataDir string
 	sparkConfigDir   string
 	masterPort       int
 	filerPort        int
@@ -79,13 +79,13 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 	return env
 }
 
-func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
+func (env *TestEnvironment) StartHanzo(t *testing.T) {
 	t.Helper()
 
 	stopPreviousMini()
 
 	var err error
-	env.seaweedfsDataDir, err = os.MkdirTemp("", "seaweed-spark-test-")
+	env.hanzoDataDir, err = os.MkdirTemp("", "hanzo-spark-test-")
 	if err != nil {
 		t.Fatalf("failed to create temp directory: %v", err)
 	}
@@ -98,14 +98,14 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 
 	bindIP := testutil.FindBindIP()
 
-	iamConfigPath, err := testutil.WriteIAMConfig(env.seaweedfsDataDir, env.accessKey, env.secretKey)
+	iamConfigPath, err := testutil.WriteIAMConfig(env.hanzoDataDir, env.accessKey, env.secretKey)
 	if err != nil {
 		t.Fatalf("failed to create IAM config: %v", err)
 	}
 
-	// Start SeaweedFS using weed mini (all-in-one including Iceberg REST)
+	// Start Hanzo using s3 mini (all-in-one including Iceberg REST)
 	env.masterProcess = exec.Command(
-		"weed", "mini",
+		"s3", "mini",
 		"-ip", bindIP,
 		"-ip.bind", "0.0.0.0",
 		"-master.port", fmt.Sprintf("%d", env.masterPort),
@@ -113,7 +113,7 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 		"-s3.port", fmt.Sprintf("%d", env.s3Port),
 		"-s3.port.iceberg", fmt.Sprintf("%d", env.icebergRestPort),
 		"-s3.config", iamConfigPath,
-		"-dir", env.seaweedfsDataDir,
+		"-dir", env.hanzoDataDir,
 	)
 	env.masterProcess.Env = append(os.Environ(),
 		"AWS_ACCESS_KEY_ID="+env.accessKey,
@@ -124,22 +124,22 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 	env.masterProcess.Stdout = os.Stdout
 	env.masterProcess.Stderr = os.Stderr
 	if err := env.masterProcess.Start(); err != nil {
-		t.Fatalf("failed to start weed mini: %v", err)
+		t.Fatalf("failed to start s3 mini: %v", err)
 	}
 	registerMiniProcess(env.masterProcess)
 
 	// Wait for all services to be ready
-	if !testutil.WaitForPort(env.masterPort, testutil.SeaweedMiniStartupTimeout) {
-		t.Fatalf("weed mini failed to start - master port %d not listening", env.masterPort)
+	if !testutil.WaitForPort(env.masterPort, testutil.HanzoMiniStartupTimeout) {
+		t.Fatalf("s3 mini failed to start - master port %d not listening", env.masterPort)
 	}
-	if !testutil.WaitForPort(env.filerPort, testutil.SeaweedMiniStartupTimeout) {
-		t.Fatalf("weed mini failed to start - filer port %d not listening", env.filerPort)
+	if !testutil.WaitForPort(env.filerPort, testutil.HanzoMiniStartupTimeout) {
+		t.Fatalf("s3 mini failed to start - filer port %d not listening", env.filerPort)
 	}
-	if !testutil.WaitForService(fmt.Sprintf("http://127.0.0.1:%d/status", env.s3Port), testutil.SeaweedMiniStartupTimeout) {
-		t.Fatalf("weed mini failed to start - s3 endpoint http://127.0.0.1:%d/status not responding", env.s3Port)
+	if !testutil.WaitForService(fmt.Sprintf("http://127.0.0.1:%d/status", env.s3Port), testutil.HanzoMiniStartupTimeout) {
+		t.Fatalf("s3 mini failed to start - s3 endpoint http://127.0.0.1:%d/status not responding", env.s3Port)
 	}
-	if !testutil.WaitForService(fmt.Sprintf("http://127.0.0.1:%d/v1/config", env.icebergRestPort), testutil.SeaweedMiniStartupTimeout) {
-		t.Fatalf("weed mini failed to start - iceberg rest endpoint http://127.0.0.1:%d/v1/config not responding", env.icebergRestPort)
+	if !testutil.WaitForService(fmt.Sprintf("http://127.0.0.1:%d/v1/config", env.icebergRestPort), testutil.HanzoMiniStartupTimeout) {
+		t.Fatalf("s3 mini failed to start - iceberg rest endpoint http://127.0.0.1:%d/v1/config not responding", env.icebergRestPort)
 	}
 }
 
@@ -160,7 +160,7 @@ func (env *TestEnvironment) writeSparkConfig(t *testing.T, catalogBucket string)
 	sparkConfig := fmt.Sprintf(`
 [spark]
 master = "local"
-app.name = "SeaweedFS Iceberg Test"
+app.name = "Hanzo Iceberg Test"
 
 [storage]
 s3.endpoint = "%s"
@@ -219,7 +219,7 @@ func (env *TestEnvironment) startSparkContainer(t *testing.T, configDir string) 
 func (env *TestEnvironment) Cleanup(t *testing.T) {
 	t.Helper()
 
-	// Kill weed mini process
+	// Kill s3 mini process
 	if env.masterProcess != nil && env.masterProcess.Process != nil {
 		env.masterProcess.Process.Kill()
 		env.masterProcess.Wait()
@@ -234,8 +234,8 @@ func (env *TestEnvironment) Cleanup(t *testing.T) {
 	}
 
 	// Remove temporary directories after processes are stopped
-	if env.seaweedfsDataDir != "" {
-		os.RemoveAll(env.seaweedfsDataDir)
+	if env.hanzoDataDir != "" {
+		os.RemoveAll(env.hanzoDataDir)
 	}
 	if env.sparkConfigDir != "" {
 		os.RemoveAll(env.sparkConfigDir)
@@ -279,7 +279,7 @@ if py4j_glob and py4j_glob[0] not in sys.path:
 from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder
-    .appName("SeaweedFS Iceberg Test")
+    .appName("Hanzo Iceberg Test")
     .config("spark.jars.ivy", ivy_dir)
     .config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.5.2,org.apache.iceberg:iceberg-aws-bundle:1.5.2")
     .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
@@ -329,13 +329,13 @@ func createTableBucket(t *testing.T, env *TestEnvironment, bucketName string) {
 	defer cancel()
 
 	masterGrpcPort := env.masterPort + 10000
-	cmd := exec.CommandContext(ctx, "weed", "shell",
+	cmd := exec.CommandContext(ctx, "s3", "shell",
 		fmt.Sprintf("-master=localhost:%d.%d", env.masterPort, masterGrpcPort),
 	)
 	cmd.Stdin = strings.NewReader(fmt.Sprintf("s3tables.bucket -create -name %s -account 000000000000\nexit\n", bucketName))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("failed to create table bucket %s via weed shell: %v\nOutput: %s", bucketName, err, string(output))
+		t.Fatalf("failed to create table bucket %s via s3 shell: %v\nOutput: %s", bucketName, err, string(output))
 	}
 }
 

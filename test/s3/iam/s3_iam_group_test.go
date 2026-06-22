@@ -430,8 +430,8 @@ func TestIAMGroupDisabledPolicyEnforcement(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
-	if !isSeaweedFSRunning(t) {
-		t.Skip("SeaweedFS is not running at", TestIAMEndpoint)
+	if !isHanzoRunning(t) {
+		t.Skip("Hanzo is not running at", TestIAMEndpoint)
 	}
 
 	framework := NewS3IAMTestFramework(t)
@@ -719,8 +719,8 @@ func TestIAMGroupRawAPI(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
-	if !isSeaweedFSRunning(t) {
-		t.Skip("SeaweedFS is not running at", TestIAMEndpoint)
+	if !isHanzoRunning(t) {
+		t.Skip("Hanzo is not running at", TestIAMEndpoint)
 	}
 
 	framework := NewS3IAMTestFramework(t)

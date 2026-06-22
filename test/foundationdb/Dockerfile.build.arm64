@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile to build SeaweedFS with FoundationDB support for ARM64
+# Multi-stage Dockerfile to build Hanzo with FoundationDB support for ARM64
 FROM --platform=linux/arm64 golang:1.25-bookworm AS builder
 
 ARG FOUNDATIONDB_VERSION=7.4.5
@@ -41,18 +41,18 @@ COPY . .
 # Download Go dependencies
 RUN go mod download
 
-# Build SeaweedFS with FoundationDB support
-RUN echo "🔨 Building SeaweedFS with FoundationDB support for ARM64..." && \
+# Build Hanzo with FoundationDB support
+RUN echo "🔨 Building Hanzo with FoundationDB support for ARM64..." && \
     echo "🔍 Debugging: Checking headers before build..." && \
     find /usr -name "fdb_c.h" -type f 2>/dev/null && \
     ls -la /usr/include/foundationdb/ 2>/dev/null && \
     ls -la /usr/lib/libfdb_c* 2>/dev/null && \
     echo "CGO_CFLAGS: $CGO_CFLAGS" && \
     echo "CGO_LDFLAGS: $CGO_LDFLAGS" && \
-    go build -tags foundationdb -ldflags="-w -s" -o ./weed/weed ./weed && \
-    chmod +x ./weed/weed && \
+    go build -tags foundationdb -ldflags="-w -s" -o ./s3/s3 ./s3 && \
+    chmod +x ./s3/s3 && \
     echo "✅ Build successful!" && \
-    ./weed/weed version
+    ./s3/s3 version
 
 # Runtime stage
 FROM --platform=linux/arm64 debian:bookworm-slim
@@ -68,18 +68,18 @@ COPY --from=builder /usr/lib/libfdb_c* /usr/lib/
 COPY --from=builder /usr/include/foundationdb /usr/include/foundationdb
 RUN ldconfig
 
-# Copy SeaweedFS binary
-COPY --from=builder /build/weed/weed /usr/local/bin/weed
+# Copy Hanzo binary
+COPY --from=builder /build/s3/s3 /usr/local/bin/s3
 
 # Create runtime directories
 RUN mkdir -p /var/fdb/config /data
 
 # Verify binary works
-RUN weed version
+RUN s3 version
 
-# Expose SeaweedFS ports
+# Expose Hanzo ports
 EXPOSE 9333 19333 8888 8333 18888
 
 # Default command
-CMD ["weed", "version"]
+CMD ["s3", "version"]
 

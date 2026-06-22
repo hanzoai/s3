@@ -1,0 +1,31 @@
+{{- include "hanzo.compat" . -}}
+{{- if .Values.allInOne.enabled }}
+{{- if .Values.global.s3.monitoring.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "hanzo.fullname" . }}-all-in-one
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ template "hanzo.name" . }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: all-in-one
+    {{- with .Values.global.s3.monitoring.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  endpoints:
+    {{- if .Values.allInOne.metricsPort }}
+    - interval: 30s
+      port: server-metrics
+      scrapeTimeout: 5s
+    {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ template "hanzo.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: hanzo-all-in-one
+{{- end }}
+{{- end }}

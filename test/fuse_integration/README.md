@@ -1,12 +1,12 @@
-# SeaweedFS FUSE Integration Testing Framework
+# Hanzo FUSE Integration Testing Framework
 
 ## Overview
 
-This directory contains a comprehensive integration testing framework for SeaweedFS FUSE operations. The current SeaweedFS FUSE tests are primarily performance-focused (using FIO) but lack comprehensive functional testing. This framework addresses those gaps.
+This directory contains a comprehensive integration testing framework for Hanzo FUSE operations. The current Hanzo FUSE tests are primarily performance-focused (using FIO) but lack comprehensive functional testing. This framework addresses those gaps.
 
 ## ⚠️ Current Status
 
-**Note**: Due to Go module conflicts between this test framework and the parent SeaweedFS module, the full test suite currently requires manual setup. The framework files are provided as a foundation for comprehensive FUSE testing once the module structure is resolved.
+**Note**: Due to Go module conflicts between this test framework and the parent Hanzo module, the full test suite currently requires manual setup. The framework files are provided as a foundation for comprehensive FUSE testing once the module structure is resolved.
 
 ### Working Components
 - ✅ Framework design and architecture (`framework.go`)
@@ -45,7 +45,7 @@ go test -v simple_test.go
 
 1. **`framework.go`** - Test infrastructure and utilities
    - `FuseTestFramework` - Main test management struct
-   - Automated SeaweedFS cluster setup/teardown
+   - Automated Hanzo cluster setup/teardown
    - FUSE mount/unmount management
    - Helper functions for file operations and assertions
 
@@ -134,7 +134,7 @@ framework.CreateTestFile("test.txt", []byte("content"))
 
 ### Basic Test Run
 ```bash
-# Build SeaweedFS binary
+# Build Hanzo binary
 make
 
 # Run all FUSE tests
@@ -221,7 +221,7 @@ jobs:
     - name: Install FUSE
       run: sudo apt-get install -y fuse
     
-    - name: Build SeaweedFS
+    - name: Build Hanzo
       run: make
     
     - name: Run FUSE Tests
@@ -234,8 +234,8 @@ jobs:
 ```dockerfile
 FROM golang:1.24
 RUN apt-get update && apt-get install -y fuse
-COPY . /seaweedfs
-WORKDIR /seaweedfs
+COPY . /hanzo
+WORKDIR /hanzo
 RUN make
 CMD ["go", "test", "-v", "./test/fuse_integration/..."]
 ```
@@ -256,7 +256,7 @@ CMD ["go", "test", "-v", "./test/fuse_integration/..."]
 ## Benefits
 
 ### 1. **Comprehensive Coverage**
-- Tests all FUSE operations supported by SeaweedFS
+- Tests all FUSE operations supported by Hanzo
 - Covers edge cases and error conditions
 - Validates behavior under concurrent access
 
@@ -272,7 +272,7 @@ CMD ["go", "test", "-v", "./test/fuse_integration/..."]
 
 ### 4. **Real-world Validation**
 - Tests actual FUSE filesystem behavior
-- Validates integration between all SeaweedFS components
+- Validates integration between all Hanzo components
 - Catches issues that unit tests might miss
 
 ## Future Enhancements
@@ -309,7 +309,7 @@ CMD ["go", "test", "-v", "./test/fuse_integration/..."]
    sudo apt-get install fuse  # Ubuntu/Debian
    brew install macfuse       # macOS
    
-   # Build SeaweedFS
+   # Build Hanzo
    make
    ```
 
@@ -324,4 +324,4 @@ CMD ["go", "test", "-v", "./test/fuse_integration/..."]
    - Failed tests include specific error information
    - Debug mode provides verbose logging
 
-This framework represents a significant improvement in SeaweedFS FUSE testing capabilities, providing comprehensive coverage, real-world validation, and reliable automation that will help ensure the robustness and reliability of the FUSE implementation. 
+This framework represents a significant improvement in Hanzo FUSE testing capabilities, providing comprehensive coverage, real-world validation, and reliable automation that will help ensure the robustness and reliability of the FUSE implementation. 

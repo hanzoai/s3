@@ -13,7 +13,7 @@ func TestPackageStructure(t *testing.T) {
 	t.Log("✅ Testing FoundationDB package structure...")
 
 	// Verify the main package files exist
-	packagePath := "../../weed/filer/foundationdb"
+	packagePath := "../../s3/filer/foundationdb"
 	expectedFiles := map[string]bool{
 		"foundationdb_store.go":      false,
 		"foundationdb_store_test.go": false,
@@ -50,7 +50,7 @@ func TestPackageStructure(t *testing.T) {
 func TestServerIntegration(t *testing.T) {
 	t.Log("✅ Testing server integration...")
 
-	serverFile := "../../weed/server/filer_server.go"
+	serverFile := "../../s3/server/filer_server.go"
 	content, err := os.ReadFile(serverFile)
 	if err != nil {
 		t.Skipf("Cannot read server file: %v", err)
@@ -60,7 +60,7 @@ func TestServerIntegration(t *testing.T) {
 	contentStr := string(content)
 
 	// Check for FoundationDB import
-	if strings.Contains(contentStr, `"github.com/hanzoai/s3/weed/filer/foundationdb"`) {
+	if strings.Contains(contentStr, `"github.com/hanzoai/s3/s3/filer/foundationdb"`) {
 		t.Log("✅ FoundationDB import found in filer_server.go")
 	} else {
 		t.Error("❌ FoundationDB import not found in filer_server.go")
@@ -75,7 +75,7 @@ func TestServerIntegration(t *testing.T) {
 
 	foundImports := 0
 	for _, imp := range expectedImports {
-		if strings.Contains(contentStr, fmt.Sprintf(`"github.com/hanzoai/s3/weed/filer/%s"`, imp)) {
+		if strings.Contains(contentStr, fmt.Sprintf(`"github.com/hanzoai/s3/s3/filer/%s"`, imp)) {
 			foundImports++
 		}
 	}
@@ -88,7 +88,7 @@ func TestBuildConstraints(t *testing.T) {
 	t.Log("✅ Testing build constraints...")
 
 	// Check that foundationdb package files have correct build tags
-	packagePath := "../../weed/filer/foundationdb"
+	packagePath := "../../s3/filer/foundationdb"
 
 	err := filepath.Walk(packagePath, func(path string, info os.FileInfo, err error) error {
 		if err != nil || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
@@ -134,7 +134,7 @@ func TestDocumentationExists(t *testing.T) {
 		{"Makefile", "Build automation"},
 		{"docker-compose.yml", "Docker setup"},
 		{"filer.toml", "Configuration template"},
-		{"../../weed/filer/foundationdb/README.md", "Package README"},
+		{"../../s3/filer/foundationdb/README.md", "Package README"},
 	}
 
 	for _, doc := range docs {

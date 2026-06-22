@@ -11,9 +11,9 @@ echo "🧪 Running S3 KMS Integration Tests"
 echo "S3 Endpoint: $SEAWEEDFS_S3_ENDPOINT"
 
 # Test file content
-TEST_CONTENT="Hello, SeaweedFS KMS Integration! This is test data that should be encrypted."
-TEST_FILE="/tmp/seaweedfs-kms-test.txt"
-DOWNLOAD_FILE="/tmp/seaweedfs-kms-download.txt"
+TEST_CONTENT="Hello, Hanzo KMS Integration! This is test data that should be encrypted."
+TEST_FILE="/tmp/hanzo-kms-test.txt"
+DOWNLOAD_FILE="/tmp/hanzo-kms-download.txt"
 
 # Create test file
 echo "$TEST_CONTENT" > "$TEST_FILE"

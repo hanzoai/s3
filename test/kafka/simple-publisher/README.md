@@ -1,6 +1,6 @@
-# Simple Kafka-Go Publisher for SeaweedMQ
+# Simple Kafka-Go Publisher for HanzoMQ
 
-This is a simple publisher client that demonstrates publishing raw messages to SeaweedMQ topics with "_" prefix, which bypass schema validation.
+This is a simple publisher client that demonstrates publishing raw messages to HanzoMQ topics with "_" prefix, which bypass schema validation.
 
 ## Features
 
@@ -11,7 +11,7 @@ This is a simple publisher client that demonstrates publishing raw messages to S
 
 ## Prerequisites
 
-1. **SeaweedMQ Running**: Make sure SeaweedMQ is running on `localhost:17777` (default Kafka port)
+1. **HanzoMQ Running**: Make sure HanzoMQ is running on `localhost:17777` (default Kafka port)
 2. **Go Modules**: The project uses Go modules for dependency management
 
 ## Setup and Run
@@ -51,7 +51,7 @@ These messages should be stored as raw bytes without schema validation.
 - **Schema-Required Topics**: `user-events`, `orders`, `payments` (require schema validation)
 - **Schema-Free Topics**: `_raw_messages`, `_logs`, `_metrics` (bypass schema validation)
 
-The "_" prefix tells SeaweedMQ to treat the topic as a system topic and skip schema processing entirely.
+The "_" prefix tells HanzoMQ to treat the topic as a system topic and skip schema processing entirely.
 
 ## Message Storage
 
@@ -61,13 +61,13 @@ For topics with "_" prefix:
 - Any binary data or text can be published
 - SMQ assumes raw messages are stored in a "value" field internally
 
-## Integration with SeaweedMQ
+## Integration with HanzoMQ
 
-This client works with SeaweedMQ's existing schema bypass logic:
+This client works with HanzoMQ's existing schema bypass logic:
 
 1. **`isSystemTopic()`** function identifies "_" prefix topics as system topics
 2. **`produceSchemaBasedRecord()`** bypasses schema processing for system topics  
-3. **Raw storage** via `seaweedMQHandler.ProduceRecord()` stores messages as-is
+3. **Raw storage** via `hanzoMQHandler.ProduceRecord()` stores messages as-is
 
 ## Use Cases
 

@@ -13,7 +13,7 @@ func setupSparkIssue8234Env(t *testing.T) *TestEnvironment {
 		t.Skip("Docker not available, skipping Spark S3 integration test")
 	}
 
-	env.StartSeaweedFS(t)
+	env.StartHanzo(t)
 	t.Cleanup(func() { env.Cleanup(t) })
 
 	createObjectBucket(t, env, "test")

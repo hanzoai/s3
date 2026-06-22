@@ -15,11 +15,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/operation"
-	"github.com/hanzoai/s3/weed/pb"
-	"github.com/hanzoai/s3/weed/pb/volume_server_pb"
-	"github.com/hanzoai/s3/weed/shell"
-	"github.com/hanzoai/s3/weed/storage/needle"
+	"github.com/hanzoai/s3/s3/operation"
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
+	"github.com/hanzoai/s3/s3/shell"
+	"github.com/hanzoai/s3/s3/storage/needle"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
@@ -43,9 +43,9 @@ func (c *TestCluster) Stop() {
 }
 
 func startCluster(ctx context.Context, dataDir string) (*TestCluster, error) {
-	weedBinary := findWeedBinary()
-	if weedBinary == "" {
-		return nil, fmt.Errorf("weed binary not found - build with 'cd weed && go build' first")
+	s3Binary := findS3Binary()
+	if s3Binary == "" {
+		return nil, fmt.Errorf("s3 binary not found - build with 'cd s3 && go build' first")
 	}
 
 	cluster := &TestCluster{}
@@ -57,7 +57,7 @@ func startCluster(ctx context.Context, dataDir string) (*TestCluster, error) {
 	os.WriteFile(filepath.Join(dataDir, "security.toml"), []byte("# test\n"), 0644)
 
 	// Start master
-	masterCmd := exec.CommandContext(ctx, weedBinary, "master",
+	masterCmd := exec.CommandContext(ctx, s3Binary, "master",
 		"-port", "9333",
 		"-mdir", masterDir,
 		"-volumeSizeLimitMB", "10",
@@ -79,7 +79,7 @@ func startCluster(ctx context.Context, dataDir string) (*TestCluster, error) {
 		os.MkdirAll(volumeDir, 0755)
 
 		port := fmt.Sprintf("808%d", i)
-		volumeCmd := exec.CommandContext(ctx, weedBinary, "volume",
+		volumeCmd := exec.CommandContext(ctx, s3Binary, "volume",
 			"-port", port,
 			"-dir", volumeDir,
 			"-max", "10",
@@ -101,11 +101,11 @@ func startCluster(ctx context.Context, dataDir string) (*TestCluster, error) {
 	return cluster, nil
 }
 
-func findWeedBinary() string {
+func findS3Binary() string {
 	candidates := []string{
-		"../../weed/weed",
-		"../weed/weed",
-		"./weed",
+		"../../s3/s3",
+		"../s3/s3",
+		"./s3",
 	}
 	for _, c := range candidates {
 		if _, err := os.Stat(c); err == nil {
@@ -115,7 +115,7 @@ func findWeedBinary() string {
 			return c
 		}
 	}
-	if path, err := exec.LookPath("weed"); err == nil {
+	if path, err := exec.LookPath("s3"); err == nil {
 		return path
 	}
 	return ""

@@ -1,6 +1,6 @@
-# 🔐 SeaweedFS KMS Integration Tests
+# 🔐 Hanzo KMS Integration Tests
 
-This directory contains comprehensive integration tests for SeaweedFS Server-Side Encryption (SSE) with Key Management Service (KMS) providers. The tests validate the complete encryption/decryption workflow using **OpenBao** (open source fork of HashiCorp Vault) as the KMS provider.
+This directory contains comprehensive integration tests for Hanzo Server-Side Encryption (SSE) with Key Management Service (KMS) providers. The tests validate the complete encryption/decryption workflow using **OpenBao** (open source fork of HashiCorp Vault) as the KMS provider.
 
 ## 🎯 Overview
 
@@ -17,7 +17,7 @@ The KMS integration tests simulate **AWS KMS** functionality using **OpenBao**, 
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   S3 Client     │    │   SeaweedFS     │    │    OpenBao      │
+│   S3 Client     │    │   Hanzo     │    │    OpenBao      │
 │   (aws s3)      │───▶│   S3 API        │───▶│   Transit       │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
         │                       │                       │
@@ -34,7 +34,7 @@ The KMS integration tests simulate **AWS KMS** functionality using **OpenBao**, 
 
 ### Required Tools
 
-- **Docker & Docker Compose** - For running OpenBao and SeaweedFS
+- **Docker & Docker Compose** - For running OpenBao and Hanzo
 - **OpenBao CLI** (`bao`) - For direct OpenBao interaction *(optional)*
 - **AWS CLI** - For S3 API testing
 - **jq** - For JSON processing in scripts
@@ -88,8 +88,8 @@ make test-benchmark
 # Start OpenBao only
 make dev-openbao
 
-# Start full environment (OpenBao + SeaweedFS)
-make setup-seaweedfs
+# Start full environment (OpenBao + Hanzo)
+make setup-hanzo
 
 # Run manual tests
 make dev-test
@@ -151,9 +151,9 @@ aws s3 cp file.txt s3://test-openbao/encrypted-file.txt \
 **Services:**
 - **OpenBao** - KMS provider (port 8200)
 - **Vault** - Alternative KMS (port 8201)  
-- **SeaweedFS Master** - Cluster coordination (port 9333)
-- **SeaweedFS Volume** - Data storage (port 8080)
-- **SeaweedFS Filer** - S3 API endpoint (port 8333)
+- **Hanzo Master** - Cluster coordination (port 9333)
+- **Hanzo Volume** - Data storage (port 8080)
+- **Hanzo Filer** - S3 API endpoint (port 8333)
 
 ### 4. **Configuration** (`filer.toml`)
 
@@ -182,7 +182,7 @@ The setup script creates these test keys in OpenBao:
 |----------|------|---------|
 | `test-key-1` | AES256-GCM96 | Basic operations |  
 | `test-key-2` | AES256-GCM96 | Multi-key scenarios |
-| `seaweedfs-test-key` | AES256-GCM96 | Integration testing |
+| `hanzo-test-key` | AES256-GCM96 | Integration testing |
 | `bucket-default-key` | AES256-GCM96 | Default bucket encryption |
 | `high-security-key` | AES256-GCM96 | Security testing |
 | `performance-key` | AES256-GCM96 | Performance benchmarks |
@@ -206,7 +206,7 @@ The setup script creates these test keys in OpenBao:
 export OPENBAO_ADDR="http://127.0.0.1:8200"
 export OPENBAO_TOKEN="root-token-for-testing"
 
-# SeaweedFS configuration  
+# Hanzo configuration  
 export SEAWEEDFS_S3_ENDPOINT="http://127.0.0.1:8333"
 export ACCESS_KEY="any"
 export SECRET_KEY="any"
@@ -237,8 +237,8 @@ OpenBao provider is automatically registered via `init()`:
 
 ```go
 func init() {
-    seaweedkms.RegisterProvider("openbao", NewOpenBaoKMSProvider)
-    seaweedkms.RegisterProvider("vault", NewOpenBaoKMSProvider) // Alias
+    hanzokms.RegisterProvider("openbao", NewOpenBaoKMSProvider)
+    hanzokms.RegisterProvider("vault", NewOpenBaoKMSProvider) // Alias
 }
 ```
 
@@ -246,11 +246,11 @@ func init() {
 
 ```
 1. S3 PUT with SSE-KMS headers
-2. SeaweedFS extracts KMS key ID  
+2. Hanzo extracts KMS key ID  
 3. KMSManager routes to OpenBao provider
 4. OpenBao generates random data key
 5. OpenBao encrypts data key with master key
-6. SeaweedFS encrypts object with data key
+6. Hanzo encrypts object with data key
 7. Encrypted data key stored in metadata
 ```
 
@@ -258,10 +258,10 @@ func init() {
 
 ```
 1. S3 GET request for encrypted object
-2. SeaweedFS extracts encrypted data key from metadata
+2. Hanzo extracts encrypted data key from metadata
 3. KMSManager routes to OpenBao provider
 4. OpenBao decrypts data key with master key
-5. SeaweedFS decrypts object with data key
+5. Hanzo decrypts object with data key
 6. Plaintext object returned to client
 ```
 
@@ -284,12 +284,12 @@ docker-compose logs openbao
 go test -v -run TestProviderRegistration ./test/kms/
 
 # Check imports in filer_kms.go
-grep -n "kms/" weed/command/filer_kms.go
+grep -n "kms/" s3/command/filer_kms.go
 ```
 
 **S3 API connection refused:**
 ```bash  
-# Check SeaweedFS services
+# Check Hanzo services
 make status
 
 # Wait for services to be ready

@@ -1,20 +1,20 @@
 # PyArrow Parquet S3 Compatibility Tests
 
-This directory contains tests for PyArrow Parquet compatibility with SeaweedFS S3 API, including the implicit directory detection fix.
+This directory contains tests for PyArrow Parquet compatibility with Hanzo S3 API, including the implicit directory detection fix.
 
 ## Overview
 
-**Status**: ✅ **All PyArrow methods work correctly with SeaweedFS**
+**Status**: ✅ **All PyArrow methods work correctly with Hanzo**
 
-SeaweedFS implements implicit directory detection to improve compatibility with s3fs and PyArrow. When PyArrow writes datasets using `write_dataset()`, it may create directory markers that can confuse s3fs. SeaweedFS now handles these correctly by returning 404 for HEAD requests on implicit directories (directories with children), forcing s3fs to use LIST-based discovery.
+Hanzo implements implicit directory detection to improve compatibility with s3fs and PyArrow. When PyArrow writes datasets using `write_dataset()`, it may create directory markers that can confuse s3fs. Hanzo now handles these correctly by returning 404 for HEAD requests on implicit directories (directories with children), forcing s3fs to use LIST-based discovery.
 
 ## Quick Start
 
 ### Running the Example Script
 
 ```bash
-# Start SeaweedFS server
-make start-seaweedfs-ci
+# Start Hanzo server
+make start-hanzo-ci
 
 # Run the example script
 python3 example_pyarrow_native.py
@@ -23,7 +23,7 @@ python3 example_pyarrow_native.py
 uv run example_pyarrow_native.py
 
 # Stop the server when done
-make stop-seaweedfs-safe
+make stop-hanzo-safe
 ```
 
 ### Running Tests
@@ -54,7 +54,7 @@ make test-sse-s3-compat
 make clean
 ```
 
-### Using PyArrow with SeaweedFS
+### Using PyArrow with Hanzo
 
 #### Option 1: Using s3fs (recommended for compatibility)
 
@@ -186,18 +186,18 @@ dataset = pads.dataset('bucket/dataset', filesystem=s3)  # ✅
 When PyArrow writes datasets with `write_dataset()`, it may create 0-byte directory markers. s3fs's `info()` method calls HEAD on these paths, and if HEAD returns 200 with size=0, s3fs incorrectly reports them as files instead of directories. This causes PyArrow to fail with "Parquet file size is 0 bytes".
 
 ### Solution
-SeaweedFS now returns 404 for HEAD requests on implicit directories (0-byte objects or directories with children, when requested without a trailing slash). This forces s3fs to fall back to LIST-based discovery, which correctly identifies directories by checking for children.
+Hanzo now returns 404 for HEAD requests on implicit directories (0-byte objects or directories with children, when requested without a trailing slash). This forces s3fs to fall back to LIST-based discovery, which correctly identifies directories by checking for children.
 
 ### Implementation
-The fix is implemented in `weed/s3api/s3api_object_handlers.go`:
+The fix is implemented in `s3/s3api/s3api_object_handlers.go`:
 - `HeadObjectHandler` - Returns 404 for implicit directories
 - `hasChildren` - Helper function to check if a path has children
 
 See the source code for detailed inline documentation.
 
 ### Test Coverage
-- **Unit tests** (Go): `weed/s3api/s3api_implicit_directory_test.go`
-  - Run: `cd weed/s3api && go test -v -run TestImplicitDirectory`
+- **Unit tests** (Go): `s3/s3api/s3api_implicit_directory_test.go`
+  - Run: `cd s3/s3api && go test -v -run TestImplicitDirectory`
   
 - **Integration tests** (Python): `test_implicit_directory_fix.py`
   - Run: `cd test/s3/parquet && make test-implicit-dir-with-server`
@@ -210,7 +210,7 @@ See the source code for detailed inline documentation.
 ```bash
 # Setup
 make setup-python          # Create Python virtual environment and install dependencies
-make build-weed           # Build SeaweedFS binary
+make build-s3           # Build Hanzo binary
 
 # Testing
 make test                 # Run full tests (assumes server is already running)
@@ -224,8 +224,8 @@ make test-cross-fs-with-server  # Run cross-filesystem compatibility tests with 
 make test-sse-s3-compat   # Run comprehensive SSE-S3 encryption compatibility tests
 
 # Server Management
-make start-seaweedfs-ci   # Start SeaweedFS in background (CI mode)
-make stop-seaweedfs-safe  # Stop SeaweedFS gracefully
+make start-hanzo-ci   # Start Hanzo in background (CI mode)
+make stop-hanzo-safe  # Stop Hanzo gracefully
 make clean                # Clean up all test artifacts
 
 # Development
@@ -248,7 +248,7 @@ The tests are automatically run in GitHub Actions on every push/PR that affects 
 - Go unit tests: 17 test cases
 
 **Test Steps** (run for each Python version):
-1. Build SeaweedFS
+1. Build Hanzo
 2. Run PyArrow Parquet integration tests (`make test-with-server`)
 3. Run implicit directory fix tests (`make test-implicit-dir-with-server`)
 4. Run PyArrow native S3 filesystem tests (`make test-native-s3-with-server`)
@@ -257,7 +257,7 @@ The tests are automatically run in GitHub Actions on every push/PR that affects 
 7. Run Go unit tests for implicit directory handling
 
 **Triggers**:
-- Push/PR to master (when `weed/s3api/**` or `weed/filer/**` changes)
+- Push/PR to master (when `s3/s3api/**` or `s3/filer/**` changes)
 - Manual trigger via GitHub UI (workflow_dispatch)
 
 ## Requirements
@@ -266,14 +266,14 @@ The tests are automatically run in GitHub Actions on every push/PR that affects 
 - PyArrow 22.0.0+
 - s3fs 2024.12.0+
 - boto3 1.40.0+
-- SeaweedFS (latest)
+- Hanzo (latest)
 
 ## AWS S3 Compatibility
 
-The implicit directory fix makes SeaweedFS behavior more compatible with AWS S3:
+The implicit directory fix makes Hanzo behavior more compatible with AWS S3:
 - AWS S3 typically doesn't create directory markers for implicit directories
 - HEAD on "dataset" (when only "dataset/file.txt" exists) returns 404 on AWS
-- SeaweedFS now matches this behavior for implicit directories with children
+- Hanzo now matches this behavior for implicit directories with children
 
 ## Edge Cases Handled
 
@@ -303,7 +303,7 @@ When adding new tests:
 
 - [PyArrow Documentation](https://arrow.apache.org/docs/python/parquet.html)
 - [s3fs Documentation](https://s3fs.readthedocs.io/)
-- [SeaweedFS S3 API](https://github.com/hanzoai/s3/wiki/Amazon-S3-API)
+- [Hanzo S3 API](https://github.com/hanzoai/s3/wiki/Amazon-S3-API)
 - [AWS S3 API Reference](https://docs.aws.amazon.com/AmazonS3/latest/API/)
 
 ---

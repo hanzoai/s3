@@ -777,7 +777,7 @@ func TestSSEMultipartUploadIntegration(t *testing.T) {
 
 	t.Run("Multipart Parts Larger Than Internal Chunks Across SSE Types", func(t *testing.T) {
 		largeParts := [][]byte{
-			generateTestData(9*1024*1024 + 123), // crosses SeaweedFS 8MB internal chunk boundary
+			generateTestData(9*1024*1024 + 123), // crosses Hanzo 8MB internal chunk boundary
 			generateTestData(5*1024*1024 + 321),
 		}
 

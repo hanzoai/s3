@@ -43,7 +43,7 @@ Regression tests that ensure:
 ## Test Architecture
 
 The tests use:
-- **Real SeaweedFS cluster**: 1 master server + 6 volume servers
+- **Real Hanzo cluster**: 1 master server + 6 volume servers
 - **Multi-server setup**: Tests realistic EC shard distribution across multiple servers
 - **Timing simulation**: Goroutines and delays to simulate race conditions
 - **Output validation**: Checks for specific log messages that prove the fix is working
@@ -88,7 +88,7 @@ A Makefile is provided for manual EC testing.
 # Quick start: start cluster and populate data
 make setup
 
-# Open weed shell to run EC commands
+# Open s3 shell to run EC commands
 make shell
 
 # Individual targets
@@ -105,7 +105,7 @@ make help       # Show all targets
 The "no free ec shard slots" issue is tested with a **unit test** that works directly on
 topology data structures without requiring a running cluster.
 
-**Location**: `weed/shell/ec_rebalance_slots_test.go`
+**Location**: `s3/shell/ec_rebalance_slots_test.go`
 
 Tests included:
 - `TestECRebalanceWithLimitedSlots`: Tests a topology with 6 servers, 7 EC volumes (98 shards)

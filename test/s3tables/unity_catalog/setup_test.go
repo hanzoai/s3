@@ -35,8 +35,8 @@ const (
 )
 
 type testEnv struct {
-	seaweedDir     string
-	weedBinary     string
+	hanzoDir     string
+	s3Binary     string
 	dataDir        string
 	bindIP         string
 	s3Port         int
@@ -47,8 +47,8 @@ type testEnv struct {
 	filerGrpcPort  int
 	volumePort     int
 	volumeGrpcPort int
-	weedProcess    *exec.Cmd
-	weedCancel     context.CancelFunc
+	s3Process    *exec.Cmd
+	s3Cancel     context.CancelFunc
 
 	accessKey string
 	secretKey string
@@ -77,23 +77,23 @@ func newTestEnv(t *testing.T) *testEnv {
 	if err != nil {
 		t.Fatalf("getwd: %v", err)
 	}
-	seaweedDir := wd
+	hanzoDir := wd
 	for i := 0; i < 8; i++ {
-		if _, err := os.Stat(filepath.Join(seaweedDir, "go.mod")); err == nil {
+		if _, err := os.Stat(filepath.Join(hanzoDir, "go.mod")); err == nil {
 			break
 		}
-		seaweedDir = filepath.Dir(seaweedDir)
+		hanzoDir = filepath.Dir(hanzoDir)
 	}
 
-	weedBinary := filepath.Join(seaweedDir, "weed", "weed")
-	if _, err := os.Stat(weedBinary); err != nil {
-		weedBinary = "weed"
-		if _, err := exec.LookPath(weedBinary); err != nil {
-			t.Skip("weed binary not found, skipping integration test")
+	s3Binary := filepath.Join(hanzoDir, "s3", "s3")
+	if _, err := os.Stat(s3Binary); err != nil {
+		s3Binary = "s3"
+		if _, err := exec.LookPath(s3Binary); err != nil {
+			t.Skip("s3 binary not found, skipping integration test")
 		}
 	}
 
-	dataDir, err := os.MkdirTemp("", "seaweed-uc-test-*")
+	dataDir, err := os.MkdirTemp("", "hanzo-uc-test-*")
 	if err != nil {
 		t.Fatalf("mkdtemp: %v", err)
 	}
@@ -112,8 +112,8 @@ func newTestEnv(t *testing.T) *testEnv {
 	}
 
 	return &testEnv{
-		seaweedDir:     seaweedDir,
-		weedBinary:     weedBinary,
+		hanzoDir:     hanzoDir,
+		s3Binary:     s3Binary,
 		dataDir:        dataDir,
 		bindIP:         bindIP,
 		s3Port:         s3Port,
@@ -131,11 +131,11 @@ func newTestEnv(t *testing.T) *testEnv {
 	}
 }
 
-// startSeaweedFS starts a `weed mini` instance. If iamJSON is empty, a minimal
+// startHanzo starts a `s3 mini` instance. If iamJSON is empty, a minimal
 // admin-only IAM config is used. When iamJSON is non-empty, it is passed to
 // both -s3.config and -s3.iam.config so the STS handler is enabled (mirroring
 // the lakekeeper test).
-func (env *testEnv) startSeaweedFS(t *testing.T, iamJSON string) {
+func (env *testEnv) startHanzo(t *testing.T, iamJSON string) {
 	t.Helper()
 
 	enableSTS := iamJSON != ""
@@ -157,9 +157,9 @@ func (env *testEnv) startSeaweedFS(t *testing.T, iamJSON string) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	env.weedCancel = cancel
+	env.s3Cancel = cancel
 
-	weedArgs := []string{"-v", "4", "mini",
+	s3Args := []string{"-v", "4", "mini",
 		"-master.port", fmt.Sprintf("%d", env.masterPort),
 		"-master.port.grpc", fmt.Sprintf("%d", env.masterGrpcPort),
 		"-volume.port", fmt.Sprintf("%d", env.volumePort),
@@ -174,26 +174,26 @@ func (env *testEnv) startSeaweedFS(t *testing.T, iamJSON string) {
 		"-dir", env.dataDir,
 	}
 	if enableSTS {
-		weedArgs = append(weedArgs, "-s3.iam.config", iamConfigPath, "-s3.iam.readOnly=false")
+		s3Args = append(s3Args, "-s3.iam.config", iamConfigPath, "-s3.iam.readOnly=false")
 	}
 
-	cmd := exec.CommandContext(ctx, env.weedBinary, weedArgs...)
+	cmd := exec.CommandContext(ctx, env.s3Binary, s3Args...)
 	cmd.Dir = env.dataDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Start(); err != nil {
-		t.Fatalf("start weed mini: %v", err)
+		t.Fatalf("start s3 mini: %v", err)
 	}
-	env.weedProcess = cmd
+	env.s3Process = cmd
 
-	if !testutil.WaitForService(fmt.Sprintf("http://127.0.0.1:%d/status", env.s3Port), testutil.SeaweedMiniStartupTimeout) {
+	if !testutil.WaitForService(fmt.Sprintf("http://127.0.0.1:%d/status", env.s3Port), testutil.HanzoMiniStartupTimeout) {
 		t.Fatalf("S3 API at 127.0.0.1:%d did not become ready", env.s3Port)
 	}
 }
 
 // startUnityCatalog launches the Unity Catalog OSS server in Docker against
-// the running SeaweedFS instance. It mirrors the upstream playground's
+// the running Hanzo instance. It mirrors the upstream playground's
 // server.properties layout and bind-mounts only that single file (matching
 // docker-compose.yaml from the playground).
 func (env *testEnv) startUnityCatalog(t *testing.T, ctx context.Context, opts ucServerOpts) {
@@ -233,7 +233,7 @@ func (env *testEnv) startUnityCatalog(t *testing.T, ctx context.Context, opts uc
 		t.Fatalf("write server.properties: %v", err)
 	}
 
-	containerName := fmt.Sprintf("seaweed-unity-catalog-%d", time.Now().UnixNano())
+	containerName := fmt.Sprintf("hanzo-unity-catalog-%d", time.Now().UnixNano())
 
 	args := []string{
 		"run", "-d", "--rm",
@@ -294,11 +294,11 @@ func (env *testEnv) cleanup(t *testing.T) {
 		}
 		_ = exec.Command("docker", "rm", "-f", env.ucContainerID).Run()
 	}
-	if env.weedCancel != nil {
-		env.weedCancel()
+	if env.s3Cancel != nil {
+		env.s3Cancel()
 	}
-	if env.weedProcess != nil {
-		_ = env.weedProcess.Wait()
+	if env.s3Process != nil {
+		_ = env.s3Process.Wait()
 	}
 	if env.dataDir != "" {
 		_ = os.RemoveAll(env.dataDir)
@@ -330,7 +330,7 @@ func (env *testEnv) newHostS3ClientWithCreds(t *testing.T, ctx context.Context, 
 
 // stsEnabledIAMConfig returns an iam.json that defines an admin user, the
 // UnityCatalogVendedRole role with a permissive trust policy, and a FullAccess
-// policy attached to it. This is the SeaweedFS-side counterpart of the
+// policy attached to it. This is the Hanzo-side counterpart of the
 // `aws.masterRoleArn` configuration on the Unity Catalog server.
 func stsEnabledIAMConfig(accessKey, secretKey string) string {
 	return fmt.Sprintf(`{
@@ -344,7 +344,7 @@ func stsEnabledIAMConfig(accessKey, secretKey string) string {
   "sts": {
     "tokenDuration": "12h",
     "maxSessionLength": "24h",
-    "issuer": "seaweedfs-sts",
+    "issuer": "hanzo-sts",
     "signingKey": "dGVzdC1zaWduaW5nLWtleS1mb3Itc3RzLWludGVncmF0aW9uLXRlc3Rz"
   },
   "roles": [

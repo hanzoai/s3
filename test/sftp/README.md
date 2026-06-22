@@ -1,13 +1,13 @@
-# SeaweedFS SFTP Integration Tests
+# Hanzo SFTP Integration Tests
 
-This directory contains integration tests for the SeaweedFS SFTP server.
+This directory contains integration tests for the Hanzo SFTP server.
 
 ## Prerequisites
 
-1. Build the SeaweedFS binary:
+1. Build the Hanzo binary:
    ```bash
-   cd ../../weed
-   go build -o weed .
+   cd ../../s3
+   go build -o s3 .
    ```
 
 2. Ensure `ssh-keygen` is available (for generating test SSH host keys)
@@ -36,7 +36,7 @@ go test -short ./...
 
 ## Test Structure
 
-- `framework.go` - Test framework that starts SeaweedFS cluster with SFTP
+- `framework.go` - Test framework that starts Hanzo cluster with SFTP
 - `basic_test.go` - Basic SFTP operation tests including:
   - HomeDir path translation (fixes issue #7470)
   - File upload/download

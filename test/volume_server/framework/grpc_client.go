@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/pb/volume_server_pb"
+	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

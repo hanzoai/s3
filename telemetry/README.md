@@ -1,6 +1,6 @@
-# SeaweedFS Telemetry System
+# Hanzo Telemetry System
 
-A privacy-respecting telemetry system for SeaweedFS that collects cluster-level usage statistics and provides visualization through Prometheus and Grafana.
+A privacy-respecting telemetry system for Hanzo that collects cluster-level usage statistics and provides visualization through Prometheus and Grafana.
 
 ## Features
 
@@ -15,7 +15,7 @@ A privacy-respecting telemetry system for SeaweedFS that collects cluster-level 
 ## Architecture
 
 ```
-SeaweedFS Cluster → Telemetry Client → Telemetry Server → Prometheus → Grafana
+Hanzo Cluster → Telemetry Client → Telemetry Server → Prometheus → Grafana
                        (protobuf)         (metrics)      (queries)
 ```
 
@@ -33,7 +33,7 @@ The telemetry system uses **Protocol Buffers exclusively** for efficient binary 
 ```protobuf
 message TelemetryData {
   string cluster_id = 1;           // In-memory generated UUID
-  string version = 2;              // SeaweedFS version
+  string version = 2;              // Hanzo version
   string os = 3;                   // Operating system
   // Field 4 reserved (was features)
   // Field 5 reserved (was deployment)
@@ -59,7 +59,7 @@ message TelemetryData {
 | Field | Description | Example |
 |-------|-------------|---------|
 | `cluster_id` | In-memory UUID (changes on restart) | `a1b2c3d4-...` |
-| `version` | SeaweedFS version | `3.45` |
+| `version` | Hanzo version | `3.45` |
 | `os` | Operating system and architecture | `linux/amd64` |
 | `volume_server_count` | Number of volume servers | `5` |
 | `total_disk_bytes` | Total disk usage across cluster | `1073741824` |
@@ -75,7 +75,7 @@ message TelemetryData {
 ```bash
 # Clone and start the complete monitoring stack
 git clone https://github.com/hanzoai/s3.git
-cd seaweedfs
+cd hanzo
 docker compose -f telemetry/docker-compose.yml up -d
 
 # Or run the server directly
@@ -83,17 +83,17 @@ cd telemetry/server
 go run . -port=8080 -dashboard=true
 ```
 
-### 2. Configure SeaweedFS
+### 2. Configure Hanzo
 
 ```bash
-# Enable telemetry in SeaweedFS master (uses default telemetry.seaweedfs.com)
-weed master -telemetry=true
+# Enable telemetry in Hanzo master (uses default telemetry.s3.com)
+s3 master -telemetry=true
 
 # Or in server mode
-weed server -telemetry=true
+s3 server -telemetry=true
 
 # Or specify custom telemetry server
-weed master -telemetry=true -telemetry.url=http://localhost:8080/api/collect
+s3 master -telemetry=true -telemetry.url=http://localhost:8080/api/collect
 ```
 
 ### 3. Access Dashboards
@@ -104,13 +104,13 @@ weed master -telemetry=true -telemetry.url=http://localhost:8080/api/collect
 
 ## Configuration
 
-### SeaweedFS Master/Server
+### Hanzo Master/Server
 
 ```bash
 # Enable telemetry
 -telemetry=true
 
-# Set custom telemetry server URL (optional, defaults to telemetry.seaweedfs.com)
+# Set custom telemetry server URL (optional, defaults to telemetry.s3.com)
 -telemetry.url=http://your-telemetry-server:8080/api/collect
 ```
 
@@ -132,19 +132,19 @@ weed master -telemetry=true -telemetry.url=http://localhost:8080/api/collect
 The telemetry server exposes these Prometheus metrics:
 
 ### Cluster Metrics
-- `seaweedfs_telemetry_total_clusters`: Total unique clusters (30 days)
-- `seaweedfs_telemetry_active_clusters`: Active clusters (7 days)
+- `hanzo_telemetry_total_clusters`: Total unique clusters (30 days)
+- `hanzo_telemetry_active_clusters`: Active clusters (7 days)
 
 ### Per-Cluster Metrics
-- `seaweedfs_telemetry_volume_servers{cluster_id, version, os}`: Volume servers per cluster
-- `seaweedfs_telemetry_disk_bytes{cluster_id, version, os}`: Disk usage per cluster  
-- `seaweedfs_telemetry_volume_count{cluster_id, version, os}`: Volume count per cluster
-- `seaweedfs_telemetry_filer_count{cluster_id, version, os}`: Filer servers per cluster
-- `seaweedfs_telemetry_broker_count{cluster_id, version, os}`: Broker servers per cluster
-- `seaweedfs_telemetry_cluster_info{cluster_id, version, os}`: Cluster metadata
+- `hanzo_telemetry_volume_servers{cluster_id, version, os}`: Volume servers per cluster
+- `hanzo_telemetry_disk_bytes{cluster_id, version, os}`: Disk usage per cluster  
+- `hanzo_telemetry_volume_count{cluster_id, version, os}`: Volume count per cluster
+- `hanzo_telemetry_filer_count{cluster_id, version, os}`: Filer servers per cluster
+- `hanzo_telemetry_broker_count{cluster_id, version, os}`: Broker servers per cluster
+- `hanzo_telemetry_cluster_info{cluster_id, version, os}`: Cluster metadata
 
 ### Server Metrics
-- `seaweedfs_telemetry_reports_received_total`: Total telemetry reports received
+- `hanzo_telemetry_reports_received_total`: Total telemetry reports received
 
 ## API Endpoints
 
@@ -205,7 +205,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - ./grafana-provisioning:/etc/grafana/provisioning
-      - ./grafana-dashboard.json:/var/lib/grafana/dashboards/seaweedfs.json
+      - ./grafana-dashboard.json:/var/lib/grafana/dashboards/hanzo.json
 ```
 
 ```bash
@@ -220,8 +220,8 @@ docker compose -f telemetry/docker-compose.yml up -d --scale telemetry-server=3
 
 ```bash
 # Build and run telemetry server (build from repo root to include all sources)
-docker build -t seaweedfs-telemetry -f telemetry/server/Dockerfile .
-docker run -p 8080:8080 seaweedfs-telemetry -port=8080 -dashboard=true
+docker build -t hanzo-telemetry -f telemetry/server/Dockerfile .
+docker run -p 8080:8080 hanzo-telemetry -port=8080 -dashboard=true
 ```
 
 ## Development
@@ -243,9 +243,9 @@ protoc --go_out=. --go_opt=paths=source_relative proto/telemetry.proto
 cd telemetry/server
 go build -o telemetry-server .
 
-# Build SeaweedFS with telemetry support
+# Build Hanzo with telemetry support
 cd ../..
-go build -o weed ./weed
+go build -o s3 ./s3
 ```
 
 ### Testing
@@ -272,22 +272,22 @@ The included Grafana dashboard provides:
 
 ```promql
 # Total active clusters
-seaweedfs_telemetry_active_clusters
+hanzo_telemetry_active_clusters
 
 # Disk usage by version
-sum by (version) (seaweedfs_telemetry_disk_bytes)
+sum by (version) (hanzo_telemetry_disk_bytes)
 
 # Volume servers by operating system
-sum by (os) (seaweedfs_telemetry_volume_servers)
+sum by (os) (hanzo_telemetry_volume_servers)
 
 # Filer servers by version
-sum by (version) (seaweedfs_telemetry_filer_count)
+sum by (version) (hanzo_telemetry_filer_count)
 
 # Broker servers across all clusters
-sum(seaweedfs_telemetry_broker_count)
+sum(hanzo_telemetry_broker_count)
 
 # Growth rate (weekly)
-increase(seaweedfs_telemetry_total_clusters[7d])
+increase(hanzo_telemetry_total_clusters[7d])
 ```
 
 ## Security Considerations
@@ -301,10 +301,10 @@ increase(seaweedfs_telemetry_total_clusters[7d])
 
 ### Common Issues
 
-**SeaweedFS not sending data:**
+**Hanzo not sending data:**
 ```bash
 # Check telemetry configuration
-weed master -h | grep telemetry
+s3 master -h | grep telemetry
 
 # Verify connectivity
 curl -v http://your-telemetry-server:8080/api/collect
@@ -331,11 +331,11 @@ docker-compose logs prometheus
 ### Debugging
 
 ```bash
-# Enable verbose logging in SeaweedFS
-weed master -v=2 -telemetry=true
+# Enable verbose logging in Hanzo
+s3 master -v=2 -telemetry=true
 
 # Check telemetry server metrics
-curl http://localhost:8080/metrics | grep seaweedfs_telemetry
+curl http://localhost:8080/metrics | grep hanzo_telemetry
 
 # Test data flow
 curl http://localhost:8080/api/stats
@@ -351,4 +351,4 @@ curl http://localhost:8080/api/stats
 
 ## License
 
-This telemetry system is part of SeaweedFS and follows the same Apache 2.0 license. 
+This telemetry system is part of Hanzo and follows the same Apache 2.0 license. 

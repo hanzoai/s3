@@ -1,6 +1,6 @@
 # Samba on FUSE integration test
 
-Exports a SeaweedFS FUSE mount over SMB with Samba's `smbd` and drives it with
+Exports a Hanzo FUSE mount over SMB with Samba's `smbd` and drives it with
 `smbclient`, verifying that SMB file operations work correctly on top of the
 mount and that data stays consistent across both protocols.
 
@@ -12,7 +12,7 @@ The functional battery in `smb_tests.sh` covers:
 - 1 MiB upload/download round-trip with content verification
 - subdirectory creation and writes into it
 - file rename
-- 64 MiB upload/download (exercises SeaweedFS chunk splitting)
+- 64 MiB upload/download (exercises Hanzo chunk splitting)
 - recursive upload of a directory tree
 - cross-protocol consistency: files written over SMB appear on the FUSE mount
   with identical content, and files written directly on the FUSE mount are
@@ -32,7 +32,7 @@ network-filesystem backend has to get right:
 - **Concurrency**: parallel writers to distinct files all succeed
 
 Both FUSE mounts are started with `-dlm` (distributed lock manager). The second
-mount (`/mnt/seaweedfs2`) exists only to contend with the smbd-backed mount in
+mount (`/mnt/hanzo2`) exists only to contend with the smbd-backed mount in
 the distributed-locking tests; both see the same filer path, so `.../share` is
 the same data on each.
 
@@ -50,15 +50,15 @@ the same data on each.
 | `smb_tests.sh` | SMB functional battery. Shared by both runners. |
 | `lock_tests.sh` | SMB locking / concurrency battery. Shared by both runners. |
 | `smb.conf.template` | Samba config; placeholders are filled in at run time. |
-| `run.sh` | Local runner: `weed mini` + two `-dlm` mounts + `smbd` + both batteries, all as the current user on unprivileged ports. |
+| `run.sh` | Local runner: `s3 mini` + two `-dlm` mounts + `smbd` + both batteries, all as the current user on unprivileged ports. |
 | `entrypoint.sh` | Container entrypoint: starts two `-dlm` FUSE mounts and runs `smbd`. |
 | `run_inside_container.sh` | Runs both batteries inside the container against the local `smbd`. |
-| `Dockerfile` | Adds Samba to the `chrislusf/seaweedfs:e2e` image. |
+| `Dockerfile` | Adds Samba to the `chrislusf/hanzo:e2e` image. |
 | `docker-compose.yml` | master + volume + filer + samba services. |
 
 ## Running locally
 
-Requirements: `weed` on `$PATH`, `fusermount3`, and Samba's `smbd` /
+Requirements: `s3` on `$PATH`, `fusermount3`, and Samba's `smbd` /
 `smbclient` / `smbpasswd` (Debian/Ubuntu: `apt-get install samba smbclient`).
 
 ```sh
@@ -82,15 +82,15 @@ docker compose -f test/samba/docker-compose.yml down -v
 
 ## CI
 
-`.github/workflows/samba-integration.yml` runs on changes to `weed/mount/**`,
-`weed/filer/**`, or `test/samba/**`. It builds the e2e image, builds the Samba
+`.github/workflows/samba-integration.yml` runs on changes to `s3/mount/**`,
+`s3/filer/**`, or `test/samba/**`. It builds the e2e image, builds the Samba
 harness image on top, brings up the cluster, runs the battery, and uploads
 server logs as artifacts.
 
 ## Notes
 
 - The share disables Samba's DOS-attribute / xattr mapping and oplocks. The
-  SeaweedFS FUSE mount does not implement that surface, and leaving it on
+  Hanzo FUSE mount does not implement that surface, and leaving it on
   produces `NT_STATUS_NOT_SUPPORTED` errors unrelated to data integrity.
 - The share path is a subdirectory of the mount (`.../share`) so the runner can
   verify SMB-side operations directly on the FUSE side.

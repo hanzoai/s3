@@ -29,17 +29,17 @@ const (
 )
 
 var (
-	weedBinaryOnce sync.Once
-	weedBinaryPath string
-	weedBinaryErr  error
+	s3BinaryOnce sync.Once
+	s3BinaryPath string
+	s3BinaryErr  error
 )
 
-// Cluster is a lightweight SeaweedFS master + one volume server test harness.
+// Cluster is a lightweight Hanzo master + one volume server test harness.
 type Cluster struct {
 	testingTB testing.TB
 	profile   matrix.Profile
 
-	weedBinary string
+	s3Binary string
 	baseDir    string
 	configDir  string
 	logsDir    string
@@ -74,9 +74,9 @@ func StartSingleVolumeClusterWithDataDirs(t testing.TB, profile matrix.Profile, 
 		t.Fatalf("dataDirCount must be >= 1, got %d", dataDirCount)
 	}
 
-	weedBinary, err := FindOrBuildWeedBinary()
+	s3Binary, err := FindOrBuildS3Binary()
 	if err != nil {
-		t.Fatalf("resolve weed binary: %v", err)
+		t.Fatalf("resolve s3 binary: %v", err)
 	}
 
 	baseDir, keepLogs, err := newWorkDir()
@@ -119,7 +119,7 @@ func StartSingleVolumeClusterWithDataDirs(t testing.TB, profile matrix.Profile, 
 	c := &Cluster{
 		testingTB:      t,
 		profile:        profile,
-		weedBinary:     weedBinary,
+		s3Binary:     s3Binary,
 		baseDir:        baseDir,
 		configDir:      configDir,
 		logsDir:        logsDir,
@@ -234,7 +234,7 @@ func (c *Cluster) startMaster(dataDir string) error {
 		"-defaultReplication=000",
 	}
 
-	c.masterCmd = exec.Command(c.weedBinary, args...)
+	c.masterCmd = exec.Command(c.s3Binary, args...)
 	c.masterCmd.Dir = c.baseDir
 	c.masterCmd.Stdout = logFile
 	c.masterCmd.Stderr = logFile
@@ -265,7 +265,7 @@ func (c *Cluster) startVolume(dataDirs []string) error {
 		"-concurrentUploadLimitMB=" + strconv.Itoa(c.profile.ConcurrentUploadLimitMB),
 		"-concurrentDownloadLimitMB=" + strconv.Itoa(c.profile.ConcurrentDownloadLimitMB),
 		// Integration tests deliberately exercise loopback S3 endpoints
-		// (the test rig boots weed-mini next to the volume server); allow
+		// (the test rig boots s3-mini next to the volume server); allow
 		// the SSRF guard to be bypassed for them.
 		"-volume.allowUntrustedRemoteEndpoints",
 	}
@@ -276,7 +276,7 @@ func (c *Cluster) startVolume(dataDirs []string) error {
 		args = append(args, "-inflightDownloadDataTimeout="+c.profile.InflightDownloadTimeout.String())
 	}
 
-	c.volumeCmd = exec.Command(c.weedBinary, args...)
+	c.volumeCmd = exec.Command(c.s3Binary, args...)
 	c.volumeCmd.Dir = c.baseDir
 	c.volumeCmd.Stdout = logFile
 	c.volumeCmd.Stderr = logFile
@@ -334,7 +334,7 @@ func stopProcess(cmd *exec.Cmd) {
 
 func newWorkDir() (dir string, keepLogs bool, err error) {
 	keepLogs = os.Getenv("VOLUME_SERVER_IT_KEEP_LOGS") == "1"
-	dir, err = os.MkdirTemp("", "seaweedfs_volume_server_it_")
+	dir, err = os.MkdirTemp("", "hanzo_volume_server_it_")
 	return dir, keepLogs, err
 }
 
@@ -369,8 +369,8 @@ func writeSecurityConfig(configDir string, profile matrix.Profile) error {
 	return os.WriteFile(filepath.Join(configDir, "security.toml"), []byte(b.String()), 0o644)
 }
 
-// FindOrBuildWeedBinary returns an executable weed binary, building one when needed.
-func FindOrBuildWeedBinary() (string, error) {
+// FindOrBuildS3Binary returns an executable s3 binary, building one when needed.
+func FindOrBuildS3Binary() (string, error) {
 	if fromEnv := os.Getenv("WEED_BINARY"); fromEnv != "" {
 		if isExecutableFile(fromEnv) {
 			return fromEnv, nil
@@ -378,43 +378,43 @@ func FindOrBuildWeedBinary() (string, error) {
 		return "", fmt.Errorf("WEED_BINARY is set but not executable: %s", fromEnv)
 	}
 
-	weedBinaryOnce.Do(func() {
+	s3BinaryOnce.Do(func() {
 		repoRoot := ""
 		if _, file, _, ok := runtime.Caller(0); ok {
 			repoRoot = filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
 		}
 		if repoRoot == "" {
-			weedBinaryErr = errors.New("unable to detect repository root")
+			s3BinaryErr = errors.New("unable to detect repository root")
 			return
 		}
 
-		binDir := filepath.Join(os.TempDir(), "seaweedfs_volume_server_it_bin")
+		binDir := filepath.Join(os.TempDir(), "hanzo_volume_server_it_bin")
 		if err := os.MkdirAll(binDir, 0o755); err != nil {
-			weedBinaryErr = fmt.Errorf("create binary directory %s: %w", binDir, err)
+			s3BinaryErr = fmt.Errorf("create binary directory %s: %w", binDir, err)
 			return
 		}
-		binPath := filepath.Join(binDir, "weed")
+		binPath := filepath.Join(binDir, "s3")
 
 		cmd := exec.Command("go", "build", "-o", binPath, ".")
-		cmd.Dir = filepath.Join(repoRoot, "weed")
+		cmd.Dir = filepath.Join(repoRoot, "s3")
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		cmd.Stderr = &out
 		if err := cmd.Run(); err != nil {
-			weedBinaryErr = fmt.Errorf("build weed binary: %w\n%s", err, out.String())
+			s3BinaryErr = fmt.Errorf("build s3 binary: %w\n%s", err, out.String())
 			return
 		}
 		if !isExecutableFile(binPath) {
-			weedBinaryErr = fmt.Errorf("built weed binary is not executable: %s", binPath)
+			s3BinaryErr = fmt.Errorf("built s3 binary is not executable: %s", binPath)
 			return
 		}
-		weedBinaryPath = binPath
+		s3BinaryPath = binPath
 	})
 
-	if weedBinaryErr != nil {
-		return "", weedBinaryErr
+	if s3BinaryErr != nil {
+		return "", s3BinaryErr
 	}
-	return weedBinaryPath, nil
+	return s3BinaryPath, nil
 }
 
 func isExecutableFile(path string) bool {
@@ -460,7 +460,7 @@ func (c *Cluster) VolumeGRPCAddress() string {
 	return net.JoinHostPort("127.0.0.1", strconv.Itoa(c.volumeGrpcPort))
 }
 
-// VolumeServerAddress returns SeaweedFS server address format: ip:httpPort.grpcPort
+// VolumeServerAddress returns Hanzo server address format: ip:httpPort.grpcPort
 func (c *Cluster) VolumeServerAddress() string {
 	return fmt.Sprintf("%s.%d", c.VolumeAdminAddress(), c.volumeGrpcPort)
 }

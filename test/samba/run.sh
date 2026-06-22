@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 #
-# Run the SMB (Samba) integration test against a SeaweedFS FUSE mount.
+# Run the SMB (Samba) integration test against a Hanzo FUSE mount.
 #
 # Pipeline:
-#   1. start a self-contained "weed mini" (master + volume + filer in one)
-#   2. mount the filesystem with "weed mount"
+#   1. start a self-contained "s3 mini" (master + volume + filer in one)
+#   2. mount the filesystem with "s3 mount"
 #   3. export a subdirectory of the mount over SMB with smbd
 #   4. drive the share with smbclient (test/samba/smb_tests.sh)
 #
 # Everything runs as the current user on unprivileged ports, so no sudo is
 # required. State lives under a temp work dir and is removed on exit.
 #
-# Requirements: weed in $PATH, fusermount3, and Samba's smbd / smbclient /
+# Requirements: s3 in $PATH, fusermount3, and Samba's smbd / smbclient /
 # smbpasswd (Debian/Ubuntu: apt-get install samba smbclient).
 #
 # Usage:
@@ -19,8 +19,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WEED_BIN="${WEED_BIN:-weed}"
-WORK_DIR="${WORK_DIR:-$(mktemp -d /tmp/seaweedfs-samba.XXXXXX)}"
+WEED_BIN="${WEED_BIN:-s3}"
+WORK_DIR="${WORK_DIR:-$(mktemp -d /tmp/hanzo-samba.XXXXXX)}"
 MOUNT_DIR="${MOUNT_DIR:-${WORK_DIR}/mnt}"
 MOUNT2_DIR="${MOUNT2_DIR:-${WORK_DIR}/mnt2}"
 DATA_DIR="${DATA_DIR:-${WORK_DIR}/data}"
@@ -32,14 +32,14 @@ SHARE_DIR2="${MOUNT2_DIR}/share"
 FILER_PORT="${FILER_PORT:-28888}"
 FILER_ADDR="127.0.0.1:${FILER_PORT}"
 SMB_PORT="${SMB_PORT:-4450}"
-SMB_SHARE="seaweedfs"
+SMB_SHARE="hanzo"
 SMB_USER="${SMB_USER:-$(id -un)}"
-SMB_PASS="${SMB_PASS:-seaweedfs}"
+SMB_PASS="${SMB_PASS:-hanzo}"
 
 SMBD_BIN="$(command -v smbd || echo /usr/sbin/smbd)"
 SMBPASSWD_BIN="$(command -v smbpasswd || echo /usr/bin/smbpasswd)"
 
-CI_LOG_DIR="/tmp/seaweedfs-samba-logs"
+CI_LOG_DIR="/tmp/hanzo-samba-logs"
 
 mini_pid=""
 mount_pid=""
@@ -82,8 +82,8 @@ mkdir -p "${MOUNT_DIR}" "${MOUNT2_DIR}" "${DATA_DIR}" "${LOG_DIR}" \
   "${STATE_DIR}/private" "${STATE_DIR}/state" "${STATE_DIR}/cache" \
   "${STATE_DIR}/lock" "${STATE_DIR}/pid" "${STATE_DIR}/ncalrpc"
 
-# --- 1. weed mini -----------------------------------------------------------
-echo "==> Starting weed mini on ${FILER_ADDR}"
+# --- 1. s3 mini -----------------------------------------------------------
+echo "==> Starting s3 mini on ${FILER_ADDR}"
 "${WEED_BIN}" mini \
   -dir="${DATA_DIR}" \
   -ip=127.0.0.1 \
@@ -99,23 +99,23 @@ for i in $(seq 1 60); do
     break
   fi
   if ! kill -0 "${mini_pid}" 2>/dev/null; then
-    echo "weed mini exited early; log tail:" >&2
+    echo "s3 mini exited early; log tail:" >&2
     tail -n 100 "${LOG_DIR}/mini.log" >&2 || true
     exit 1
   fi
   sleep 0.5
 done
 if ! (echo >"/dev/tcp/127.0.0.1/${FILER_PORT}") 2>/dev/null; then
-  echo "weed mini filer did not become reachable within 30s; log tail:" >&2
+  echo "s3 mini filer did not become reachable within 30s; log tail:" >&2
   tail -n 100 "${LOG_DIR}/mini.log" >&2 || true
   exit 1
 fi
 
-# --- 2. weed mount (two mounts, both with -dlm) -----------------------------
+# --- 2. s3 mount (two mounts, both with -dlm) -----------------------------
 # mount_with_dlm <mountpoint> <logfile> <pid-var-name>
 mount_with_dlm() {
   local dir="$1" log="$2" pidvar="$3" pid
-  echo "==> Mounting SeaweedFS at ${dir} with -dlm"
+  echo "==> Mounting Hanzo at ${dir} with -dlm"
   "${WEED_BIN}" mount \
     -filer="${FILER_ADDR}" \
     -dir="${dir}" \
@@ -130,7 +130,7 @@ mount_with_dlm() {
       return 0
     fi
     if ! kill -0 "${pid}" 2>/dev/null; then
-      echo "weed mount (${dir}) exited early; log tail:" >&2
+      echo "s3 mount (${dir}) exited early; log tail:" >&2
       tail -n 100 "${log}" >&2 || true
       exit 1
     fi

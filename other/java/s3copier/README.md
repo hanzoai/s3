@@ -1,6 +1,6 @@
-# SeaweedFS S3 Java SDK Compatibility Tests
+# Hanzo S3 Java SDK Compatibility Tests
 
-This project contains Java-based integration tests for SeaweedFS S3 API compatibility.
+This project contains Java-based integration tests for Hanzo S3 API compatibility.
 
 ## Overview
 
@@ -17,9 +17,9 @@ Tests are provided for both AWS SDK v1 and v2 to ensure compatibility with the v
 
 ### Prerequisites
 
-1. SeaweedFS running with S3 API enabled:
+1. Hanzo running with S3 API enabled:
    ```bash
-   weed server -s3
+   s3 server -s3
    ```
 
 2. Java 18+ and Maven
@@ -66,7 +66,7 @@ Tests for [GitHub Issue #7768](https://github.com/hanzoai/s3/issues/7768) - ETag
 
 ### Background: Issue #7768
 
-AWS SDK v2 for Java includes checksum validation that decodes the ETag as hexadecimal. When SeaweedFS returned composite ETags (`<md5>-<count>`) for regular `PutObject` with internally auto-chunked files, the SDK failed with:
+AWS SDK v2 for Java includes checksum validation that decodes the ETag as hexadecimal. When Hanzo returned composite ETags (`<md5>-<count>`) for regular `PutObject` with internally auto-chunked files, the SDK failed with:
 
 ```
 java.lang.IllegalArgumentException: Invalid base 16 character: '-'
@@ -76,16 +76,16 @@ java.lang.IllegalArgumentException: Invalid base 16 character: '-'
 - `PutObject`: ETag is always a pure MD5 hex string (32 chars)
 - `CompleteMultipartUpload`: ETag is composite format (`<md5>-<partcount>`)
 
-The fix ensures SeaweedFS follows this specification.
+The fix ensures Hanzo follows this specification.
 
 ## Project Structure
 
 ```
 src/
-├── main/java/com/seaweedfs/s3/
+├── main/java/com/hanzo/s3/
 │   ├── PutObject.java           # Example PutObject with SDK v1
 │   └── HighLevelMultipartUpload.java
-└── test/java/com/seaweedfs/s3/
+└── test/java/com/hanzo/s3/
     ├── PutObjectTest.java       # Basic SDK v1 test
     └── ETagValidationTest.java  # Comprehensive SDK v2 ETag tests
 ```

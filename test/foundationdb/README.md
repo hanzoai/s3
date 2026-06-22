@@ -1,6 +1,6 @@
 # FoundationDB Integration Testing
 
-This directory contains integration tests and setup scripts for the FoundationDB filer store in SeaweedFS.
+This directory contains integration tests and setup scripts for the FoundationDB filer store in Hanzo.
 
 ## Quick Start
 
@@ -13,7 +13,7 @@ make test-mock          # Mock FoundationDB tests (always work)
 go test -v ./validation_test.go  # Package structure validation
 
 # 🐳 FULL INTEGRATION (requires Docker + FoundationDB dependencies)
-make setup              # Start FoundationDB cluster + SeaweedFS
+make setup              # Start FoundationDB cluster + Hanzo
 make test               # Run all integration tests
 make test-simple        # Simple containerized test environment
 
@@ -38,11 +38,11 @@ make test-emulated      # Test with x86 emulation
 
 **🍎 For M1/M2/M3 Mac users:** FoundationDB's official Docker images are AMD64-only. We provide three solutions:
 
-- **Native ARM64** (`make setup-arm64`) - Downloads official FoundationDB ARM64 packages and builds SeaweedFS natively (≈2-3 min setup, best performance)
+- **Native ARM64** (`make setup-arm64`) - Downloads official FoundationDB ARM64 packages and builds Hanzo natively (≈2-3 min setup, best performance)
 - **x86 Emulation** (`make setup-emulated`) - Uses Docker emulation (fast setup, slower runtime)  
 - **Mock Testing** (`make test-mock`) - No FoundationDB needed (instant, tests logic only)
 
-The ARM64 setup automatically builds both FoundationDB and SeaweedFS from source using `docker-compose.arm64.yml` and dedicated ARM64 Dockerfiles. No pre-built images required!
+The ARM64 setup automatically builds both FoundationDB and Hanzo from source using `docker-compose.arm64.yml` and dedicated ARM64 Dockerfiles. No pre-built images required!
 
 📖 **Detailed Guide:** See [README.ARM64.md](README.ARM64.md) for complete ARM64 documentation.
 
@@ -52,7 +52,7 @@ The test environment includes:
 
 - **3-node FoundationDB cluster** (fdb1, fdb2, fdb3) for realistic distributed testing
 - **Database initialization service** (fdb-init) that configures the cluster
-- **SeaweedFS service** configured to use the FoundationDB filer store
+- **Hanzo service** configured to use the FoundationDB filer store
 - **Automatic service orchestration** with proper startup dependencies
 
 ## Test Structure
@@ -91,7 +91,7 @@ The test environment includes:
 
 **This test validates the complete S3 workflow including the listing operations that were problematic in earlier versions.**
 
-#### Unit Tests (`weed/filer/foundationdb/foundationdb_store_test.go`)
+#### Unit Tests (`s3/filer/foundationdb/foundationdb_store_test.go`)
 - Store initialization and configuration
 - Key generation and directory prefixes
 - Error handling and validation
@@ -125,8 +125,8 @@ export FDB_PORT=4500
 # FoundationDB cluster file contents (default: docker:docker@fdb1:4500,fdb2:4500,fdb3:4500)
 export FDB_CLUSTER_FILE_CONTENTS="docker:docker@fdb1:4500,fdb2:4500,fdb3:4500"
 
-# SeaweedFS image (default: chrislusf/seaweedfs:latest)
-export SEAWEEDFS_IMAGE=chrislusf/seaweedfs:latest
+# Hanzo image (default: chrislusf/hanzo:latest)
+export SEAWEEDFS_IMAGE=chrislusf/hanzo:latest
 ```
 
 **Note:** These variables are optional. If not set, the docker-compose will use the default values shown above, allowing `docker-compose up` to work out-of-the-box without any `.env` file or manual configuration.
@@ -137,7 +137,7 @@ The `docker-compose.yml` sets up:
 
 1. **FoundationDB Cluster**: 3 coordinating nodes with data distribution
 2. **Database Configuration**: Single SSD storage class for testing
-3. **SeaweedFS Integration**: Automatic filer store configuration
+3. **Hanzo Integration**: Automatic filer store configuration
 4. **Volume Persistence**: Data persists between container restarts
 
 ### Test Configuration Files
@@ -179,7 +179,7 @@ make test-benchmark   # Performance benchmarks
 - **Metadata index operations** - All CRUD operations on directory entries
 
 **⚠️ Limited/Future Coverage:**
-- **Recursive tree operations** - Not explicitly tested (e.g., `weed filer.tree` command)
+- **Recursive tree operations** - Not explicitly tested (e.g., `s3 filer.tree` command)
 - **Large directory stress tests** - Listings with thousands of entries not currently benchmarked
 - **Concurrent listing operations** - Multiple simultaneous directory listings under load
 - **S3 ListObjectsV2 pagination** - Large bucket listing with continuation tokens
@@ -192,7 +192,7 @@ make test-benchmark   # Performance benchmarks
 make status           # Show service status
 make logs             # Show all logs
 make logs-fdb         # FoundationDB logs only
-make logs-seaweedfs   # SeaweedFS logs only
+make logs-hanzo   # Hanzo logs only
 make debug            # Debug information
 ```
 
@@ -206,10 +206,10 @@ make clean            # Stop services and cleanup
 
 Tests use isolated directory prefixes to avoid conflicts:
 
-- **Unit tests**: `seaweedfs_test`
-- **Integration tests**: `seaweedfs_test`
-- **Concurrent tests**: `seaweedfs_concurrent_test_<timestamp>`
-- **E2E tests**: `seaweedfs` (default)
+- **Unit tests**: `hanzo_test`
+- **Integration tests**: `hanzo_test`
+- **Concurrent tests**: `hanzo_concurrent_test_<timestamp>`
+- **E2E tests**: `hanzo` (default)
 
 ## Expected Test Results
 
@@ -245,7 +245,7 @@ Based on FoundationDB characteristics:
    ```bash
    # Check service logs
    make logs-fdb
-   make logs-seaweedfs
+   make logs-hanzo
    
    # Run with verbose output
    go test -v -tags foundationdb ./...
@@ -275,7 +275,7 @@ Based on FoundationDB characteristics:
 Enable verbose logging for detailed troubleshooting:
 
 ```bash
-# SeaweedFS debug logs
+# Hanzo debug logs
 WEED_FILER_OPTIONS_V=2 make test
 
 # FoundationDB debug logs (in fdbcli)
@@ -296,12 +296,12 @@ docker-compose exec fdb-init fdbcli
 # FDB commands:
 # status                    - Show cluster status  
 # getrange "" \xFF          - Show all keys
-# getrange seaweedfs seaweedfs\xFF  - Show SeaweedFS keys
+# getrange hanzo hanzo\xFF  - Show Hanzo keys
 ```
 
 ### Listing Operations Return Empty Results
 
-**Symptoms:** Uploads succeed, direct file reads work, but listing operations (`aws s3 ls`, `s3.bucket.list`, `weed filer.ls/tree`) return no results.
+**Symptoms:** Uploads succeed, direct file reads work, but listing operations (`aws s3 ls`, `s3.bucket.list`, `s3 filer.ls/tree`) return no results.
 
 **Test Coverage:** The `test_fdb_s3.sh` script explicitly tests S3 bucket listing (`aws s3 ls`) to catch this class of issue. Integration tests cover the underlying `ListDirectoryEntries` operations.
 
@@ -310,21 +310,21 @@ docker-compose exec fdb-init fdbcli
 ```bash
 # 1. Verify writes reached FoundationDB
 docker-compose exec fdb-init fdbcli
-> getrange seaweedfs seaweedfs\xFF
+> getrange hanzo hanzo\xFF
 # If no keys appear, writes aren't reaching the store
 
-# 2. Check SeaweedFS volume assignment
+# 2. Check Hanzo volume assignment
 curl http://localhost:9333/cluster/status
 # Look for "AssignVolume" errors in logs:
-make logs-seaweedfs | grep -i "assignvolume\|writable"
+make logs-hanzo | grep -i "assignvolume\|writable"
 
 # 3. Verify filer health and configuration
 curl http://localhost:8888/statistics/health
-make logs-seaweedfs | grep -i "store\|foundationdb"
+make logs-hanzo | grep -i "store\|foundationdb"
 ```
 
 **Interpretation:**
-- No SeaweedFS keys in FDB: Directory index writes failing; check filer logs for write errors
+- No Hanzo keys in FDB: Directory index writes failing; check filer logs for write errors
 - AssignVolume errors: Volume assignment blocked; check master status and disk space
 - Filer health errors: Configuration or connectivity issue; restart services and verify filer.toml
 

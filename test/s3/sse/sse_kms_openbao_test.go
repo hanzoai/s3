@@ -15,7 +15,7 @@ import (
 )
 
 // TestSSEKMSOpenBaoIntegration tests SSE-KMS with real OpenBao KMS provider
-// This test verifies that SeaweedFS can successfully encrypt and decrypt data
+// This test verifies that Hanzo can successfully encrypt and decrypt data
 // using actual KMS operations through OpenBao, not just mock key IDs
 func TestSSEKMSOpenBaoIntegration(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -69,7 +69,7 @@ func TestSSEKMSOpenBaoIntegration(t *testing.T) {
 			objectKey string
 		}{
 			{"test-key-123", "Data encrypted with test-key-123", "object-key-123"},
-			{"seaweedfs-test-key", "Data encrypted with seaweedfs-test-key", "object-seaweedfs-key"},
+			{"hanzo-test-key", "Data encrypted with hanzo-test-key", "object-hanzo-key"},
 			{"high-security-key", "Data encrypted with high-security-key", "object-security-key"},
 		}
 

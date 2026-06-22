@@ -7,9 +7,9 @@ import (
 	"time"
 
 	pluginworkers "github.com/hanzoai/s3/test/plugin_workers"
-	"github.com/hanzoai/s3/weed/pb/plugin_pb"
-	pluginworker "github.com/hanzoai/s3/weed/plugin/worker"
-	"github.com/hanzoai/s3/weed/worker/tasks/vacuum"
+	"github.com/hanzoai/s3/s3/pb/plugin_pb"
+	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
+	"github.com/hanzoai/s3/s3/worker/tasks/vacuum"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -69,7 +69,7 @@ func TestVacuumExecutionIntegration(t *testing.T) {
 	// on the Compact-failure branch.
 	require.Equal(t, 0, cleanupCalls)
 	// Phase 3 marks each replica writable so master returns it to the
-	// writables layout. See upstream seaweedfs#9685.
+	// writables layout. See upstream hanzo#9685.
 	require.GreaterOrEqual(t, source.MarkWritableCount(), 1)
 }
 

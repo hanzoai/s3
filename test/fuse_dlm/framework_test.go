@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/cluster/lock_manager"
-	"github.com/hanzoai/s3/weed/pb"
-	"github.com/hanzoai/s3/weed/pb/filer_pb"
-	"github.com/hanzoai/s3/weed/pb/master_pb"
+	"github.com/hanzoai/s3/s3/cluster/lock_manager"
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -24,12 +24,12 @@ import (
 
 const filerGroup = "fuse-dlm-test"
 
-// dlmTestCluster manages a full SeaweedFS cluster with 2 filers and 2 FUSE
+// dlmTestCluster manages a full Hanzo cluster with 2 filers and 2 FUSE
 // mounts for testing DLM-based cross-mount write coordination.
 type dlmTestCluster struct {
 	t          testing.TB
 	baseDir    string
-	weedBinary string
+	s3Binary string
 
 	masterPort     int
 	masterGrpcPort int
@@ -49,18 +49,18 @@ type dlmTestCluster struct {
 }
 
 func startDLMTestCluster(t testing.TB) *dlmTestCluster {
-	binary := findWeedBinary()
+	binary := findS3Binary()
 	if binary == "" {
-		t.Skip("weed binary not found; set WEED_BINARY or ensure it is on PATH")
+		t.Skip("s3 binary not found; set WEED_BINARY or ensure it is on PATH")
 	}
 
-	baseDir, err := os.MkdirTemp("", "seaweedfs_fuse_dlm_test_")
+	baseDir, err := os.MkdirTemp("", "hanzo_fuse_dlm_test_")
 	require.NoError(t, err)
 
 	c := &dlmTestCluster{
 		t:          t,
 		baseDir:    baseDir,
-		weedBinary: binary,
+		s3Binary: binary,
 	}
 	// Register cleanup early so processes are stopped even if a require fails below.
 	t.Cleanup(c.Stop)
@@ -154,13 +154,13 @@ func (c *dlmTestCluster) Stop() {
 
 // masterAddress returns the master address in the format that encodes both
 // HTTP and gRPC ports: "host:httpPort.grpcPort". This is the format that
-// SeaweedFS uses to communicate non-default gRPC ports between components.
+// Hanzo uses to communicate non-default gRPC ports between components.
 func (c *dlmTestCluster) masterAddress() string {
 	return string(pb.NewServerAddress("127.0.0.1", c.masterPort, c.masterGrpcPort))
 }
 
 func (c *dlmTestCluster) startMaster(configDir string) error {
-	c.masterCmd = exec.Command(c.weedBinary,
+	c.masterCmd = exec.Command(c.s3Binary,
 		"-logdir="+filepath.Join(c.baseDir, "logs"),
 		"master",
 		"-ip=127.0.0.1",
@@ -177,7 +177,7 @@ func (c *dlmTestCluster) startVolume(configDir string) error {
 	if err := os.MkdirAll(volDir, 0755); err != nil {
 		return fmt.Errorf("create volume dir: %w", err)
 	}
-	c.volumeCmd = exec.Command(c.weedBinary,
+	c.volumeCmd = exec.Command(c.s3Binary,
 		"-logdir="+filepath.Join(c.baseDir, "logs"),
 		"volume",
 		"-ip=127.0.0.1",
@@ -196,7 +196,7 @@ func (c *dlmTestCluster) startFiler(idx int, configDir string) error {
 	if err := os.MkdirAll(filerDir, 0755); err != nil {
 		return fmt.Errorf("create filer dir: %w", err)
 	}
-	c.filerCmds[idx] = exec.Command(c.weedBinary,
+	c.filerCmds[idx] = exec.Command(c.s3Binary,
 		"-logdir="+filepath.Join(c.baseDir, "logs"),
 		"filer",
 		"-ip=127.0.0.1",
@@ -219,7 +219,7 @@ func (c *dlmTestCluster) startMount(idx int, configDir string) error {
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
 		return fmt.Errorf("create cache dir: %w", err)
 	}
-	c.mountCmds[idx] = exec.Command(c.weedBinary,
+	c.mountCmds[idx] = exec.Command(c.s3Binary,
 		"-logdir="+filepath.Join(c.baseDir, "logs"),
 		"mount",
 		"-filer="+c.filerAddress(0), // both mounts use filer0 for shared metadata
@@ -261,7 +261,7 @@ func (c *dlmTestCluster) tailLog(name string) string {
 }
 
 func (c *dlmTestCluster) copyLogsForCI() {
-	ciLogDir := "/tmp/seaweedfs-fuse-dlm-logs"
+	ciLogDir := "/tmp/hanzo-fuse-dlm-logs"
 	os.MkdirAll(ciLogDir, 0755)
 	logsDir := filepath.Join(c.baseDir, "logs")
 	entries, err := os.ReadDir(logsDir)
@@ -331,7 +331,7 @@ func (c *dlmTestCluster) waitForFilerCount(expected int, timeout time.Duration) 
 	}
 	defer conn.Close()
 
-	client := master_pb.NewSeaweedClient(conn)
+	client := master_pb.NewHanzoClient(conn)
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -405,7 +405,7 @@ func (c *dlmTestCluster) checkLockMutualExclusion(key string) (bool, error) {
 	}
 	defer conn0.Close()
 
-	client0 := filer_pb.NewSeaweedFilerClient(conn0)
+	client0 := filer_pb.NewHanzoFilerClient(conn0)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	resp0, err := client0.DistributedLock(ctx, &filer_pb.LockRequest{
@@ -427,7 +427,7 @@ func (c *dlmTestCluster) checkLockMutualExclusion(key string) (bool, error) {
 	}
 	defer conn1.Close()
 
-	client1 := filer_pb.NewSeaweedFilerClient(conn1)
+	client1 := filer_pb.NewHanzoFilerClient(conn1)
 	resp1, err := client1.DistributedLock(ctx, &filer_pb.LockRequest{
 		Name:          key,
 		SecondsToLock: 5,
@@ -495,16 +495,16 @@ func allocatePorts(t testing.TB, n int) []int {
 	return ports
 }
 
-func findWeedBinary() string {
+func findS3Binary() string {
 	if p := os.Getenv("WEED_BINARY"); p != "" {
 		return p
 	}
-	if p, err := exec.LookPath("weed"); err == nil {
+	if p, err := exec.LookPath("s3"); err == nil {
 		return p
 	}
 	candidates := []string{
-		"../../weed/weed",
-		"./weed",
+		"../../s3/s3",
+		"./s3",
 	}
 	for _, c := range candidates {
 		if info, err := os.Stat(c); err == nil && !info.IsDir() {

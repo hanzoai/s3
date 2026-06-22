@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# End-to-end test script for SeaweedFS with FoundationDB
+# End-to-end test script for Hanzo with FoundationDB
 set -e
 
 # Colors
@@ -16,7 +16,7 @@ ACCESS_KEY="admin"
 SECRET_KEY="admin_secret_key"
 BUCKET_NAME="test-fdb-bucket"
 TEST_FILE="test-file.txt"
-TEST_CONTENT="Hello FoundationDB from SeaweedFS!"
+TEST_CONTENT="Hello FoundationDB from Hanzo!"
 
 echo -e "${BLUE}Starting FoundationDB S3 integration tests...${NC}"
 
@@ -97,9 +97,9 @@ fi
 
 echo -e "${BLUE}Test: FoundationDB backend verification${NC}"
 # Check that data is actually stored in FoundationDB
-docker-compose exec -T fdb1 fdbcli --exec 'getrange seaweedfs seaweedfs\xFF' > fdb_keys.txt || true
+docker-compose exec -T fdb1 fdbcli --exec 'getrange hanzo hanzo\xFF' > fdb_keys.txt || true
 
-if [ -s fdb_keys.txt ] && grep -q "seaweedfs" fdb_keys.txt; then
+if [ -s fdb_keys.txt ] && grep -q "hanzo" fdb_keys.txt; then
     echo -e "${GREEN}✅ Data confirmed in FoundationDB backend${NC}"
 else
     echo -e "${YELLOW}⚠️  No data found in FoundationDB (may be expected if no operations performed)${NC}"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Performance Test Runner for SeaweedFS S3 IAM
+# Performance Test Runner for Hanzo S3 IAM
 
 set -e
 

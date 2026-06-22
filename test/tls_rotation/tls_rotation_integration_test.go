@@ -1,5 +1,5 @@
 // Package tls_rotation exercises HTTPS certificate rotation end-to-end:
-// start a real `weed master` with an HTTPS listener, capture the leaf
+// start a real `s3 master` with an HTTPS listener, capture the leaf
 // served at handshake time, rewrite the cert/key files on disk, and
 // assert that a subsequent handshake sees the new leaf — all without
 // stopping the master process. The test shortens the reloader's refresh
@@ -28,7 +28,7 @@ import (
 	"time"
 )
 
-// TestMasterHTTPSCertRotation boots `weed master` with HTTPS, confirms
+// TestMasterHTTPSCertRotation boots `s3 master` with HTTPS, confirms
 // the initial leaf is served, rotates the cert/key pair on disk, and
 // asserts the rotated leaf is served on subsequent TLS handshakes.
 func TestMasterHTTPSCertRotation(t *testing.T) {
@@ -36,7 +36,7 @@ func TestMasterHTTPSCertRotation(t *testing.T) {
 		t.Skip("skipping HTTPS rotation integration test in -short mode")
 	}
 
-	weedBin := findWeedBinary(t)
+	s3Bin := findS3Binary(t)
 
 	dir := t.TempDir()
 	tlsDir := filepath.Join(dir, "tls")
@@ -58,7 +58,7 @@ func TestMasterHTTPSCertRotation(t *testing.T) {
 		t.Fatalf("mkdir master: %v", err)
 	}
 	// Empty security.toml so the master doesn't pick up a user's
-	// ~/.seaweedfs/security.toml during the test.
+	// ~/.s3/security.toml during the test.
 	if err := os.WriteFile(filepath.Join(masterDir, "security.toml"), []byte("# test\n"), 0o644); err != nil {
 		t.Fatalf("write security.toml: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestMasterHTTPSCertRotation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, weedBin, "master",
+	cmd := exec.CommandContext(ctx, s3Bin, "master",
 		"-ip", "127.0.0.1",
 		"-port", strconv.Itoa(port),
 		"-port.grpc", strconv.Itoa(grpcPort),
@@ -79,8 +79,8 @@ func TestMasterHTTPSCertRotation(t *testing.T) {
 	cmd.Dir = masterDir
 	cmd.Env = append(os.Environ(),
 		// Isolate HOME so the subprocess cannot pick up a developer's
-		// ~/.seaweedfs/security.toml. Viper's AddConfigPath uses the
-		// literal string "$HOME/.seaweedfs" without env expansion today,
+		// ~/.s3/security.toml. Viper's AddConfigPath uses the
+		// literal string "$HOME/.s3" without env expansion today,
 		// so this is only belt-and-braces — but it insures us against a
 		// future viper upgrade that does expand env vars.
 		"HOME="+dir,
@@ -203,12 +203,12 @@ func getFreeTCPPort(t *testing.T) int {
 	return port
 }
 
-func findWeedBinary(t *testing.T) string {
+func findS3Binary(t *testing.T) string {
 	t.Helper()
 	candidates := []string{
-		"../../weed/weed",
-		"../weed/weed",
-		"./weed",
+		"../../s3/s3",
+		"../s3/s3",
+		"./s3",
 	}
 	for _, c := range candidates {
 		if _, err := os.Stat(c); err == nil {
@@ -219,10 +219,10 @@ func findWeedBinary(t *testing.T) string {
 			return c
 		}
 	}
-	if path, err := exec.LookPath("weed"); err == nil {
+	if path, err := exec.LookPath("s3"); err == nil {
 		return path
 	}
-	t.Skip("weed binary not found — build with `cd weed && go build` first")
+	t.Skip("s3 binary not found — build with `cd s3 && go build` first")
 	return ""
 }
 

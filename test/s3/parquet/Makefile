@@ -2,7 +2,7 @@
 # This Makefile provides targets for running comprehensive S3 Parquet tests with PyArrow
 
 # Default values
-SEAWEEDFS_BINARY ?= weed
+SEAWEEDFS_BINARY ?= s3
 S3_PORT ?= 8333
 TEST_TIMEOUT ?= 15m
 ACCESS_KEY ?= some_access_key1
@@ -25,18 +25,18 @@ GREEN := \033[0;32m
 YELLOW := \033[1;33m
 NC := \033[0m # No Color
 
-.PHONY: all build-weed check-binary check-python ci-test clean debug-logs debug-status help manual-start manual-stop setup-python start-seaweedfs start-seaweedfs-ci stop-seaweedfs stop-seaweedfs-safe test test-cross-fs test-cross-fs-with-server test-implicit-dir test-implicit-dir-with-server test-native-s3 test-native-s3-with-server test-native-s3-with-sse test-quick test-sse-s3-compat test-with-server
+.PHONY: all build-s3 check-binary check-python ci-test clean debug-logs debug-status help manual-start manual-stop setup-python start-hanzo start-hanzo-ci stop-hanzo stop-hanzo-safe test test-cross-fs test-cross-fs-with-server test-implicit-dir test-implicit-dir-with-server test-native-s3 test-native-s3-with-server test-native-s3-with-sse test-quick test-sse-s3-compat test-with-server
 
 all: test
 
-# Build SeaweedFS binary (GitHub Actions compatible)
-build-weed:
-	@echo "Building SeaweedFS binary..."
-	@cd $(SEAWEEDFS_ROOT)/weed && go install -buildvcs=false
-	@echo "✅ SeaweedFS binary built successfully"
+# Build Hanzo binary (GitHub Actions compatible)
+build-s3:
+	@echo "Building Hanzo binary..."
+	@cd $(SEAWEEDFS_ROOT)/s3 && go install -buildvcs=false
+	@echo "✅ Hanzo binary built successfully"
 
 help:
-	@echo "SeaweedFS S3 Parquet Integration Tests"
+	@echo "Hanzo S3 Parquet Integration Tests"
 	@echo ""
 	@echo "Available targets:"
 	@echo "  test              - Run full S3 Parquet integration tests (small and large files)"
@@ -52,13 +52,13 @@ help:
 	@echo "  test-sse-s3-compat - Comprehensive SSE-S3 compatibility test (multipart uploads)"
 	@echo "  setup-python      - Setup Python virtual environment and install dependencies"
 	@echo "  check-python      - Check if Python and required packages are available"
-	@echo "  start-seaweedfs   - Start SeaweedFS server for testing"
-	@echo "  start-seaweedfs-ci - Start SeaweedFS server (CI-safe version)"
-	@echo "  stop-seaweedfs    - Stop SeaweedFS server"
-	@echo "  stop-seaweedfs-safe - Stop SeaweedFS server (CI-safe version)"
+	@echo "  start-hanzo   - Start Hanzo server for testing"
+	@echo "  start-hanzo-ci - Start Hanzo server (CI-safe version)"
+	@echo "  stop-hanzo    - Stop Hanzo server"
+	@echo "  stop-hanzo-safe - Stop Hanzo server (CI-safe version)"
 	@echo "  clean             - Clean up test artifacts"
-	@echo "  check-binary      - Check if SeaweedFS binary exists"
-	@echo "  build-weed        - Build SeaweedFS binary"
+	@echo "  check-binary      - Check if Hanzo binary exists"
+	@echo "  build-s3        - Build Hanzo binary"
 	@echo ""
 	@echo "Configuration:"
 	@echo "  SEAWEEDFS_BINARY=$(SEAWEEDFS_BINARY)"
@@ -69,11 +69,11 @@ help:
 
 check-binary:
 	@if ! command -v $(SEAWEEDFS_BINARY) > /dev/null 2>&1; then \
-		echo "$(RED)Error: SeaweedFS binary '$(SEAWEEDFS_BINARY)' not found in PATH$(NC)"; \
-		echo "Please build SeaweedFS first by running 'make' in the root directory"; \
+		echo "$(RED)Error: Hanzo binary '$(SEAWEEDFS_BINARY)' not found in PATH$(NC)"; \
+		echo "Please build Hanzo first by running 'make' in the root directory"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)SeaweedFS binary found: $$(which $(SEAWEEDFS_BINARY))$(NC)"
+	@echo "$(GREEN)Hanzo binary found: $$(which $(SEAWEEDFS_BINARY))$(NC)"
 
 check-python:
 	@if ! command -v $(PYTHON) > /dev/null 2>&1; then \
@@ -94,8 +94,8 @@ setup-python: check-python
 	@$(VENV_DIR)/bin/pip install -r requirements.txt
 	@echo "$(GREEN)Python dependencies installed successfully$(NC)"
 
-start-seaweedfs-ci: check-binary
-	@echo "$(YELLOW)Starting SeaweedFS server for Parquet testing...$(NC)"
+start-hanzo-ci: check-binary
+	@echo "$(YELLOW)Starting Hanzo server for Parquet testing...$(NC)"
 	
 	# Clean up any existing processes first (CI-safe) - aggressive cleanup
 	@echo "Aggressively cleaning up any existing processes on S3 port $(S3_PORT) and master port 9333..."
@@ -109,26 +109,26 @@ start-seaweedfs-ci: check-binary
 	@sleep 3
 	
 	# Create necessary directories
-	@mkdir -p /tmp/seaweedfs-test-parquet
+	@mkdir -p /tmp/hanzo-test-parquet
 	
 	# Clean up any old server logs
-	@rm -f /tmp/seaweedfs-parquet-*.log || true
+	@rm -f /tmp/hanzo-parquet-*.log || true
 	
-	# Start weed mini with embedded S3
-	@echo "Starting weed mini with embedded S3..."
+	# Start s3 mini with embedded S3
+	@echo "Starting s3 mini with embedded S3..."
 	@if [ "$(ENABLE_SSE_S3)" = "true" ]; then \
 		echo "  SSE-S3 encryption: ENABLED"; \
-		printf '{"identities":[{"name":"%s","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","Write"]}],"buckets":[{"name":"$(BUCKET_NAME)","encryption":{"sseS3":{"enabled":true}}}]}' "$(ACCESS_KEY)" "$(ACCESS_KEY)" "$(SECRET_KEY)" > /tmp/seaweedfs-parquet-s3.json; \
+		printf '{"identities":[{"name":"%s","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","Write"]}],"buckets":[{"name":"$(BUCKET_NAME)","encryption":{"sseS3":{"enabled":true}}}]}' "$(ACCESS_KEY)" "$(ACCESS_KEY)" "$(SECRET_KEY)" > /tmp/hanzo-parquet-s3.json; \
 	else \
 		echo "  SSE-S3 encryption: DISABLED"; \
-		printf '{"identities":[{"name":"%s","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","Write"]}]}' "$(ACCESS_KEY)" "$(ACCESS_KEY)" "$(SECRET_KEY)" > /tmp/seaweedfs-parquet-s3.json; \
+		printf '{"identities":[{"name":"%s","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","Write"]}]}' "$(ACCESS_KEY)" "$(ACCESS_KEY)" "$(SECRET_KEY)" > /tmp/hanzo-parquet-s3.json; \
 	fi
 	@$(SEAWEEDFS_BINARY) mini \
-		-dir=/tmp/seaweedfs-test-parquet \
+		-dir=/tmp/hanzo-test-parquet \
 		-ip.bind=0.0.0.0 \
 		-s3.port=$(S3_PORT) \
-		-s3.config=/tmp/seaweedfs-parquet-s3.json \
-		> /tmp/seaweedfs-parquet-mini.log 2>&1 & echo $$! > /tmp/weed-mini.pid
+		-s3.config=/tmp/hanzo-parquet-s3.json \
+		> /tmp/hanzo-parquet-mini.log 2>&1 & echo $$! > /tmp/s3-mini.pid
 	@echo "Waiting for S3 service to be fully ready (max 90 seconds)..."
 	@bash -c 'for i in $$(seq 1 90); do \
 		if curl -s -H "Authorization: AWS4-HMAC-SHA256 Credential=$(ACCESS_KEY)" http://localhost:$(S3_PORT)/ > /dev/null 2>&1; then \
@@ -140,32 +140,32 @@ start-seaweedfs-ci: check-binary
 	done; \
 	echo "ERROR S3 service failed to start within 90 seconds"; \
 	echo "=== Server log output ==="; \
-	cat /tmp/seaweedfs-parquet-mini.log 2>/dev/null || echo "No startup log available"; \
+	cat /tmp/hanzo-parquet-mini.log 2>/dev/null || echo "No startup log available"; \
 	exit 1'
 
-start-seaweedfs: check-binary
-	@echo "$(YELLOW)Starting SeaweedFS server for Parquet testing...$(NC)"
+start-hanzo: check-binary
+	@echo "$(YELLOW)Starting Hanzo server for Parquet testing...$(NC)"
 	@# Use port-based cleanup for consistency and safety
 	@echo "Cleaning up any existing processes..."
 	@lsof -ti :$(S3_PORT) 2>/dev/null | xargs -r kill -TERM || true
 	@sleep 2
-	@$(MAKE) start-seaweedfs-ci
+	@$(MAKE) start-hanzo-ci
 
-stop-seaweedfs:
-	@echo "$(YELLOW)Stopping SeaweedFS server...$(NC)"
+stop-hanzo:
+	@echo "$(YELLOW)Stopping Hanzo server...$(NC)"
 	@# Use port-based cleanup for consistency and safety
-	@if [ -f /tmp/weed-mini.pid ]; then \
-		echo "Stopping weed mini..."; \
-		kill $$(cat /tmp/weed-mini.pid) || true; \
-		rm -f /tmp/weed-mini.pid; \
+	@if [ -f /tmp/s3-mini.pid ]; then \
+		echo "Stopping s3 mini..."; \
+		kill $$(cat /tmp/s3-mini.pid) || true; \
+		rm -f /tmp/s3-mini.pid; \
 	fi
 	@lsof -ti :$(S3_PORT) 2>/dev/null | xargs -r kill -TERM || true
 	@sleep 2
-	@echo "$(GREEN)SeaweedFS server stopped$(NC)"
+	@echo "$(GREEN)Hanzo server stopped$(NC)"
 
 # CI-safe server stop that's more conservative
-stop-seaweedfs-safe:
-	@echo "$(YELLOW)Safely stopping SeaweedFS server...$(NC)"
+stop-hanzo-safe:
+	@echo "$(YELLOW)Safely stopping Hanzo server...$(NC)"
 	@# Use port-based cleanup which is safer in CI
 	@if command -v lsof >/dev/null 2>&1; then \
 		echo "Using lsof for port-based cleanup..."; \
@@ -175,25 +175,25 @@ stop-seaweedfs-safe:
 		netstat -tlnp 2>/dev/null | grep :$(S3_PORT) | awk '{print $$7}' | cut -d/ -f1 | head -5 | while read pid; do [ "$$pid" != "-" ] && kill -TERM $$pid 2>/dev/null || true; done; \
 	fi
 	@sleep 2
-	@echo "$(GREEN)SeaweedFS server safely stopped$(NC)"
+	@echo "$(GREEN)Hanzo server safely stopped$(NC)"
 
 clean:
 	@echo "$(YELLOW)Cleaning up Parquet test artifacts...$(NC)"
-	@rm -rf /tmp/seaweedfs-test-parquet-*
-	@rm -f /tmp/seaweedfs-parquet-*.log
-	@rm -f /tmp/seaweedfs-parquet-s3.json
+	@rm -rf /tmp/hanzo-test-parquet-*
+	@rm -f /tmp/hanzo-parquet-*.log
+	@rm -f /tmp/hanzo-parquet-s3.json
 	@rm -f s3_parquet_test_errors_*.log
 	@rm -rf $(VENV_DIR)
 	@echo "$(GREEN)Parquet test cleanup completed$(NC)"
 
 # Test with automatic server management (GitHub Actions compatible)
-test-with-server: build-weed setup-python
+test-with-server: build-s3 setup-python
 	@echo "🚀 Starting Parquet integration tests with automated server management..."
-	@echo "Starting SeaweedFS cluster..."
-	@if $(MAKE) start-seaweedfs-ci > weed-test.log 2>&1; then \
-		echo "✅ SeaweedFS cluster started successfully"; \
+	@echo "Starting Hanzo cluster..."
+	@if $(MAKE) start-hanzo-ci > s3-test.log 2>&1; then \
+		echo "✅ Hanzo cluster started successfully"; \
 		echo "Running Parquet integration tests..."; \
-		trap '$(MAKE) -C $(TEST_DIR) stop-seaweedfs-safe || true' EXIT; \
+		trap '$(MAKE) -C $(TEST_DIR) stop-hanzo-safe || true' EXIT; \
 		S3_ENDPOINT_URL=http://localhost:$(S3_PORT) \
 		S3_ACCESS_KEY=$(ACCESS_KEY) \
 		S3_SECRET_KEY=$(SECRET_KEY) \
@@ -201,18 +201,18 @@ test-with-server: build-weed setup-python
 		$(VENV_DIR)/bin/$(PYTHON) $(PYTHON_TEST_SCRIPT) || exit 1; \
 		echo "✅ All tests completed successfully"; \
 	else \
-		echo "❌ Failed to start SeaweedFS cluster"; \
+		echo "❌ Failed to start Hanzo cluster"; \
 		echo "=== Server startup logs ==="; \
-		tail -100 weed-test.log 2>/dev/null || echo "No startup log available"; \
+		tail -100 s3-test.log 2>/dev/null || echo "No startup log available"; \
 		echo "=== System information ==="; \
-		ps aux | grep -E "weed|make" | grep -v grep || echo "No relevant processes found"; \
+		ps aux | grep -E "s3|make" | grep -v grep || echo "No relevant processes found"; \
 		exit 1; \
 	fi
 
-# Run tests assuming SeaweedFS is already running
+# Run tests assuming Hanzo is already running
 test: setup-python
 	@echo "$(YELLOW)Running Parquet integration tests...$(NC)"
-	@echo "$(YELLOW)Assuming SeaweedFS is already running on localhost:$(S3_PORT)$(NC)"
+	@echo "$(YELLOW)Assuming Hanzo is already running on localhost:$(S3_PORT)$(NC)"
 	@S3_ENDPOINT_URL=http://localhost:$(S3_PORT) \
 	 S3_ACCESS_KEY=$(ACCESS_KEY) \
 	 S3_SECRET_KEY=$(SECRET_KEY) \
@@ -222,7 +222,7 @@ test: setup-python
 # Run quick tests with small files only
 test-quick: setup-python
 	@echo "$(YELLOW)Running quick Parquet tests (small files only)...$(NC)"
-	@echo "$(YELLOW)Assuming SeaweedFS is already running on localhost:$(S3_PORT)$(NC)"
+	@echo "$(YELLOW)Assuming Hanzo is already running on localhost:$(S3_PORT)$(NC)"
 	@S3_ENDPOINT_URL=http://localhost:$(S3_PORT) \
 	 S3_ACCESS_KEY=$(ACCESS_KEY) \
 	 S3_SECRET_KEY=$(SECRET_KEY) \
@@ -233,7 +233,7 @@ test-quick: setup-python
 # Test implicit directory fix for s3fs compatibility
 test-implicit-dir: setup-python
 	@echo "$(YELLOW)Running implicit directory fix tests...$(NC)"
-	@echo "$(YELLOW)Assuming SeaweedFS is already running on localhost:$(S3_PORT)$(NC)"
+	@echo "$(YELLOW)Assuming Hanzo is already running on localhost:$(S3_PORT)$(NC)"
 	@S3_ENDPOINT_URL=http://localhost:$(S3_PORT) \
 	 S3_ACCESS_KEY=$(ACCESS_KEY) \
 	 S3_SECRET_KEY=$(SECRET_KEY) \
@@ -241,13 +241,13 @@ test-implicit-dir: setup-python
 	 $(VENV_DIR)/bin/$(PYTHON) test_implicit_directory_fix.py
 
 # Test implicit directory fix with automatic server management
-test-implicit-dir-with-server: build-weed setup-python
+test-implicit-dir-with-server: build-s3 setup-python
 	@echo "🚀 Starting implicit directory fix tests with automated server management..."
-	@echo "Starting SeaweedFS cluster..."
-	@if $(MAKE) start-seaweedfs-ci > weed-test.log 2>&1; then \
-		echo "✅ SeaweedFS cluster started successfully"; \
+	@echo "Starting Hanzo cluster..."
+	@if $(MAKE) start-hanzo-ci > s3-test.log 2>&1; then \
+		echo "✅ Hanzo cluster started successfully"; \
 		echo "Running implicit directory fix tests..."; \
-		trap '$(MAKE) -C $(TEST_DIR) stop-seaweedfs-safe || true' EXIT; \
+		trap '$(MAKE) -C $(TEST_DIR) stop-hanzo-safe || true' EXIT; \
 		S3_ENDPOINT_URL=http://localhost:$(S3_PORT) \
 		S3_ACCESS_KEY=$(ACCESS_KEY) \
 		S3_SECRET_KEY=$(SECRET_KEY) \
@@ -255,35 +255,35 @@ test-implicit-dir-with-server: build-weed setup-python
 		$(VENV_DIR)/bin/$(PYTHON) test_implicit_directory_fix.py || exit 1; \
 		echo "✅ All tests completed successfully"; \
 	else \
-		echo "❌ Failed to start SeaweedFS cluster"; \
+		echo "❌ Failed to start Hanzo cluster"; \
 		echo "=== Server startup logs ==="; \
-		tail -100 weed-test.log 2>/dev/null || echo "No startup log available"; \
+		tail -100 s3-test.log 2>/dev/null || echo "No startup log available"; \
 		exit 1; \
 	fi
 
 # Debug targets
 debug-logs:
 	@echo "$(YELLOW)=== Mini Log ===$(NC)"
-	@tail -n 50 /tmp/seaweedfs-parquet-mini.log || echo "No mini log found"
+	@tail -n 50 /tmp/hanzo-parquet-mini.log || echo "No mini log found"
 
 debug-status:
 	@echo "$(YELLOW)=== Process Status ===$(NC)"
-	@ps aux | grep -E "(weed|seaweedfs)" | grep -v grep || echo "No SeaweedFS processes found"
+	@ps aux | grep -E "(s3|hanzo)" | grep -v grep || echo "No Hanzo processes found"
 	@echo "$(YELLOW)=== Port Status ===$(NC)"
 	@netstat -an | grep -E "($(S3_PORT))" || echo "No ports in use"
 
 # Manual test targets for development
-manual-start: start-seaweedfs
-	@echo "$(GREEN)SeaweedFS with S3 is now running for manual testing$(NC)"
+manual-start: start-hanzo
+	@echo "$(GREEN)Hanzo with S3 is now running for manual testing$(NC)"
 	@echo "You can now run Parquet tests manually"
 	@echo "Run 'make manual-stop' when finished"
 
-manual-stop: stop-seaweedfs clean
+manual-stop: stop-hanzo clean
 
 # Test PyArrow's native S3 filesystem
 test-native-s3: setup-python
 	@echo "$(YELLOW)Running PyArrow native S3 filesystem tests...$(NC)"
-	@echo "$(YELLOW)Assuming SeaweedFS is already running on localhost:$(S3_PORT)$(NC)"
+	@echo "$(YELLOW)Assuming Hanzo is already running on localhost:$(S3_PORT)$(NC)"
 	@S3_ENDPOINT_URL=http://localhost:$(S3_PORT) \
 	 S3_ACCESS_KEY=$(ACCESS_KEY) \
 	 S3_SECRET_KEY=$(SECRET_KEY) \
@@ -291,13 +291,13 @@ test-native-s3: setup-python
 	 $(VENV_DIR)/bin/$(PYTHON) test_pyarrow_native_s3.py
 
 # Test PyArrow's native S3 filesystem with automatic server management
-test-native-s3-with-server: build-weed setup-python
+test-native-s3-with-server: build-s3 setup-python
 	@echo "🚀 Starting PyArrow native S3 filesystem tests with automated server management..."
-	@echo "Starting SeaweedFS cluster..."
-	@if $(MAKE) start-seaweedfs-ci > weed-test.log 2>&1; then \
-		echo "✅ SeaweedFS cluster started successfully"; \
+	@echo "Starting Hanzo cluster..."
+	@if $(MAKE) start-hanzo-ci > s3-test.log 2>&1; then \
+		echo "✅ Hanzo cluster started successfully"; \
 		echo "Running PyArrow native S3 filesystem tests..."; \
-		trap '$(MAKE) -C $(TEST_DIR) stop-seaweedfs-safe || true' EXIT; \
+		trap '$(MAKE) -C $(TEST_DIR) stop-hanzo-safe || true' EXIT; \
 		S3_ENDPOINT_URL=http://localhost:$(S3_PORT) \
 		S3_ACCESS_KEY=$(ACCESS_KEY) \
 		S3_SECRET_KEY=$(SECRET_KEY) \
@@ -305,16 +305,16 @@ test-native-s3-with-server: build-weed setup-python
 		$(VENV_DIR)/bin/$(PYTHON) test_pyarrow_native_s3.py || exit 1; \
 		echo "✅ All tests completed successfully"; \
 	else \
-		echo "❌ Failed to start SeaweedFS cluster"; \
+		echo "❌ Failed to start Hanzo cluster"; \
 		echo "=== Server startup logs ==="; \
-		tail -100 weed-test.log 2>/dev/null || echo "No startup log available"; \
+		tail -100 s3-test.log 2>/dev/null || echo "No startup log available"; \
 		exit 1; \
 	fi
 
 # Test cross-filesystem compatibility (s3fs ↔ PyArrow native S3)
 test-cross-fs: setup-python
 	@echo "$(YELLOW)Running cross-filesystem compatibility tests...$(NC)"
-	@echo "$(YELLOW)Assuming SeaweedFS is already running on localhost:$(S3_PORT)$(NC)"
+	@echo "$(YELLOW)Assuming Hanzo is already running on localhost:$(S3_PORT)$(NC)"
 	@S3_ENDPOINT_URL=http://localhost:$(S3_PORT) \
 	 S3_ACCESS_KEY=$(ACCESS_KEY) \
 	 S3_SECRET_KEY=$(SECRET_KEY) \
@@ -322,13 +322,13 @@ test-cross-fs: setup-python
 	 $(VENV_DIR)/bin/$(PYTHON) test_cross_filesystem_compatibility.py
 
 # Test cross-filesystem compatibility with automatic server management
-test-cross-fs-with-server: build-weed setup-python
+test-cross-fs-with-server: build-s3 setup-python
 	@echo "🚀 Starting cross-filesystem compatibility tests with automated server management..."
-	@echo "Starting SeaweedFS cluster..."
-	@if $(MAKE) start-seaweedfs-ci > weed-test.log 2>&1; then \
-		echo "✅ SeaweedFS cluster started successfully"; \
+	@echo "Starting Hanzo cluster..."
+	@if $(MAKE) start-hanzo-ci > s3-test.log 2>&1; then \
+		echo "✅ Hanzo cluster started successfully"; \
 		echo "Running cross-filesystem compatibility tests..."; \
-		trap '$(MAKE) -C $(TEST_DIR) stop-seaweedfs-safe || true' EXIT; \
+		trap '$(MAKE) -C $(TEST_DIR) stop-hanzo-safe || true' EXIT; \
 		S3_ENDPOINT_URL=http://localhost:$(S3_PORT) \
 		S3_ACCESS_KEY=$(ACCESS_KEY) \
 		S3_SECRET_KEY=$(SECRET_KEY) \
@@ -336,21 +336,21 @@ test-cross-fs-with-server: build-weed setup-python
 		$(VENV_DIR)/bin/$(PYTHON) test_cross_filesystem_compatibility.py || exit 1; \
 		echo "✅ All tests completed successfully"; \
 	else \
-		echo "❌ Failed to start SeaweedFS cluster"; \
+		echo "❌ Failed to start Hanzo cluster"; \
 		echo "=== Server startup logs ==="; \
-		tail -100 weed-test.log 2>/dev/null || echo "No startup log available"; \
+		tail -100 s3-test.log 2>/dev/null || echo "No startup log available"; \
 		exit 1; \
 	fi
 
 # Test PyArrow's native S3 filesystem compatibility with SSE-S3 enabled backend
 # (For encryption-specific validation, use test-sse-s3-compat)
-test-native-s3-with-sse: build-weed setup-python
+test-native-s3-with-sse: build-s3 setup-python
 	@echo "🚀 Testing PyArrow native S3 compatibility with SSE-S3 enabled backend..."
-	@echo "Starting SeaweedFS cluster with SSE-S3 enabled..."
-	@if $(MAKE) start-seaweedfs-ci ENABLE_SSE_S3=true > weed-test-sse.log 2>&1; then \
-		echo "✅ SeaweedFS cluster started successfully with SSE-S3"; \
+	@echo "Starting Hanzo cluster with SSE-S3 enabled..."
+	@if $(MAKE) start-hanzo-ci ENABLE_SSE_S3=true > s3-test-sse.log 2>&1; then \
+		echo "✅ Hanzo cluster started successfully with SSE-S3"; \
 		echo "Running PyArrow native S3 filesystem tests with SSE-S3..."; \
-		trap '$(MAKE) -C $(TEST_DIR) stop-seaweedfs-safe || true' EXIT; \
+		trap '$(MAKE) -C $(TEST_DIR) stop-hanzo-safe || true' EXIT; \
 		S3_ENDPOINT_URL=http://localhost:$(S3_PORT) \
 		S3_ACCESS_KEY=$(ACCESS_KEY) \
 		S3_SECRET_KEY=$(SECRET_KEY) \
@@ -358,20 +358,20 @@ test-native-s3-with-sse: build-weed setup-python
 		$(VENV_DIR)/bin/$(PYTHON) test_pyarrow_native_s3.py || exit 1; \
 		echo "✅ All SSE-S3 tests completed successfully"; \
 	else \
-		echo "❌ Failed to start SeaweedFS cluster with SSE-S3"; \
+		echo "❌ Failed to start Hanzo cluster with SSE-S3"; \
 		echo "=== Server startup logs ==="; \
-		tail -100 weed-test-sse.log 2>/dev/null || echo "No startup log available"; \
+		tail -100 s3-test-sse.log 2>/dev/null || echo "No startup log available"; \
 		exit 1; \
 	fi
 
 # Comprehensive SSE-S3 compatibility test
-test-sse-s3-compat: build-weed setup-python
+test-sse-s3-compat: build-s3 setup-python
 	@echo "🚀 Starting comprehensive SSE-S3 compatibility tests..."
-	@echo "Starting SeaweedFS cluster with SSE-S3 enabled..."
-	@if $(MAKE) start-seaweedfs-ci ENABLE_SSE_S3=true > weed-test-sse-compat.log 2>&1; then \
-		echo "✅ SeaweedFS cluster started successfully with SSE-S3"; \
+	@echo "Starting Hanzo cluster with SSE-S3 enabled..."
+	@if $(MAKE) start-hanzo-ci ENABLE_SSE_S3=true > s3-test-sse-compat.log 2>&1; then \
+		echo "✅ Hanzo cluster started successfully with SSE-S3"; \
 		echo "Running comprehensive SSE-S3 compatibility tests..."; \
-		trap '$(MAKE) -C $(TEST_DIR) stop-seaweedfs-safe || true' EXIT; \
+		trap '$(MAKE) -C $(TEST_DIR) stop-hanzo-safe || true' EXIT; \
 		S3_ENDPOINT_URL=http://localhost:$(S3_PORT) \
 		S3_ACCESS_KEY=$(ACCESS_KEY) \
 		S3_SECRET_KEY=$(SECRET_KEY) \
@@ -379,9 +379,9 @@ test-sse-s3-compat: build-weed setup-python
 		$(VENV_DIR)/bin/$(PYTHON) test_sse_s3_compatibility.py || exit 1; \
 		echo "✅ All SSE-S3 compatibility tests completed successfully"; \
 	else \
-		echo "❌ Failed to start SeaweedFS cluster with SSE-S3"; \
+		echo "❌ Failed to start Hanzo cluster with SSE-S3"; \
 		echo "=== Server startup logs ==="; \
-		tail -100 weed-test-sse-compat.log 2>/dev/null || echo "No startup log available"; \
+		tail -100 s3-test-sse-compat.log 2>/dev/null || echo "No startup log available"; \
 		exit 1; \
 	fi
 

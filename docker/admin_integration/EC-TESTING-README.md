@@ -1,6 +1,6 @@
-# SeaweedFS EC Worker Testing Environment
+# Hanzo EC Worker Testing Environment
 
-This Docker Compose setup provides a comprehensive testing environment for SeaweedFS Erasure Coding (EC) workers using **official SeaweedFS commands**.
+This Docker Compose setup provides a comprehensive testing environment for Hanzo Erasure Coding (EC) workers using **official Hanzo commands**.
 
 ## 📂 Directory Structure
 
@@ -16,14 +16,14 @@ docker/admin_integration/
 
 ## 🏗️ Architecture
 
-The testing environment uses **official SeaweedFS commands** and includes:
+The testing environment uses **official Hanzo commands** and includes:
 
 - **1 Master Server** (port 9333) - Coordinates the cluster with 50MB volume size limit
 - **6 Volume Servers** (ports 8080-8085) - Distributed across 2 data centers and 3 racks for diversity  
 - **1 Filer** (port 8888) - Provides file system interface
 - **1 Admin Server** (port 23646) - Detects volumes needing EC and manages workers using official `admin` command
 - **3 EC Workers** - Execute erasure coding tasks using official `worker` command with task-specific working directories
-- **1 Load Generator** - Continuously writes and deletes files using SeaweedFS shell commands
+- **1 Load Generator** - Continuously writes and deletes files using Hanzo shell commands
 - **1 Monitor** - Tracks cluster health and EC progress using shell scripts
 
 ## ✨ New Features
@@ -63,7 +63,7 @@ make start
 ```
 
 The `make start` command will:
-1. Start all services using official SeaweedFS images
+1. Start all services using official Hanzo images
 2. Configure workers with task-specific working directories
 3. Wait for services to be ready
 4. Display monitoring URLs and run health checks
@@ -435,4 +435,4 @@ make scale-load RATE=X # Increase load
 make troubleshoot      # Diagnose issues
 ```
 
-This environment provides a realistic testing scenario for SeaweedFS EC workers with actual data operations, comprehensive monitoring, and easy management through Make targets. 
+This environment provides a realistic testing scenario for Hanzo EC workers with actual data operations, comprehensive monitoring, and easy management through Make targets. 

@@ -1,26 +1,26 @@
-# SeaweedFS Message Queue Test Suite
+# Hanzo Message Queue Test Suite
 
-This directory contains test programs for SeaweedFS Message Queue (MQ) functionality, including message producers and consumers.
+This directory contains test programs for Hanzo Message Queue (MQ) functionality, including message producers and consumers.
 
 ## Prerequisites
 
-1. **SeaweedFS with MQ Broker and Agent**: You need a running SeaweedFS instance with MQ broker and agent enabled
+1. **Hanzo with MQ Broker and Agent**: You need a running Hanzo instance with MQ broker and agent enabled
 2. **Go**: Go 1.19 or later required for building the test programs
 
 ## Quick Start
 
-### 1. Start SeaweedFS with MQ Broker and Agent
+### 1. Start Hanzo with MQ Broker and Agent
 
 ```bash
-# Start SeaweedFS server with MQ broker and agent
-weed server -mq.broker -mq.agent -filer -volume -master.peers=none
+# Start Hanzo server with MQ broker and agent
+s3 server -mq.broker -mq.agent -filer -volume -master.peers=none
 
 # Or start components separately
-weed master -peers=none
-weed volume -master=localhost:9333
-weed filer -master=localhost:9333
-weed mq.broker -filer=localhost:8888
-weed mq.agent -brokers=localhost:17777
+s3 master -peers=none
+s3 volume -master=localhost:9333
+s3 filer -master=localhost:9333
+s3 mq.broker -filer=localhost:8888
+s3 mq.agent -brokers=localhost:17777
 ```
 
 ### 2. Build Test Programs
@@ -49,7 +49,7 @@ make producer    # Start producer
 
 ### Producer (`producer/main.go`)
 
-Generates structured messages and publishes them to a SeaweedMQ topic via the MQ agent.
+Generates structured messages and publishes them to a HanzoMQ topic via the MQ agent.
 
 **Usage:**
 ```bash
@@ -73,7 +73,7 @@ Generates structured messages and publishes them to a SeaweedMQ topic via the MQ
 
 ### Consumer (`consumer/main.go`)
 
-Consumes structured messages from a SeaweedMQ topic via the MQ agent.
+Consumes structured messages from a HanzoMQ topic via the MQ agent.
 
 **Usage:**
 ```bash
@@ -186,11 +186,11 @@ make consumer OFFSET=timestamp OFFSET_TS=1699000000000000000
 
 ### Common Issues
 
-1. **Connection Refused**: Make sure SeaweedFS MQ agent is running on the specified address
+1. **Connection Refused**: Make sure Hanzo MQ agent is running on the specified address
 2. **Agent Not Found**: Ensure both MQ broker and agent are running (agent requires broker)
 3. **Topic Not Found**: The producer will create the topic automatically on first publish
 4. **Consumer Not Receiving Messages**: Check if consumer group offset is correct (try `earliest`)
-5. **Build Failures**: Ensure you're running from the SeaweedFS root directory
+5. **Build Failures**: Ensure you're running from the Hanzo root directory
 
 ### Debug Mode
 
@@ -210,8 +210,8 @@ curl http://localhost:9333/cluster/brokers
 # Check if agent is running (if running as server)
 curl http://localhost:9333/cluster/agents
 
-# Or use weed shell
-weed shell -master=localhost:9333
+# Or use s3 shell
+s3 shell -master=localhost:9333
 > mq.broker.list
 ```
 

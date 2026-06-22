@@ -7,7 +7,7 @@
 # before any test code runs.
 #
 # Prerequisites:
-#   - SeaweedFS running with S3 API enabled on port 8333
+#   - Hanzo running with S3 API enabled on port 8333
 #   - Go 1.21+
 #
 # Usage:

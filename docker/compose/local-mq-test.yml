@@ -1,6 +1,6 @@
 services:
   server:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 9333:9333
       - 19333:19333
@@ -10,7 +10,7 @@ services:
     healthcheck:
       test: curl -f http://localhost:8888/healthz
   mq_broker:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 17777:17777
     command: "mq.broker -master=server:9333 -ip=mq_broker"
@@ -18,14 +18,14 @@ services:
       server:
         condition: service_healthy
   mq_agent:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 16777:16777
     command: "mq.agent -broker=mq_broker:17777 -port=16777"
     depends_on:
       - mq_broker
   mq_client:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     # run a custom command instead of entrypoint
     command: "ls -al"
     depends_on:

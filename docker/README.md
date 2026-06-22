@@ -1,7 +1,7 @@
 # Docker
 
 ## Compose V2 
-SeaweedFS now uses the `v2` syntax `docker compose`
+Hanzo now uses the `v2` syntax `docker compose`
 
 If you rely on using Docker Compose as docker-compose (with a hyphen), you can set up Compose V2 to act as a drop-in replacement of the previous docker-compose. Refer to the [Installing Compose](https://docs.docker.com/compose/install/) section for detailed instructions on upgrading.
 
@@ -15,9 +15,9 @@ Docker Compose version v2.10.2
 
 ```bash
 
-wget https://raw.githubusercontent.com/seaweedfs/seaweedfs/master/docker/seaweedfs-compose.yml
+wget https://raw.githubusercontent.com/hanzo/hanzo/master/docker/hanzo-compose.yml
 
-docker compose -f seaweedfs-compose.yml -p seaweedfs up
+docker compose -f hanzo-compose.yml -p hanzo up
 
 ```
 
@@ -25,9 +25,9 @@ docker compose -f seaweedfs-compose.yml -p seaweedfs up
 
 ```bash
 
-wget https://raw.githubusercontent.com/seaweedfs/seaweedfs/master/docker/seaweedfs-dev-compose.yml
+wget https://raw.githubusercontent.com/hanzo/hanzo/master/docker/hanzo-dev-compose.yml
 
-docker compose -f seaweedfs-dev-compose.yml -p seaweedfs up
+docker compose -f hanzo-dev-compose.yml -p hanzo up
 
 ```
 
@@ -50,7 +50,7 @@ s3cmd --no-ssl --host=127.0.0.1:8333 ls s3://
 Make sure that `docker buildx` is supported (might be an experimental docker feature)
 ```bash
 BUILDER=$(docker buildx create --driver docker-container --use)
-docker buildx build --pull --push --platform linux/386,linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 . -t chrislusf/seaweedfs
+docker buildx build --pull --push --platform linux/386,linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 . -t chrislusf/hanzo
 docker buildx stop $BUILDER
 ```
 

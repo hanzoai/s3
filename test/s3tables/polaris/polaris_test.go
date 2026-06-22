@@ -134,9 +134,9 @@ type storageCredential struct {
 func bootstrapPolarisTest(t *testing.T, env *TestEnvironment) (context.Context, context.CancelFunc, polarisSession, *polarisTableSetup, func()) {
 	t.Helper()
 
-	t.Logf(">>> Starting SeaweedFS with Polaris configuration...")
-	env.StartSeaweedFS(t)
-	t.Logf(">>> SeaweedFS started.")
+	t.Logf(">>> Starting Hanzo with Polaris configuration...")
+	env.StartHanzo(t)
+	t.Logf(">>> Hanzo started.")
 
 	t.Logf(">>> Starting Polaris...")
 	env.StartPolaris(t)

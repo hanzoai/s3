@@ -50,13 +50,13 @@ RUN cd /tmp && \
 ENV CGO_CFLAGS="-I/usr/include/foundationdb"
 ENV CGO_LDFLAGS="-lfdb_c"
 
-# build SeaweedFS sources; prefer local context but fall back to git clone if context only has docker files
+# build Hanzo sources; prefer local context but fall back to git clone if context only has docker files
 ARG SOURCE_REF=master
 WORKDIR /go/src/github.com/hanzoai/s3
 COPY . .
 RUN set -euo pipefail && \
-    if [ ! -d weed ]; then \
-        echo "Local build context does not include SeaweedFS sources; cloning ${SOURCE_REF}" >&2; \
+    if [ ! -d s3 ]; then \
+        echo "Local build context does not include Hanzo sources; cloning ${SOURCE_REF}" >&2; \
         mkdir -p /tmp/local-context && cp -a /go/src/github.com/hanzoai/s3/. /tmp/local-context && \
         cd / && rm -rf /go/src/github.com/hanzoai/s3 && \
         git clone --depth 1 --branch ${SOURCE_REF} https://github.com/hanzoai/s3 /go/src/github.com/hanzoai/s3 && \
@@ -64,9 +64,9 @@ RUN set -euo pipefail && \
         rm -rf /tmp/local-context && \
         cd /go/src/github.com/hanzoai/s3; \
     fi && \
-    cd weed \
+    cd s3 \
   && COMMIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown") \
-  && export LDFLAGS="-X github.com/hanzoai/s3/weed/util/version.COMMIT=${COMMIT_SHA}" \
+  && export LDFLAGS="-X github.com/hanzoai/s3/s3/util/version.COMMIT=${COMMIT_SHA}" \
   && go install -tags "5BytesOffset foundationdb" -ldflags "${LDFLAGS}"
 
 
@@ -88,15 +88,15 @@ COPY --from=builder /usr/lib/foundationdb /usr/lib/foundationdb
 COPY --from=builder /usr/bin/fdb* /usr/bin/
 RUN ldconfig
 
-# Copy SeaweedFS binary and configuration
-COPY --from=builder /go/bin/weed /usr/bin/
-RUN mkdir -p /etc/seaweedfs
-COPY --from=builder /go/src/github.com/hanzoai/s3/docker/filer_foundationdb.toml /etc/seaweedfs/filer.toml
+# Copy Hanzo binary and configuration
+COPY --from=builder /go/bin/s3 /usr/bin/
+RUN mkdir -p /etc/hanzo
+COPY --from=builder /go/src/github.com/hanzoai/s3/docker/filer_foundationdb.toml /etc/hanzo/filer.toml
 COPY --from=builder /go/src/github.com/hanzoai/s3/docker/entrypoint.sh /entrypoint.sh
 
 # Create non-root user
-RUN groupadd -g 1000 seaweed && \
-    useradd -u 1000 -g seaweed -s /bin/bash -m seaweed
+RUN groupadd -g 1000 hanzo && \
+    useradd -u 1000 -g hanzo -s /bin/bash -m hanzo
 
 # volume server gprc port
 EXPOSE 18080
@@ -115,10 +115,10 @@ EXPOSE 8333
 # webdav server http port
 EXPOSE 7333
 
-# Create data directory and set proper ownership for seaweed user
+# Create data directory and set proper ownership for hanzo user
 RUN mkdir -p /data && \
-    chown -R seaweed:seaweed /data && \
-    chown -R seaweed:seaweed /etc/seaweedfs && \
+    chown -R hanzo:hanzo /data && \
+    chown -R hanzo:hanzo /etc/hanzo && \
     chmod 755 /entrypoint.sh
 
 VOLUME /data
@@ -126,7 +126,7 @@ VOLUME /data
 WORKDIR /data
 
 # Switch to non-root user
-USER seaweed
+USER hanzo
 
 ENTRYPOINT ["/entrypoint.sh"]
 

@@ -41,14 +41,14 @@ be closed as hardening suggestions.
 
 ## Trust model
 
-SeaweedFS is built to run with its cluster components (master, volume servers,
+Hanzo is built to run with its cluster components (master, volume servers,
 and the raw filer API) on a trusted network. Those internal APIs are not an
 authentication boundary unless you explicitly enable a control (for example
 volume JWT or filer authentication) and that control is bypassed. Exposing an
 internal port directly to untrusted clients is a deployment mistake, not a
-vulnerability in SeaweedFS.
+vulnerability in Hanzo.
 
-Reports are in scope when they cross a boundary SeaweedFS is meant to enforce,
+Reports are in scope when they cross a boundary Hanzo is meant to enforce,
 for example:
 
 - Unauthenticated access to data or operations that require authentication

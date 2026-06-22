@@ -1,7 +1,7 @@
-# SeaweedFS FUSE Integration Testing Makefile
+# Hanzo FUSE Integration Testing Makefile
 
 # Configuration
-WEED_BINARY := weed
+WEED_BINARY := s3
 GO_VERSION := 1.24
 TEST_TIMEOUT := 30m
 COVERAGE_FILE := coverage.out
@@ -9,14 +9,14 @@ COVERAGE_FILE := coverage.out
 # Default target
 .DEFAULT_GOAL := help
 
-# Check if weed binary exists
+# Check if s3 binary exists
 check-binary:
 	@if [ ! -f "$(WEED_BINARY)" ]; then \
-		echo "ERROR SeaweedFS binary not found at $(WEED_BINARY)"; \
+		echo "ERROR Hanzo binary not found at $(WEED_BINARY)"; \
 		echo "   Please run 'make' in the root directory first"; \
 		exit 1; \
 	fi
-	@echo "OK SeaweedFS binary found"
+	@echo "OK Hanzo binary found"
 
 # Check FUSE installation
 check-fuse:
@@ -43,9 +43,9 @@ check-go:
 check-prereqs: check-go check-fuse
 	@echo "✅ All prerequisites satisfied"
 
-# Build the SeaweedFS binary (if needed)
+# Build the Hanzo binary (if needed)
 build:
-	@echo "Building SeaweedFS..."
+	@echo "Building Hanzo..."
 	cd ../.. && make
 	@echo "OK Build complete"
 
@@ -53,7 +53,7 @@ build:
 init-module:
 	@if [ ! -f go.mod ]; then \
 		echo "📦 Initializing Go module..."; \
-		go mod init seaweedfs-fuse-tests; \
+		go mod init hanzo-fuse-tests; \
 		go mod tidy; \
 	fi
 
@@ -120,7 +120,7 @@ validate: init-module
 clean:
 	@echo "🧹 Cleaning up..."
 	rm -f $(COVERAGE_FILE) coverage.html
-	rm -rf /tmp/seaweedfs_fuse_test_*
+	rm -rf /tmp/hanzo_fuse_test_*
 	go clean -testcache
 	@echo "✅ Cleanup complete"
 
@@ -157,8 +157,8 @@ setup: install-deps build check-prereqs
 # Docker-based testing
 test-docker:
 	@echo "🐳 Running tests in Docker..."
-	docker build -t seaweedfs-fuse-tests -f Dockerfile.test ../..
-	docker run --rm --privileged seaweedfs-fuse-tests
+	docker build -t hanzo-fuse-tests -f Dockerfile.test ../..
+	docker run --rm --privileged hanzo-fuse-tests
 
 # Create Docker test image
 docker-build:
@@ -166,11 +166,11 @@ docker-build:
 	@cat > Dockerfile.test << 'EOF' ;\
 FROM golang:$(GO_VERSION) ;\
 RUN apt-get update && apt-get install -y fuse ;\
-WORKDIR /seaweedfs ;\
+WORKDIR /hanzo ;\
 COPY . . ;\
 RUN make ;\
-WORKDIR /seaweedfs/test/fuse ;\
-RUN go mod init seaweedfs-fuse-tests && go mod tidy ;\
+WORKDIR /hanzo/test/fuse ;\
+RUN go mod init hanzo-fuse-tests && go mod tidy ;\
 CMD ["make", "test"] ;\
 EOF
 
@@ -204,7 +204,7 @@ jobs: ;\
     - name: Install FUSE ;\
       run: sudo apt-get update && sudo apt-get install -y fuse ;\
        ;\
-    - name: Build SeaweedFS ;\
+    - name: Build Hanzo ;\
       run: make ;\
        ;\
     - name: Run FUSE Integration Tests ;\
@@ -217,7 +217,7 @@ jobs: ;\
       uses: actions/upload-artifact@v3 ;\
       with: ;\
         name: test-logs ;\
-        path: /tmp/seaweedfs_fuse_test_* ;\
+        path: /tmp/hanzo_fuse_test_* ;\
 EOF
 	@echo "✅ GitHub Actions workflow generated"
 
@@ -266,13 +266,13 @@ watch:
 
 # Show help
 help:
-	@echo "SeaweedFS FUSE Integration Testing"
+	@echo "Hanzo FUSE Integration Testing"
 	@echo "=================================="
 	@echo ""
 	@echo "Prerequisites:"
 	@echo "  make check-prereqs    - Check all prerequisites"
 	@echo "  make setup           - Complete development setup"
-	@echo "  make build           - Build SeaweedFS binary"
+	@echo "  make build           - Build Hanzo binary"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test            - Run all tests"

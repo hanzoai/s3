@@ -19,7 +19,7 @@ type MultiVolumeCluster struct {
 	testingTB testing.TB
 	profile   matrix.Profile
 
-	weedBinary        string
+	s3Binary        string
 	baseDir           string
 	configDir         string
 	logsDir           string
@@ -61,9 +61,9 @@ func StartMultiVolumeClusterWithDisks(t testing.TB, profile matrix.Profile, serv
 		t.Fatalf("disksPerServer must be at least 1, got %d", disksPerServer)
 	}
 
-	weedBinary, err := FindOrBuildWeedBinary()
+	s3Binary, err := FindOrBuildS3Binary()
 	if err != nil {
-		t.Fatalf("resolve weed binary: %v", err)
+		t.Fatalf("resolve s3 binary: %v", err)
 	}
 
 	baseDir, keepLogs, err := newWorkDir()
@@ -118,7 +118,7 @@ func StartMultiVolumeClusterWithDisks(t testing.TB, profile matrix.Profile, serv
 	c := &MultiVolumeCluster{
 		testingTB:         t,
 		profile:           profile,
-		weedBinary:        weedBinary,
+		s3Binary:        s3Binary,
 		baseDir:           baseDir,
 		configDir:         configDir,
 		logsDir:           logsDir,
@@ -227,7 +227,7 @@ func (c *MultiVolumeCluster) startMaster(dataDir string) error {
 		"-defaultReplication=000",
 	}
 
-	c.masterCmd = exec.Command(c.weedBinary, args...)
+	c.masterCmd = exec.Command(c.s3Binary, args...)
 	c.masterCmd.Dir = c.baseDir
 	c.masterCmd.Stdout = logFile
 	c.masterCmd.Stderr = logFile
@@ -268,7 +268,7 @@ func (c *MultiVolumeCluster) startVolume(index int, dataDirs []string) error {
 		args = append(args, "-inflightDownloadDataTimeout="+c.profile.InflightDownloadTimeout.String())
 	}
 
-	cmd := exec.Command(c.weedBinary, args...)
+	cmd := exec.Command(c.s3Binary, args...)
 	cmd.Dir = c.baseDir
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile

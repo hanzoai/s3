@@ -5,7 +5,7 @@ This directory contains integration tests for the remote object caching feature 
 ## Test Flow
 
 Each test follows this pattern:
-1. **Write to local** - Upload data to primary SeaweedFS (local storage)
+1. **Write to local** - Upload data to primary Hanzo (local storage)
 2. **Uncache** - Push data to remote storage and remove local chunks
 3. **Read** - Read data (triggers caching from remote back to local)
 
@@ -17,7 +17,7 @@ This tests the full remote caching workflow including singleflight deduplication
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Test Client                               │
 │                                                                  │
-│    1. PUT data to primary SeaweedFS                             │
+│    1. PUT data to primary Hanzo                             │
 │    2. remote.cache.uncache (push to remote, purge local)        │
 │    3. GET data (triggers caching from remote)                   │
 │    4. Verify singleflight deduplication                         │
@@ -26,7 +26,7 @@ This tests the full remote caching workflow including singleflight deduplication
                  ┌─────────────────┴─────────────────┐
                  ▼                                   ▼
 ┌────────────────────────────────────┐   ┌────────────────────────────────┐
-│     Primary SeaweedFS              │   │     Remote SeaweedFS           │
+│     Primary Hanzo              │   │     Remote Hanzo           │
 │        (port 8333)                 │   │        (port 8334)             │
 │                                    │   │                                │
 │  - Being tested                    │   │  - Acts as "remote" S3         │
@@ -51,7 +51,7 @@ This tests the full remote caching workflow including singleflight deduplication
 | `command_remote_meta_sync_test.go` | `remote.meta.sync` | 8 tests | Metadata synchronization |
 | `command_edge_cases_test.go` | All commands | 11 tests | Edge cases and stress tests |
 
-**Total: 67 test cases covering 8 weed shell commands and the S3 copy paths for remote-only sources**
+**Total: 67 test cases covering 8 s3 shell commands and the S3 copy paths for remote-only sources**
 
 ### Commands Tested
 
@@ -136,20 +136,20 @@ go test -v -run TestEdgeCase
 ### Run Full Test Suite (Recommended)
 
 ```bash
-# Build SeaweedFS, start both servers, run tests, stop servers
+# Build Hanzo, start both servers, run tests, stop servers
 make test-with-server
 ```
 
 ### Manual Steps
 
 ```bash
-# 1. Build SeaweedFS binary
-make build-weed
+# 1. Build Hanzo binary
+make build-s3
 
-# 2. Start remote SeaweedFS (acts as "remote" storage)
+# 2. Start remote Hanzo (acts as "remote" storage)
 make start-remote
 
-# 3. Start primary SeaweedFS (the one being tested)
+# 3. Start primary Hanzo (the one being tested)
 make start-primary
 
 # 4. Configure remote storage mount
@@ -164,7 +164,7 @@ make clean
 
 ## Configuration
 
-### Primary SeaweedFS (Being Tested)
+### Primary Hanzo (Being Tested)
 
 | Service | Port |
 |---------|------|
@@ -173,7 +173,7 @@ make clean
 | Master | 9333 |
 | Volume | 8080 |
 
-### Remote SeaweedFS (Remote Storage)
+### Remote Hanzo (Remote Storage)
 
 | Service | Port |
 |---------|------|
@@ -186,9 +186,9 @@ make clean
 
 ```bash
 make help           # Show all available targets
-make build-weed     # Build SeaweedFS binary
-make start-remote   # Start remote SeaweedFS
-make start-primary  # Start primary SeaweedFS
+make build-s3     # Build Hanzo binary
+make start-remote   # Start remote Hanzo
+make start-primary  # Start primary Hanzo
 make setup-remote   # Configure remote storage mount
 make test           # Run tests
 make test-with-server  # Full automated test workflow

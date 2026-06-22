@@ -10,7 +10,7 @@ import (
 // ============================================================================
 // IMPORTANT: This file contains a STANDALONE demonstration of the FUSE testing
 // framework that works around Go module conflicts between the main framework
-// and the SeaweedFS parent module.
+// and the Hanzo parent module.
 //
 // PURPOSE:
 // - Provides a working demonstration of framework capabilities for CI/CD
@@ -118,7 +118,7 @@ func (f *DemoFuseTestFramework) Cleanup() {
 // using local filesystem instead of actual FUSE mounts. It exists to prove
 // the framework concept works while Go module conflicts are resolved.
 func TestFrameworkDemo(t *testing.T) {
-	t.Log("SeaweedFS FUSE Integration Testing Framework Demo")
+	t.Log("Hanzo FUSE Integration Testing Framework Demo")
 	t.Log("This demo simulates FUSE operations using local filesystem")
 
 	// Initialize demo framework
@@ -138,7 +138,7 @@ func TestFrameworkDemo(t *testing.T) {
 
 	t.Run("BasicFileOperations", func(t *testing.T) {
 		// Test file creation and reading
-		content := []byte("Hello, SeaweedFS FUSE Testing!")
+		content := []byte("Hello, Hanzo FUSE Testing!")
 		filename := "demo_test.txt"
 
 		t.Log("Creating test file...")

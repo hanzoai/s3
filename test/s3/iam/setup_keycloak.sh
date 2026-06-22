@@ -16,9 +16,9 @@ KEYCLOAK_INTERNAL_PORT="8080"  # Internal container port (always 8080)
 KEYCLOAK_URL="http://localhost:${KEYCLOAK_PORT}"
 
 # Realm and test fixtures expected by tests
-REALM_NAME="seaweedfs-test"
-CLIENT_ID="seaweedfs-s3"
-CLIENT_SECRET="seaweedfs-s3-secret"
+REALM_NAME="hanzo-test"
+CLIENT_ID="hanzo-s3"
+CLIENT_SECRET="hanzo-s3-secret"
 ROLE_ADMIN="s3-admin"
 ROLE_READONLY="s3-read-only"
 ROLE_WRITEONLY="s3-write-only"
@@ -38,7 +38,7 @@ get_user_password() {
 # List of users to create
 USERS="admin-user read-user write-user write-only-user"
 
-echo -e "${BLUE}🔧 Setting up Keycloak realm and users for SeaweedFS S3 IAM testing...${NC}"
+echo -e "${BLUE}🔧 Setting up Keycloak realm and users for Hanzo S3 IAM testing...${NC}"
 
 ensure_container() {
   # Check for any existing Keycloak container and detect its port
@@ -195,7 +195,7 @@ ensure_user() {
     uid=$(kcadm create users -r "${REALM_NAME}" \
       -s username="${username}" \
       -s enabled=true \
-      -s email="${username}@seaweedfs.test" \
+      -s email="${username}@hanzo.test" \
       -s emailVerified=true \
       -s firstName="${username}" \
       -s lastName="User" \

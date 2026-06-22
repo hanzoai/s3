@@ -208,7 +208,7 @@ func (k *KafkaGoClient) consumeWithGroupOnce(topicName, groupID string, expected
 	// Give each reader its own ClientID so restarts do not get mistaken for the
 	// still-shutting-down reader they are replacing.
 	dialer := &kafka.Dialer{
-		ClientID: fmt.Sprintf("seaweedfs-e2e-%s-%d", groupID, time.Now().UnixNano()),
+		ClientID: fmt.Sprintf("hanzo-e2e-%s-%d", groupID, time.Now().UnixNano()),
 		Timeout:  10 * time.Second,
 	}
 

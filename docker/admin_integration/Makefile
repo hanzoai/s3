@@ -1,5 +1,5 @@
-# SeaweedFS Admin Integration Test Makefile
-# Tests the admin server and worker functionality using official weed commands
+# Hanzo Admin Integration Test Makefile
+# Tests the admin server and worker functionality using official s3 commands
 
 .PHONY: help build build-and-restart restart-workers start stop restart logs clean status test admin-ui worker-logs master-logs admin-logs vacuum-test vacuum-demo vacuum-status vacuum-data vacuum-data-high vacuum-data-low vacuum-continuous vacuum-clean vacuum-help
 .DEFAULT_GOAL := help
@@ -7,15 +7,15 @@
 COMPOSE_FILE := docker-compose-ec-test.yml
 PROJECT_NAME := admin_integration
 
-build: ## Build SeaweedFS with latest changes and create Docker image
-	@echo "🔨 Building SeaweedFS with latest changes..."
+build: ## Build Hanzo with latest changes and create Docker image
+	@echo "🔨 Building Hanzo with latest changes..."
 	@echo "1️⃣ Generating admin templates..."
 	@cd ../../ && make admin-generate
 	@echo "2️⃣ Building Docker image with latest changes..."
 	@cd ../ && make build
 	@echo "3️⃣ Copying binary for local docker-compose..."
-	@cp ../weed ./weed-local
-	@echo "✅ Build complete! Updated image: chrislusf/seaweedfs:local"
+	@cp ../s3 ./s3-local
+	@echo "✅ Build complete! Updated image: chrislusf/hanzo:local"
 	@echo "💡 Run 'make restart' to apply changes to running services"
 
 build-and-restart: build ## Build with latest changes and restart services
@@ -35,9 +35,9 @@ restart-workers: ## Restart all workers to reconnect to admin server
 	@echo "✅ Workers restarted and will reconnect to admin server"
 
 help: ## Show this help message
-	@echo "SeaweedFS Admin Integration Test"
+	@echo "Hanzo Admin Integration Test"
 	@echo "================================"
-	@echo "Tests admin server task distribution to workers using official weed commands"
+	@echo "Tests admin server task distribution to workers using official s3 commands"
 	@echo ""
 	@echo "🏗️  Cluster Management:"
 	@grep -E '^(start|stop|restart|clean|status|build):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
@@ -58,8 +58,8 @@ help: ## Show this help message
 	@echo ""
 	@echo "💡 For detailed vacuum testing: make vacuum-help"
 
-start: ## Start the complete SeaweedFS cluster with admin and workers
-	@echo "🚀 Starting SeaweedFS cluster with admin and workers..."
+start: ## Start the complete Hanzo cluster with admin and workers
+	@echo "🚀 Starting Hanzo cluster with admin and workers..."
 	@docker-compose -f $(COMPOSE_FILE) up -d
 	@echo "✅ Cluster started!"
 	@echo ""
@@ -79,7 +79,7 @@ start: ## Start the complete SeaweedFS cluster with admin and workers
 	@echo "💡 Use 'make logs' to watch the startup process"
 
 start-staged: ## Start services in proper order with delays
-	@echo "🚀 Starting SeaweedFS cluster in stages..."
+	@echo "🚀 Starting Hanzo cluster in stages..."
 	@echo ""
 	@echo "Stage 1: Starting Master server..."
 	@docker-compose -f $(COMPOSE_FILE) up -d master
@@ -114,21 +114,21 @@ start-staged: ## Start services in proper order with delays
 	@echo "⏳ Services are initializing... Use 'make status' to check progress"
 
 stop: ## Stop all services
-	@echo "🛑 Stopping SeaweedFS cluster..."
+	@echo "🛑 Stopping Hanzo cluster..."
 	@docker-compose -f $(COMPOSE_FILE) down
 	@echo "✅ Cluster stopped"
 
 restart: stop start ## Restart the entire cluster
 
 clean: ## Stop and remove all containers, networks, and volumes
-	@echo "🧹 Cleaning up SeaweedFS test environment..."
+	@echo "🧹 Cleaning up Hanzo test environment..."
 	@docker-compose -f $(COMPOSE_FILE) down -v --remove-orphans
 	@docker system prune -f
 	@rm -rf data/
 	@echo "✅ Environment cleaned"
 
 status: ## Check the status of all services
-	@echo "📊 SeaweedFS Cluster Status"
+	@echo "📊 Hanzo Cluster Status"
 	@echo "=========================="
 	@docker-compose -f $(COMPOSE_FILE) ps
 	@echo ""
@@ -177,7 +177,7 @@ test: ## Run integration test to verify task assignment and completion
 	@echo "Creating large files with random data to trigger EC (targeting ~60MB total to exceed 50MB limit)..."
 	@for i in {1..12}; do \
 		echo "Creating 5MB random file $$i..."; \
-		docker run --rm --network admin_integration_seaweed_net -v /tmp:/tmp --entrypoint sh chrislusf/seaweedfs:local -c "dd if=/dev/urandom of=/tmp/largefile$$i.dat bs=1M count=5 2>/dev/null && weed upload -master=master:9333 /tmp/largefile$$i.dat && rm /tmp/largefile$$i.dat"; \
+		docker run --rm --network admin_integration_hanzo_net -v /tmp:/tmp --entrypoint sh chrislusf/hanzo:local -c "dd if=/dev/urandom of=/tmp/largefile$$i.dat bs=1M count=5 2>/dev/null && s3 upload -master=master:9333 /tmp/largefile$$i.dat && rm /tmp/largefile$$i.dat"; \
 		sleep 3; \
 	done
 	@echo ""
@@ -209,7 +209,7 @@ validate: ## Validate integration test configuration
 	@./test-integration.sh
 
 demo: start ## Start cluster and run demonstration
-	@echo "🎭 SeaweedFS Admin-Worker Demo"
+	@echo "🎭 Hanzo Admin-Worker Demo"
 	@echo "============================="
 	@echo ""
 	@echo "⏳ Waiting for services to start..."
@@ -239,7 +239,7 @@ demo: start ## Start cluster and run demonstration
 
 # Vacuum Testing Targets
 vacuum-test: ## Create test data with garbage and verify vacuum detection
-	@echo "🧪 SeaweedFS Vacuum Task Testing"
+	@echo "🧪 Hanzo Vacuum Task Testing"
 	@echo "================================"
 	@echo ""
 	@echo "1️⃣ Checking cluster health..."
@@ -321,7 +321,7 @@ vacuum-help: ## Show vacuum testing help and examples
 	@echo "=========================================="
 	@echo ""
 	@echo "Quick Start:"
-	@echo "  make start         # Start SeaweedFS cluster with vacuum-tester"
+	@echo "  make start         # Start Hanzo cluster with vacuum-tester"
 	@echo "  make vacuum-test   # Create test data and instructions"
 	@echo "  make vacuum-status # Check volume status"
 	@echo ""

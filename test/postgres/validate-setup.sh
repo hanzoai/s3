@@ -7,7 +7,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${BLUE}=== SeaweedFS PostgreSQL Setup Validation ===${NC}"
+echo -e "${BLUE}=== Hanzo PostgreSQL Setup Validation ===${NC}"
 
 # Check prerequisites
 echo -e "${YELLOW}Checking prerequisites...${NC}"
@@ -57,20 +57,20 @@ echo -e "${YELLOW}Running smoke test...${NC}"
 
 # Start services
 echo "Starting services..."
-docker-compose up -d seaweedfs postgres-server 2>/dev/null
+docker-compose up -d hanzo postgres-server 2>/dev/null
 
 # Wait a bit for services to start
 sleep 15
 
 # Check if services are running
-seaweedfs_running=$(docker-compose ps seaweedfs | grep -c "Up")
+hanzo_running=$(docker-compose ps hanzo | grep -c "Up")
 postgres_running=$(docker-compose ps postgres-server | grep -c "Up")
 
-if [[ $seaweedfs_running -eq 1 ]]; then
-    echo -e "${GREEN}✓ SeaweedFS service is running${NC}"
+if [[ $hanzo_running -eq 1 ]]; then
+    echo -e "${GREEN}✓ Hanzo service is running${NC}"
 else
-    echo -e "${RED}✗ SeaweedFS service failed to start${NC}"
-    docker-compose logs seaweedfs | tail -10
+    echo -e "${RED}✗ Hanzo service failed to start${NC}"
+    docker-compose logs hanzo | tail -10
 fi
 
 if [[ $postgres_running -eq 1 ]]; then
@@ -82,19 +82,19 @@ fi
 
 # Test PostgreSQL connectivity
 echo "Testing PostgreSQL connectivity..."
-if timeout 10 docker run --rm --network "$(basename $(pwd))_seaweedfs-net" postgres:15-alpine \
-    psql -h postgres-server -p 5432 -U seaweedfs -d default -c "SELECT version();" > /dev/null 2>&1; then
+if timeout 10 docker run --rm --network "$(basename $(pwd))_hanzo-net" postgres:15-alpine \
+    psql -h postgres-server -p 5432 -U hanzo -d default -c "SELECT version();" > /dev/null 2>&1; then
     echo -e "${GREEN}✓ PostgreSQL connectivity test passed${NC}"
 else
     echo -e "${RED}✗ PostgreSQL connectivity test failed${NC}"
 fi
 
-# Test SeaweedFS API
-echo "Testing SeaweedFS API..."
+# Test Hanzo API
+echo "Testing Hanzo API..."
 if curl -s http://localhost:9333/cluster/status > /dev/null 2>&1; then
-    echo -e "${GREEN}✓ SeaweedFS API accessible${NC}"
+    echo -e "${GREEN}✓ Hanzo API accessible${NC}"
 else
-    echo -e "${RED}✗ SeaweedFS API not accessible${NC}"
+    echo -e "${RED}✗ Hanzo API not accessible${NC}"
 fi
 
 # Cleanup
@@ -103,7 +103,7 @@ docker-compose down > /dev/null 2>&1
 
 echo -e "${BLUE}=== Validation Summary ===${NC}"
 
-if [[ $seaweedfs_running -eq 1 ]] && [[ $postgres_running -eq 1 ]]; then
+if [[ $hanzo_running -eq 1 ]] && [[ $postgres_running -eq 1 ]]; then
     echo -e "${GREEN}✓ Setup validation PASSED${NC}"
     echo
     echo "Your setup is ready! You can now run:"

@@ -22,7 +22,7 @@ func TestRemoteCacheBasicCommand(t *testing.T) {
 	// Now cache it back using remote.cache command
 	t.Log("Caching file from remote using command...")
 	cmd := fmt.Sprintf("remote.cache -dir=/buckets/%s", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.cache command failed")
 	t.Logf("Cache output: %s", output)
 
@@ -49,7 +49,7 @@ func TestRemoteCacheWithInclude(t *testing.T) {
 	// Cache only PDF files
 	t.Log("Caching only PDF files...")
 	cmd := fmt.Sprintf("remote.cache -dir=/buckets/%s -include=*.pdf", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.cache with include failed")
 	t.Logf("Cache output: %s", output)
 
@@ -77,7 +77,7 @@ func TestRemoteCacheWithExclude(t *testing.T) {
 	// Cache excluding .tmp files
 	t.Log("Caching excluding .tmp files...")
 	cmd := fmt.Sprintf("remote.cache -dir=/buckets/%s -exclude=*.tmp", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.cache with exclude failed")
 	t.Logf("Cache output: %s", output)
 
@@ -105,7 +105,7 @@ func TestRemoteCacheMinSize(t *testing.T) {
 	// Cache only files larger than 1KB
 	t.Log("Caching files larger than 1KB...")
 	cmd := fmt.Sprintf("remote.cache -dir=/buckets/%s -minSize=1024", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.cache with minSize failed")
 	t.Logf("Cache output: %s", output)
 
@@ -133,7 +133,7 @@ func TestRemoteCacheMaxSize(t *testing.T) {
 	// Cache only files smaller than 2KB
 	t.Log("Caching files smaller than 2KB...")
 	cmd := fmt.Sprintf("remote.cache -dir=/buckets/%s -maxSize=2048", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.cache with maxSize failed")
 	t.Logf("Cache output: %s", output)
 
@@ -161,7 +161,7 @@ func TestRemoteCacheCombinedFilters(t *testing.T) {
 	// Cache .dat files larger than 1KB
 	t.Log("Caching .dat files larger than 1KB...")
 	cmd := fmt.Sprintf("remote.cache -dir=/buckets/%s -include=*.dat -minSize=1024", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.cache with combined filters failed")
 	t.Logf("Cache output: %s", output)
 
@@ -184,7 +184,7 @@ func TestRemoteCacheDryRun(t *testing.T) {
 	// Run cache in dry-run mode
 	t.Log("Running cache in dry-run mode...")
 	cmd := fmt.Sprintf("remote.cache -dir=/buckets/%s -dryRun=true", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.cache dry-run failed")
 	t.Logf("Dry-run output: %s", output)
 
@@ -205,7 +205,7 @@ func TestRemoteUncacheBasic(t *testing.T) {
 	// Uncache it
 	t.Log("Uncaching file...")
 	cmd := fmt.Sprintf("remote.uncache -dir=/buckets/%s -include=%s", testBucket, testKey)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.uncache failed")
 	t.Logf("Uncache output: %s", output)
 
@@ -227,7 +227,7 @@ func TestRemoteUncacheWithFilters(t *testing.T) {
 	// Uncache only .log files
 	t.Log("Uncaching only .log files...")
 	cmd := fmt.Sprintf("remote.uncache -dir=/buckets/%s -include=*.log", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.uncache with filter failed")
 	t.Logf("Uncache output: %s", output)
 
@@ -250,7 +250,7 @@ func TestRemoteUncacheMinSize(t *testing.T) {
 	// Uncache only files larger than 2KB
 	t.Log("Uncaching files larger than 2KB...")
 	cmd := fmt.Sprintf("remote.uncache -dir=/buckets/%s -minSize=2048", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.uncache with minSize failed")
 	t.Logf("Uncache output: %s", output)
 
@@ -283,7 +283,7 @@ func TestRemoteCacheConcurrency(t *testing.T) {
 	// Cache with high concurrency
 	t.Log("Caching with concurrency=8...")
 	cmd := fmt.Sprintf("remote.cache -dir=/buckets/%s -concurrent=8", testBucket)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "remote.cache with concurrency failed")
 	t.Logf("Cache output: %s", output)
 

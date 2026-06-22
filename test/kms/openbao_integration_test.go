@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/hanzoai/s3/weed/glog"
-	"github.com/hanzoai/s3/weed/kms"
-	_ "github.com/hanzoai/s3/weed/kms/openbao"
+	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/kms"
+	_ "github.com/hanzoai/s3/s3/kms/openbao"
 )
 
 const (
@@ -162,7 +162,7 @@ func setupTransitEngine(t *testing.T) {
 	}
 
 	// Create test encryption keys
-	testKeys := []string{"test-key-1", "test-key-2", "seaweedfs-test-key"}
+	testKeys := []string{"test-key-1", "test-key-2", "hanzo-test-key"}
 
 	for _, keyName := range testKeys {
 		keyData := map[string]interface{}{
@@ -365,7 +365,7 @@ func TestOpenBaoKMSProvider_Integration(t *testing.T) {
 		ctx := context.Background()
 
 		// Test with multiple keys
-		testKeys := []string{"test-key-1", "test-key-2", "seaweedfs-test-key"}
+		testKeys := []string{"test-key-1", "test-key-2", "hanzo-test-key"}
 
 		for _, keyName := range testKeys {
 			t.Run(fmt.Sprintf("Key_%s", keyName), func(t *testing.T) {

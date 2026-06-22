@@ -6,15 +6,15 @@ export GODEBUG="${GODEBUG:+$GODEBUG,}fips140=on"
 
 # Fix permissions for mounted volumes
 # If /data is mounted from host, it might have different ownership
-# Fix this by ensuring seaweed user owns the directory
+# Fix this by ensuring hanzo user owns the directory
 if [ "$(id -u)" = "0" ]; then
   # Running as root, check and fix permissions if needed
-  SEAWEED_UID=$(id -u seaweed)
-  SEAWEED_GID=$(id -g seaweed)
+  SEAWEED_UID=$(id -u hanzo)
+  SEAWEED_GID=$(id -g hanzo)
   
-  # Verify seaweed user and group exist
+  # Verify hanzo user and group exist
   if [ -z "$SEAWEED_UID" ] || [ -z "$SEAWEED_GID" ]; then
-    echo "Error: 'seaweed' user or group not found. Cannot fix permissions." >&2
+    echo "Error: 'hanzo' user or group not found. Cannot fix permissions." >&2
     exit 1
   fi
   
@@ -25,15 +25,15 @@ if [ "$(id -u)" = "0" ]; then
   # recursive chown on subsequent starts, and is a no-op on OpenShift when
   # fsGroup has already set correct ownership on the PVC).
   if [ "$DATA_UID" != "$SEAWEED_UID" ] || [ "$DATA_GID" != "$SEAWEED_GID" ]; then
-    echo "Fixing /data ownership for seaweed user (uid=$SEAWEED_UID, gid=$SEAWEED_GID)"
-    if ! chown -R seaweed:seaweed /data; then
+    echo "Fixing /data ownership for hanzo user (uid=$SEAWEED_UID, gid=$SEAWEED_GID)"
+    if ! chown -R hanzo:hanzo /data; then
       echo "Warning: Failed to change ownership of /data. This may cause permission errors." >&2
       echo "If /data is read-only or has mount issues, the application may fail to start." >&2
     fi
   fi
   
-  # Use su-exec to drop privileges and run as seaweed user
-  exec su-exec seaweed "$0" "$@"
+  # Use su-exec to drop privileges and run as hanzo user
+  exec su-exec hanzo "$0" "$@"
 fi
 
 isArgPassed() {
@@ -64,7 +64,7 @@ case "$1" in
   'master')
   	ARGS="-mdir=/data -volumeSizeLimitMB=1024"
   	shift
-  	exec /usr/bin/weed -logtostderr=true master $ARGS $@
+  	exec /usr/bin/s3 -logtostderr=true master $ARGS $@
 	;;
 
   'volume')
@@ -73,7 +73,7 @@ case "$1" in
   	  ARGS="-dir=/data"
   	fi
   	shift
-  	exec /usr/bin/weed -logtostderr=true volume $ARGS $@
+  	exec /usr/bin/s3 -logtostderr=true volume $ARGS $@
 	;;
 
   'volume-rust')
@@ -82,12 +82,12 @@ case "$1" in
   	  ARGS="-dir /data"
   	fi
   	shift
-  	if [ ! -s /usr/bin/weed-volume ]; then
+  	if [ ! -s /usr/bin/s3-volume ]; then
   	  echo "Error: Rust volume server is not available on this platform ($(uname -m))." >&2
   	  echo "Use 'volume' for the Go volume server instead." >&2
   	  exit 1
   	fi
-  	exec /usr/bin/weed-volume $ARGS $@
+  	exec /usr/bin/s3-volume $ARGS $@
 	;;
 
   'server')
@@ -96,7 +96,7 @@ case "$1" in
   	  ARGS="-dir=/data -master.volumeSizeLimitMB=1024"
   	fi
  	shift
-  	exec /usr/bin/weed -logtostderr=true server $ARGS $@
+  	exec /usr/bin/s3 -logtostderr=true server $ARGS $@
   	;;
 
   'mini')
@@ -105,28 +105,28 @@ case "$1" in
   	  ARGS=""
   	fi
   	shift
-  	exec /usr/bin/weed -logtostderr=true mini $ARGS $@
+  	exec /usr/bin/s3 -logtostderr=true mini $ARGS $@
   	;;
 
   'filer')
   	ARGS=""
   	shift
-  	exec /usr/bin/weed -logtostderr=true filer $ARGS $@
+  	exec /usr/bin/s3 -logtostderr=true filer $ARGS $@
 	;;
 
   's3')
   	ARGS="-domainName=$S3_DOMAIN_NAME -key.file=$S3_KEY_FILE -cert.file=$S3_CERT_FILE"
   	shift
-  	exec /usr/bin/weed -logtostderr=true s3 $ARGS $@
+  	exec /usr/bin/s3 -logtostderr=true s3 $ARGS $@
 	;;
 
   'shell')
   	ARGS="-cluster=$SHELL_CLUSTER -filer=$SHELL_FILER -filerGroup=$SHELL_FILER_GROUP -master=$SHELL_MASTER -options=$SHELL_OPTIONS"
   	shift
-  	exec echo "$@" | /usr/bin/weed -logtostderr=true shell $ARGS
+  	exec echo "$@" | /usr/bin/s3 -logtostderr=true shell $ARGS
   ;;
 
   *)
-  	exec /usr/bin/weed $@
+  	exec /usr/bin/s3 $@
 	;;
 esac

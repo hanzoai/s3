@@ -19,21 +19,21 @@ import (
 	"github.com/hanzoai/s3/test/testutil"
 	"github.com/hanzoai/s3/test/volume_server/framework"
 	"github.com/hanzoai/s3/test/volume_server/matrix"
-	"github.com/hanzoai/s3/weed/pb/remote_pb"
-	"github.com/hanzoai/s3/weed/pb/volume_server_pb"
+	"github.com/hanzoai/s3/s3/pb/remote_pb"
+	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 )
 
 // findAvailablePort finds a free TCP port on localhost.
 
-// startWeedMini starts a weed mini subprocess and returns the S3 endpoint and cleanup func.
-func startWeedMini(t *testing.T) (s3Endpoint string, cleanup func()) {
+// startS3Mini starts a s3 mini subprocess and returns the S3 endpoint and cleanup func.
+func startS3Mini(t *testing.T) (s3Endpoint string, cleanup func()) {
 	t.Helper()
 
-	weedBin, err := exec.LookPath("weed")
+	s3Bin, err := exec.LookPath("s3")
 	if err != nil {
-		weedBin = filepath.Join("..", "..", "..", "weed", "weed_binary")
-		if _, err := os.Stat(weedBin); os.IsNotExist(err) {
-			t.Skip("weed binary not found, skipping S3 remote storage test")
+		s3Bin = filepath.Join("..", "..", "..", "s3", "s3_binary")
+		if _, err := os.Stat(s3Bin); os.IsNotExist(err) {
+			t.Skip("s3 binary not found, skipping S3 remote storage test")
 		}
 	}
 
@@ -47,7 +47,7 @@ func startWeedMini(t *testing.T) (s3Endpoint string, cleanup func()) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	miniCmd := exec.CommandContext(ctx, weedBin, "mini",
+	miniCmd := exec.CommandContext(ctx, s3Bin, "mini",
 		fmt.Sprintf("-dir=%s", miniDir),
 		fmt.Sprintf("-master.port=%d", miniMasterPort),
 		fmt.Sprintf("-volume.port=%d", miniVolumePort),
@@ -56,24 +56,24 @@ func startWeedMini(t *testing.T) (s3Endpoint string, cleanup func()) {
 	)
 	miniCmd.Env = append(os.Environ(), "AWS_ACCESS_KEY_ID=admin", "AWS_SECRET_ACCESS_KEY=admin")
 	miniCmd.Dir = miniDir
-	logFile, _ := os.CreateTemp("", "weed-mini-*.log")
+	logFile, _ := os.CreateTemp("", "s3-mini-*.log")
 	miniCmd.Stdout = logFile
 	miniCmd.Stderr = logFile
-	t.Logf("weed mini logs at %s", logFile.Name())
+	t.Logf("s3 mini logs at %s", logFile.Name())
 
 	if err := miniCmd.Start(); err != nil {
 		cancel()
 		logFile.Close()
-		t.Fatalf("start weed mini: %v", err)
+		t.Fatalf("start s3 mini: %v", err)
 	}
 
 	if !testutil.WaitForPort(miniS3Port, 30*time.Second) {
 		cancel()
 		miniCmd.Wait()
 		logFile.Close()
-		t.Fatalf("weed mini S3 not ready on port %d", miniS3Port)
+		t.Fatalf("s3 mini S3 not ready on port %d", miniS3Port)
 	}
-	t.Logf("weed mini S3 ready on port %d", miniS3Port)
+	t.Logf("s3 mini S3 ready on port %d", miniS3Port)
 
 	return fmt.Sprintf("http://127.0.0.1:%d", miniS3Port), func() {
 		cancel()
@@ -94,7 +94,7 @@ func newS3Client(endpoint string) *s3.S3 {
 }
 
 // TestFetchAndWriteNeedleFromS3 tests the full FetchAndWriteNeedle flow:
-// 1. Start a weed mini instance as S3 backend
+// 1. Start a s3 mini instance as S3 backend
 // 2. Upload a test object to it via S3 API
 // 3. Call FetchAndWriteNeedle on the volume server to fetch from S3
 // 4. Verify the response contains a valid e_tag
@@ -103,7 +103,7 @@ func TestFetchAndWriteNeedleFromS3(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	s3Endpoint, cleanupMini := startWeedMini(t)
+	s3Endpoint, cleanupMini := startS3Mini(t)
 	defer cleanupMini()
 
 	s3Client := newS3Client(s3Endpoint)
@@ -172,7 +172,7 @@ func TestFetchAndWriteNeedleFromS3WithPartialRead(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	s3Endpoint, cleanupMini := startWeedMini(t)
+	s3Endpoint, cleanupMini := startS3Mini(t)
 	defer cleanupMini()
 
 	s3Client := newS3Client(s3Endpoint)
@@ -227,7 +227,7 @@ func TestFetchAndWriteNeedleS3NotFound(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	s3Endpoint, cleanupMini := startWeedMini(t)
+	s3Endpoint, cleanupMini := startS3Mini(t)
 	defer cleanupMini()
 
 	s3Client := newS3Client(s3Endpoint)

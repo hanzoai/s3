@@ -20,13 +20,13 @@ NC := \033[0m # No Color
 .PHONY: help setup test clean logs status
 
 help: ## Show this help message
-	@echo "$(BLUE)SeaweedFS Kafka Integration Testing - Refactored$(NC)"
+	@echo "$(BLUE)Hanzo Kafka Integration Testing - Refactored$(NC)"
 	@echo ""
 	@echo "Available targets:"
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 # Environment Setup
-setup: ## Set up test environment (Kafka + Schema Registry + SeaweedFS)
+setup: ## Set up test environment (Kafka + Schema Registry + Hanzo)
 	@echo "$(YELLOW)Setting up Kafka integration test environment...$(NC)"
 	@$(DOCKER_COMPOSE) up -d
 	@echo "$(BLUE)Waiting for all services to be ready...$(NC)"
@@ -96,10 +96,10 @@ dev-kafka: ## Start only Kafka ecosystem for development
 	@sleep 20
 	@$(DOCKER_COMPOSE) --profile setup run --rm test-setup
 
-dev-seaweedfs: ## Start only SeaweedFS for development
-	@$(DOCKER_COMPOSE) up -d seaweedfs-master seaweedfs-volume seaweedfs-filer seaweedfs-mq-broker seaweedfs-mq-agent
+dev-hanzo: ## Start only Hanzo for development
+	@$(DOCKER_COMPOSE) up -d hanzo-master hanzo-volume hanzo-filer hanzo-mq-broker hanzo-mq-agent
 
-dev-gateway: dev-seaweedfs ## Start Kafka Gateway for development
+dev-gateway: dev-hanzo ## Start Kafka Gateway for development
 	@$(DOCKER_COMPOSE) up -d kafka-gateway
 
 dev-test: dev-kafka ## Quick test with just Kafka ecosystem
@@ -122,8 +122,8 @@ logs-kafka: ## Show Kafka logs
 logs-schema-registry: ## Show Schema Registry logs
 	@$(DOCKER_COMPOSE) logs --tail=100 -f schema-registry
 
-logs-seaweedfs: ## Show SeaweedFS logs
-	@$(DOCKER_COMPOSE) logs --tail=100 -f seaweedfs-master seaweedfs-volume seaweedfs-filer seaweedfs-mq-broker seaweedfs-mq-agent
+logs-hanzo: ## Show Hanzo logs
+	@$(DOCKER_COMPOSE) logs --tail=100 -f hanzo-master hanzo-volume hanzo-filer hanzo-mq-broker hanzo-mq-agent
 
 logs-gateway: ## Show Kafka Gateway logs
 	@$(DOCKER_COMPOSE) logs --tail=100 -f kafka-gateway

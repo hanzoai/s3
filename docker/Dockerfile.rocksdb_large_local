@@ -1,26 +1,26 @@
 FROM chrislusf/rocksdb_dev_env as builder
 
-# build SeaweedFS
-RUN mkdir -p /go/src/github.com/seaweedfs/
+# build Hanzo
+RUN mkdir -p /go/src/github.com/hanzo/
 ADD . /go/src/github.com/hanzoai/s3
-RUN ls -al /go/src/github.com/seaweedfs/ && \
-  cd /go/src/github.com/hanzoai/s3/weed \
-  && export LDFLAGS="-X github.com/hanzoai/s3/weed/util/version.COMMIT=$(git rev-parse --short HEAD)" \
+RUN ls -al /go/src/github.com/hanzo/ && \
+  cd /go/src/github.com/hanzoai/s3/s3 \
+  && export LDFLAGS="-X github.com/hanzoai/s3/s3/util/version.COMMIT=$(git rev-parse --short HEAD)" \
   && go install -tags "5BytesOffset rocksdb" -ldflags "-extldflags -static ${LDFLAGS}"
 
 
 FROM alpine AS final
 LABEL author="Chris Lu"
-COPY --from=builder /go/bin/weed /usr/bin/
-RUN mkdir -p /etc/seaweedfs
-COPY --from=builder /go/src/github.com/hanzoai/s3/docker/filer_rocksdb.toml /etc/seaweedfs/filer.toml
+COPY --from=builder /go/bin/s3 /usr/bin/
+RUN mkdir -p /etc/hanzo
+COPY --from=builder /go/src/github.com/hanzoai/s3/docker/filer_rocksdb.toml /etc/hanzo/filer.toml
 COPY --from=builder /go/src/github.com/hanzoai/s3/docker/entrypoint.sh /entrypoint.sh
 
 # Install dependencies and create non-root user
 RUN apk upgrade --no-cache && \
     apk add --no-cache fuse snappy gflags curl tmux su-exec && \
-    addgroup -g 1000 seaweed && \
-    adduser -D -u 1000 -G seaweed seaweed
+    addgroup -g 1000 hanzo && \
+    adduser -D -u 1000 -G hanzo hanzo
 
 # volume server gprc port
 EXPOSE 18080
@@ -39,10 +39,10 @@ EXPOSE 8333
 # webdav server http port
 EXPOSE 7333
 
-# Create data directory and set proper ownership for seaweed user
+# Create data directory and set proper ownership for hanzo user
 RUN mkdir -p /data/filer_rocksdb && \
-    chown -R seaweed:seaweed /data && \
-    chown -R seaweed:seaweed /etc/seaweedfs && \
+    chown -R hanzo:hanzo /data && \
+    chown -R hanzo:hanzo /etc/hanzo && \
     chmod 755 /entrypoint.sh
 
 VOLUME /data

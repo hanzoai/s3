@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/hanzoai/s3/weed/pb/master_pb"
+	"github.com/hanzoai/s3/s3/pb/master_pb"
 )
 
 // TestConfig holds configuration for filer group S3 tests
@@ -78,11 +78,11 @@ func getS3Client(t *testing.T) *s3.Client {
 	})
 }
 
-func getMasterClient(t *testing.T) master_pb.SeaweedClient {
+func getMasterClient(t *testing.T) master_pb.HanzoClient {
 	conn, err := grpc.NewClient(testConfig.MasterAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
-	return master_pb.NewSeaweedClient(conn)
+	return master_pb.NewHanzoClient(conn)
 }
 
 func getNewBucketName() string {
@@ -99,7 +99,7 @@ func getExpectedCollectionName(bucketName string) string {
 }
 
 // listAllCollections returns a list of all collection names from the master
-func listAllCollections(t *testing.T, masterClient master_pb.SeaweedClient) []string {
+func listAllCollections(t *testing.T, masterClient master_pb.HanzoClient) []string {
 	collectionResp, err := masterClient.CollectionList(context.Background(), &master_pb.CollectionListRequest{
 		IncludeNormalVolumes: true,
 		IncludeEcVolumes:     true,
@@ -116,7 +116,7 @@ func listAllCollections(t *testing.T, masterClient master_pb.SeaweedClient) []st
 }
 
 // collectionExists checks if a collection exists in the master
-func collectionExists(t *testing.T, masterClient master_pb.SeaweedClient, collectionName string) bool {
+func collectionExists(t *testing.T, masterClient master_pb.HanzoClient, collectionName string) bool {
 	for _, name := range listAllCollections(t, masterClient) {
 		if name == collectionName {
 			return true
@@ -126,7 +126,7 @@ func collectionExists(t *testing.T, masterClient master_pb.SeaweedClient, collec
 }
 
 // waitForCollectionExists waits for a collection to exist using polling
-func waitForCollectionExists(t *testing.T, masterClient master_pb.SeaweedClient, collectionName string) {
+func waitForCollectionExists(t *testing.T, masterClient master_pb.HanzoClient, collectionName string) {
 	var lastCollections []string
 	success := assert.Eventually(t, func() bool {
 		lastCollections = listAllCollections(t, masterClient)
@@ -143,7 +143,7 @@ func waitForCollectionExists(t *testing.T, masterClient master_pb.SeaweedClient,
 }
 
 // waitForCollectionDeleted waits for a collection to be deleted using polling
-func waitForCollectionDeleted(t *testing.T, masterClient master_pb.SeaweedClient, collectionName string) {
+func waitForCollectionDeleted(t *testing.T, masterClient master_pb.HanzoClient, collectionName string) {
 	require.Eventually(t, func() bool {
 		return !collectionExists(t, masterClient, collectionName)
 	}, 10*time.Second, 200*time.Millisecond, "collection %s should be deleted", collectionName)

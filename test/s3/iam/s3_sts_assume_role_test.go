@@ -41,19 +41,19 @@ func TestSTSAssumeRoleValidation(t *testing.T) {
 	}
 
 	if !isSTSEndpointRunning(t) {
-		t.Fatal("SeaweedFS STS endpoint is not running at", TestSTSEndpoint, "- please run 'make setup-all-tests' first")
+		t.Fatal("Hanzo STS endpoint is not running at", TestSTSEndpoint, "- please run 'make setup-all-tests' first")
 	}
 
 	// Check if AssumeRole is implemented by making a test call
 	if !isAssumeRoleImplemented(t) {
-		t.Fatal("AssumeRole action is not implemented in the running server - please rebuild weed binary with new code and restart the server")
+		t.Fatal("AssumeRole action is not implemented in the running server - please rebuild s3 binary with new code and restart the server")
 	}
 
 	t.Run("missing_role_arn_defaults_to_caller_identity", func(t *testing.T) {
-		// SeaweedFS intentionally allows AssumeRole without RoleArn to support
+		// Hanzo intentionally allows AssumeRole without RoleArn to support
 		// S3-compatible clients that omit it. In that case the session is tied
 		// to the caller's own identity (User Context assumption). See
-		// handleAssumeRole in weed/s3api/s3api_sts.go.
+		// handleAssumeRole in s3/s3api/s3api_sts.go.
 		resp, err := callSTSAPIWithSigV4(t, url.Values{
 			"Action":          {"AssumeRole"},
 			"Version":         {"2011-06-15"},
@@ -194,14 +194,14 @@ func isAssumeRoleImplemented(t *testing.T) bool {
 }
 
 // TestSTSAssumeRoleWithValidCredentials tests AssumeRole with valid IAM credentials
-// This test requires a configured IAM user in SeaweedFS
+// This test requires a configured IAM user in Hanzo
 func TestSTSAssumeRoleWithValidCredentials(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
 
 	if !isSTSEndpointRunning(t) {
-		t.Skip("SeaweedFS STS endpoint is not running at", TestSTSEndpoint)
+		t.Skip("Hanzo STS endpoint is not running at", TestSTSEndpoint)
 	}
 
 	// Use test credentials from environment or fall back to defaults
@@ -287,7 +287,7 @@ func TestSTSAssumeRoleWithInvalidCredentials(t *testing.T) {
 	}
 
 	if !isSTSEndpointRunning(t) {
-		t.Skip("SeaweedFS STS endpoint is not running at", TestSTSEndpoint)
+		t.Skip("Hanzo STS endpoint is not running at", TestSTSEndpoint)
 	}
 
 	t.Run("invalid_access_key", func(t *testing.T) {

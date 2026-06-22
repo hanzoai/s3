@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   master0:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 9333:9333
       - 19333:19333
@@ -12,7 +12,7 @@ services:
       WEED_MASTER_VOLUME_GROWTH_COPY_2: 2
       WEED_MASTER_VOLUME_GROWTH_COPY_OTHER: 1
   master1:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 9334:9334
       - 19334:19334
@@ -22,7 +22,7 @@ services:
       WEED_MASTER_VOLUME_GROWTH_COPY_2: 2
       WEED_MASTER_VOLUME_GROWTH_COPY_OTHER: 1
   master2:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 9335:9335
       - 19335:19335
@@ -32,7 +32,7 @@ services:
       WEED_MASTER_VOLUME_GROWTH_COPY_2: 2
       WEED_MASTER_VOLUME_GROWTH_COPY_OTHER: 1
   volume1:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8080:8080
       - 18080:18080
@@ -42,7 +42,7 @@ services:
       - master1
       - master2
   volume2:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8082:8082
       - 18082:18082
@@ -52,7 +52,7 @@ services:
       - master1
       - master2
   volume3:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8083:8083
       - 18083:18083
@@ -62,7 +62,7 @@ services:
       - master1
       - master2
   filer1:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8888:8888
       - 18888:18888
@@ -74,7 +74,7 @@ services:
       - volume1
       - volume2
   filer2:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8889:8889
       - 18889:18889
@@ -87,7 +87,7 @@ services:
       - volume2
       - filer1
   broker1:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 17777:17777
     command: 'mq.broker -master="master0:9333,master1:9334,master2:9335" -port=17777 -ip=broker1'
@@ -100,7 +100,7 @@ services:
       - filer1
       - filer2
   broker2:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 17778:17778
     command: 'mq.broker -master="master0:9333,master1:9334,master2:9335" -port=17778 -ip=broker2'
@@ -113,7 +113,7 @@ services:
       - filer1
       - filer2
   broker3:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 17779:17779
     command: 'mq.broker -master="master0:9333,master1:9334,master2:9335" -port=17779 -ip=broker3'

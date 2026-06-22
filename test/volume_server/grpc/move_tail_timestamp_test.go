@@ -15,13 +15,13 @@ import (
 
 	"github.com/hanzoai/s3/test/volume_server/framework"
 	"github.com/hanzoai/s3/test/volume_server/matrix"
-	"github.com/hanzoai/s3/weed/pb/volume_server_pb"
-	"github.com/hanzoai/s3/weed/storage"
-	"github.com/hanzoai/s3/weed/storage/backend"
-	"github.com/hanzoai/s3/weed/storage/idx"
-	"github.com/hanzoai/s3/weed/storage/needle"
-	"github.com/hanzoai/s3/weed/storage/types"
-	"github.com/hanzoai/s3/weed/util"
+	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
+	"github.com/hanzoai/s3/s3/storage"
+	"github.com/hanzoai/s3/s3/storage/backend"
+	"github.com/hanzoai/s3/s3/storage/idx"
+	"github.com/hanzoai/s3/s3/storage/needle"
+	"github.com/hanzoai/s3/s3/storage/types"
+	"github.com/hanzoai/s3/s3/util"
 )
 
 func TestVolumeCopyReturnsPreciseLastAppendTimestamp(t *testing.T) {

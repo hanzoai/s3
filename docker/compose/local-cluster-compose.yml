@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   master0:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 9333:9333
       - 19333:19333
@@ -12,7 +12,7 @@ services:
       WEED_MASTER_VOLUME_GROWTH_COPY_2: 2
       WEED_MASTER_VOLUME_GROWTH_COPY_OTHER: 1
   master1:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 9334:9334
       - 19334:19334
@@ -22,7 +22,7 @@ services:
       WEED_MASTER_VOLUME_GROWTH_COPY_2: 2
       WEED_MASTER_VOLUME_GROWTH_COPY_OTHER: 1
   master2:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 9335:9335
       - 19335:19335
@@ -32,7 +32,7 @@ services:
       WEED_MASTER_VOLUME_GROWTH_COPY_2: 2
       WEED_MASTER_VOLUME_GROWTH_COPY_OTHER: 1
   volume1:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8080:8080
       - 18080:18080
@@ -42,7 +42,7 @@ services:
       - master1
       - master2
   volume2:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8082:8082
       - 18082:18082
@@ -52,7 +52,7 @@ services:
       - master1
       - master2
   volume3:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8083:8083
       - 18083:18083
@@ -62,7 +62,7 @@ services:
       - master1
       - master2
   filer:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8888:8888
       - 18888:18888
@@ -75,7 +75,7 @@ services:
       - volume1
       - volume2
   s3:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8333:8333
     command: '-v=9 s3 -filer="filer:8888"'

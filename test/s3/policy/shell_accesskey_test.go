@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hanzoai/s3/weed/pb"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,7 +17,7 @@ func TestShellAccessKeyLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	defer cluster.Stop()
 
-	const weedCmd = "weed"
+	const s3Cmd = "s3"
 	master := string(pb.NewServerAddress("127.0.0.1", cluster.masterPort, cluster.masterGrpcPort))
 	filer := string(pb.NewServerAddress("127.0.0.1", cluster.filerPort, cluster.filerGrpcPort))
 
@@ -25,18 +25,18 @@ func TestShellAccessKeyLifecycle(t *testing.T) {
 	// Create user with explicit key so we know the initial value.
 	initialAK := "INITIALAK1234567890X"
 	initialSK := "initialsecret1234567890abcdefghijklmnop"
-	execShell(t, weedCmd, master, filer,
+	execShell(t, s3Cmd, master, filer,
 		fmt.Sprintf("s3.user.create -name %s -access_key %s -secret_key %s", userName, initialAK, initialSK))
-	defer execShell(t, weedCmd, master, filer, fmt.Sprintf("s3.user.delete -name %s", userName))
+	defer execShell(t, s3Cmd, master, filer, fmt.Sprintf("s3.user.delete -name %s", userName))
 
 	t.Run("ListInitialKey", func(t *testing.T) {
-		out := execShell(t, weedCmd, master, filer, fmt.Sprintf("s3.accesskey.list -user %s", userName))
+		out := execShell(t, s3Cmd, master, filer, fmt.Sprintf("s3.accesskey.list -user %s", userName))
 		requireContains(t, out, initialAK, "accesskey.list initial")
 	})
 
 	var createdAK string
 	t.Run("CreateAdditionalKey", func(t *testing.T) {
-		out := execShell(t, weedCmd, master, filer, fmt.Sprintf("s3.accesskey.create -user %s", userName))
+		out := execShell(t, s3Cmd, master, filer, fmt.Sprintf("s3.accesskey.create -user %s", userName))
 		requireContains(t, out, "Access Key:", "accesskey.create output")
 		requireContains(t, out, "Secret Key:", "accesskey.create output")
 		createdAK = extractFieldAfter(out, "Access Key:")
@@ -44,7 +44,7 @@ func TestShellAccessKeyLifecycle(t *testing.T) {
 			t.Fatalf("failed to extract access key from create output:\n%s", out)
 		}
 
-		out = execShell(t, weedCmd, master, filer, fmt.Sprintf("s3.accesskey.list -user %s", userName))
+		out = execShell(t, s3Cmd, master, filer, fmt.Sprintf("s3.accesskey.list -user %s", userName))
 		requireContains(t, out, initialAK, "list contains original")
 		requireContains(t, out, createdAK, "list contains new key")
 	})
@@ -53,12 +53,12 @@ func TestShellAccessKeyLifecycle(t *testing.T) {
 		if createdAK == "" {
 			t.Fatal("createdAK is empty; CreateAdditionalKey must run successfully first")
 		}
-		out := execShell(t, weedCmd, master, filer,
+		out := execShell(t, s3Cmd, master, filer,
 			fmt.Sprintf("s3.accesskey.rotate -user %s -access_key %s", userName, initialAK))
 		requireContains(t, out, initialAK, "rotate shows old key")
 		requireContains(t, out, "deleted", "rotate marks old key deleted")
 
-		out = execShell(t, weedCmd, master, filer, fmt.Sprintf("s3.accesskey.list -user %s", userName))
+		out = execShell(t, s3Cmd, master, filer, fmt.Sprintf("s3.accesskey.list -user %s", userName))
 		requireNotContains(t, out, initialAK, "old key removed")
 		requireContains(t, out, createdAK, "other key still present")
 	})
@@ -67,9 +67,9 @@ func TestShellAccessKeyLifecycle(t *testing.T) {
 		if createdAK == "" {
 			t.Fatal("createdAK is empty; CreateAdditionalKey must run successfully first")
 		}
-		execShell(t, weedCmd, master, filer,
+		execShell(t, s3Cmd, master, filer,
 			fmt.Sprintf("s3.accesskey.delete -user %s -access_key %s", userName, createdAK))
-		out := execShell(t, weedCmd, master, filer, fmt.Sprintf("s3.accesskey.list -user %s", userName))
+		out := execShell(t, s3Cmd, master, filer, fmt.Sprintf("s3.accesskey.list -user %s", userName))
 		requireNotContains(t, out, createdAK, "deleted key removed from list")
 	})
 }

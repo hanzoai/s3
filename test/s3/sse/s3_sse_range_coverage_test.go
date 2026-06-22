@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// internalChunkSize mirrors the constant in weed/s3api/s3api_object_handlers_put.go
+// internalChunkSize mirrors the constant in s3/s3api/s3api_object_handlers_put.go
 // (the size at which auto-chunking splits a single PUT or part body inside the
 // volume-server layer). Range-read coverage that's interesting for SSE has to
 // straddle this boundary, since each internal chunk is encrypted with its own

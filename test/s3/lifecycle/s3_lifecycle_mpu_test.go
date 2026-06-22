@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/hanzoai/s3/weed/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/stretchr/testify/require"
 )
 
@@ -40,7 +40,7 @@ func putAbortMPULifecycle(t *testing.T, c *s3.Client, bucket, prefix string, day
 // backdateUploadDir ages the .uploads/<uploadID>/ directory entry, which is
 // what the lifecycle worker keys ABORT_MPU off of (the upload's init-time
 // directory carries the destination key in Extended).
-func backdateUploadDir(t *testing.T, fc filer_pb.SeaweedFilerClient, bucket, uploadID string, daysOld int) {
+func backdateUploadDir(t *testing.T, fc filer_pb.HanzoFilerClient, bucket, uploadID string, daysOld int) {
 	t.Helper()
 	dir := bucketsPath + "/" + bucket + "/.uploads"
 	resp, err := fc.LookupDirectoryEntry(context.Background(), &filer_pb.LookupDirectoryEntryRequest{

@@ -16,7 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 
-	"github.com/hanzoai/s3/weed/s3api/s3tables"
+	"github.com/hanzoai/s3/s3/s3api/s3tables"
 )
 
 func getFirstNamespace(namespace []string) (string, error) {

@@ -1,10 +1,10 @@
-# SeaweedFS S3 SSE-KMS Integration with OpenBao
+# Hanzo S3 SSE-KMS Integration with OpenBao
 
-This directory contains comprehensive integration tests for SeaweedFS S3 Server-Side Encryption with Key Management Service (SSE-KMS) using OpenBao as the KMS provider.
+This directory contains comprehensive integration tests for Hanzo S3 Server-Side Encryption with Key Management Service (SSE-KMS) using OpenBao as the KMS provider.
 
 ## 🎯 Overview
 
-The integration tests verify that SeaweedFS can:
+The integration tests verify that Hanzo can:
 - ✅ **Encrypt data** using real KMS operations (not mock keys)
 - ✅ **Decrypt data** correctly with proper key management
 - ✅ **Handle multiple KMS keys** for different security levels
@@ -16,7 +16,7 @@ The integration tests verify that SeaweedFS can:
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   S3 Client     │    │   SeaweedFS      │    │   OpenBao       │
+│   S3 Client     │    │   Hanzo      │    │   OpenBao       │
 │                 │    │   S3 API         │    │   KMS           │
 ├─────────────────┤    ├──────────────────┤    ├─────────────────┤
 │ PUT /object     │───▶│ SSE-KMS Handler  │───▶│ GenerateDataKey │
@@ -45,7 +45,7 @@ make test-with-kms
 
 ### 3. Check KMS Status
 ```bash
-# Verify OpenBao and SeaweedFS are running
+# Verify OpenBao and Hanzo are running
 make status-kms
 ```
 
@@ -56,7 +56,7 @@ make status-kms
 | `setup-openbao` | Set up OpenBao KMS with test encryption keys |
 | `test-with-kms` | Run all SSE tests with real KMS integration |
 | `test-ssekms-integration` | Run only SSE-KMS tests with OpenBao |
-| `start-full-stack` | Start SeaweedFS + OpenBao with Docker Compose |
+| `start-full-stack` | Start Hanzo + OpenBao with Docker Compose |
 | `stop-full-stack` | Stop all Docker services |
 | `clean-kms` | Clean up KMS test environment |
 | `status-kms` | Check status of KMS and S3 services |
@@ -73,7 +73,7 @@ The setup automatically creates these encryption keys in OpenBao:
 | `dest-test-key-456` | Copy operation destination key |
 | `test-multipart-key` | Multipart upload tests |
 | `test-kms-range-key` | Range request tests |
-| `seaweedfs-test-key` | General SeaweedFS SSE tests |
+| `hanzo-test-key` | General Hanzo SSE tests |
 | `bucket-default-key` | Default bucket encryption |
 | `high-security-key` | High security scenarios |
 | `performance-key` | Performance testing |
@@ -125,9 +125,9 @@ The setup automatically creates these encryption keys in OpenBao:
 
 ### Docker Compose Services
 - **OpenBao**: KMS provider on port 8200
-- **SeaweedFS Master**: Metadata management on port 9333
-- **SeaweedFS Volume**: Data storage on port 8080
-- **SeaweedFS Filer**: S3 API with KMS on port 8333
+- **Hanzo Master**: Metadata management on port 9333
+- **Hanzo Volume**: Data storage on port 8080
+- **Hanzo Filer**: S3 API with KMS on port 8333
 
 ## 🎛️ Environment Variables
 
@@ -145,7 +145,7 @@ $ make test-ssekms-integration
 
 Setting up OpenBao for SSE-KMS testing...
 ✅ OpenBao setup complete!
-Starting full SeaweedFS + KMS stack...
+Starting full Hanzo + KMS stack...
 ✅ Full stack running!
 Running SSE-KMS integration tests with OpenBao...
 
@@ -170,10 +170,10 @@ docker-compose logs openbao
 lsof -ti :8200
 ```
 
-### SeaweedFS KMS Not Working
+### Hanzo KMS Not Working
 ```bash
 # Check filer logs for KMS errors
-docker-compose logs seaweedfs-filer
+docker-compose logs hanzo-filer
 
 # Verify KMS configuration
 curl http://localhost:8200/v1/sys/health
@@ -228,7 +228,7 @@ From benchmark results:
 
 ## 🔗 Related Documentation
 
-- [SeaweedFS S3 API Documentation](https://github.com/hanzoai/s3/wiki/Amazon-S3-API)
+- [Hanzo S3 API Documentation](https://github.com/hanzoai/s3/wiki/Amazon-S3-API)
 - [OpenBao Transit Secrets Engine](https://github.com/openbao/openbao/blob/main/website/content/docs/secrets/transit.md)
 - [AWS S3 Server-Side Encryption](https://docs.aws.amazon.com/AmazonS3/latest/userguide/serv-side-encryption.html)
 
@@ -242,4 +242,4 @@ The integration is considered successful when:
 - ✅ Performance meets production requirements
 - ✅ Error cases are handled gracefully
 
-This integration demonstrates that SeaweedFS SSE-KMS is **production-ready** with real KMS providers! 🚀
+This integration demonstrates that Hanzo SSE-KMS is **production-ready** with real KMS providers! 🚀

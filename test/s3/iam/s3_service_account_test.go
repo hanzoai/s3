@@ -70,9 +70,9 @@ func TestServiceAccountLifecycle(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	// Check if SeaweedFS is running
-	if !isSeaweedFSRunning(t) {
-		t.Skip("SeaweedFS is not running at", TestIAMEndpoint)
+	// Check if Hanzo is running
+	if !isHanzoRunning(t) {
+		t.Skip("Hanzo is not running at", TestIAMEndpoint)
 	}
 
 	// First, ensure the parent user exists
@@ -232,7 +232,7 @@ func TestServiceAccountLifecycle(t *testing.T) {
 
 		sess, err := session.NewSession(&aws.Config{
 			Region:   aws.String("us-east-1"),
-			Endpoint: aws.String(TestIAMEndpoint), // IAM and S3 usually on same port in mini-seaweed
+			Endpoint: aws.String(TestIAMEndpoint), // IAM and S3 usually on same port in mini-hanzo
 			Credentials: credentials.NewStaticCredentials(
 				createdAccessKeyId,
 				createdSecretAccessKey,
@@ -287,8 +287,8 @@ func TestServiceAccountValidation(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	if !isSeaweedFSRunning(t) {
-		t.Skip("SeaweedFS is not running at", TestIAMEndpoint)
+	if !isHanzoRunning(t) {
+		t.Skip("Hanzo is not running at", TestIAMEndpoint)
 	}
 
 	t.Run("create_without_parent_user", func(t *testing.T) {
@@ -367,8 +367,8 @@ func callIAMAPI(t *testing.T, action string, params url.Values) (*http.Response,
 	return client.Do(req)
 }
 
-// isSeaweedFSRunning checks if SeaweedFS S3 API is running
-func isSeaweedFSRunning(t *testing.T) bool {
+// isHanzoRunning checks if Hanzo S3 API is running
+func isHanzoRunning(t *testing.T) bool {
 	client := &http.Client{Timeout: 2 * time.Second}
 	resp, err := client.Get(TestIAMEndpoint + "/status")
 	if err != nil {

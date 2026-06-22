@@ -17,11 +17,11 @@ import (
 	"github.com/hanzoai/s3/test/testutil"
 )
 
-// oauthTestEnv holds a weed mini instance started with IAM credentials
+// oauthTestEnv holds a s3 mini instance started with IAM credentials
 // so that the OAuth token endpoint is functional.
 type oauthTestEnv struct {
-	seaweedDir     string
-	weedBinary     string
+	hanzoDir     string
+	s3Binary     string
 	dataDir        string
 	bindIP         string
 	s3Port         int
@@ -34,8 +34,8 @@ type oauthTestEnv struct {
 	volumePort     int
 	volumeGrpcPort int
 	webdavPort     int
-	weedProcess    *exec.Cmd
-	weedCancel     context.CancelFunc
+	s3Process    *exec.Cmd
+	s3Cancel     context.CancelFunc
 	accessKey      string
 	secretKey      string
 }
@@ -48,23 +48,23 @@ func newOAuthTestEnv(t *testing.T) *oauthTestEnv {
 		t.Fatalf("get working directory: %v", err)
 	}
 
-	seaweedDir := wd
+	hanzoDir := wd
 	for i := 0; i < 6; i++ {
-		if _, err := os.Stat(filepath.Join(seaweedDir, "go.mod")); err == nil {
+		if _, err := os.Stat(filepath.Join(hanzoDir, "go.mod")); err == nil {
 			break
 		}
-		seaweedDir = filepath.Dir(seaweedDir)
+		hanzoDir = filepath.Dir(hanzoDir)
 	}
 
-	weedBinary := filepath.Join(seaweedDir, "weed", "weed")
-	if info, err := os.Stat(weedBinary); err != nil || info.IsDir() {
-		weedBinary = "weed"
-		if _, err := exec.LookPath(weedBinary); err != nil {
-			t.Skip("weed binary not found, skipping integration test")
+	s3Binary := filepath.Join(hanzoDir, "s3", "s3")
+	if info, err := os.Stat(s3Binary); err != nil || info.IsDir() {
+		s3Binary = "s3"
+		if _, err := exec.LookPath(s3Binary); err != nil {
+			t.Skip("s3 binary not found, skipping integration test")
 		}
 	}
 
-	dataDir, err := os.MkdirTemp("", "seaweed-oauth-test-*")
+	dataDir, err := os.MkdirTemp("", "hanzo-oauth-test-*")
 	if err != nil {
 		t.Fatalf("create temp dir: %v", err)
 	}
@@ -73,8 +73,8 @@ func newOAuthTestEnv(t *testing.T) *oauthTestEnv {
 	ports := testutil.MustAllocatePorts(t, 10)
 
 	return &oauthTestEnv{
-		seaweedDir:     seaweedDir,
-		weedBinary:     weedBinary,
+		hanzoDir:     hanzoDir,
+		s3Binary:     s3Binary,
 		dataDir:        dataDir,
 		bindIP:         bindIP,
 		masterPort:     ports[0],
@@ -106,9 +106,9 @@ func (env *oauthTestEnv) start(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	env.weedCancel = cancel
+	env.s3Cancel = cancel
 
-	cmd := exec.CommandContext(ctx, env.weedBinary, "mini",
+	cmd := exec.CommandContext(ctx, env.s3Binary, "mini",
 		"-master.port", fmt.Sprintf("%d", env.masterPort),
 		"-master.port.grpc", fmt.Sprintf("%d", env.masterGrpcPort),
 		"-volume.port", fmt.Sprintf("%d", env.volumePort),
@@ -134,9 +134,9 @@ func (env *oauthTestEnv) start(t *testing.T) {
 
 	if err := cmd.Start(); err != nil {
 		cancel()
-		t.Fatalf("start weed mini: %v", err)
+		t.Fatalf("start s3 mini: %v", err)
 	}
-	env.weedProcess = cmd
+	env.s3Process = cmd
 
 	icebergURL := fmt.Sprintf("http://%s:%d/v1/config", env.bindIP, env.icebergPort)
 	if !testutil.WaitForService(icebergURL, 30*time.Second) {
@@ -148,11 +148,11 @@ func (env *oauthTestEnv) start(t *testing.T) {
 
 func (env *oauthTestEnv) cleanup(t *testing.T) {
 	t.Helper()
-	if env.weedCancel != nil {
-		env.weedCancel()
+	if env.s3Cancel != nil {
+		env.s3Cancel()
 	}
-	if env.weedProcess != nil {
-		env.weedProcess.Wait()
+	if env.s3Process != nil {
+		env.s3Process.Wait()
 	}
 	if env.dataDir != "" {
 		os.RemoveAll(env.dataDir)
@@ -422,18 +422,18 @@ func requestOAuthToken(t *testing.T, env *oauthTestEnv, accessKey, secretKey str
 	return tokenResp.AccessToken
 }
 
-// createTableBucketViaShell creates a table bucket using weed shell,
+// createTableBucketViaShell creates a table bucket using s3 shell,
 // which bypasses S3 auth. This is the same approach used by the Trino tests.
 func createTableBucketViaShell(t *testing.T, env *oauthTestEnv, bucketName string) {
 	t.Helper()
 
-	cmd := exec.Command(env.weedBinary, "shell",
+	cmd := exec.Command(env.s3Binary, "shell",
 		fmt.Sprintf("-master=%s:%d.%d", env.bindIP, env.masterPort, env.masterGrpcPort),
 	)
 	cmd.Stdin = strings.NewReader(fmt.Sprintf("s3tables.bucket -create -name %s -account 000000000000\nexit\n", bucketName))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("create table bucket %s via weed shell: %v\nOutput: %s", bucketName, err, output)
+		t.Fatalf("create table bucket %s via s3 shell: %v\nOutput: %s", bucketName, err, output)
 	}
 	t.Logf("Created table bucket %s", bucketName)
 }

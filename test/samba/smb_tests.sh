@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# SMB protocol test battery against a Samba share backed by a SeaweedFS FUSE
+# SMB protocol test battery against a Samba share backed by a Hanzo FUSE
 # mount. Driven both by the local runner (test/samba/run.sh) and by the Docker
 # harness (run_inside_container.sh).
 #
@@ -9,7 +9,7 @@
 #   SMB_PASS   samba password
 # Optional env:
 #   SMB_HOST   samba host                (default 127.0.0.1)
-#   SMB_SHARE  share name                (default seaweedfs)
+#   SMB_SHARE  share name                (default hanzo)
 #   SMB_PORT   smbd port                 (default 445)
 #   SHARE_FS_PATH  directory on the FUSE mount that backs the share. When set,
 #                  the suite also checks cross-protocol consistency: data written
@@ -17,7 +17,7 @@
 set -uo pipefail
 
 SMB_HOST="${SMB_HOST:-127.0.0.1}"
-SMB_SHARE="${SMB_SHARE:-seaweedfs}"
+SMB_SHARE="${SMB_SHARE:-hanzo}"
 SMB_PORT="${SMB_PORT:-445}"
 SMB_USER="${SMB_USER:?SMB_USER is required}"
 SMB_PASS="${SMB_PASS:?SMB_PASS is required}"
@@ -107,8 +107,8 @@ if [[ -n "${SHARE_FS_PATH}" ]]; then
   fi
 fi
 
-# 5. Large file (exercises SeaweedFS chunking) -------------------------------
-echo "==> 5. large file (SeaweedFS chunking)"
+# 5. Large file (exercises Hanzo chunking) -------------------------------
+echo "==> 5. large file (Hanzo chunking)"
 big="${WORK}/big.bin"
 head -c 67108864 /dev/urandom >"${big}" # 64 MiB
 bigback="${WORK}/big.back"

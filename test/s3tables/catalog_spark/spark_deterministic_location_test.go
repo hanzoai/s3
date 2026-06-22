@@ -12,7 +12,7 @@ import (
 )
 
 // TestSparkDeterministicLocationCTAS exercises Spark's iceberg-spark
-// connector against the SeaweedFS REST catalog with no explicit `LOCATION`
+// connector against the Hanzo REST catalog with no explicit `LOCATION`
 // clause and no UUID-suffixing. iceberg-spark does not implement Trino's
 // unique-table-location feature, so every CREATE TABLE here produces a
 // deterministic <namespace-location>/<tableName> path. The test asserts

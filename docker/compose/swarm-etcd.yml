@@ -10,7 +10,7 @@ services:
       replicas: 3
 
   master:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     environment:
       WEED_MASTER_FILER_DEFAULT: "filer:8888"
       WEED_MASTER_SEQUENCER_TYPE: "raft"
@@ -29,7 +29,7 @@ services:
       replicas: 1
 
   filer:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     environment:
       WEED_LEVELDB2_ENABLED: "false"
       WEED_ETCD_ENABLED: "true"
@@ -57,7 +57,7 @@ services:
       replicas: 1
 
   volume:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - target: 8080
         published: 8080

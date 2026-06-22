@@ -70,12 +70,12 @@ Inspect V2 scenario/test assets and produce a table:
 
 Start with:
 
-1. `weed/storage/blockvol/testrunner/`
-2. `weed/storage/blockvol/testrunner/scenarios/public/ha-restart-recovery.yaml`
-3. `weed/storage/blockvol/testrunner/scenarios/public/ha-failover.yaml`
-4. `weed/storage/blockvol/testrunner/scenarios/public/fault-partition.yaml`
-5. `weed/storage/blockvol/test/component/`
-6. `weed/server/qa_block_*`
+1. `s3/storage/blockvol/testrunner/`
+2. `s3/storage/blockvol/testrunner/scenarios/public/ha-restart-recovery.yaml`
+3. `s3/storage/blockvol/testrunner/scenarios/public/ha-failover.yaml`
+4. `s3/storage/blockvol/testrunner/scenarios/public/fault-partition.yaml`
+5. `s3/storage/blockvol/test/component/`
+6. `s3/server/qa_block_*`
 7. `learn/test` evidence layout
 
 ### D. L2 Process Smoke Decision

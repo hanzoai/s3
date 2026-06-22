@@ -35,7 +35,7 @@ func main() {
 		o.UsePathStyle = true
 	})
 
-	// Use the S3 client to interact with SeaweedFS
+	// Use the S3 client to interact with Hanzo
 	// ...
 	// Example: List all buckets
 	result, err := svc.ListBuckets(context.Background(), &s3.ListBucketsInput{})

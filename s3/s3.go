@@ -1,0 +1,204 @@
+package main
+
+import (
+	"embed"
+	"fmt"
+	"io"
+	"io/fs"
+	"os"
+	"strings"
+	"sync"
+	"text/template"
+	"time"
+	"unicode"
+	"unicode/utf8"
+
+	s3server "github.com/hanzoai/s3/s3/server"
+	"github.com/hanzoai/s3/s3/util"
+	flag "github.com/hanzoai/s3/s3/util/fla9"
+
+	"github.com/getsentry/sentry-go"
+	"github.com/hanzoai/s3/s3/command"
+	"github.com/hanzoai/s3/s3/glog"
+	util_http "github.com/hanzoai/s3/s3/util/http"
+)
+
+var IsDebug *bool
+
+var commands = command.Commands
+
+var exitStatus = 0
+var exitMu sync.Mutex
+
+func setExitStatus(n int) {
+	exitMu.Lock()
+	if exitStatus < n {
+		exitStatus = n
+	}
+	exitMu.Unlock()
+}
+
+//go:embed static
+var static embed.FS
+
+func init() {
+	s3server.StaticFS, _ = fs.Sub(static, "static")
+
+	flag.Var(&util.ConfigurationFileDirectory, "config_dir", "directory with toml configuration files")
+}
+
+func main() {
+	glog.MaxSize = 1024 * 1024 * 10
+	glog.MaxFileCount = 5
+	flag.Usage = usage
+
+	err := sentry.Init(sentry.ClientOptions{
+		SampleRate:       0.1,
+		EnableTracing:    true,
+		TracesSampleRate: 0.1,
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "sentry.Init: %v", err)
+	}
+	// Flush buffered events before the program terminates.
+	// Set the timeout to the maximum duration the program can afford to wait.
+	defer sentry.Flush(2 * time.Second)
+
+	if command.AutocompleteMain(commands) {
+		return
+	}
+
+	flag.Parse()
+
+	args := flag.Args()
+	if len(args) < 1 {
+		usage()
+	}
+
+	if args[0] == "help" {
+		help(args[1:])
+		for _, cmd := range commands {
+			if len(args) >= 2 && cmd.Name() == args[1] && cmd.Run != nil {
+				fmt.Fprintf(os.Stderr, "Default Parameters:\n")
+				cmd.Flag.PrintDefaults()
+			}
+		}
+		return
+	}
+	if args[0] != command.GetFuseCommandName() {
+		util_http.InitGlobalHttpClient()
+	}
+	for _, cmd := range commands {
+		if cmd.Name() == args[0] && cmd.Run != nil {
+			cmd.Flag.Usage = func() { cmd.Usage() }
+			cmd.Flag.Parse(args[1:])
+			args = cmd.Flag.Args()
+			IsDebug = cmd.IsDebug
+			if !cmd.Run(cmd, args) {
+				fmt.Fprintf(os.Stderr, "\n")
+				cmd.Flag.Usage()
+				fmt.Fprintf(os.Stderr, "Default Parameters:\n")
+				cmd.Flag.PrintDefaults()
+				// Command execution failed - general error
+				setExitStatus(1)
+			}
+			exit()
+			return
+		}
+	}
+
+	// Unknown command - syntax error
+	fmt.Fprintf(os.Stderr, "s3: unknown subcommand %q\nRun 's3 help' for usage.\n", args[0])
+	setExitStatus(2)
+	exit()
+}
+
+var usageTemplate = `
+Hanzo S3: store billions of files and serve them fast!
+
+Usage:
+
+	s3 command [arguments]
+
+The commands are:
+{{range .}}{{if .Runnable}}
+    {{.Name | printf "%-11s"}} {{.Short}}{{end}}{{end}}
+
+Use "s3 help [command]" for more information about a command.
+
+`
+
+var helpTemplate = `{{if .Runnable}}Usage: s3 {{.UsageLine}}
+{{end}}
+  {{.Long}}
+`
+
+// tmpl executes the given template text on data, writing the result to w.
+func tmpl(w io.Writer, text string, data interface{}) {
+	t := template.New("top")
+	t.Funcs(template.FuncMap{"trim": strings.TrimSpace, "capitalize": capitalize})
+	template.Must(t.Parse(text))
+	if err := t.Execute(w, data); err != nil {
+		panic(err)
+	}
+}
+
+func capitalize(s string) string {
+	if s == "" {
+		return s
+	}
+	r, n := utf8.DecodeRuneInString(s)
+	return string(unicode.ToTitle(r)) + s[n:]
+}
+
+func printUsage(w io.Writer) {
+	tmpl(w, usageTemplate, commands)
+}
+
+func usage() {
+	printUsage(os.Stderr)
+	fmt.Fprintf(os.Stderr, "For Logging, use \"s3 [logging_options] [command]\". The logging options are:\n")
+	flag.PrintDefaults()
+	// Invalid command line usage - syntax error
+	setExitStatus(2)
+	exit()
+}
+
+// help implements the 'help' command.
+func help(args []string) {
+	if len(args) == 0 {
+		printUsage(os.Stdout)
+		// Success - help displayed correctly
+		return
+	}
+	if len(args) != 1 {
+		fmt.Fprintf(os.Stderr, "usage: s3 help command\n\nToo many arguments given.\n")
+		// Invalid help usage - syntax error
+		setExitStatus(2)
+		exit()
+	}
+
+	arg := args[0]
+
+	for _, cmd := range commands {
+		if cmd.Name() == arg {
+			tmpl(os.Stdout, helpTemplate, cmd)
+			// Success - help for specific command displayed correctly
+			return
+		}
+	}
+
+	fmt.Fprintf(os.Stderr, "Unknown help topic %#q.  Run 's3 help'.\n", arg)
+	// Unknown help topic - syntax error
+	setExitStatus(2)
+	exit()
+}
+
+var atexitFuncs []func()
+
+func exit() {
+	for _, f := range atexitFuncs {
+		f()
+	}
+	os.Exit(exitStatus)
+}

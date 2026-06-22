@@ -82,7 +82,7 @@ schemas:
       {
         "type": "record",
         "name": "UserEvent",
-        "namespace": "com.seaweedfs.test",
+        "namespace": "com.s3.test",
         "fields": [
           {"name": "user_id", "type": "string"},
           {"name": "event_type", "type": "string"},
@@ -97,7 +97,7 @@ schemas:
       {
         "type": "record",
         "name": "Transaction", 
-        "namespace": "com.seaweedfs.test",
+        "namespace": "com.s3.test",
         "fields": [
           {"name": "transaction_id", "type": "string"},
           {"name": "amount", "type": "double"},

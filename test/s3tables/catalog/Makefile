@@ -5,20 +5,20 @@
 
 .PHONY: build mini test test-pyiceberg clean
 
-# Root directory of the SeaweedFS project
+# Root directory of the Hanzo project
 PROJECT_ROOT = ../../..
-WEED_BIN = $(PROJECT_ROOT)/weed/weed
+WEED_BIN = $(PROJECT_ROOT)/s3/s3
 
-# Build the weed binary
+# Build the s3 binary
 build:
-	@echo "Building SeaweedFS binary..."
-	cd $(PROJECT_ROOT)/weed && go build -v
+	@echo "Building Hanzo binary..."
+	cd $(PROJECT_ROOT)/s3 && go build -v
 
-# Start SeaweedFS mini cluster for manual testing
+# Start Hanzo mini cluster for manual testing
 # Uses default ports: S3=8333, Iceberg=8182
 mini: build
-	@echo "Starting SeaweedFS mini cluster..."
-	$(WEED_BIN) mini -s3.port.iceberg=8182 & echo $$! > weed-mini.pid; wait
+	@echo "Starting Hanzo mini cluster..."
+	$(WEED_BIN) mini -s3.port.iceberg=8182 & echo $$! > s3-mini.pid; wait
 
 # Run all integration tests in this directory
 test: build
@@ -30,8 +30,8 @@ test-pyiceberg: build
 	@echo "Running PyIceberg compatibility tests..."
 	go test -v -run TestPyIcebergRestCatalog .
 
-# Clean up temporary data and stop weed mini if running
+# Clean up temporary data and stop s3 mini if running
 clean:
 	@echo "Cleaning up..."
-	@test -f weed-mini.pid && kill $$(cat weed-mini.pid) && rm weed-mini.pid || true
-	@rm -rf /tmp/seaweed-iceberg-test-*
+	@test -f s3-mini.pid && kill $$(cat s3-mini.pid) && rm s3-mini.pid || true
+	@rm -rf /tmp/hanzo-iceberg-test-*

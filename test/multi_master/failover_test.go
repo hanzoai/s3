@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/pb"
+	"github.com/hanzoai/s3/s3/pb"
 )
 
 const (

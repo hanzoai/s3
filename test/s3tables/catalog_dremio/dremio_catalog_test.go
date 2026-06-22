@@ -1,4 +1,4 @@
-// Package catalog_dremio provides integration tests for Dremio with SeaweedFS Iceberg REST Catalog.
+// Package catalog_dremio provides integration tests for Dremio with Hanzo Iceberg REST Catalog.
 package catalog_dremio
 
 import (
@@ -26,13 +26,13 @@ import (
 const (
 	dremioImage         = "dremio/dremio-oss:25.2.0"
 	dremioSourceName    = "iceberg"
-	dremioAdminUser     = "seaweed-admin"
-	dremioAdminPassword = "SeaweedFS123!"
+	dremioAdminUser     = "hanzo-admin"
+	dremioAdminPassword = "Hanzo123!"
 )
 
 type TestEnvironment struct {
-	seaweedDir      string
-	weedBinary      string
+	hanzoDir      string
+	s3Binary      string
 	dataDir         string
 	bindIP          string
 	s3Port          int
@@ -44,23 +44,23 @@ type TestEnvironment struct {
 	filerGrpcPort   int
 	volumePort      int
 	volumeGrpcPort  int
-	weedProcess     *exec.Cmd
-	weedCancel      context.CancelFunc
+	s3Process     *exec.Cmd
+	s3Cancel      context.CancelFunc
 	dremioContainer string
 	dremioToken     string
 	accessKey       string
 	secretKey       string
 }
 
-// TestDremioIcebergCatalog starts Dremio, registers SeaweedFS as an Iceberg
+// TestDremioIcebergCatalog starts Dremio, registers Hanzo as an Iceberg
 // REST catalog source, and runs Dremio SQL against tables served by the
-// SeaweedFS catalog. The table and namespace are seeded via the Iceberg REST
+// Hanzo catalog. The table and namespace are seeded via the Iceberg REST
 // API before Dremio bootstraps so they are visible on the source's first scan.
 //
 // Subtests cover:
 //   - BasicSelect: Dremio is alive and answering SQL.
 //   - CountEmptyTable: catalog→table resolution and a scan of an empty table.
-//   - ColumnProjection: the column names from the SeaweedFS-issued schema are
+//   - ColumnProjection: the column names from the Hanzo-issued schema are
 //     usable in Dremio (failure here means Dremio could not parse the schema).
 //   - InformationSchemaColumns: the table's columns are exposed through
 //     Dremio's metadata layer with the expected name and ordinal positions.
@@ -77,9 +77,9 @@ func TestDremioIcebergCatalog(t *testing.T) {
 	env := NewTestEnvironment(t)
 	defer env.Cleanup(t)
 
-	fmt.Printf(">>> Starting SeaweedFS...\n")
-	env.StartSeaweedFS(t)
-	fmt.Printf(">>> SeaweedFS started.\n")
+	fmt.Printf(">>> Starting Hanzo...\n")
+	env.StartHanzo(t)
+	fmt.Printf(">>> Hanzo started.\n")
 
 	tableBucket := "iceberg-tables"
 	fmt.Printf(">>> Creating table bucket: %s\n", tableBucket)
@@ -134,7 +134,7 @@ func TestDremioIcebergCatalog(t *testing.T) {
 	t.Run("ColumnProjection", func(t *testing.T) {
 		// SELECT COUNT(*) does not exercise the schema. A projection by
 		// column name fails fast with "column not found" if the schema
-		// from the SeaweedFS catalog response was not parsed.
+		// from the Hanzo catalog response was not parsed.
 		out := runDremioSQL(t, env, fmt.Sprintf("SELECT id, label FROM %s", tableRef))
 		schema, rows := parseDremioResponseSchemaRows(t, out)
 		if len(rows) != 0 {
@@ -221,28 +221,28 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 		t.Fatalf("Failed to get working directory: %v", err)
 	}
 
-	seaweedDir := wd
+	hanzoDir := wd
 	for i := 0; i < 6; i++ {
-		if _, err := os.Stat(filepath.Join(seaweedDir, "go.mod")); err == nil {
+		if _, err := os.Stat(filepath.Join(hanzoDir, "go.mod")); err == nil {
 			break
 		}
-		seaweedDir = filepath.Dir(seaweedDir)
+		hanzoDir = filepath.Dir(hanzoDir)
 	}
 
-	weedBinary := filepath.Join(seaweedDir, "weed", "weed")
-	info, err := os.Stat(weedBinary)
+	s3Binary := filepath.Join(hanzoDir, "s3", "s3")
+	info, err := os.Stat(s3Binary)
 	if err != nil || info.IsDir() {
-		weedBinary = filepath.Join(seaweedDir, "weed", "weed", "weed")
-		info, err = os.Stat(weedBinary)
+		s3Binary = filepath.Join(hanzoDir, "s3", "s3", "s3")
+		info, err = os.Stat(s3Binary)
 		if err != nil || info.IsDir() {
-			weedBinary = "weed"
-			if _, err := exec.LookPath(weedBinary); err != nil {
-				t.Skip("weed binary not found, skipping integration test")
+			s3Binary = "s3"
+			if _, err := exec.LookPath(s3Binary); err != nil {
+				t.Skip("s3 binary not found, skipping integration test")
 			}
 		}
 	}
 
-	dataDir, err := os.MkdirTemp("", "seaweed-dremio-test-*")
+	dataDir, err := os.MkdirTemp("", "hanzo-dremio-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -251,8 +251,8 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 	ports := testutil.MustAllocatePorts(t, 9)
 
 	env := &TestEnvironment{
-		seaweedDir:     seaweedDir,
-		weedBinary:     weedBinary,
+		hanzoDir:     hanzoDir,
+		s3Binary:     s3Binary,
 		dataDir:        dataDir,
 		bindIP:         bindIP,
 		masterPort:     ports[0],
@@ -272,8 +272,8 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 	return env
 }
 
-// StartSeaweedFS starts a SeaweedFS mini instance with all necessary services.
-func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
+// StartHanzo starts a Hanzo mini instance with all necessary services.
+func (env *TestEnvironment) StartHanzo(t *testing.T) {
 	t.Helper()
 
 	iamConfigPath, err := testutil.WriteIAMConfig(env.dataDir, env.accessKey, env.secretKey)
@@ -287,9 +287,9 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	env.weedCancel = cancel
+	env.s3Cancel = cancel
 
-	cmd := exec.CommandContext(ctx, env.weedBinary, "mini",
+	cmd := exec.CommandContext(ctx, env.s3Binary, "mini",
 		"-master.port", fmt.Sprintf("%d", env.masterPort),
 		"-master.port.grpc", fmt.Sprintf("%d", env.masterGrpcPort),
 		"-volume.port", fmt.Sprintf("%d", env.volumePort),
@@ -316,9 +316,9 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 	)
 
 	if err := cmd.Start(); err != nil {
-		t.Fatalf("Failed to start SeaweedFS: %v", err)
+		t.Fatalf("Failed to start Hanzo: %v", err)
 	}
-	env.weedProcess = cmd
+	env.s3Process = cmd
 
 	icebergURL := fmt.Sprintf("http://%s:%d/v1/config", env.bindIP, env.icebergPort)
 	if !env.waitForService(icebergURL, 30*time.Second) {
@@ -342,13 +342,13 @@ func (env *TestEnvironment) Cleanup(t *testing.T) {
 		_ = exec.Command("docker", "rm", "-f", env.dremioContainer).Run()
 	}
 
-	if env.weedCancel != nil {
-		env.weedCancel()
+	if env.s3Cancel != nil {
+		env.s3Cancel()
 	}
 
-	if env.weedProcess != nil {
+	if env.s3Process != nil {
 		time.Sleep(2 * time.Second)
-		_ = env.weedProcess.Wait()
+		_ = env.s3Process.Wait()
 	}
 
 	if env.dataDir != "" {
@@ -435,7 +435,7 @@ func (env *TestEnvironment) writeDremioConfig(t *testing.T, warehouseBucket stri
 func (env *TestEnvironment) startDremioContainer(t *testing.T, configDir string) {
 	t.Helper()
 
-	containerName := "seaweed-dremio-" + randomString(8)
+	containerName := "hanzo-dremio-" + randomString(8)
 	env.dremioContainer = containerName
 
 	cmd := exec.Command("docker", "run", "-d",
@@ -512,9 +512,9 @@ func (env *TestEnvironment) createDremioAdminUser(t *testing.T) {
 
 	payload := map[string]any{
 		"userName":  dremioAdminUser,
-		"firstName": "Seaweed",
+		"firstName": "Hanzo",
 		"lastName":  "Admin",
-		"email":     "seaweed-admin@example.com",
+		"email":     "hanzo-admin@example.com",
 		"createdAt": time.Now().UnixMilli(),
 		"password":  dremioAdminPassword,
 	}
@@ -973,7 +973,7 @@ func createIcebergNamespaceLevels(t *testing.T, env *TestEnvironment, token, buc
 
 // createIcebergTableInLevels creates a table in a (possibly multi-level)
 // namespace. The namespace path component is encoded with the unit-separator
-// (0x1F) convention used by SeaweedFS's Iceberg REST API.
+// (0x1F) convention used by Hanzo's Iceberg REST API.
 func createIcebergTableInLevels(t *testing.T, env *TestEnvironment, token, bucketName string, levels []string, tableName string) {
 	t.Helper()
 
@@ -993,7 +993,7 @@ func createIcebergTableInLevels(t *testing.T, env *TestEnvironment, token, bucke
 		}, http.StatusOK)
 }
 
-const dremioWriterImage = "seaweedfs-dremio-writer"
+const dremioWriterImage = "hanzo-dremio-writer"
 
 // buildDremioWriterImage builds the local PyIceberg writer image. Layer
 // caching makes repeat invocations cheap; the first build pulls
@@ -1018,7 +1018,7 @@ func buildDremioWriterImage(t *testing.T) {
 
 // writeIcebergRows runs the PyIceberg writer container, which loads the
 // already-created table and appends three rows. The container reaches
-// SeaweedFS via host.docker.internal (matching the Dremio container's path).
+// Hanzo via host.docker.internal (matching the Dremio container's path).
 func writeIcebergRows(t *testing.T, env *TestEnvironment, bucketName string, namespace []string, tableName string) {
 	t.Helper()
 
@@ -1094,7 +1094,7 @@ func dremioObjectName(parts ...string) string {
 	return strings.Join(quoted, ".")
 }
 
-// createTableBucket creates an S3 table bucket using `weed shell`, which
+// createTableBucket creates an S3 table bucket using `s3 shell`, which
 // talks to the filer over gRPC and bypasses S3 SigV4 auth (the test runs
 // with IAM enabled). The master address must use `host:port.grpcPort`
 // (dot, not colon).
@@ -1104,13 +1104,13 @@ func createTableBucket(t *testing.T, env *TestEnvironment, bucketName string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, env.weedBinary, "shell",
+	cmd := exec.CommandContext(ctx, env.s3Binary, "shell",
 		fmt.Sprintf("-master=%s:%d.%d", env.bindIP, env.masterPort, env.masterGrpcPort),
 	)
 	cmd.Stdin = strings.NewReader(fmt.Sprintf("s3tables.bucket -create -name %s -account 000000000000\nexit\n", bucketName))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("Failed to create table bucket %s via weed shell: %v\nOutput: %s", bucketName, err, string(output))
+		t.Fatalf("Failed to create table bucket %s via s3 shell: %v\nOutput: %s", bucketName, err, string(output))
 	}
 	t.Logf("Created table bucket: %s", bucketName)
 }

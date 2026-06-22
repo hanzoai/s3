@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/mq/kafka/gateway"
-	"github.com/hanzoai/s3/weed/mq/kafka/schema"
+	"github.com/hanzoai/s3/s3/mq/kafka/gateway"
+	"github.com/hanzoai/s3/s3/mq/kafka/schema"
 )
 
 // GatewayTestServer wraps the gateway server with common test utilities
@@ -49,7 +49,7 @@ func NewGatewayTestServer(t *testing.T, opts GatewayOptions) *GatewayTestServer 
 			Masters: opts.Masters,
 		})
 	} else {
-		// For unit testing without real SeaweedMQ masters
+		// For unit testing without real HanzoMQ masters
 		srv = gateway.NewTestServerForUnitTests(gateway.Options{
 			Listen: opts.Listen,
 		})
@@ -137,7 +137,7 @@ func (g *GatewayTestServer) LogConsumerGroupSnapshot(groupID string) {
 	g.t.Logf("Consumer group snapshot for %s:\n%s", groupID, string(payload))
 }
 
-// SMQAvailabilityMode indicates whether SeaweedMQ is available for testing
+// SMQAvailabilityMode indicates whether HanzoMQ is available for testing
 type SMQAvailabilityMode int
 
 const (
@@ -146,7 +146,7 @@ const (
 	SMQRequired                               // SMQ is required, skip test if unavailable
 )
 
-// CheckSMQAvailability checks if SeaweedFS masters are available for testing
+// CheckSMQAvailability checks if Hanzo masters are available for testing
 func CheckSMQAvailability() (bool, string) {
 	masters := os.Getenv("SEAWEEDFS_MASTERS")
 	if masters == "" {

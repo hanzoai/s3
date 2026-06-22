@@ -2,13 +2,13 @@ version: '3.9'
 
 services:
   master:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 9333:9333
       - 19333:19333
     command: "master -ip=master -volumeSizeLimitMB=100"
   volume:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8080:8080
       - 18080:18080
@@ -16,14 +16,14 @@ services:
     depends_on:
       - master
   s3:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8888:8888
       - 18888:18888
       - 8333:8333
-    command: '-v 9 filer -master="master:9333" -s3 -s3.config=/etc/seaweedfs/s3.json -s3.port=8333'
+    command: '-v 9 filer -master="master:9333" -s3 -s3.config=/etc/hanzo/s3.json -s3.port=8333'
     volumes:
-      - ./s3.json:/etc/seaweedfs/s3.json
+      - ./s3.json:/etc/hanzo/s3.json
     depends_on:
       - master
       - volume
@@ -40,7 +40,7 @@ services:
   registry1:
     image: registry:2
     environment:
-      REGISTRY_HTTP_ADDR: "0.0.0.0:5001" # seaweedfs s3
+      REGISTRY_HTTP_ADDR: "0.0.0.0:5001" # hanzo s3
       REGISTRY_LOG_LEVEL: "debug"
       REGISTRY_STORAGE: "s3"
       REGISTRY_STORAGE_S3_REGION: "us-east-1"

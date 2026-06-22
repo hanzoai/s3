@@ -7,7 +7,7 @@ rule_files:
   # - "second_rules.yml"
 
 scrape_configs:
-  - job_name: 'seaweedfs-telemetry'
+  - job_name: 'hanzo-telemetry'
     static_configs:
       - targets: ['telemetry-server:8080']
     scrape_interval: 30s

@@ -12,7 +12,7 @@ These tests were created to verify the fix for [GitHub Issue #7589](https://gith
 When uploading an object with tags using the `X-Amz-Tagging` header, the tags were not being stored. 
 When querying the object tagging with `GetObjectTagging`, the response was empty.
 
-This was a regression between SeaweedFS 4.00 and 4.01.
+This was a regression between Hanzo 4.00 and 4.01.
 
 ## Root Cause
 

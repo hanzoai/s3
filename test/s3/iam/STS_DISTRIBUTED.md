@@ -1,6 +1,6 @@
-# Distributed STS Service for SeaweedFS S3 Gateway
+# Distributed STS Service for Hanzo S3 Gateway
 
-This document explains how to configure and deploy the STS (Security Token Service) for distributed SeaweedFS S3 Gateway deployments with consistent identity provider configurations.
+This document explains how to configure and deploy the STS (Security Token Service) for distributed Hanzo S3 Gateway deployments with consistent identity provider configurations.
 
 ## Problem Solved
 
@@ -29,7 +29,7 @@ The STS service now supports **automatic provider loading** from configuration f
   "sts": {
     "tokenDuration": "1h",
     "maxSessionLength": "12h", 
-    "issuer": "seaweedfs-sts",
+    "issuer": "hanzo-sts",
     "signingKey": "base64-encoded-signing-key-32-chars-min"
   }
 }
@@ -44,7 +44,7 @@ The STS service now supports **automatic provider loading** from configuration f
   "sts": {
     "tokenDuration": "1h",
     "maxSessionLength": "12h",
-    "issuer": "seaweedfs-sts",
+    "issuer": "hanzo-sts",
     "signingKey": "base64-encoded-signing-key",
     "providers": [
       {
@@ -52,10 +52,10 @@ The STS service now supports **automatic provider loading** from configuration f
         "type": "oidc", 
         "enabled": true,
         "config": {
-          "issuer": "https://keycloak.company.com/realms/seaweedfs",
-          "clientId": "seaweedfs-s3",
+          "issuer": "https://keycloak.company.com/realms/hanzo",
+          "clientId": "hanzo-s3",
           "clientSecret": "super-secret-key",
-          "jwksUri": "https://keycloak.company.com/realms/seaweedfs/protocol/openid-connect/certs",
+          "jwksUri": "https://keycloak.company.com/realms/hanzo/protocol/openid-connect/certs",
           "scopes": ["openid", "profile", "email", "roles"],
           "claimsMapping": {
             "usernameClaim": "preferred_username",
@@ -69,7 +69,7 @@ The STS service now supports **automatic provider loading** from configuration f
         "enabled": false,
         "config": {
           "issuer": "https://backup-oidc.company.com",
-          "clientId": "seaweedfs-backup"
+          "clientId": "hanzo-backup"
         }
       },
       {
@@ -111,7 +111,7 @@ For production authentication with OpenID Connect providers like Keycloak, Auth0
   "enabled": true,
   "config": {
     "issuer": "https://sso.company.com/realms/production",
-    "clientId": "seaweedfs-prod",
+    "clientId": "hanzo-prod",
     "clientSecret": "confidential-secret", 
     "scopes": ["openid", "profile", "email", "groups"],
     "claimsMapping": {
@@ -165,20 +165,20 @@ The factory pattern supports easy addition of new provider types:
 
 ```bash
 # Standard deployment with config-driven providers
-weed s3 -filer=localhost:8888 -port=8333 -iam.config=/path/to/sts_config.json
+s3 s3 -filer=localhost:8888 -port=8333 -iam.config=/path/to/sts_config.json
 ```
 
 ### Multiple Instances (Production)
 
 ```bash
 # Instance 1 
-weed s3 -filer=prod-filer:8888 -port=8333 -iam.config=/shared/sts_distributed.json
+s3 s3 -filer=prod-filer:8888 -port=8333 -iam.config=/shared/sts_distributed.json
 
 # Instance 2
-weed s3 -filer=prod-filer:8888 -port=8334 -iam.config=/shared/sts_distributed.json
+s3 s3 -filer=prod-filer:8888 -port=8334 -iam.config=/shared/sts_distributed.json
 
 # Instance N
-weed s3 -filer=prod-filer:8888 -port=833N -iam.config=/shared/sts_distributed.json
+s3 s3 -filer=prod-filer:8888 -port=833N -iam.config=/shared/sts_distributed.json
 ```
 
 **Critical Requirements for Distributed Deployment:**
@@ -195,13 +195,13 @@ weed s3 -filer=prod-filer:8888 -port=833N -iam.config=/shared/sts_distributed.js
 # docker-compose.yml for production deployment
 services:
   filer:
-    image: seaweedfs/seaweedfs:latest
+    image: hanzo/hanzo:latest
     command: "filer -master=master:9333"
     volumes:
       - filer-data:/data
     
   s3-gateway-1:
-    image: seaweedfs/seaweedfs:latest
+    image: hanzo/hanzo:latest
     command: "s3 -filer=filer:8888 -port=8333 -iam.config=/config/sts_distributed.json"
     ports:
       - "8333:8333"
@@ -210,7 +210,7 @@ services:
     depends_on: [filer]
     
   s3-gateway-2:
-    image: seaweedfs/seaweedfs:latest 
+    image: hanzo/hanzo:latest 
     command: "s3 -filer=filer:8888 -port=8333 -iam.config=/config/sts_distributed.json"
     ports:
       - "8334:8333"
@@ -219,7 +219,7 @@ services:
     depends_on: [filer]
     
   s3-gateway-3:
-    image: seaweedfs/seaweedfs:latest
+    image: hanzo/hanzo:latest
     command: "s3 -filer=filer:8888 -port=8333 -iam.config=/config/sts_distributed.json"
     ports:
       - "8335:8333"
@@ -245,7 +245,7 @@ services:
    ↓
 2. User receives OIDC JWT token from provider
    ↓  
-3. User calls SeaweedFS STS AssumeRoleWithWebIdentity
+3. User calls Hanzo STS AssumeRoleWithWebIdentity
    POST /sts/assume-role-with-web-identity
    {
      "RoleArn": "arn:aws:iam::role/S3AdminRole",
@@ -278,7 +278,7 @@ services:
    ↓
 8. User makes S3 requests with temporary credentials
    - AWS SDK signs requests with temporary credentials
-   - SeaweedFS S3 gateway validates session token
+   - Hanzo S3 gateway validates session token
    - Gateway checks permissions via policy engine
 ```
 
@@ -355,7 +355,7 @@ points and are not interchangeable:
   "sts": {
     "tokenDuration": "1h",
     "maxSessionLength": "12h",
-    "issuer": "seaweedfs-dev-sts",
+    "issuer": "hanzo-dev-sts",
     "signingKey": "ZGV2LXNpZ25pbmcta2V5LTMyLWNoYXJhY3RlcnMtbG9uZw==",
     "providers": [
       {
@@ -379,7 +379,7 @@ points and are not interchangeable:
   "sts": {
     "tokenDuration": "1h",
     "maxSessionLength": "12h",
-    "issuer": "seaweedfs-prod-sts",
+    "issuer": "hanzo-prod-sts",
     "signingKey": "cHJvZC1zaWduaW5nLWtleS0zMi1jaGFyYWN0ZXJzLWxvbmctcmFuZG9t",
     "providers": [
       {
@@ -388,7 +388,7 @@ points and are not interchangeable:
         "enabled": true,
         "config": {
           "issuer": "https://sso.company.com/realms/production",
-          "clientId": "seaweedfs-prod",
+          "clientId": "hanzo-prod",
           "clientSecret": "${SSO_CLIENT_SECRET}",
           "scopes": ["openid", "profile", "email", "groups"],
           "claimsMapping": {
@@ -403,7 +403,7 @@ points and are not interchangeable:
         "enabled": false,
         "config": {
           "issuer": "https://backup-sso.company.com",
-          "clientId": "seaweedfs-backup"
+          "clientId": "hanzo-backup"
         }
       }
     ]
@@ -462,8 +462,8 @@ stsService.RegisterProvider(keycloakProvider)
         "type": "oidc",
         "enabled": true,
         "config": {
-          "issuer": "https://keycloak.company.com/realms/seaweedfs",
-          "clientId": "seaweedfs-s3"
+          "issuer": "https://keycloak.company.com/realms/hanzo",
+          "clientId": "hanzo-s3"
         }
       }
     ]
@@ -516,7 +516,7 @@ curl http://instance2:8334/sts/providers | jq '.providers | length'
 
 ```bash
 # Test configuration loading
-weed s3 -iam.config=/path/to/config.json -test.config
+s3 s3 -iam.config=/path/to/config.json -test.config
 
 # Validate JWT tokens
 curl -X POST http://localhost:8333/sts/validate-token \
@@ -556,4 +556,4 @@ The configuration-driven provider system solves critical distributed deployment 
 - ✅ **Production Ready**: Supports OIDC, proper session management, distributed storage
 - ✅ **Backwards Compatible**: Existing manual registration still works
 
-This enables SeaweedFS S3 Gateway to **scale horizontally** with **consistent authentication** across all instances, making it truly **production-ready for enterprise deployments**.
+This enables Hanzo S3 Gateway to **scale horizontally** with **consistent authentication** across all instances, making it truly **production-ready for enterprise deployments**.

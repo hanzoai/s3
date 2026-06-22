@@ -11,16 +11,16 @@ import (
 
 	"github.com/hanzoai/s3/test/volume_server/framework"
 	"github.com/hanzoai/s3/test/volume_server/matrix"
-	"github.com/hanzoai/s3/weed/pb/volume_server_pb"
+	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 )
 
-// runWeedShell executes a weed shell command by providing commands via stdin with lock/unlock.
-// It uses a timeout to prevent hanging if the weed shell process becomes unresponsive.
-func runWeedShell(t *testing.T, weedBinary, masterAddr, shellCommand string) (output string, err error) {
+// runS3Shell executes a s3 shell command by providing commands via stdin with lock/unlock.
+// It uses a timeout to prevent hanging if the s3 shell process becomes unresponsive.
+func runS3Shell(t *testing.T, s3Binary, masterAddr, shellCommand string) (output string, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, weedBinary, "shell", "-master="+masterAddr)
+	cmd := exec.CommandContext(ctx, s3Binary, "shell", "-master="+masterAddr)
 	// Wrap command in lock/unlock for cluster-wide operations
 	shellCommands := "lock\n" + shellCommand + "\nunlock\nexit\n"
 	cmd.Stdin = strings.NewReader(shellCommands)
@@ -28,15 +28,15 @@ func runWeedShell(t *testing.T, weedBinary, masterAddr, shellCommand string) (ou
 	output = string(outputBytes)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			t.Logf("weed shell command '%s' timed out after 30s", shellCommand)
+			t.Logf("s3 shell command '%s' timed out after 30s", shellCommand)
 		} else {
-			t.Logf("weed shell command '%s' output: %s, error: %v", shellCommand, output, err)
+			t.Logf("s3 shell command '%s' output: %s, error: %v", shellCommand, output, err)
 		}
 	}
 	return output, err
 }
 
-// TestVolumeMergeBasic verifies the basic volume.merge workflow using the weed shell command
+// TestVolumeMergeBasic verifies the basic volume.merge workflow using the s3 shell command
 func TestVolumeMergeBasic(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
@@ -61,18 +61,18 @@ func TestVolumeMergeBasic(t *testing.T) {
 
 	t.Logf("Successfully allocated volume %d on servers 0 and 1 as replicas", volumeID)
 
-	// Get weed binary
-	weedBinary := os.Getenv("WEED_BINARY")
-	if weedBinary == "" {
+	// Get s3 binary
+	s3Binary := os.Getenv("WEED_BINARY")
+	if s3Binary == "" {
 		var err error
-		weedBinary, err = framework.FindOrBuildWeedBinary()
+		s3Binary, err = framework.FindOrBuildS3Binary()
 		if err != nil {
-			t.Fatalf("failed to find weed binary: %v", err)
+			t.Fatalf("failed to find s3 binary: %v", err)
 		}
 	}
 
-	// Execute volume.merge command via weed shell
-	output, err := runWeedShell(t, weedBinary, cluster.MasterAddress(), fmt.Sprintf("volume.merge -volumeId %d", volumeID))
+	// Execute volume.merge command via s3 shell
+	output, err := runS3Shell(t, s3Binary, cluster.MasterAddress(), fmt.Sprintf("volume.merge -volumeId %d", volumeID))
 
 	t.Logf("volume.merge command output:\n%s", output)
 
@@ -109,18 +109,18 @@ func TestVolumeMergeReadonly(t *testing.T) {
 	framework.AllocateVolume(t, volumeClient0, volumeID, "")
 	framework.AllocateVolume(t, volumeClient1, volumeID, "")
 
-	// Get weed binary
-	weedBinary := os.Getenv("WEED_BINARY")
-	if weedBinary == "" {
+	// Get s3 binary
+	s3Binary := os.Getenv("WEED_BINARY")
+	if s3Binary == "" {
 		var err error
-		weedBinary, err = framework.FindOrBuildWeedBinary()
+		s3Binary, err = framework.FindOrBuildS3Binary()
 		if err != nil {
-			t.Fatalf("failed to find weed binary: %v", err)
+			t.Fatalf("failed to find s3 binary: %v", err)
 		}
 	}
 
 	// Test 1: Merge while writable (merge command will mark volumes readonly as needed)
-	output, err := runWeedShell(t, weedBinary, cluster.MasterAddress(), fmt.Sprintf("volume.merge -volumeId %d", volumeID))
+	output, err := runS3Shell(t, s3Binary, cluster.MasterAddress(), fmt.Sprintf("volume.merge -volumeId %d", volumeID))
 	if err != nil {
 		t.Logf("merge on writable volumes failed: %v\noutput: %s", err, output)
 		t.Fatalf("volume.merge should work on writable volumes (marks them readonly internally)")
@@ -200,18 +200,18 @@ func TestVolumeMergeRestore(t *testing.T) {
 		t.Fatalf("failed to mark readonly on server 1: %v", err)
 	}
 
-	// Get weed binary
-	weedBinary := os.Getenv("WEED_BINARY")
-	if weedBinary == "" {
+	// Get s3 binary
+	s3Binary := os.Getenv("WEED_BINARY")
+	if s3Binary == "" {
 		var err error
-		weedBinary, err = framework.FindOrBuildWeedBinary()
+		s3Binary, err = framework.FindOrBuildS3Binary()
 		if err != nil {
-			t.Fatalf("failed to find weed binary: %v", err)
+			t.Fatalf("failed to find s3 binary: %v", err)
 		}
 	}
 
 	// Execute volume.merge via shell
-	output, err := runWeedShell(t, weedBinary, cluster.MasterAddress(), fmt.Sprintf("volume.merge -volumeId %d", volumeID))
+	output, err := runS3Shell(t, s3Binary, cluster.MasterAddress(), fmt.Sprintf("volume.merge -volumeId %d", volumeID))
 
 	t.Logf("volume.merge output: %s, error: %v", output, err)
 
@@ -315,18 +315,18 @@ func TestVolumeMergeTailNeedles(t *testing.T) {
 		t.Fatalf("failed to mark readonly on server 1: %v", err)
 	}
 
-	// Get weed binary
-	weedBinary := os.Getenv("WEED_BINARY")
-	if weedBinary == "" {
+	// Get s3 binary
+	s3Binary := os.Getenv("WEED_BINARY")
+	if s3Binary == "" {
 		var err error
-		weedBinary, err = framework.FindOrBuildWeedBinary()
+		s3Binary, err = framework.FindOrBuildS3Binary()
 		if err != nil {
-			t.Fatalf("failed to find weed binary: %v", err)
+			t.Fatalf("failed to find s3 binary: %v", err)
 		}
 	}
 
 	// Execute volume.merge command on empty volumes
-	output, err := runWeedShell(t, weedBinary, cluster.MasterAddress(), fmt.Sprintf("volume.merge -volumeId %d", volumeID))
+	output, err := runS3Shell(t, s3Binary, cluster.MasterAddress(), fmt.Sprintf("volume.merge -volumeId %d", volumeID))
 
 	t.Logf("merge empty volumes - output: %s, error: %v", output, err)
 
@@ -426,18 +426,18 @@ func TestVolumeMergeDivergentReplicas(t *testing.T) {
 		t.Fatalf("expected volume %d to be readonly on server 1", volumeID)
 	}
 
-	// Get weed binary
-	weedBinary := os.Getenv("WEED_BINARY")
-	if weedBinary == "" {
+	// Get s3 binary
+	s3Binary := os.Getenv("WEED_BINARY")
+	if s3Binary == "" {
 		var err error
-		weedBinary, err = framework.FindOrBuildWeedBinary()
+		s3Binary, err = framework.FindOrBuildS3Binary()
 		if err != nil {
-			t.Fatalf("failed to find weed binary: %v", err)
+			t.Fatalf("failed to find s3 binary: %v", err)
 		}
 	}
 
 	// Execute volume.merge command via shell
-	output, err := runWeedShell(t, weedBinary, cluster.MasterAddress(), fmt.Sprintf("volume.merge -volumeId %d", volumeID))
+	output, err := runS3Shell(t, s3Binary, cluster.MasterAddress(), fmt.Sprintf("volume.merge -volumeId %d", volumeID))
 
 	t.Logf("merge divergent replicas - output: %s, error: %v", output, err)
 

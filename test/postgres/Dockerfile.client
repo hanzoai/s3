@@ -30,7 +30,7 @@ RUN chmod +x ./client
 # Set environment variables with defaults
 ENV POSTGRES_HOST=localhost
 ENV POSTGRES_PORT=5432
-ENV POSTGRES_USER=seaweedfs
+ENV POSTGRES_USER=hanzo
 ENV POSTGRES_DB=default
 
 # Run the client

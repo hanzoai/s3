@@ -1,21 +1,21 @@
-# Execution Plan: SeaweedFS Volume Server — Go to Rust Port
+# Execution Plan: Hanzo Volume Server — Go to Rust Port
 
 ## Scope Summary
 
 | Component | Go Source | Lines (non-test) | Description |
 |---|---|---|---|
-| CLI & startup | `weed/command/volume.go` | 476 | ~40 CLI flags, server bootstrap |
-| HTTP server + handlers | `weed/server/volume_server*.go` | 1,517 | Struct, routes, read/write/delete handlers |
-| gRPC handlers | `weed/server/volume_grpc_*.go` | 3,073 | 40 RPC method implementations |
-| Storage engine | `weed/storage/` | 15,271 | Volumes, needles, index, compaction, EC, backend |
-| Protobuf definitions | `weed/pb/volume_server.proto` | 759 | Service + message definitions |
-| Shared utilities | `weed/security/`, `weed/stats/`, `weed/util/` | ~2,000+ | JWT, TLS, metrics, helpers |
+| CLI & startup | `s3/command/volume.go` | 476 | ~40 CLI flags, server bootstrap |
+| HTTP server + handlers | `s3/server/volume_server*.go` | 1,517 | Struct, routes, read/write/delete handlers |
+| gRPC handlers | `s3/server/volume_grpc_*.go` | 3,073 | 40 RPC method implementations |
+| Storage engine | `s3/storage/` | 15,271 | Volumes, needles, index, compaction, EC, backend |
+| Protobuf definitions | `s3/pb/volume_server.proto` | 759 | Service + message definitions |
+| Shared utilities | `s3/security/`, `s3/stats/`, `s3/util/` | ~2,000+ | JWT, TLS, metrics, helpers |
 | **Total** | | **~23,000+** | |
 
 ## Rust Crate & Dependency Strategy
 
 ```
-seaweed-volume/
+hanzo-volume/
 ├── Cargo.toml
 ├── build.rs                    # protobuf codegen
 ├── proto/
@@ -134,13 +134,13 @@ seaweed-volume/
 
 **Steps:**
 
-1.1. Create `seaweed-volume/Cargo.toml` with all dependencies listed above.
+1.1. Create `hanzo-volume/Cargo.toml` with all dependencies listed above.
 
 1.2. Copy `volume_server.proto` and `remote.proto` into `proto/`. Adjust package paths for Rust codegen.
 
 1.3. Create `build.rs` using `tonic-build` to compile `.proto` files into Rust types.
 
-1.4. Create `src/main.rs` with `clap` derive structs mirroring all 40 CLI flags from `weed/command/volume.go`:
+1.4. Create `src/main.rs` with `clap` derive structs mirroring all 40 CLI flags from `s3/command/volume.go`:
    - `--port` (default 8080)
    - `--port.grpc` (default 0 → 10000+port)
    - `--port.public` (default 0 → same as port)
@@ -196,17 +196,17 @@ seaweed-volume/
 ---
 
 ### Phase 2: Core Storage Types & On-Disk Format
-**Goal:** Read and write the SeaweedFS needle/volume binary format bit-for-bit compatible with Go.
+**Goal:** Read and write the Hanzo needle/volume binary format bit-for-bit compatible with Go.
 
 **Source files to port:**
-- `weed/storage/types/needle_types.go` → `src/storage/types.rs`
-- `weed/storage/needle/needle.go` → `src/storage/needle/needle.rs`
-- `weed/storage/needle/needle_read.go` → `src/storage/needle/needle_read.rs`
-- `weed/storage/needle/needle_write.go` (partial) → `src/storage/needle/needle_write.rs`
-- `weed/storage/needle/crc.go` → `src/storage/needle/crc.rs`
-- `weed/storage/needle/needle_value_map.go` → `src/storage/needle/needle_value.rs`
-- `weed/storage/super_block/super_block.go` → `src/storage/super_block.rs`
-- `weed/storage/idx/` → `src/storage/idx/`
+- `s3/storage/types/needle_types.go` → `src/storage/types.rs`
+- `s3/storage/needle/needle.go` → `src/storage/needle/needle.rs`
+- `s3/storage/needle/needle_read.go` → `src/storage/needle/needle_read.rs`
+- `s3/storage/needle/needle_write.go` (partial) → `src/storage/needle/needle_write.rs`
+- `s3/storage/needle/crc.go` → `src/storage/needle/crc.rs`
+- `s3/storage/needle/needle_value_map.go` → `src/storage/needle/needle_value.rs`
+- `s3/storage/super_block/super_block.go` → `src/storage/super_block.rs`
+- `s3/storage/idx/` → `src/storage/idx/`
 
 **Steps:**
 
@@ -255,13 +255,13 @@ seaweed-volume/
 **Goal:** Mount, read from, write to, and unmount a volume.
 
 **Source files to port:**
-- `weed/storage/volume.go` → `src/storage/volume.rs`
-- `weed/storage/volume_read.go` → `src/storage/volume_read.rs`
-- `weed/storage/volume_write.go` → `src/storage/volume_write.rs`
-- `weed/storage/volume_loading.go`
-- `weed/storage/volume_vacuum.go` → `src/storage/volume_compact.rs`
-- `weed/storage/volume_info/volume_info.go` → `src/storage/volume_info.rs`
-- `weed/storage/volume_super_block.go`
+- `s3/storage/volume.go` → `src/storage/volume.rs`
+- `s3/storage/volume_read.go` → `src/storage/volume_read.rs`
+- `s3/storage/volume_write.go` → `src/storage/volume_write.rs`
+- `s3/storage/volume_loading.go`
+- `s3/storage/volume_vacuum.go` → `src/storage/volume_compact.rs`
+- `s3/storage/volume_info/volume_info.go` → `src/storage/volume_info.rs`
+- `s3/storage/volume_super_block.go`
 
 **Steps:**
 
@@ -313,10 +313,10 @@ seaweed-volume/
 **Goal:** Manage multiple volumes across multiple disk directories.
 
 **Source files to port:**
-- `weed/storage/store.go` → `src/storage/store.rs`
-- `weed/storage/disk_location.go` → `src/storage/disk_location.rs`
-- `weed/storage/store_ec.go`
-- `weed/storage/store_state.go`
+- `s3/storage/store.go` → `src/storage/store.rs`
+- `s3/storage/disk_location.go` → `src/storage/disk_location.rs`
+- `s3/storage/store_ec.go`
+- `s3/storage/store_state.go`
 
 **Steps:**
 
@@ -349,7 +349,7 @@ seaweed-volume/
 **Goal:** Full EC shard encode/decode/read/write/rebuild.
 
 **Source files to port:**
-- `weed/storage/erasure_coding/` (3,599 lines)
+- `s3/storage/erasure_coding/` (3,599 lines)
 
 **Steps:**
 
@@ -382,7 +382,7 @@ seaweed-volume/
 **Goal:** Support tiered storage to remote backends (S3, etc).
 
 **Source files to port:**
-- `weed/storage/backend/` (1,850 lines)
+- `s3/storage/backend/` (1,850 lines)
 
 **Steps:**
 
@@ -406,9 +406,9 @@ seaweed-volume/
 **Goal:** JWT authentication, whitelist guard, TLS configuration.
 
 **Source files to port:**
-- `weed/security/guard.go` → `src/security/guard.rs`
-- `weed/security/jwt.go` → `src/security/jwt.rs`
-- `weed/security/tls.go` → `src/security/tls.rs`
+- `s3/security/guard.go` → `src/security/guard.rs`
+- `s3/security/jwt.go` → `src/security/jwt.rs`
+- `s3/security/tls.go` → `src/security/tls.rs`
 
 **Steps:**
 
@@ -418,7 +418,7 @@ seaweed-volume/
    - `UpdateWhiteList()` for live reload
 
 7.2. **JWT** (`jwt.rs`):
-   - `SeaweedFileIdClaims` with `fid` field
+   - `HanzoFileIdClaims` with `fid` field
    - Sign with HMAC-SHA256
    - Verify + decode with expiry check
    - Separate signing keys for read vs write
@@ -442,7 +442,7 @@ seaweed-volume/
 **Goal:** Export same metric names as Go for dashboard compatibility.
 
 **Source files to port:**
-- `weed/stats/metrics.go` (volume server counters/gauges/histograms)
+- `s3/stats/metrics.go` (volume server counters/gauges/histograms)
 
 **Steps:**
 
@@ -469,13 +469,13 @@ seaweed-volume/
 **Goal:** All HTTP endpoints with exact same behavior as Go.
 
 **Source files to port:**
-- `weed/server/volume_server.go` → `src/server/volume_server.rs`
-- `weed/server/volume_server_handlers.go` → `src/server/http_handlers.rs`
-- `weed/server/volume_server_handlers_read.go` → `src/server/http_read.rs`
-- `weed/server/volume_server_handlers_write.go` → `src/server/http_write.rs`
-- `weed/server/volume_server_handlers_admin.go` → `src/server/http_admin.rs`
-- `weed/server/volume_server_handlers_helper.go` (URL parsing, proxy, JSON responses)
-- `weed/server/volume_server_handlers_ui.go` → `src/server/http_admin.rs`
+- `s3/server/volume_server.go` → `src/server/volume_server.rs`
+- `s3/server/volume_server_handlers.go` → `src/server/http_handlers.rs`
+- `s3/server/volume_server_handlers_read.go` → `src/server/http_read.rs`
+- `s3/server/volume_server_handlers_write.go` → `src/server/http_write.rs`
+- `s3/server/volume_server_handlers_admin.go` → `src/server/http_admin.rs`
+- `s3/server/volume_server_handlers_helper.go` (URL parsing, proxy, JSON responses)
+- `s3/server/volume_server_handlers_ui.go` → `src/server/http_admin.rs`
 
 **Steps:**
 
@@ -553,22 +553,22 @@ seaweed-volume/
 **Goal:** All 40 gRPC methods with exact logic.
 
 **Source files to port:**
-- `weed/server/volume_grpc_admin.go` (380 lines)
-- `weed/server/volume_grpc_vacuum.go` (124 lines)
-- `weed/server/volume_grpc_copy.go` (636 lines)
-- `weed/server/volume_grpc_copy_incremental.go` (66 lines)
-- `weed/server/volume_grpc_read_write.go` (74 lines)
-- `weed/server/volume_grpc_batch_delete.go` (124 lines)
-- `weed/server/volume_grpc_tail.go` (140 lines)
-- `weed/server/volume_grpc_erasure_coding.go` (619 lines)
-- `weed/server/volume_grpc_scrub.go` (121 lines)
-- `weed/server/volume_grpc_tier_upload.go` (98 lines)
-- `weed/server/volume_grpc_tier_download.go` (85 lines)
-- `weed/server/volume_grpc_remote.go` (95 lines)
-- `weed/server/volume_grpc_query.go` (69 lines)
-- `weed/server/volume_grpc_state.go` (26 lines)
-- `weed/server/volume_grpc_read_all.go` (35 lines)
-- `weed/server/volume_grpc_client_to_master.go` (325 lines)
+- `s3/server/volume_grpc_admin.go` (380 lines)
+- `s3/server/volume_grpc_vacuum.go` (124 lines)
+- `s3/server/volume_grpc_copy.go` (636 lines)
+- `s3/server/volume_grpc_copy_incremental.go` (66 lines)
+- `s3/server/volume_grpc_read_write.go` (74 lines)
+- `s3/server/volume_grpc_batch_delete.go` (124 lines)
+- `s3/server/volume_grpc_tail.go` (140 lines)
+- `s3/server/volume_grpc_erasure_coding.go` (619 lines)
+- `s3/server/volume_grpc_scrub.go` (121 lines)
+- `s3/server/volume_grpc_tier_upload.go` (98 lines)
+- `s3/server/volume_grpc_tier_download.go` (85 lines)
+- `s3/server/volume_grpc_remote.go` (95 lines)
+- `s3/server/volume_grpc_query.go` (69 lines)
+- `s3/server/volume_grpc_state.go` (26 lines)
+- `s3/server/volume_grpc_read_all.go` (35 lines)
+- `s3/server/volume_grpc_client_to_master.go` (325 lines)
 
 **Steps (grouped by functional area):**
 

@@ -8,7 +8,7 @@ import (
 
 	"github.com/hanzoai/s3/test/volume_server/framework"
 	"github.com/hanzoai/s3/test/volume_server/matrix"
-	"github.com/hanzoai/s3/weed/operation"
+	"github.com/hanzoai/s3/s3/operation"
 )
 
 func TestChunkManifestExpansionAndBypass(t *testing.T) {

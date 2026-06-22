@@ -1,10 +1,10 @@
-# SeaweedFS S3 Copying Tests
+# Hanzo S3 Copying Tests
 
-This directory contains comprehensive Go tests for SeaweedFS S3 copying functionality, converted from the failing Python tests in the s3-tests repository.
+This directory contains comprehensive Go tests for Hanzo S3 copying functionality, converted from the failing Python tests in the s3-tests repository.
 
 ## Overview
 
-These tests verify that SeaweedFS correctly implements S3 operations, starting with basic put/get operations and progressing to advanced copy operations, including:
+These tests verify that Hanzo correctly implements S3 operations, starting with basic put/get operations and progressing to advanced copy operations, including:
 - **Basic S3 Operations**: Put/Get operations, bucket management, and metadata handling
 - **Basic object copying**: within the same bucket
 - **Cross-bucket copying**: across different buckets
@@ -41,13 +41,13 @@ These tests verify that SeaweedFS correctly implements S3 operations, starting w
 ## Requirements
 
 1. **Go 1.19+**: Required for AWS SDK v2 and modern Go features
-2. **SeaweedFS Binary**: Built from source (`../../../weed/weed`)
+2. **Hanzo Binary**: Built from source (`../../../s3/s3`)
 3. **Free Ports**: 8333 (S3), 8888 (Filer), 8080 (Volume), 9333 (Master)
 4. **Dependencies**: Uses the main repository's go.mod with existing AWS SDK v2 and testify dependencies
 
 ## Quick Start
 
-### 1. Build SeaweedFS
+### 1. Build Hanzo
 ```bash
 cd ../../../
 make
@@ -82,15 +82,15 @@ make test-conditional
 - `make test-conditional` - Run conditional copying tests only
 
 ### Server Management
-- `make start-seaweedfs` - Start SeaweedFS server for testing
-- `make stop-seaweedfs` - Stop SeaweedFS server
+- `make start-hanzo` - Start Hanzo server for testing
+- `make stop-hanzo` - Stop Hanzo server
 - `make manual-start` - Start server for manual testing
 - `make manual-stop` - Stop server and clean up
 
 ### Debugging
 - `make debug-logs` - Show recent log entries from all services
 - `make debug-status` - Show process and port status
-- `make check-binary` - Verify SeaweedFS binary exists
+- `make check-binary` - Verify Hanzo binary exists
 
 ### Performance Testing
 - `make benchmark` - Run performance benchmarks
@@ -119,7 +119,7 @@ The tests use the following default configuration:
 You can modify these values in `test_config.json` or by setting environment variables:
 
 ```bash
-export SEAWEEDFS_BINARY=/path/to/weed
+export SEAWEEDFS_BINARY=/path/to/s3
 export S3_PORT=8333
 export FILER_PORT=8888
 export VOLUME_PORT=8080
@@ -223,7 +223,7 @@ export VOLUME_MAX_SIZE_MB=50
 
 ## Expected Behavior
 
-These tests verify that SeaweedFS correctly implements:
+These tests verify that Hanzo correctly implements:
 
 1. **Basic S3 Operations**: Standard `PutObject`, `GetObject`, `ListBuckets`, `ListObjects` APIs
 2. **Bucket Management**: Bucket creation, deletion, and listing
@@ -242,11 +242,11 @@ These tests verify that SeaweedFS correctly implements:
 
 1. **Port Already in Use**
    ```bash
-   make stop-seaweedfs
+   make stop-hanzo
    make clean
    ```
 
-2. **SeaweedFS Binary Not Found**
+2. **Hanzo Binary Not Found**
    ```bash
    cd ../../../
    make
@@ -281,10 +281,10 @@ make manual-stop
 ### Log Locations
 
 When running tests, logs are stored in:
-- Master: `/tmp/seaweedfs-master.log`
-- Volume: `/tmp/seaweedfs-volume.log`
-- Filer: `/tmp/seaweedfs-filer.log`
-- S3: `/tmp/seaweedfs-s3.log`
+- Master: `/tmp/hanzo-master.log`
+- Volume: `/tmp/hanzo-volume.log`
+- Filer: `/tmp/hanzo-filer.log`
+- S3: `/tmp/hanzo-s3.log`
 
 ## Contributing
 

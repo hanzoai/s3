@@ -1,10 +1,10 @@
 # ETag Format Integration Tests
 #
 # These tests verify S3 ETag format compatibility, particularly for large files
-# that trigger SeaweedFS auto-chunking. This addresses GitHub Issue #7768.
+# that trigger Hanzo auto-chunking. This addresses GitHub Issue #7768.
 #
 # Prerequisites:
-#   - SeaweedFS running with S3 API enabled on port 8333
+#   - Hanzo running with S3 API enabled on port 8333
 #   - Go 1.21+
 #
 # Usage:

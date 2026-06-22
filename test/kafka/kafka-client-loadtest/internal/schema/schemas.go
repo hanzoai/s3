@@ -5,7 +5,7 @@ func GetAvroSchema() string {
 	return `{
 		"type": "record",
 		"name": "LoadTestMessage",
-		"namespace": "com.seaweedfs.loadtest",
+		"namespace": "com.s3.loadtest",
 		"fields": [
 			{"name": "id", "type": "string"},
 			{"name": "timestamp", "type": "long"},
@@ -44,7 +44,7 @@ func GetJSONSchema() string {
 func GetProtobufSchema() string {
 	return `syntax = "proto3";
 
-package com.seaweedfs.loadtest;
+package com.s3.loadtest;
 
 message LoadTestMessage {
   string id = 1;

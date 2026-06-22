@@ -1,6 +1,6 @@
 # TUS Protocol Integration Tests
 
-This directory contains integration tests for the TUS (resumable upload) protocol support in SeaweedFS Filer.
+This directory contains integration tests for the TUS (resumable upload) protocol support in Hanzo Filer.
 
 ## Overview
 
@@ -46,13 +46,13 @@ TUS protocol support is enabled by default at `/.tus` path. You can customize th
 
 ```bash
 # Start filer with default TUS path (/.tus)
-weed filer -master=localhost:9333
+s3 filer -master=localhost:9333
 
 # Use a custom path (leading slash added automatically if missing)
-weed filer -master=localhost:9333 -tusBasePath=/.uploads/tus
+s3 filer -master=localhost:9333 -tusBasePath=/.uploads/tus
 
 # Disable TUS by setting empty path
-weed filer -master=localhost:9333 -tusBasePath=
+s3 filer -master=localhost:9333 -tusBasePath=
 ```
 
 ## Test Structure
@@ -82,11 +82,11 @@ The tests cover:
 
 ### Prerequisites
 
-1. **Build SeaweedFS**:
+1. **Build Hanzo**:
 ```bash
-make build-weed
+make build-s3
 # or
-cd ../../weed && go build -o weed
+cd ../../s3 && go build -o s3
 ```
 
 ### Using Makefile
@@ -108,7 +108,7 @@ make test-resume     # Resume/HEAD tests
 make test-errors     # Error handling tests
 
 # Manual testing
-make manual-start    # Start SeaweedFS for manual testing
+make manual-start    # Start Hanzo for manual testing
 make manual-stop     # Stop and cleanup
 ```
 
@@ -138,7 +138,7 @@ make debug-status
 ## Test Environment
 
 Each test run:
-1. Starts a SeaweedFS cluster (master, volume, filer)
+1. Starts a Hanzo cluster (master, volume, filer)
 2. Creates uploads using TUS protocol
 3. Verifies files are stored correctly
 4. Cleans up test data
@@ -238,4 +238,4 @@ Client                         Filer                      Volume Servers
 - [TUS Protocol Specification](https://tus.io/protocols/resumable-upload)
 - [tus-js-client](https://github.com/tus/tus-js-client) - JavaScript client
 - [go-tus](https://github.com/eventials/go-tus) - Go client
-- [SeaweedFS S3 API](../../weed/s3api) - Alternative multipart upload
+- [Hanzo S3 API](../../s3/s3api) - Alternative multipart upload

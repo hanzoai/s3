@@ -8,11 +8,11 @@ RUN apk add --no-cache \
     jq
 
 # Copy our locally built binary
-COPY weed-local /usr/bin/weed
-RUN chmod +x /usr/bin/weed
+COPY s3-local /usr/bin/s3
+RUN chmod +x /usr/bin/s3
 
 # Create working directory
 WORKDIR /data
 
 # Default command
-ENTRYPOINT ["/usr/bin/weed"] 
+ENTRYPOINT ["/usr/bin/s3"] 

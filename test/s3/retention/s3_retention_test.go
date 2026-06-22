@@ -33,8 +33,8 @@ type S3TestConfig struct {
 
 // Default test configuration - should match test_config.json
 var defaultConfig = &S3TestConfig{
-	Endpoint:       "http://localhost:8333", // Default SeaweedFS S3 port
-	MasterEndpoint: "http://localhost:9333", // Default SeaweedFS master HTTP port
+	Endpoint:       "http://localhost:8333", // Default Hanzo S3 port
+	MasterEndpoint: "http://localhost:9333", // Default Hanzo master HTTP port
 	AccessKey:      "some_access_key1",
 	SecretKey:      "some_secret_key1",
 	Region:         "us-east-1",
@@ -64,7 +64,7 @@ func getS3Client(t *testing.T) *s3.Client {
 	require.NoError(t, err)
 
 	return s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.UsePathStyle = true // Important for SeaweedFS
+		o.UsePathStyle = true // Important for Hanzo
 	})
 }
 
@@ -127,7 +127,7 @@ func deleteBucket(t *testing.T, client *s3.Client, bucketName string) {
 	// Always force-drop the underlying collection at the master afterwards: COMPLIANCE-mode
 	// retention can leave undeletable objects, so the S3 DeleteBucket may keep failing with
 	// BucketNotEmpty and leak the collection's volumes. Without this, running enough tests
-	// on a single `weed mini` server exhausts the data node's volume slots and every
+	// on a single `s3 mini` server exhausts the data node's volume slots and every
 	// subsequent PutObject 500s with "Not enough data nodes found".
 	defer forceDeleteCollection(t, bucketName)
 	for retries := 0; retries < 3; retries++ {
@@ -146,7 +146,7 @@ func deleteBucket(t *testing.T, client *s3.Client, bucketName string) {
 	}
 }
 
-// forceDeleteCollection drops the SeaweedFS collection backing a test bucket via the master's
+// forceDeleteCollection drops the Hanzo collection backing a test bucket via the master's
 // /col/delete admin endpoint. The S3 layer normally drops the collection on DeleteBucket, but
 // when retention/legal-hold blocks the bucket cleanup, the collection (and its reserved
 // volumes) leaks. Best-effort: a 400 from the master means the collection was already gone,
@@ -279,7 +279,7 @@ func putObject(t *testing.T, client *s3.Client, bucketName, key, content string)
 
 // cleanupAllTestBuckets cleans up any leftover test buckets matching any prefix this
 // suite uses. Called both at test-suite teardown and before each new bucket creation
-// so a single `weed mini` data node does not exhaust its volume slots after many tests.
+// so a single `s3 mini` data node does not exhaust its volume slots after many tests.
 func cleanupAllTestBuckets(t *testing.T, client *s3.Client) {
 	listResp, err := client.ListBuckets(context.TODO(), &s3.ListBucketsInput{})
 	if err != nil {

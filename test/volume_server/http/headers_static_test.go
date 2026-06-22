@@ -111,10 +111,10 @@ func TestStaticAssetEndpoints(t *testing.T) {
 		t.Fatalf("/favicon.ico expected 200, got %d", faviconResp.StatusCode)
 	}
 
-	staticResp := framework.DoRequest(t, client, mustNewRequest(t, http.MethodGet, clusterHarness.VolumeAdminURL()+"/seaweedfsstatic/seaweed50x50.png"))
+	staticResp := framework.DoRequest(t, client, mustNewRequest(t, http.MethodGet, clusterHarness.VolumeAdminURL()+"/hanzostatic/hanzo50x50.png"))
 	_ = framework.ReadAllAndClose(t, staticResp)
 	if staticResp.StatusCode != http.StatusOK {
-		t.Fatalf("/seaweedfsstatic/seaweed50x50.png expected 200, got %d", staticResp.StatusCode)
+		t.Fatalf("/hanzostatic/hanzo50x50.png expected 200, got %d", staticResp.StatusCode)
 	}
 }
 
@@ -132,9 +132,9 @@ func TestStaticAssetEndpointsOnPublicPort(t *testing.T) {
 		t.Fatalf("public /favicon.ico expected 200, got %d", faviconResp.StatusCode)
 	}
 
-	staticResp := framework.DoRequest(t, client, mustNewRequest(t, http.MethodGet, clusterHarness.VolumePublicURL()+"/seaweedfsstatic/seaweed50x50.png"))
+	staticResp := framework.DoRequest(t, client, mustNewRequest(t, http.MethodGet, clusterHarness.VolumePublicURL()+"/hanzostatic/hanzo50x50.png"))
 	_ = framework.ReadAllAndClose(t, staticResp)
 	if staticResp.StatusCode != http.StatusOK {
-		t.Fatalf("public /seaweedfsstatic/seaweed50x50.png expected 200, got %d", staticResp.StatusCode)
+		t.Fatalf("public /hanzostatic/hanzo50x50.png expected 200, got %d", staticResp.StatusCode)
 	}
 }

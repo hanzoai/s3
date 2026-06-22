@@ -769,7 +769,7 @@ func (p *Producer) registerTopicSchema(subject string) error {
 }
 
 // createConfluentWireFormat creates a message in Confluent Wire Format
-// This matches the implementation in weed/mq/kafka/schema/envelope.go CreateConfluentEnvelope
+// This matches the implementation in s3/mq/kafka/schema/envelope.go CreateConfluentEnvelope
 func (p *Producer) createConfluentWireFormat(schemaID int, avroData []byte) []byte {
 	// Confluent Wire Format: [magic_byte(1)][schema_id(4)][payload(n)]
 	// magic_byte = 0x00

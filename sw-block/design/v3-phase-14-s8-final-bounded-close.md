@@ -147,16 +147,16 @@ S8 can close P14 with L3 blockers only if the blockers are genuinely P15 product
 
 S8 **does not port testrunner machinery into the V3 tree** (round-2 doc-consistency fix, aligned with `v3-phase-14-s8-v2-scenario-classification.md` §2). The items below are the V2 muscles S8 inventories and classifies; actual porting is a P15 Final Gate (Cluster Validation Agent) deliverable, not an S8 one.
 
-1. `weed/storage/blockvol/testrunner/`
+1. `s3/storage/blockvol/testrunner/`
    - **classify now**: runner architecture, scenario YAML shape, action vocabulary, artifact collection, report generation — recorded as PORT-MECHANISM in the classification table. **Port in P15 Final Gate.**
 
-2. `weed/storage/blockvol/testrunner/scenarios/public` and selected internal scenarios
+2. `s3/storage/blockvol/testrunner/scenarios/public` and selected internal scenarios
    - **classify now**: map each scenario shape to RUNNABLE-P14 / BLOCKED-FRONTEND / BLOCKED-OPS / BLOCKED-HA / BLOCKED-PERF. **Port in P15 Final Gate.**
 
-3. `weed/storage/blockvol/test/component/`
+3. `s3/storage/blockvol/test/component/`
    - **classify now**: component harness structure and failure-injection style. **Port in P15 T1 Frontend + Data Path** as that track's real-route harness.
 
-4. `weed/server/qa_block_*`
+4. `s3/server/qa_block_*`
    - **classify now**: coverage taxonomy and route scenario ideas as reference for the evidence matrix (§5). **Port only as applicable per P15 track needs.**
 
 5. `learn/test` evidence convention

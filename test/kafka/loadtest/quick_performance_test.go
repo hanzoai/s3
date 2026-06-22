@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/glog"
+	"github.com/hanzoai/s3/s3/glog"
 )
 
 // TestQuickPerformance_10K tests the fixed broker with 10K records

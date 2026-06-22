@@ -21,7 +21,7 @@ type RustCluster struct {
 	testingTB testing.TB
 	profile   matrix.Profile
 
-	weedBinary       string // Go weed binary (for the master)
+	s3Binary       string // Go s3 binary (for the master)
 	rustVolumeBinary string // Rust volume binary
 
 	baseDir   string
@@ -51,9 +51,9 @@ var (
 func StartRustVolumeCluster(t testing.TB, profile matrix.Profile) *RustCluster {
 	t.Helper()
 
-	weedBinary, err := FindOrBuildWeedBinary()
+	s3Binary, err := FindOrBuildS3Binary()
 	if err != nil {
-		t.Fatalf("resolve weed binary: %v", err)
+		t.Fatalf("resolve s3 binary: %v", err)
 	}
 
 	rustBinary, err := FindOrBuildRustBinary()
@@ -90,7 +90,7 @@ func StartRustVolumeCluster(t testing.TB, profile matrix.Profile) *RustCluster {
 	rc := &RustCluster{
 		testingTB:        t,
 		profile:          profile,
-		weedBinary:       weedBinary,
+		s3Binary:       s3Binary,
 		rustVolumeBinary: rustBinary,
 		baseDir:          baseDir,
 		configDir:        configDir,
@@ -175,7 +175,7 @@ func (rc *RustCluster) startMaster(dataDir string) error {
 		"-defaultReplication=000",
 	}
 
-	rc.masterCmd = exec.Command(rc.weedBinary, args...)
+	rc.masterCmd = exec.Command(rc.s3Binary, args...)
 	rc.masterCmd.Dir = rc.baseDir
 	rc.masterCmd.Stdout = logFile
 	rc.masterCmd.Stderr = logFile
@@ -252,7 +252,7 @@ func FindOrBuildRustBinary() (string, error) {
 		rustCrateDir := ""
 		if _, file, _, ok := runtime.Caller(0); ok {
 			repoRoot := filepath.Clean(filepath.Join(filepath.Dir(file), "..", "..", ".."))
-			for _, candidate := range []string{"seaweed-volume", "weed-volume"} {
+			for _, candidate := range []string{"hanzo-volume", "s3-volume"} {
 				dir := filepath.Join(repoRoot, candidate)
 				if isDir(dir) && isFile(filepath.Join(dir, "Cargo.toml")) {
 					rustCrateDir = dir
@@ -265,7 +265,7 @@ func FindOrBuildRustBinary() (string, error) {
 			return
 		}
 
-		releaseBin := filepath.Join(rustCrateDir, "target", "release", "weed-volume")
+		releaseBin := filepath.Join(rustCrateDir, "target", "release", "s3-volume")
 
 		// Always rebuild once per test process so the harness uses current source and features.
 		cmd := exec.Command("cargo", "build", "--release")
@@ -318,7 +318,7 @@ func (rc *RustCluster) VolumeGRPCAddress() string {
 	return net.JoinHostPort("127.0.0.1", strconv.Itoa(rc.volumeGrpcPort))
 }
 
-// VolumeServerAddress returns SeaweedFS server address format: ip:httpPort.grpcPort
+// VolumeServerAddress returns Hanzo server address format: ip:httpPort.grpcPort
 func (rc *RustCluster) VolumeServerAddress() string {
 	return fmt.Sprintf("%s.%d", rc.VolumeAdminAddress(), rc.volumeGrpcPort)
 }

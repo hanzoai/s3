@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	master      = flag.String("master", "master:9333", "SeaweedFS master server address")
+	master      = flag.String("master", "master:9333", "Hanzo master server address")
 	fileCount   = flag.Int("files", 20, "Number of files to create")
 	deleteRatio = flag.Float64("delete", 0.4, "Ratio of files to delete (0.0-1.0)")
 	fileSizeKB  = flag.Int("size", 100, "Size of each file in KB")

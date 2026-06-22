@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	util_http "github.com/hanzoai/s3/weed/util/http"
+	util_http "github.com/hanzoai/s3/s3/util/http"
 )
 
 var (

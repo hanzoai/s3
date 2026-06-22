@@ -1,24 +1,24 @@
-# SeaweedFS PostgreSQL Protocol Examples
+# Hanzo PostgreSQL Protocol Examples
 
-This directory contains examples demonstrating how to connect to SeaweedFS using the PostgreSQL wire protocol.
+This directory contains examples demonstrating how to connect to Hanzo using the PostgreSQL wire protocol.
 
 ## Starting the PostgreSQL Server
 
 ```bash
 # Start with trust authentication (no password required)
-weed postgres -port=5432 -master=localhost:9333
+s3 postgres -port=5432 -master=localhost:9333
 
 # Start with password authentication
-weed postgres -port=5432 -auth=password -users="admin:secret;readonly:view123"
+s3 postgres -port=5432 -auth=password -users="admin:secret;readonly:view123"
 
 # Start with MD5 authentication (more secure)
-weed postgres -port=5432 -auth=md5 -users="user1:pass1;user2:pass2"
+s3 postgres -port=5432 -auth=md5 -users="user1:pass1;user2:pass2"
 
 # Start with TLS encryption
-weed postgres -port=5432 -tls-cert=server.crt -tls-key=server.key
+s3 postgres -port=5432 -tls-cert=server.crt -tls-key=server.key
 
 # Allow connections from any host
-weed postgres -host=0.0.0.0 -port=5432
+s3 postgres -host=0.0.0.0 -port=5432
 ```
 
 ## Client Connections
@@ -27,7 +27,7 @@ weed postgres -host=0.0.0.0 -port=5432
 
 ```bash
 # Basic connection (trust auth)
-psql -h localhost -p 5432 -U seaweedfs -d default
+psql -h localhost -p 5432 -U hanzo -d default
 
 # With password
 PGPASSWORD=secret psql -h localhost -p 5432 -U admin -d default
@@ -45,11 +45,11 @@ psql "host=localhost port=5432 dbname=default user=admin password=secret"
 ```python
 import psycopg2
 
-# Connect to SeaweedFS
+# Connect to Hanzo
 conn = psycopg2.connect(
     host="localhost",
     port=5432,
-    user="seaweedfs", 
+    user="hanzo", 
     database="default"
 )
 
@@ -68,11 +68,11 @@ conn.close()
 ```java
 import java.sql.*;
 
-public class SeaweedFSExample {
+public class HanzoExample {
     public static void main(String[] args) throws SQLException {
         String url = "jdbc:postgresql://localhost:5432/default";
         
-        Connection conn = DriverManager.getConnection(url, "seaweedfs", "");
+        Connection conn = DriverManager.getConnection(url, "hanzo", "");
         Statement stmt = conn.createStatement();
         
         ResultSet rs = stmt.executeQuery("SELECT * FROM my_topic LIMIT 10");
@@ -100,7 +100,7 @@ import (
 
 func main() {
     db, err := sql.Open("postgres", 
-        "host=localhost port=5432 user=seaweedfs dbname=default sslmode=disable")
+        "host=localhost port=5432 user=hanzo dbname=default sslmode=disable")
     if err != nil {
         panic(err)
     }
@@ -131,7 +131,7 @@ const { Client } = require('pg');
 const client = new Client({
     host: 'localhost',
     port: 5432,
-    user: 'seaweedfs',
+    user: 'hanzo',
     database: 'default',
 });
 
@@ -254,7 +254,7 @@ SELECT current_setting('server_encoding');
    - **Host**: localhost
    - **Port**: 5432
    - **Database**: default
-   - **Username**: seaweedfs (or configured user)
+   - **Username**: hanzo (or configured user)
    - **Password**: (if using password auth)
 
 ### pgAdmin
@@ -262,7 +262,7 @@ SELECT current_setting('server_encoding');
 2. Connection tab:
    - **Host**: localhost
    - **Port**: 5432
-   - **Username**: seaweedfs
+   - **Username**: hanzo
    - **Database**: default
 
 ### DataGrip
@@ -270,7 +270,7 @@ SELECT current_setting('server_encoding');
 2. Configure:
    - **Host**: localhost
    - **Port**: 5432
-   - **User**: seaweedfs
+   - **User**: hanzo
    - **Database**: default
 
 ### Grafana
@@ -278,7 +278,7 @@ SELECT current_setting('server_encoding');
 2. Configuration:
    - **Host**: localhost:5432
    - **Database**: default
-   - **User**: seaweedfs
+   - **User**: hanzo
    - **SSL Mode**: disable
 
 ## BI Tools
@@ -288,13 +288,13 @@ SELECT current_setting('server_encoding');
 2. Server: localhost
 3. Port: 5432
 4. Database: default
-5. Username: seaweedfs
+5. Username: hanzo
 
 ### Power BI
 1. Get Data → Database → PostgreSQL
 2. Server: localhost
 3. Database: default
-4. Username: seaweedfs
+4. Username: hanzo
 
 ## Connection Pooling
 
@@ -302,7 +302,7 @@ SELECT current_setting('server_encoding');
 ```java
 HikariConfig config = new HikariConfig();
 config.setJdbcUrl("jdbc:postgresql://localhost:5432/default");
-config.setUsername("seaweedfs");
+config.setUsername("hanzo");
 config.setMaximumPoolSize(10);
 
 HikariDataSource dataSource = new HikariDataSource(config);
@@ -316,7 +316,7 @@ connection_pool = psycopg2.pool.SimpleConnectionPool(
     1, 20,
     host="localhost",
     port=5432,
-    user="seaweedfs",
+    user="hanzo",
     database="default"
 )
 
@@ -333,19 +333,19 @@ connection_pool.putconn(conn)
 openssl req -x509 -newkey rsa:4096 -keyout server.key -out server.crt -days 365 -nodes
 
 # Start with TLS
-weed postgres -tls-cert=server.crt -tls-key=server.key
+s3 postgres -tls-cert=server.crt -tls-key=server.key
 ```
 
 ### Use MD5 Authentication
 ```bash
 # More secure than password auth
-weed postgres -auth=md5 -users="admin:secret123;readonly:view456"
+s3 postgres -auth=md5 -users="admin:secret123;readonly:view456"
 ```
 
 ### Limit Connections
 ```bash
 # Limit concurrent connections
-weed postgres -max-connections=50 -idle-timeout=30m
+s3 postgres -max-connections=50 -idle-timeout=30m
 ```
 
 ## Troubleshooting
@@ -356,10 +356,10 @@ weed postgres -max-connections=50 -idle-timeout=30m
 telnet localhost 5432
 
 # Check if server is running
-ps aux | grep "weed postgres"
+ps aux | grep "s3 postgres"
 
 # Check logs for errors
-tail -f /var/log/seaweedfs/postgres.log
+tail -f /var/log/hanzo/postgres.log
 ```
 
 ### Common Errors
@@ -411,4 +411,4 @@ SELECT name, setting FROM pg_settings WHERE name LIKE '%connection%';
 EXPLAIN SELECT * FROM my_topic WHERE id > 1000;
 ```
 
-This PostgreSQL protocol support makes SeaweedFS accessible to the entire PostgreSQL ecosystem, enabling seamless integration with existing tools, applications, and workflows.
+This PostgreSQL protocol support makes Hanzo accessible to the entire PostgreSQL ecosystem, enabling seamless integration with existing tools, applications, and workflows.

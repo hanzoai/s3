@@ -1,4 +1,4 @@
-# SeaweedFS S3 IAM Integration Tests Makefile
+# Hanzo S3 IAM Integration Tests Makefile
 
 .PHONY: all test clean setup start-services stop-services wait-for-services help
 
@@ -6,7 +6,7 @@
 all: test
 
 # Test configuration
-WEED_BINARY ?= $(shell go env GOPATH)/bin/weed
+WEED_BINARY ?= $(shell go env GOPATH)/bin/s3
 LOG_LEVEL ?= 2
 S3_PORT ?= 8333
 FILER_PORT ?= 8888
@@ -15,14 +15,14 @@ VOLUME_PORT ?= 8081
 TEST_TIMEOUT ?= 30m
 
 # Service PIDs
-MASTER_PID_FILE = /tmp/weed-master.pid
-VOLUME_PID_FILE = /tmp/weed-volume.pid  
-FILER_PID_FILE = /tmp/weed-filer.pid
-S3_PID_FILE = /tmp/weed-s3.pid
-MINI_PID_FILE = /tmp/weed-mini.pid
+MASTER_PID_FILE = /tmp/s3-master.pid
+VOLUME_PID_FILE = /tmp/s3-volume.pid  
+FILER_PID_FILE = /tmp/s3-filer.pid
+S3_PID_FILE = /tmp/s3-s3.pid
+MINI_PID_FILE = /tmp/s3-mini.pid
 
 help: ## Show this help message
-	@echo "SeaweedFS S3 IAM Integration Tests"
+	@echo "Hanzo S3 IAM Integration Tests"
 	@echo ""
 	@echo "Usage:"
 	@echo "  make [target]"
@@ -62,8 +62,8 @@ setup: ## Setup test environment
 		cp iam_config.local.json iam_config.json; \
 	fi
 
-start-services: ## Start SeaweedFS services for testing
-	@echo "Starting SeaweedFS services using weed mini..."
+start-services: ## Start Hanzo services for testing
+	@echo "Starting Hanzo services using s3 mini..."
 	@mkdir -p test-volume-data
 	@$(WEED_BINARY) mini \
 		-dir=test-volume-data \
@@ -71,7 +71,7 @@ start-services: ## Start SeaweedFS services for testing
 		-s3.config=test_config.json \
 		-s3.iam.config=$(CURDIR)/iam_config.json \
 		-s3.iam.readOnly=false \
-		> weed-mini.log 2>&1 & \
+		> s3-mini.log 2>&1 & \
 		echo $$! > $(MINI_PID_FILE)
 	
 	@echo "Waiting for services to be ready..."
@@ -96,10 +96,10 @@ wait-for-services: ## Wait for all services to be ready
 	@sleep 3
 	@echo "OK All services are ready"
 
-stop-services: ## Stop all SeaweedFS services
-	@echo "Stopping SeaweedFS services..."
+stop-services: ## Stop all Hanzo services
+	@echo "Stopping Hanzo services..."
 	@if [ -f $(MINI_PID_FILE) ]; then \
-		echo "Stopping weed mini..."; \
+		echo "Stopping s3 mini..."; \
 		kill $$(cat $(MINI_PID_FILE)) 2>/dev/null || true; \
 		rm -f $(MINI_PID_FILE); \
 	fi
@@ -128,7 +128,7 @@ stop-services: ## Stop all SeaweedFS services
 clean: stop-services ## Clean up test environment
 	@echo "Cleaning up test environment..."
 	@rm -rf test-volume-data
-	@rm -f weed-*.log
+	@rm -f s3-*.log
 	@rm -f *.test
 	@rm -f iam_config.json
 	@rm -f .test_env
@@ -139,16 +139,16 @@ clean: stop-services ## Clean up test environment
 logs: ## Show service logs
 	@echo "Service Logs:"
 	@echo "=== Master Log ==="
-	@tail -20 weed-master.log 2>/dev/null || echo "No master log"
+	@tail -20 s3-master.log 2>/dev/null || echo "No master log"
 	@echo ""
 	@echo "=== Volume Log ==="
-	@tail -20 weed-volume.log 2>/dev/null || echo "No volume log"
+	@tail -20 s3-volume.log 2>/dev/null || echo "No volume log"
 	@echo ""
 	@echo "=== Filer Log ==="
-	@tail -20 weed-filer.log 2>/dev/null || echo "No filer log"
+	@tail -20 s3-filer.log 2>/dev/null || echo "No filer log"
 	@echo ""
 	@echo "=== S3 API Log ==="
-	@tail -20 weed-s3.log 2>/dev/null || echo "No S3 log"
+	@tail -20 s3-s3.log 2>/dev/null || echo "No S3 log"
 
 status: ## Check service status
 	@echo "Service Status:"
@@ -229,8 +229,8 @@ install-deps: ## Install test dependencies
 # Docker support
 docker-test-legacy: ## Run tests in Docker container (legacy)
 	@echo "🐳 Running tests in Docker..."
-	docker build -f Dockerfile.test -t seaweedfs-s3-iam-test .
-	docker run --rm -v $(PWD)/../../../:/app seaweedfs-s3-iam-test
+	docker build -f Dockerfile.test -t hanzo-s3-iam-test .
+	docker run --rm -v $(PWD)/../../../:/app hanzo-s3-iam-test
 
 # Docker Compose support with Keycloak
 docker-up: ## Start all services with Docker Compose (including Keycloak)
@@ -259,9 +259,9 @@ docker-test: docker-up ## Run tests with Docker Compose including Keycloak
 	@echo "🐳 Stopping services after tests..."
 	@make docker-down
 
-docker-build: ## Build custom SeaweedFS image for Docker tests
-	@echo "🏗️ Building custom SeaweedFS image..."
-	@docker build -f Dockerfile.s3 -t seaweedfs-iam:latest ../../..
+docker-build: ## Build custom Hanzo image for Docker tests
+	@echo "🏗️ Building custom Hanzo image..."
+	@docker build -f Dockerfile.s3 -t hanzo-iam:latest ../../..
 	@echo "✅ Image built successfully"
 
 # All PHONY targets

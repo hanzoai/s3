@@ -1,4 +1,4 @@
-# SeaweedFS FoundationDB Integration Testing Makefile
+# Hanzo FoundationDB Integration Testing Makefile
 
 # Configuration
 FDB_CLUSTER_FILE ?= /tmp/fdb.cluster
@@ -18,20 +18,20 @@ NC := \033[0m # No Color
          setup-arm64 test-arm64 setup-emulated test-emulated clean-arm64
 
 help: ## Show this help message
-	@echo "$(BLUE)SeaweedFS FoundationDB Integration Testing$(NC)"
+	@echo "$(BLUE)Hanzo FoundationDB Integration Testing$(NC)"
 	@echo ""
 	@echo "Available targets:"
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_][a-zA-Z0-9_-]*:.*?## / {printf "  $(GREEN)%-15s$(NC) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-setup: ## Set up test environment (FoundationDB + SeaweedFS)
-	@echo "$(YELLOW)Setting up FoundationDB cluster and SeaweedFS...$(NC)"
+setup: ## Set up test environment (FoundationDB + Hanzo)
+	@echo "$(YELLOW)Setting up FoundationDB cluster and Hanzo...$(NC)"
 	@$(DOCKER_COMPOSE) up -d fdb1 fdb2 fdb3
 	@echo "$(BLUE)Waiting for FoundationDB cluster to initialize...$(NC)"
 	@sleep 15
 	@$(DOCKER_COMPOSE) up -d fdb-init
 	@sleep 10
-	@echo "$(BLUE)Starting SeaweedFS with FoundationDB filer...$(NC)"
-	@$(DOCKER_COMPOSE) up -d seaweedfs
+	@echo "$(BLUE)Starting Hanzo with FoundationDB filer...$(NC)"
+	@$(DOCKER_COMPOSE) up -d hanzo
 	@echo "$(GREEN)✅ Test environment ready!$(NC)"
 	@echo "$(BLUE)Checking cluster status...$(NC)"
 	@make status
@@ -40,7 +40,7 @@ test: setup test-unit test-integration ## Run all tests
 
 test-unit: ## Run unit tests for FoundationDB filer store
 	@echo "$(YELLOW)Running FoundationDB filer store unit tests...$(NC)"
-	@cd ../../ && go test -v -timeout=$(TEST_TIMEOUT) -tags foundationdb ./weed/filer/foundationdb/...
+	@cd ../../ && go test -v -timeout=$(TEST_TIMEOUT) -tags foundationdb ./s3/filer/foundationdb/...
 
 test-integration: ## Run integration tests with FoundationDB
 	@echo "$(YELLOW)Running FoundationDB integration tests...$(NC)"
@@ -57,7 +57,7 @@ test-benchmark-filer: ## Run filer store benchmarks (batch vs no-batch compariso
 		-bench='BenchmarkFoundationDBStore_.*' \
 		-benchmem \
 		-benchtime=5s \
-		./weed/filer/foundationdb/...
+		./s3/filer/foundationdb/...
 
 test-benchmark-concurrent: ## Run concurrent operation benchmarks
 	@echo "$(YELLOW)Running concurrent operation benchmarks...$(NC)"
@@ -66,7 +66,7 @@ test-benchmark-concurrent: ## Run concurrent operation benchmarks
 		-benchmem \
 		-benchtime=10s \
 		-cpu=1,2,4,8 \
-		./weed/filer/foundationdb/...
+		./s3/filer/foundationdb/...
 
 # ARM64 specific targets (Apple Silicon / M1/M2/M3 Macs)
 setup-arm64: ## Set up ARM64-native FoundationDB cluster (builds from source)
@@ -78,8 +78,8 @@ setup-arm64: ## Set up ARM64-native FoundationDB cluster (builds from source)
 	@sleep 20
 	@$(DOCKER_COMPOSE_ARM64) up -d fdb-init
 	@sleep 15
-	@echo "$(BLUE)Starting SeaweedFS with FoundationDB filer...$(NC)"
-	@$(DOCKER_COMPOSE_ARM64) up -d seaweedfs
+	@echo "$(BLUE)Starting Hanzo with FoundationDB filer...$(NC)"
+	@$(DOCKER_COMPOSE_ARM64) up -d hanzo
 	@echo "$(GREEN)✅ ARM64 test environment ready!$(NC)"
 
 test-arm64: setup-arm64 test-unit test-integration ## Run all tests with ARM64-native FoundationDB
@@ -92,8 +92,8 @@ setup-emulated: ## Set up FoundationDB cluster with x86 emulation on ARM64
 	@sleep 15
 	@DOCKER_DEFAULT_PLATFORM=linux/amd64 $(DOCKER_COMPOSE) up -d fdb-init
 	@sleep 10
-	@echo "$(BLUE)Starting SeaweedFS with FoundationDB filer...$(NC)"
-	@$(DOCKER_COMPOSE) up -d seaweedfs
+	@echo "$(BLUE)Starting Hanzo with FoundationDB filer...$(NC)"
+	@$(DOCKER_COMPOSE) up -d hanzo
 	@echo "$(GREEN)✅ Emulated test environment ready!$(NC)"
 
 test-emulated: setup-emulated test-unit test-integration ## Run all tests with x86 emulation
@@ -103,9 +103,9 @@ clean-arm64: ## Clean up ARM64-specific containers and volumes
 	@$(DOCKER_COMPOSE_ARM64) down -v --remove-orphans 2>/dev/null || true
 	@echo "$(GREEN)✅ ARM64 environment cleaned up!$(NC)"
 
-test-e2e: setup-complete ## Run end-to-end tests with SeaweedFS + FoundationDB
+test-e2e: setup-complete ## Run end-to-end tests with Hanzo + FoundationDB
 	@echo "$(YELLOW)Running end-to-end FoundationDB tests...$(NC)"
-	@sleep 10  # Wait for SeaweedFS to be ready
+	@sleep 10  # Wait for Hanzo to be ready
 	@./test_fdb_s3.sh
 
 setup-complete: ## Start complete environment and wait for readiness
@@ -134,8 +134,8 @@ logs: ## Show logs from all services
 logs-fdb: ## Show FoundationDB logs
 	@$(DOCKER_COMPOSE) logs --tail=100 -f fdb1 fdb2 fdb3 fdb-init
 
-logs-seaweedfs: ## Show SeaweedFS logs
-	@$(DOCKER_COMPOSE) logs --tail=100 -f seaweedfs
+logs-hanzo: ## Show Hanzo logs
+	@$(DOCKER_COMPOSE) logs --tail=100 -f hanzo
 
 status: ## Show status of all services
 	@echo "$(BLUE)Service Status:$(NC)"
@@ -144,13 +144,13 @@ status: ## Show status of all services
 	@echo "$(BLUE)FoundationDB Cluster Status:$(NC)"
 	@$(DOCKER_COMPOSE) exec fdb-init fdbcli --exec 'status' || echo "FoundationDB not accessible"
 	@echo ""
-	@echo "$(BLUE)SeaweedFS S3 Status:$(NC)"
-	@curl -s $(SEAWEEDFS_S3_ENDPOINT) || echo "SeaweedFS S3 not accessible"
+	@echo "$(BLUE)Hanzo S3 Status:$(NC)"
+	@curl -s $(SEAWEEDFS_S3_ENDPOINT) || echo "Hanzo S3 not accessible"
 
 debug: ## Debug test environment
 	@echo "$(BLUE)Debug Information:$(NC)"
 	@echo "FoundationDB Cluster File: $(FDB_CLUSTER_FILE)"
-	@echo "SeaweedFS S3 Endpoint: $(SEAWEEDFS_S3_ENDPOINT)"
+	@echo "Hanzo S3 Endpoint: $(SEAWEEDFS_S3_ENDPOINT)"
 	@echo "Docker Compose Status:"
 	@$(DOCKER_COMPOSE) ps
 	@echo ""
@@ -166,7 +166,7 @@ dev-fdb: ## Start only FoundationDB cluster for development
 	@sleep 15
 
 dev-test: dev-fdb ## Quick test with just FoundationDB
-	@cd ../../ && go test -v -timeout=30s -tags foundationdb -run TestFoundationDBStore_Initialize ./weed/filer/foundationdb/
+	@cd ../../ && go test -v -timeout=30s -tags foundationdb -run TestFoundationDBStore_Initialize ./s3/filer/foundationdb/
 
 # Utility targets
 install-deps: ## Install required dependencies
@@ -198,9 +198,9 @@ ci-e2e: ## Run end-to-end tests in CI
 	@make clean
 
 # Container build targets
-build-container: ## Build SeaweedFS with FoundationDB in container
-	@echo "$(YELLOW)Building SeaweedFS with FoundationDB in container...$(NC)"
-	@docker-compose -f docker-compose.build.yml build seaweedfs-fdb-builder
+build-container: ## Build Hanzo with FoundationDB in container
+	@echo "$(YELLOW)Building Hanzo with FoundationDB in container...$(NC)"
+	@docker-compose -f docker-compose.build.yml build hanzo-fdb-builder
 	@echo "$(GREEN)✅ Container build complete!$(NC)"
 
 test-container: build-container ## Run containerized FoundationDB integration test
@@ -208,16 +208,16 @@ test-container: build-container ## Run containerized FoundationDB integration te
 	@docker-compose -f docker-compose.build.yml up --build --abort-on-container-exit
 	@echo "$(GREEN)🎉 Containerized integration test complete!$(NC)"
 
-extract-binary: build-container ## Extract built SeaweedFS binary from container
-	@echo "$(YELLOW)Extracting SeaweedFS binary from container...$(NC)"
-	@docker run --rm -v $(PWD)/bin:/output seaweedfs:foundationdb sh -c "cp /usr/local/bin/weed /output/weed-foundationdb && echo '✅ Binary extracted to ./bin/weed-foundationdb'"
+extract-binary: build-container ## Extract built Hanzo binary from container
+	@echo "$(YELLOW)Extracting Hanzo binary from container...$(NC)"
+	@docker run --rm -v $(PWD)/bin:/output hanzo:foundationdb sh -c "cp /usr/local/bin/s3 /output/s3-foundationdb && echo '✅ Binary extracted to ./bin/s3-foundationdb'"
 	@mkdir -p bin
-	@echo "$(GREEN)✅ Binary available at ./bin/weed-foundationdb$(NC)"
+	@echo "$(GREEN)✅ Binary available at ./bin/s3-foundationdb$(NC)"
 
 clean-container: ## Clean up container builds
 	@echo "$(YELLOW)Cleaning up container builds...$(NC)"
 	@docker-compose -f docker-compose.build.yml down -v --remove-orphans || true
-	@docker rmi seaweedfs:foundationdb 2>/dev/null || true
+	@docker rmi hanzo:foundationdb 2>/dev/null || true
 	@echo "$(GREEN)✅ Container cleanup complete!$(NC)"
 
 # Simple test environment targets

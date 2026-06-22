@@ -18,12 +18,12 @@ import (
 	"flag"
 
 	"github.com/hanzoai/s3/test/testutil"
-	"github.com/hanzoai/s3/weed/command"
-	"github.com/hanzoai/s3/weed/glog"
-	"github.com/hanzoai/s3/weed/s3api/s3tables"
+	"github.com/hanzoai/s3/s3/command"
+	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/s3api/s3tables"
 )
 
-// TestMain starts a single default weed mini cluster for the whole package and
+// TestMain starts a single default s3 mini cluster for the whole package and
 // tears it down after all tests have completed. Tests that require a different
 // cluster configuration (e.g. TestS3TablesCreateBucketIAMPolicy) start their
 // own cluster independently.
@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// Create a temporary T-less context so we can use t.TempDir-equivalent.
-	testDir, err := os.MkdirTemp("", "seaweed-s3tables-shared-*")
+	testDir, err := os.MkdirTemp("", "hanzo-s3tables-shared-*")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "SKIP: failed to create shared temp dir: %v\n", err)
 		os.Exit(0)
@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 
 	cluster, err := startMiniClusterInDir(testDir, nil)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "SKIP: failed to start shared weed mini cluster: %v\n", err)
+		fmt.Fprintf(os.Stderr, "SKIP: failed to start shared s3 mini cluster: %v\n", err)
 		os.RemoveAll(testDir)
 		os.Exit(0)
 	}
@@ -110,7 +110,7 @@ func TestS3TablesCreateBucketIAMPolicy(t *testing.T) {
   "sts": {
     "tokenDuration": "1h",
     "maxSessionLength": "12h",
-    "issuer": "seaweedfs-sts",
+    "issuer": "hanzo-sts",
     "signingKey": "%s"
   },
   "accounts": [
@@ -590,7 +590,7 @@ func testTargetOperations(t *testing.T, client *S3TablesClient) {
 
 // Helper functions
 
-// startMiniClusterInDir starts a weed mini instance using testDir as the data
+// startMiniClusterInDir starts a s3 mini instance using testDir as the data
 // directory. It does not require a *testing.T so it can be called from TestMain.
 // extraArgs are appended to the default mini command flags.
 func startMiniClusterInDir(testDir string, extraArgs []string) (*TestCluster, error) {
@@ -645,7 +645,7 @@ func startMiniClusterInDir(testDir string, extraArgs []string) (*TestCluster, er
 		os.Setenv("AWS_SECRET_ACCESS_KEY", "admin")
 	}
 
-	// Start weed mini in a goroutine by calling the command directly
+	// Start s3 mini in a goroutine by calling the command directly
 	cluster.wg.Add(1)
 	go func() {
 		defer cluster.wg.Done()
@@ -686,7 +686,7 @@ func startMiniClusterInDir(testDir string, extraArgs []string) (*TestCluster, er
 		if len(extraArgs) > 0 {
 			baseArgs = append(baseArgs, extraArgs...)
 		}
-		os.Args = append([]string{"weed"}, baseArgs...)
+		os.Args = append([]string{"s3"}, baseArgs...)
 
 		// Suppress most logging during tests
 		glog.MaxSize = 1024 * 1024
@@ -714,7 +714,7 @@ func startMiniClusterInDir(testDir string, extraArgs []string) (*TestCluster, er
 	return cluster, nil
 }
 
-// startMiniClusterWithExtraArgs starts a weed mini instance for a single test.
+// startMiniClusterWithExtraArgs starts a s3 mini instance for a single test.
 // It uses t.TempDir() for data isolation and t.Setenv for credential scoping.
 func startMiniClusterWithExtraArgs(t *testing.T, extraArgs []string) (*TestCluster, error) {
 	t.Helper()

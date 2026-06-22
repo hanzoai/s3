@@ -22,14 +22,14 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/hanzoai/s3/test/testutil"
 	"github.com/hanzoai/s3/test/volume_server/framework"
-	"github.com/hanzoai/s3/weed/command"
-	"github.com/hanzoai/s3/weed/glog"
-	"github.com/hanzoai/s3/weed/pb"
-	flag "github.com/hanzoai/s3/weed/util/fla9"
+	"github.com/hanzoai/s3/s3/command"
+	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/pb"
+	flag "github.com/hanzoai/s3/s3/util/fla9"
 	"github.com/stretchr/testify/require"
 )
 
-// TestCluster manages the weed mini instance for integration testing
+// TestCluster manages the s3 mini instance for integration testing
 type TestCluster struct {
 	dataDir        string
 	ctx            context.Context
@@ -64,36 +64,36 @@ func TestS3PolicyShellRevised(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, tmpPolicyFile.Close())
 
-	weedCmd := "weed"
+	s3Cmd := "s3"
 	masterAddr := string(pb.NewServerAddress("127.0.0.1", cluster.masterPort, cluster.masterGrpcPort))
 	filerAddr := string(pb.NewServerAddress("127.0.0.1", cluster.filerPort, cluster.filerGrpcPort))
 
 	// Put
-	execShell(t, weedCmd, masterAddr, filerAddr, fmt.Sprintf("s3.policy -put -name=testpolicy -file=%s", tmpPolicyFile.Name()))
+	execShell(t, s3Cmd, masterAddr, filerAddr, fmt.Sprintf("s3.policy -put -name=testpolicy -file=%s", tmpPolicyFile.Name()))
 
 	// List
-	out := execShell(t, weedCmd, masterAddr, filerAddr, "s3.policy -list")
+	out := execShell(t, s3Cmd, masterAddr, filerAddr, "s3.policy -list")
 	if !contains(out, "Name: testpolicy") {
 		t.Errorf("List failed: %s", out)
 	}
 
 	// Get
-	out = execShell(t, weedCmd, masterAddr, filerAddr, "s3.policy -get -name=testpolicy")
+	out = execShell(t, s3Cmd, masterAddr, filerAddr, "s3.policy -get -name=testpolicy")
 	if !contains(out, "Statement") {
 		t.Errorf("Get failed: %s", out)
 	}
 
 	// Delete
-	execShell(t, weedCmd, masterAddr, filerAddr, "s3.policy -delete -name=testpolicy")
+	execShell(t, s3Cmd, masterAddr, filerAddr, "s3.policy -delete -name=testpolicy")
 
 	// Verify
-	out = execShell(t, weedCmd, masterAddr, filerAddr, "s3.policy -list")
+	out = execShell(t, s3Cmd, masterAddr, filerAddr, "s3.policy -list")
 	if contains(out, "Name: testpolicy") {
 		t.Errorf("delete failed, policy 'testpolicy' should not be in the list: %s", out)
 	}
 	// Verify s3.configure linking policies
-	execShell(t, weedCmd, masterAddr, filerAddr, "s3.configure -user=test -actions=Read -policies=testpolicy -apply")
-	out = execShell(t, weedCmd, masterAddr, filerAddr, "s3.configure")
+	execShell(t, s3Cmd, masterAddr, filerAddr, "s3.configure -user=test -actions=Read -policies=testpolicy -apply")
+	out = execShell(t, s3Cmd, masterAddr, filerAddr, "s3.configure")
 	if !contains(out, "\"policyNames\": [\n    \"testpolicy\"\n  ]") {
 		// relaxed check
 		if !contains(out, "\"testpolicy\"") || !contains(out, "policyNames") {
@@ -102,15 +102,15 @@ func TestS3PolicyShellRevised(t *testing.T) {
 	}
 
 	// 1. Update User: Add Write action
-	execShell(t, weedCmd, masterAddr, filerAddr, "s3.configure -user=test -actions=Write -apply")
-	out = execShell(t, weedCmd, masterAddr, filerAddr, "s3.configure")
+	execShell(t, s3Cmd, masterAddr, filerAddr, "s3.configure -user=test -actions=Write -apply")
+	out = execShell(t, s3Cmd, masterAddr, filerAddr, "s3.configure")
 	if !contains(out, "Write") {
 		t.Errorf("s3.configure failed to add Write action: %s", out)
 	}
 
 	// 2. Granular Delete: Delete Read action
-	execShell(t, weedCmd, masterAddr, filerAddr, "s3.configure -user=test -actions=Read -delete -apply")
-	out = execShell(t, weedCmd, masterAddr, filerAddr, "s3.configure")
+	execShell(t, s3Cmd, masterAddr, filerAddr, "s3.configure -user=test -actions=Read -delete -apply")
+	out = execShell(t, s3Cmd, masterAddr, filerAddr, "s3.configure")
 	if contains(out, "\"Read\"") { // Quote to avoid matching partial words if any
 		t.Errorf("s3.configure failed to delete Read action: %s", out)
 	}
@@ -119,21 +119,21 @@ func TestS3PolicyShellRevised(t *testing.T) {
 	}
 
 	// 3. Access Key Management
-	execShell(t, weedCmd, masterAddr, filerAddr, "s3.configure -user=test -access_key=testkey -secret_key=testsecret -apply")
-	out = execShell(t, weedCmd, masterAddr, filerAddr, "s3.configure")
+	execShell(t, s3Cmd, masterAddr, filerAddr, "s3.configure -user=test -access_key=testkey -secret_key=testsecret -apply")
+	out = execShell(t, s3Cmd, masterAddr, filerAddr, "s3.configure")
 	if !contains(out, "testkey") {
 		t.Errorf("s3.configure failed to add access key: %s", out)
 	}
 
-	execShell(t, weedCmd, masterAddr, filerAddr, "s3.configure -user=test -access_key=testkey -delete -apply")
-	out = execShell(t, weedCmd, masterAddr, filerAddr, "s3.configure")
+	execShell(t, s3Cmd, masterAddr, filerAddr, "s3.configure -user=test -access_key=testkey -delete -apply")
+	out = execShell(t, s3Cmd, masterAddr, filerAddr, "s3.configure")
 	if contains(out, "testkey") {
 		t.Errorf("s3.configure failed to delete access key: %s", out)
 	}
 
 	// 4. Delete User
-	execShell(t, weedCmd, masterAddr, filerAddr, "s3.configure -user=test -delete -apply")
-	out = execShell(t, weedCmd, masterAddr, filerAddr, "s3.configure")
+	execShell(t, s3Cmd, masterAddr, filerAddr, "s3.configure -user=test -delete -apply")
+	out = execShell(t, s3Cmd, masterAddr, filerAddr, "s3.configure")
 	if contains(out, "\"Name\": \"test\"") {
 		t.Errorf("s3.configure failed to delete user: %s", out)
 	}
@@ -160,10 +160,10 @@ func TestS3IAMAttachDetachUserPolicy(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, tmpPolicyFile.Close())
 
-	weedCmd := "weed"
+	s3Cmd := "s3"
 	masterAddr := string(pb.NewServerAddress("127.0.0.1", cluster.masterPort, cluster.masterGrpcPort))
 	filerAddr := string(pb.NewServerAddress("127.0.0.1", cluster.filerPort, cluster.filerGrpcPort))
-	execShell(t, weedCmd, masterAddr, filerAddr, fmt.Sprintf("s3.policy -put -name=%s -file=%s", policyName, tmpPolicyFile.Name()))
+	execShell(t, s3Cmd, masterAddr, filerAddr, fmt.Sprintf("s3.policy -put -name=%s -file=%s", policyName, tmpPolicyFile.Name()))
 
 	iamClient := newIAMClient(t, cluster.s3Endpoint)
 
@@ -636,12 +636,12 @@ func TestS3IAMManagedPolicyErrorCases(t *testing.T) {
 	})
 }
 
-func execShell(t *testing.T, weedCmd, master, filer, shellCmd string) string {
-	// weed shell -master=... -filer=...
+func execShell(t *testing.T, s3Cmd, master, filer, shellCmd string) string {
+	// s3 shell -master=... -filer=...
 	args := []string{"shell", "-master=" + master, "-filer=" + filer}
-	t.Logf("Running: %s %v <<< %s", weedCmd, args, shellCmd)
+	t.Logf("Running: %s %v <<< %s", s3Cmd, args, shellCmd)
 
-	cmd := exec.Command(weedCmd, args...)
+	cmd := exec.Command(s3Cmd, args...)
 	cmd.Stdin = strings.NewReader(shellCmd + "\n")
 
 	out, err := cmd.CombinedOutput()
@@ -722,8 +722,8 @@ func startMiniCluster(t *testing.T) (*TestCluster, error) {
 	// exited. Otherwise t.TempDir()'s RemoveAll cleanup races the admin
 	// plugin worker, which keeps creating files under admin/plugin/job_types/
 	// for ~1s after subtests finish, producing flaky "directory not empty"
-	// failures (see seaweedfs CI run 25352039081).
-	testDir, err := os.MkdirTemp("", "seaweed-policy-mini-")
+	// failures (see hanzo CI run 25352039081).
+	testDir, err := os.MkdirTemp("", "hanzo-policy-mini-")
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -776,7 +776,7 @@ enabled = true
 		}()
 		os.Chdir(testDir)
 		os.Args = []string{
-			"weed",
+			"s3",
 			"-dir=" + testDir,
 			"-master.port=" + strconv.Itoa(masterPort),
 			"-master.port.grpc=" + strconv.Itoa(masterGrpcPort),
@@ -818,7 +818,7 @@ enabled = true
 		return nil, fmt.Errorf("timeout waiting for S3 at %s", cluster.s3Endpoint)
 	}
 
-	// If VOLUME_SERVER_IMPL=rust, start a Rust volume server alongside weed mini
+	// If VOLUME_SERVER_IMPL=rust, start a Rust volume server alongside s3 mini
 	if os.Getenv("VOLUME_SERVER_IMPL") == "rust" {
 		if err := cluster.startRustVolumeServer(t); err != nil {
 			cancel()

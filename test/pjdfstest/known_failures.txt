@@ -1,4 +1,4 @@
-# Known pjdfstest failures for SeaweedFS FUSE mount.
+# Known pjdfstest failures for Hanzo FUSE mount.
 #
 # Tests listed here are skipped during CI runs. Each entry must be a path
 # relative to the pjdfstest root (e.g. tests/chmod/02.t).

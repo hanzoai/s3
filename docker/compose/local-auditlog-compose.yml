@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   s3:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8333:8333
       - 9333:9333
@@ -12,10 +12,10 @@ services:
       - 8888:8888
       - 18888:18888
       - 8000:8000
-    command: "server -ip=s3 -filer -s3 -s3.config=/etc/seaweedfs/s3.json -s3.port=8000 -s3.auditLogConfig=/etc/seaweedfs/fluent.json -volume.max=0 -master.volumeSizeLimitMB=8 -volume.preStopSeconds=1"
+    command: "server -ip=s3 -filer -s3 -s3.config=/etc/hanzo/s3.json -s3.port=8000 -s3.auditLogConfig=/etc/hanzo/fluent.json -volume.max=0 -master.volumeSizeLimitMB=8 -volume.preStopSeconds=1"
     volumes:
-      - ./fluent.json:/etc/seaweedfs/fluent.json
-      - ./s3.json:/etc/seaweedfs/s3.json
+      - ./fluent.json:/etc/hanzo/fluent.json
+      - ./s3.json:/etc/hanzo/s3.json
     depends_on:
       - fluent
   fluent:

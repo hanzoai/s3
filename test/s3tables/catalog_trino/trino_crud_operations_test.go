@@ -21,8 +21,8 @@ func setupTrinoTest(t *testing.T, configOpts ...func(*trinoConfigOptions)) *Test
 		t.Skip("Docker not available, skipping Trino integration test")
 	}
 
-	t.Logf(">>> Starting SeaweedFS...")
-	env.StartSeaweedFS(t)
+	t.Logf(">>> Starting Hanzo...")
+	env.StartHanzo(t)
 
 	tableBucket := "iceberg-tables"
 	catalogBucket := tableBucket

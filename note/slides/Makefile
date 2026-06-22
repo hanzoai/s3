@@ -1,5 +1,5 @@
 MARP    ?= npx @marp-team/marp-cli
-SRC     := seaweedfs-production-setup.md
+SRC     := hanzo-production-setup.md
 PDF     := $(SRC:.md=.pdf)
 HTML    := $(SRC:.md=.html)
 PPTX    := $(SRC:.md=.pptx)

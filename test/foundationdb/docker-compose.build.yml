@@ -1,22 +1,22 @@
 version: '3.9'
 
 services:
-  # Build SeaweedFS with FoundationDB support
-  seaweedfs-fdb-builder:
+  # Build Hanzo with FoundationDB support
+  hanzo-fdb-builder:
     build:
-      context: ../..  # Build from seaweedfs root
+      context: ../..  # Build from hanzo root
       dockerfile: test/foundationdb/Dockerfile.build
-    image: seaweedfs:foundationdb
-    container_name: seaweedfs-fdb-builder
+    image: hanzo:foundationdb
+    container_name: hanzo-fdb-builder
     volumes:
-      - seaweedfs-build:/build/output
+      - hanzo-build:/build/output
     command: >
       sh -c "
-        echo '🔨 Building SeaweedFS with FoundationDB support...' &&
-        cp /usr/local/bin/weed /build/output/weed-foundationdb &&
+        echo '🔨 Building Hanzo with FoundationDB support...' &&
+        cp /usr/local/bin/s3 /build/output/s3-foundationdb &&
         cp /usr/local/bin/fdb_store_test /build/output/fdb_store_test &&
         echo '✅ Build complete! Binaries saved to volume.' &&
-        /usr/local/bin/weed version &&
+        /usr/local/bin/s3 version &&
         echo '📦 Available binaries:' &&
         ls -la /build/output/
       "
@@ -58,35 +58,35 @@ services:
         echo '✅ FoundationDB initialized!'
       "
 
-  # Test the built SeaweedFS with FoundationDB
-  seaweedfs-test:
-    image: seaweedfs:foundationdb
+  # Test the built Hanzo with FoundationDB
+  hanzo-test:
+    image: hanzo:foundationdb
     depends_on:
       fdb-init:
         condition: service_completed_successfully
-      seaweedfs-fdb-builder:
+      hanzo-fdb-builder:
         condition: service_completed_successfully
     volumes:
       - fdb_config:/var/fdb/config
-      - seaweedfs-build:/build/output
+      - hanzo-build:/build/output
     networks:
       - fdb_network
     environment:
       WEED_FOUNDATIONDB_ENABLED: "true"
       WEED_FOUNDATIONDB_CLUSTER_FILE: "/var/fdb/config/fdb.cluster"
       WEED_FOUNDATIONDB_API_VERSION: "740"
-      WEED_FOUNDATIONDB_DIRECTORY_PREFIX: "seaweedfs_test"
+      WEED_FOUNDATIONDB_DIRECTORY_PREFIX: "hanzo_test"
     command: >
       bash -c "
         echo '🧪 Testing FoundationDB integration...' &&
         sleep 5 &&
         echo '📋 Cluster file contents:' &&
         cat /var/fdb/config/fdb.cluster &&
-        echo '🚀 Starting SeaweedFS server with FoundationDB...' &&
-        /usr/local/bin/weed server -filer -master.volumeSizeLimitMB=16 -volume.max=0 &
+        echo '🚀 Starting Hanzo server with FoundationDB...' &&
+        /usr/local/bin/s3 server -filer -master.volumeSizeLimitMB=16 -volume.max=0 &
         SERVER_PID=$! &&
         sleep 10 &&
-        echo '✅ SeaweedFS started successfully with FoundationDB!' &&
+        echo '✅ Hanzo started successfully with FoundationDB!' &&
         echo '🏁 Integration test passed!' &&
         kill $SERVER_PID
       "
@@ -94,7 +94,7 @@ services:
 volumes:
   fdb_data1:
   fdb_config:
-  seaweedfs-build:
+  hanzo-build:
 
 networks:
   fdb_network:

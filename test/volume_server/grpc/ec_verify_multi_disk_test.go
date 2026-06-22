@@ -9,8 +9,8 @@ import (
 
 	"github.com/hanzoai/s3/test/volume_server/framework"
 	"github.com/hanzoai/s3/test/volume_server/matrix"
-	"github.com/hanzoai/s3/weed/pb/volume_server_pb"
-	"github.com/hanzoai/s3/weed/storage/erasure_coding"
+	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
+	"github.com/hanzoai/s3/s3/storage/erasure_coding"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -157,7 +157,7 @@ func TestVolumeEcShardsInfoReturnsAllShardsAcrossDisks(t *testing.T) {
 	}
 
 	// End-to-end assertion via the same helper the worker uses to gate
-	// source-volume deletion (weed/worker/tasks/erasure_coding/ec_task.go
+	// source-volume deletion (s3/worker/tasks/erasure_coding/ec_task.go
 	// verifyEcShardsBeforeDelete). The union across destinations is what
 	// RequireRecoverableShardSet measures; with one destination that holds
 	// every shard, the union must cover dataShards + parityShards without
