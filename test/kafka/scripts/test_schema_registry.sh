@@ -18,26 +18,26 @@ else
     echo "⚠️  Mock registry not implemented yet, test will be skipped"
 fi
 
-# Start SeaweedFS infrastructure
-echo "🌱 Starting SeaweedFS infrastructure..."
+# Start Hanzo infrastructure
+echo "🌱 Starting Hanzo infrastructure..."
 cd /Users/chrislu/go/src/github.com/hanzoai/s3
 
 # Clean up any existing processes
-pkill -f "weed server" || true
-pkill -f "weed mq.broker" || true
+pkill -f "s3 server" || true
+pkill -f "s3 mq.broker" || true
 sleep 2
 
-# Start SeaweedFS server
-echo "🗄️  Starting SeaweedFS server..."
-/tmp/weed server -dir=/tmp/seaweedfs-test -master.port=9333 -volume.port=8080 -filer.port=8888 -ip=localhost -master.peers=none > /tmp/seaweed-server.log 2>&1 &
+# Start Hanzo server
+echo "🗄️  Starting Hanzo server..."
+/tmp/s3 server -dir=/tmp/hanzo-test -master.port=9333 -volume.port=8080 -filer.port=8888 -ip=localhost -master.peers=none > /tmp/hanzo-server.log 2>&1 &
 SERVER_PID=$!
 
 # Wait for server to be ready
 sleep 5
 
 # Start MQ broker
-echo "📨 Starting SeaweedMQ broker..."
-/tmp/weed mq.broker -master=localhost:9333 -port=17777 > /tmp/seaweed-broker.log 2>&1 &
+echo "📨 Starting HanzoMQ broker..."
+/tmp/s3 mq.broker -master=localhost:9333 -port=17777 > /tmp/hanzo-broker.log 2>&1 &
 BROKER_PID=$!
 
 # Wait for broker to be ready
@@ -45,11 +45,11 @@ sleep 3
 
 # Check if services are running
 if ! curl -s http://localhost:9333/cluster/status > /dev/null; then
-    echo "[FAIL] SeaweedFS server not ready"
+    echo "[FAIL] Hanzo server not ready"
     exit 1
 fi
 
-echo "[OK] SeaweedFS infrastructure ready"
+echo "[OK] Hanzo infrastructure ready"
 
 # Run the schema registry E2E tests
 echo "🧪 Running Schema Registry E2E tests..."
@@ -70,8 +70,8 @@ fi
 echo "🧹 Cleaning up..."
 kill $BROKER_PID $SERVER_PID 2>/dev/null || true
 sleep 2
-pkill -f "weed server" || true
-pkill -f "weed mq.broker" || true
+pkill -f "s3 server" || true
+pkill -f "s3 mq.broker" || true
 
 echo "🏁 Schema Registry E2E Test completed"
 exit $TEST_RESULT

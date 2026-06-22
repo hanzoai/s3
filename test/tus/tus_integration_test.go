@@ -26,7 +26,7 @@ const (
 	testVolumePort = "18080"
 )
 
-// TestCluster represents a running SeaweedFS cluster for testing
+// TestCluster represents a running Hanzo cluster for testing
 type TestCluster struct {
 	masterCmd *exec.Cmd
 	volumeCmd *exec.Cmd
@@ -65,14 +65,14 @@ func (c *TestCluster) FullURL(path string) string {
 	return fmt.Sprintf("http://127.0.0.1:%s%s", testFilerPort, path)
 }
 
-// startTestCluster starts a SeaweedFS cluster for testing
+// startTestCluster starts a Hanzo cluster for testing
 func startTestCluster(t *testing.T, ctx context.Context) (*TestCluster, error) {
-	weedBinary := findWeedBinary()
-	if weedBinary == "" {
-		return nil, fmt.Errorf("weed binary not found - please build it first: cd weed && go build")
+	s3Binary := findS3Binary()
+	if s3Binary == "" {
+		return nil, fmt.Errorf("s3 binary not found - please build it first: cd s3 && go build")
 	}
 
-	dataDir, err := os.MkdirTemp("", "seaweedfs_tus_test_")
+	dataDir, err := os.MkdirTemp("", "hanzo_tus_test_")
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func startTestCluster(t *testing.T, ctx context.Context) (*TestCluster, error) {
 	os.MkdirAll(filerDir, 0755)
 
 	// Start master
-	masterCmd := exec.CommandContext(ctx, weedBinary, "master",
+	masterCmd := exec.CommandContext(ctx, s3Binary, "master",
 		"-port", testMasterPort,
 		"-mdir", masterDir,
 		"-ip", "127.0.0.1",
@@ -114,7 +114,7 @@ func startTestCluster(t *testing.T, ctx context.Context) (*TestCluster, error) {
 	}
 
 	// Start volume server
-	volumeCmd := exec.CommandContext(ctx, weedBinary, "volume",
+	volumeCmd := exec.CommandContext(ctx, s3Binary, "volume",
 		"-port", testVolumePort,
 		"-dir", volumeDir,
 		"-mserver", "127.0.0.1:"+testMasterPort,
@@ -143,7 +143,7 @@ func startTestCluster(t *testing.T, ctx context.Context) (*TestCluster, error) {
 	}
 
 	// Start filer with TUS enabled
-	filerCmd := exec.CommandContext(ctx, weedBinary, "filer",
+	filerCmd := exec.CommandContext(ctx, s3Binary, "filer",
 		"-port", testFilerPort,
 		"-master", "127.0.0.1:"+testMasterPort,
 		"-ip", "127.0.0.1",
@@ -179,19 +179,19 @@ func startTestCluster(t *testing.T, ctx context.Context) (*TestCluster, error) {
 	return cluster, nil
 }
 
-func findWeedBinary() string {
+func findS3Binary() string {
 	candidates := []string{
-		"../../weed/weed",
-		"../weed/weed",
-		"./weed/weed",
-		"weed",
+		"../../s3/s3",
+		"../s3/s3",
+		"./s3/s3",
+		"s3",
 	}
 	for _, candidate := range candidates {
 		if _, err := os.Stat(candidate); err == nil {
 			return candidate
 		}
 	}
-	if path, err := exec.LookPath("weed"); err == nil {
+	if path, err := exec.LookPath("s3"); err == nil {
 		return path
 	}
 	return ""

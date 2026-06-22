@@ -15,7 +15,7 @@ import (
 //
 // Prerequisites:
 //   - Docker must be available
-//   - SeaweedFS must be running with Iceberg REST enabled
+//   - Hanzo must be running with Iceberg REST enabled
 //
 // To run manually:
 //
@@ -37,7 +37,7 @@ func TestPyIcebergRestCatalog(t *testing.T) {
 	createTableBucket(t, env, bucketName)
 
 	// Build the test working directory path
-	testDir := filepath.Join(env.seaweedDir, "test", "s3tables", "catalog")
+	testDir := filepath.Join(env.hanzoDir, "test", "s3tables", "catalog")
 
 	// Run PyIceberg test using Docker
 	catalogURL := fmt.Sprintf("http://host.docker.internal:%d", env.icebergPort)
@@ -75,7 +75,7 @@ func TestPyIcebergRestCatalog(t *testing.T) {
 }
 
 // TestPyIcebergRestCatalogAuthenticated tests the Iceberg REST Catalog using PyIceberg with authentication.
-// This test uses the default admin credentials that SeaweedFS creates on startup.
+// This test uses the default admin credentials that Hanzo creates on startup.
 func TestPyIcebergRestCatalogAuthenticated(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -96,7 +96,7 @@ func TestPyIcebergRestCatalogAuthenticated(t *testing.T) {
 	createTableBucket(t, env, bucketName)
 
 	// Build the test working directory path
-	testDir := filepath.Join(env.seaweedDir, "test", "s3tables", "catalog")
+	testDir := filepath.Join(env.hanzoDir, "test", "s3tables", "catalog")
 
 	// Run PyIceberg test using Docker with authentication
 	catalogURL := fmt.Sprintf("http://host.docker.internal:%d", env.icebergPort)

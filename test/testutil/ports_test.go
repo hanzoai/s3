@@ -2,7 +2,7 @@ package testutil
 
 import "testing"
 
-// AllocateMiniPorts must never hand out a port that weed mini will reserve
+// AllocateMiniPorts must never hand out a port that s3 mini will reserve
 // for one of its default services (or that default's gRPC offset). A real
 // failure: Filer was given 33646 (Admin default 23646 + GrpcPortOffset),
 // which mini then refused as "reserved for gRPC calculation".

@@ -2,7 +2,7 @@
     "sts": {
     "tokenDuration": "1h",
     "maxSessionLength": "12h",
-    "issuer": "seaweedfs-sts",
+    "issuer": "hanzo-sts",
     "signingKey": "dGVzdC1zaWduaW5nLWtleS0zMi1jaGFyYWN0ZXJzLWxvbmc=",
     "providers": [
       {
@@ -10,10 +10,10 @@
         "type": "oidc",
         "enabled": true,
         "config": {
-          "issuer": "http://keycloak:8080/realms/seaweedfs-test",
-          "clientId": "seaweedfs-s3",
-          "clientSecret": "seaweedfs-s3-secret",
-          "jwksUri": "http://keycloak:8080/realms/seaweedfs-test/protocol/openid-connect/certs",
+          "issuer": "http://keycloak:8080/realms/hanzo-test",
+          "clientId": "hanzo-s3",
+          "clientSecret": "hanzo-s3-secret",
+          "jwksUri": "http://keycloak:8080/realms/hanzo-test/protocol/openid-connect/certs",
           "scopes": ["openid", "profile", "email", "roles"]
         }
       }

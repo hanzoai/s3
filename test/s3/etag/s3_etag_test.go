@@ -1,11 +1,11 @@
 // Package etag_test provides integration tests for S3 ETag format validation.
 //
-// These tests verify that SeaweedFS returns correct ETag formats for different
+// These tests verify that Hanzo returns correct ETag formats for different
 // upload scenarios, ensuring compatibility with AWS S3 SDKs that validate ETags.
 //
 // Background (GitHub Issue #7768):
 // AWS S3 SDK for Java v2 validates ETags as hexadecimal MD5 hashes for PutObject
-// responses. SeaweedFS was incorrectly returning composite ETags ("<md5>-<count>")
+// responses. Hanzo was incorrectly returning composite ETags ("<md5>-<count>")
 // for regular PutObject when files were internally auto-chunked (>8MB), causing
 // the SDK to fail with "Invalid base 16 character: '-'".
 //
@@ -60,7 +60,7 @@ var defaultConfig = &S3TestConfig{
 
 // Constants for auto-chunking thresholds (must match s3api_object_handlers_put.go)
 const (
-	// SeaweedFS auto-chunks files larger than 8MB
+	// Hanzo auto-chunks files larger than 8MB
 	autoChunkSize = 8 * 1024 * 1024
 
 	// Test sizes

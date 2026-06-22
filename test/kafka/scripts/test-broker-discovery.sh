@@ -4,33 +4,33 @@
 
 set -e
 
-echo "=== Testing SeaweedFS Broker Discovery ==="
+echo "=== Testing Hanzo Broker Discovery ==="
 
 cd /Users/chrislu/go/src/github.com/hanzoai/s3
 
-# Build weed binary
-echo "Building weed binary..."
-go build -o /tmp/weed-discovery ./weed
+# Build s3 binary
+echo "Building s3 binary..."
+go build -o /tmp/s3-discovery ./s3
 
 # Setup data directory
-WEED_DATA_DIR="/tmp/seaweedfs-discovery-test-$$"
+WEED_DATA_DIR="/tmp/hanzo-discovery-test-$$"
 mkdir -p "$WEED_DATA_DIR"
 echo "Using data directory: $WEED_DATA_DIR"
 
 # Cleanup function
 cleanup() {
     echo "Cleaning up..."
-    pkill -f "weed.*server" || true
-    pkill -f "weed.*mq.broker" || true
+    pkill -f "s3.*server" || true
+    pkill -f "s3.*mq.broker" || true
     sleep 2
     rm -rf "$WEED_DATA_DIR"
-    rm -f /tmp/weed-discovery* /tmp/broker-discovery-test*
+    rm -f /tmp/s3-discovery* /tmp/broker-discovery-test*
 }
 trap cleanup EXIT
 
-# Start SeaweedFS server with consistent IP configuration
-echo "Starting SeaweedFS server..."
-/tmp/weed-discovery -v 1 server \
+# Start Hanzo server with consistent IP configuration
+echo "Starting Hanzo server..."
+/tmp/s3-discovery -v 1 server \
   -ip="127.0.0.1" \
   -ip.bind="127.0.0.1" \
   -dir="$WEED_DATA_DIR" \
@@ -40,7 +40,7 @@ echo "Starting SeaweedFS server..."
   -filer.port=8888 \
   -filer=true \
   -metricsPort=9325 \
-  > /tmp/weed-discovery-server.log 2>&1 &
+  > /tmp/s3-discovery-server.log 2>&1 &
 
 SERVER_PID=$!
 echo "Server PID: $SERVER_PID"
@@ -62,10 +62,10 @@ sleep 10
 
 # Start MQ broker
 echo "Starting MQ broker..."
-/tmp/weed-discovery -v 2 mq.broker \
+/tmp/s3-discovery -v 2 mq.broker \
   -master="127.0.0.1:9333" \
   -port=17777 \
-  > /tmp/weed-discovery-broker.log 2>&1 &
+  > /tmp/s3-discovery-broker.log 2>&1 &
 
 BROKER_PID=$!
 echo "Broker PID: $BROKER_PID"
@@ -87,9 +87,9 @@ done
 if [ "$broker_ready" = false ]; then
   echo "[FAIL] MQ broker failed to start"
   echo "Server logs:"
-  cat /tmp/weed-discovery-server.log
+  cat /tmp/s3-discovery-server.log
   echo "Broker logs:"  
-  cat /tmp/weed-discovery-broker.log
+  cat /tmp/s3-discovery-broker.log
   exit 1
 fi
 
@@ -124,6 +124,6 @@ echo "  Gateway discovery: $([ "$discovery_success" = true ] && echo "✅" || ec
 
 echo
 echo "📁 Logs available:"
-echo "  Server: /tmp/weed-discovery-server.log"
-echo "  Broker: /tmp/weed-discovery-broker.log"
+echo "  Server: /tmp/s3-discovery-server.log"
+echo "  Broker: /tmp/s3-discovery-broker.log"
 echo "  Discovery test: /tmp/broker-discovery-test.log"

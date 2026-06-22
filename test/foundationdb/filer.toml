@@ -5,4 +5,4 @@ enabled = true
 cluster_file = "/var/fdb/config/fdb.cluster"
 # api_version = 740
 # timeout = "5s"
-# directory_prefix = "seaweedfs"
+# directory_prefix = "hanzo"

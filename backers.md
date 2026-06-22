@@ -1,7 +1,7 @@
 
 <h1 align="center">Sponsors &amp; Backers</h1>
 
-- [Become a backer or sponsor on Patreon](https://www.patreon.com/seaweedfs).
+- [Become a backer or sponsor on Patreon](https://www.patreon.com/hanzo).
 
 <h2 align="center">Generous Backers ($50+)</h2>
 

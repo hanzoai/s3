@@ -21,24 +21,24 @@ import (
 //
 // It verifies two things end-to-end:
 //
-//  1. SeaweedFS' STS endpoint accepts sts:AssumeRole for the
+//  1. Hanzo' STS endpoint accepts sts:AssumeRole for the
 //     UnityCatalogVendedRole, returning real STS-vended credentials. This
 //     mirrors what the lakekeeper / polaris tests already exercise via the Go
-//     AWS SDK and is the SeaweedFS-side prerequisite for UC's master-role
+//     AWS SDK and is the Hanzo-side prerequisite for UC's master-role
 //     flow.
 //
 //  2. Unity Catalog OSS starts and accepts catalog/schema/EXTERNAL Delta
 //     table CRUD when configured with `aws.masterRoleArn` set to that role
-//     and AWS_ENDPOINT_URL_STS pointed at SeaweedFS.
+//     and AWS_ENDPOINT_URL_STS pointed at Hanzo.
 //
 // What it does NOT verify is the third hop -- UC's Java StsClient
-// reaching SeaweedFS' STS handler. UC's
+// reaching Hanzo' STS handler. UC's
 // AwsCredentialGenerator.StsAwsCredentialGenerator builds the StsClient
 // without an endpointOverride and doesn't propagate aws.endpoint to it, so
 // the SDK's generic AWS_ENDPOINT_URL_STS resolution doesn't kick in and the
 // request always targets real AWS, returning InvalidClientTokenId. Verified
 // by pointing AWS_ENDPOINT_URL_STS at port 1: same 403 either way, and a
-// sniffer in front of SeaweedFS records zero traffic. UC's own tests mock
+// sniffer in front of Hanzo records zero traffic. UC's own tests mock
 // StsClient out (BaseCRUDTestWithMockCredentials' EchoAwsStsClient,
 // Mockito.mockStatic in CloudCredentialVendorTest), so this never showed
 // up upstream. Fix is in unitycatalog/unitycatalog#1532; that bit is
@@ -54,9 +54,9 @@ func TestUnityCatalogMasterRoleIntegration(t *testing.T) {
 	env := newTestEnv(t)
 	defer env.cleanup(t)
 
-	t.Log(">>> starting SeaweedFS with STS-enabled IAM config...")
-	env.startSeaweedFS(t, stsEnabledIAMConfig(env.accessKey, env.secretKey))
-	t.Log(">>> SeaweedFS ready")
+	t.Log(">>> starting Hanzo with STS-enabled IAM config...")
+	env.startHanzo(t, stsEnabledIAMConfig(env.accessKey, env.secretKey))
+	t.Log(">>> Hanzo ready")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
@@ -66,12 +66,12 @@ func TestUnityCatalogMasterRoleIntegration(t *testing.T) {
 		t.Fatalf("create warehouse bucket: %v", err)
 	}
 
-	// Slice 1: prove SeaweedFS STS works for the role UC would use.
-	t.Run("SeaweedFsAssumesUnityCatalogVendedRole", func(t *testing.T) {
+	// Slice 1: prove Hanzo STS works for the role UC would use.
+	t.Run("HanzoFsAssumesUnityCatalogVendedRole", func(t *testing.T) {
 		stsEndpoint := fmt.Sprintf("http://127.0.0.1:%d", env.s3Port)
-		creds, err := assumeRoleViaSeaweedFS(ctx, stsEndpoint, env.accessKey, env.secretKey, ucVendedRoleArn)
+		creds, err := assumeRoleViaHanzo(ctx, stsEndpoint, env.accessKey, env.secretKey, ucVendedRoleArn)
 		if err != nil {
-			t.Fatalf("AssumeRole on SeaweedFS STS: %v", err)
+			t.Fatalf("AssumeRole on Hanzo STS: %v", err)
 		}
 		if creds.SessionToken == "" {
 			t.Fatalf("expected non-empty session_token from STS, got %+v", creds)
@@ -113,7 +113,7 @@ func TestUnityCatalogMasterRoleIntegration(t *testing.T) {
 
 	uc := newUCClient(fmt.Sprintf("http://127.0.0.1:%d", env.ucHostPort))
 	suffix := time.Now().UnixNano()
-	catalogName := fmt.Sprintf("seaweed_uc_role_%d", suffix)
+	catalogName := fmt.Sprintf("hanzo_uc_role_%d", suffix)
 	schemaName := fmt.Sprintf("ns_%d", suffix)
 	tableName := fmt.Sprintf("events_%d", suffix)
 	tableLocation := fmt.Sprintf("s3://%s/%s/%s/%s", ucWarehouse, ucWarehouseKey, schemaName, tableName)
@@ -152,8 +152,8 @@ func TestUnityCatalogMasterRoleIntegration(t *testing.T) {
 			t.Fatalf("expected table_id in CreateTable response, got %+v", created)
 		}
 
-		// The actual UC -> SeaweedFS STS handoff is the still-unsolved slice.
-		// Log what happens, but don't fail the test on it: SeaweedFS' STS is
+		// The actual UC -> Hanzo STS handoff is the still-unsolved slice.
+		// Log what happens, but don't fail the test on it: Hanzo' STS is
 		// known-good (slice 1 above), and UC's CRUD is known-good (this slice).
 		_, ucCredErr := uc.generateTemporaryTableCredentials(ctx, created.TableID, "READ_WRITE")
 		if ucCredErr != nil {
@@ -164,10 +164,10 @@ func TestUnityCatalogMasterRoleIntegration(t *testing.T) {
 	})
 }
 
-// assumeRoleViaSeaweedFS calls sts:AssumeRole against SeaweedFS' STS endpoint
+// assumeRoleViaHanzo calls sts:AssumeRole against Hanzo' STS endpoint
 // using the Go AWS SDK, mirroring how lakekeeper/polaris tests prove
-// SeaweedFS' STS path works.
-func assumeRoleViaSeaweedFS(ctx context.Context, endpoint, accessKey, secretKey, roleArn string) (aws.Credentials, error) {
+// Hanzo' STS path works.
+func assumeRoleViaHanzo(ctx context.Context, endpoint, accessKey, secretKey, roleArn string) (aws.Credentials, error) {
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion("us-east-1"),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
@@ -196,6 +196,6 @@ func assumeRoleViaSeaweedFS(ctx context.Context, endpoint, accessKey, secretKey,
 		AccessKeyID:     aws.ToString(resp.Credentials.AccessKeyId),
 		SecretAccessKey: aws.ToString(resp.Credentials.SecretAccessKey),
 		SessionToken:    aws.ToString(resp.Credentials.SessionToken),
-		Source:          "seaweedfs-sts",
+		Source:          "hanzo-sts",
 	}, nil
 }

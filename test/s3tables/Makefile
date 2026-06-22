@@ -13,8 +13,8 @@ CATALOG_ENDPOINT_DOCKER ?= $(subst localhost,host.docker.internal,$(subst 127.0.
 
 # Auth and table-bucket settings
 # If credentials are not explicitly provided, try to reuse the ones from a running
-# local weed mini process (often started with inline AWS_ACCESS_KEY_ID/SECRET).
-WEED_RUNTIME_PID := $(shell pgrep -f "weed mini" 2>/dev/null | head -n 1)
+# local s3 mini process (often started with inline AWS_ACCESS_KEY_ID/SECRET).
+WEED_RUNTIME_PID := $(shell pgrep -f "s3 mini" 2>/dev/null | head -n 1)
 DETECTED_AWS_ACCESS_KEY_ID := $(shell if [ -n "$(WEED_RUNTIME_PID)" ]; then ps eww -p "$(WEED_RUNTIME_PID)" 2>/dev/null | sed -n 's/.*AWS_ACCESS_KEY_ID=\([^[:space:]]*\).*/\1/p'; fi)
 DETECTED_AWS_SECRET_ACCESS_KEY := $(shell if [ -n "$(WEED_RUNTIME_PID)" ]; then ps eww -p "$(WEED_RUNTIME_PID)" 2>/dev/null | sed -n 's/.*AWS_SECRET_ACCESS_KEY=\([^[:space:]]*\).*/\1/p'; fi)
 AWS_ACCESS_KEY_ID ?= $(if $(DETECTED_AWS_ACCESS_KEY_ID),$(DETECTED_AWS_ACCESS_KEY_ID),admin)
@@ -24,8 +24,8 @@ TABLE_ACCOUNT_ID ?= admin
 TABLE_BUCKET ?= iceberg-tables
 WAREHOUSE ?= s3tablescatalog/$(TABLE_BUCKET)
 
-# Weed shell config for bucket bootstrap
-WEED_BIN ?= weed
+# S3 shell config for bucket bootstrap
+WEED_BIN ?= s3
 MASTER_ADDR ?= localhost:9333
 
 # Runtime images
@@ -40,7 +40,7 @@ SPARK_NAMESPACE ?= ui_spark
 SPARK_TABLE ?= events
 
 # Temp workspace for generated configs/sql
-WORK_DIR ?= /tmp/seaweedfs-s3tables-seed
+WORK_DIR ?= /tmp/hanzo-s3tables-seed
 
 help: ## Show available targets and key variables
 	@echo "S3Tables local data generator"
@@ -56,16 +56,16 @@ help: ## Show available targets and key variables
 check-deps: ## Verify local dependencies
 	@command -v docker >/dev/null 2>&1 || (echo "docker is required" && exit 1)
 	@if command -v $(WEED_BIN) >/dev/null 2>&1; then \
-		echo "Using weed binary: $(WEED_BIN)"; \
+		echo "Using s3 binary: $(WEED_BIN)"; \
 	elif [ -x "$(WEED_BIN)" ]; then \
-		echo "Using weed binary path: $(WEED_BIN)"; \
+		echo "Using s3 binary path: $(WEED_BIN)"; \
 	else \
-		echo "weed binary not found at $(WEED_BIN)"; \
-		echo "Override with WEED_BIN=/path/to/weed"; \
+		echo "s3 binary not found at $(WEED_BIN)"; \
+		echo "Override with WEED_BIN=/path/to/s3"; \
 		exit 1; \
 	fi; \
 	if [ "$(origin AWS_ACCESS_KEY_ID)" = "file" ] && [ -n "$(DETECTED_AWS_ACCESS_KEY_ID)" ]; then \
-		echo "Using AWS access key from running weed mini process: $(DETECTED_AWS_ACCESS_KEY_ID)"; \
+		echo "Using AWS access key from running s3 mini process: $(DETECTED_AWS_ACCESS_KEY_ID)"; \
 	fi
 
 check-services: check-deps ## Validate local master/S3/catalog endpoints before seeding
@@ -85,7 +85,7 @@ check-services: check-deps ## Validate local master/S3/catalog endpoints before 
 		echo "check-services: master reports leader $$leader_addr (http: $$leader_http)"; \
 		if ! curl -fsS --max-time 3 "http://$$leader_http/cluster/status" >/dev/null; then \
 			echo "ERROR: master advertises leader $$leader_addr (http: $$leader_http), but it is unreachable from this host."; \
-			echo "This causes 'weed shell' (and make populate targets) to block waiting for master connection."; \
+			echo "This causes 's3 shell' (and make populate targets) to block waiting for master connection."; \
 			echo "Fix master advertised address (-ip / -ip.bind) or point MASTER_ADDR to a reachable leader."; \
 			exit 1; \
 		fi; \
@@ -122,7 +122,7 @@ check-services: check-deps ## Validate local master/S3/catalog endpoints before 
 	if [ "$$auth_code" = "403" ] && grep -q "access key ID you provided does not exist" "$$auth_body"; then \
 		echo "ERROR: AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) is not recognized by the running Iceberg service."; \
 		if [ -n "$(DETECTED_AWS_ACCESS_KEY_ID)" ] && [ -n "$(DETECTED_AWS_SECRET_ACCESS_KEY)" ] && [ "$(AWS_ACCESS_KEY_ID)" != "$(DETECTED_AWS_ACCESS_KEY_ID)" ]; then \
-			echo "Detected running weed mini credentials via process env:"; \
+			echo "Detected running s3 mini credentials via process env:"; \
 			echo "  AWS_ACCESS_KEY_ID=$(DETECTED_AWS_ACCESS_KEY_ID)"; \
 			echo "Retry with:"; \
 			echo "  make populate AWS_ACCESS_KEY_ID=$(DETECTED_AWS_ACCESS_KEY_ID) AWS_SECRET_ACCESS_KEY=<secret>"; \
@@ -212,7 +212,7 @@ populate-trino: ensure-table-bucket ensure-work-dir ## Populate sample data via 
 	> "$(WORK_DIR)/trino_seed.sql"
 	@echo "populate-trino: starting Trino docker run"
 	@set -eu; \
-	container_name="seaweedfs-s3tables-trino-seed-$$RANDOM-$$RANDOM"; \
+	container_name="hanzo-s3tables-trino-seed-$$RANDOM-$$RANDOM"; \
 	echo "populate-trino: launching Trino server container $$container_name"; \
 	docker run -d --name "$$container_name" \
 		--add-host host.docker.internal:host-gateway \

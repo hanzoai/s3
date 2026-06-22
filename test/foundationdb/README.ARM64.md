@@ -124,11 +124,11 @@ uname -m  # Should show arm64
 The ARM64 solution now uses the official FoundationDB 7.4.5 aarch64 packages:
 
 1. **Builder Stage**: Downloads prebuilt FoundationDB client libraries
-   - Uses Debian-based Go image for compiling SeaweedFS
+   - Uses Debian-based Go image for compiling Hanzo
    - Verifies SHA256 checksums before installing the deb package
 
 2. **Runtime Stage**: Copies the already-installed artifacts
-   - SeaweedFS runtime layers reuse the validated libraries
+   - Hanzo runtime layers reuse the validated libraries
    - FoundationDB server containers install the prebuilt server + client packages with checksum verification
 
 This keeps the setup time short while preserving native ARM64 performance and strong supply-chain guarantees.

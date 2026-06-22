@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hanzoai/s3/weed/pb"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,7 +18,7 @@ func TestShellPolicyAttachDetach(t *testing.T) {
 	require.NoError(t, err)
 	defer cluster.Stop()
 
-	const weedCmd = "weed"
+	const s3Cmd = "s3"
 	master := string(pb.NewServerAddress("127.0.0.1", cluster.masterPort, cluster.masterGrpcPort))
 	filer := string(pb.NewServerAddress("127.0.0.1", cluster.filerPort, cluster.filerGrpcPort))
 
@@ -34,34 +34,34 @@ func TestShellPolicyAttachDetach(t *testing.T) {
 	policyName := uniqueName("attach-pol")
 	userName := uniqueName("attach-user")
 
-	execShell(t, weedCmd, master, filer,
+	execShell(t, s3Cmd, master, filer,
 		fmt.Sprintf("s3.policy -put -name=%s -file=%s", policyName, tmpFile.Name()))
-	defer execShell(t, weedCmd, master, filer, fmt.Sprintf("s3.policy -delete -name=%s", policyName))
+	defer execShell(t, s3Cmd, master, filer, fmt.Sprintf("s3.policy -delete -name=%s", policyName))
 
-	execShell(t, weedCmd, master, filer, fmt.Sprintf("s3.user.create -name %s", userName))
-	defer execShell(t, weedCmd, master, filer, fmt.Sprintf("s3.user.delete -name %s", userName))
+	execShell(t, s3Cmd, master, filer, fmt.Sprintf("s3.user.create -name %s", userName))
+	defer execShell(t, s3Cmd, master, filer, fmt.Sprintf("s3.user.delete -name %s", userName))
 
 	t.Run("AttachAndVerify", func(t *testing.T) {
-		out := execShell(t, weedCmd, master, filer,
+		out := execShell(t, s3Cmd, master, filer,
 			fmt.Sprintf("s3.policy.attach -policy %s -user %s", policyName, userName))
 		requireContains(t, out, policyName, "policy.attach output")
 
-		out = execShell(t, weedCmd, master, filer, fmt.Sprintf("s3.user.show -name %s", userName))
+		out = execShell(t, s3Cmd, master, filer, fmt.Sprintf("s3.user.show -name %s", userName))
 		requireContains(t, out, policyName, "user.show after attach")
 	})
 
 	t.Run("AttachIdempotent", func(t *testing.T) {
 		// Should succeed without error per the command's idempotent design.
-		execShell(t, weedCmd, master, filer,
+		execShell(t, s3Cmd, master, filer,
 			fmt.Sprintf("s3.policy.attach -policy %s -user %s", policyName, userName))
 	})
 
 	t.Run("DetachAndVerify", func(t *testing.T) {
-		out := execShell(t, weedCmd, master, filer,
+		out := execShell(t, s3Cmd, master, filer,
 			fmt.Sprintf("s3.policy.detach -policy %s -user %s", policyName, userName))
 		requireContains(t, out, policyName, "policy.detach output")
 
-		out = execShell(t, weedCmd, master, filer, fmt.Sprintf("s3.user.show -name %s", userName))
+		out = execShell(t, s3Cmd, master, filer, fmt.Sprintf("s3.user.show -name %s", userName))
 		requireNotContains(t, out, fmt.Sprintf("\"%s\"", policyName), "user.show after detach")
 	})
 }

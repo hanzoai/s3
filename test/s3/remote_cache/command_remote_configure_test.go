@@ -21,14 +21,14 @@ func TestRemoteConfigureBasic(t *testing.T) {
 	t.Log("Creating remote configuration...")
 	cmd := fmt.Sprintf("remote.configure -name=%s -type=s3 -s3.access_key=%s -s3.secret_key=%s -s3.endpoint=http://localhost:%s -s3.region=us-east-1",
 		testName, accessKey, secretKey, "8334")
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to create remote configuration")
 	t.Logf("Configure output: %s", output)
 
 	// List configurations and verify it exists
 	t.Log("Listing remote configurations...")
 	time.Sleep(500 * time.Millisecond) // Give some time for configuration to persist
-	output, err = runWeedShellWithOutput(t, "remote.configure")
+	output, err = runS3ShellWithOutput(t, "remote.configure")
 	require.NoError(t, err, "failed to list configurations")
 	assert.Contains(t, output, testName, "configuration not found in list")
 	t.Logf("List output: %s", output)
@@ -36,7 +36,7 @@ func TestRemoteConfigureBasic(t *testing.T) {
 	// Clean up - delete the configuration
 	t.Log("Deleting remote configuration...")
 	cmd = fmt.Sprintf("remote.configure -name=%s -delete=true", testName)
-	_, err = runWeedShellWithOutput(t, cmd)
+	_, err = runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to delete configuration")
 }
 
@@ -55,7 +55,7 @@ func TestRemoteConfigureInvalidName(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			cmd := fmt.Sprintf("remote.configure -name='%s' -type=s3 -s3.access_key=%s -s3.secret_key=%s -s3.endpoint=http://localhost:8334",
 				name, accessKey, secretKey)
-			output, err := runWeedShellWithOutput(t, cmd)
+			output, err := runS3ShellWithOutput(t, cmd)
 
 			// Should fail with invalid name
 			hasError := err != nil || strings.Contains(strings.ToLower(output), "invalid") || strings.Contains(strings.ToLower(output), "error")
@@ -76,25 +76,25 @@ func TestRemoteConfigureUpdate(t *testing.T) {
 	t.Log("Creating initial configuration...")
 	cmd := fmt.Sprintf("remote.configure -name=%s -type=s3 -s3.access_key=%s -s3.secret_key=%s -s3.endpoint=http://localhost:8334 -s3.region=us-east-1",
 		testName, accessKey, secretKey)
-	_, err := runWeedShellWithOutput(t, cmd)
+	_, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to create initial configuration")
 
 	// Update with different region
 	t.Log("Updating configuration...")
 	cmd = fmt.Sprintf("remote.configure -name=%s -type=s3 -s3.access_key=%s -s3.secret_key=%s -s3.endpoint=http://localhost:8334 -s3.region=us-west-2",
 		testName, accessKey, secretKey)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to update configuration")
 	t.Logf("Update output: %s", output)
 
 	// Verify update
-	output, err = runWeedShellWithOutput(t, "remote.configure")
+	output, err = runS3ShellWithOutput(t, "remote.configure")
 	require.NoError(t, err, "failed to list configurations")
 	assert.Contains(t, output, testName, "configuration not found after update")
 
 	// Clean up
 	cmd = fmt.Sprintf("remote.configure -name=%s -delete=true", testName)
-	_, err = runWeedShellWithOutput(t, cmd)
+	_, err = runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to delete configuration")
 }
 
@@ -108,18 +108,18 @@ func TestRemoteConfigureDelete(t *testing.T) {
 	// Create configuration
 	cmd := fmt.Sprintf("remote.configure -name=%s -type=s3 -s3.access_key=%s -s3.secret_key=%s -s3.endpoint=http://localhost:8334 -s3.region=us-east-1",
 		testName, accessKey, secretKey)
-	_, err := runWeedShellWithOutput(t, cmd)
+	_, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to create configuration")
 
 	// Delete it
 	t.Log("Deleting configuration...")
 	cmd = fmt.Sprintf("remote.configure -name=%s -delete=true", testName)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to delete configuration")
 	t.Logf("Delete output: %s", output)
 
 	// Verify it's gone
-	output, err = runWeedShellWithOutput(t, "remote.configure")
+	output, err = runS3ShellWithOutput(t, "remote.configure")
 	require.NoError(t, err, "failed to list configurations")
 	assert.NotContains(t, output, testName, "configuration still exists after deletion")
 }
@@ -152,7 +152,7 @@ func TestRemoteConfigureMissingParams(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := runWeedShellWithOutput(t, tc.command)
+			output, err := runS3ShellWithOutput(t, tc.command)
 			// Just log the result - the command may or may not validate strictly
 			t.Logf("Test case %s: err=%v, output: %s", tc.name, err, output)
 			// The main goal is to ensure the command doesn't crash
@@ -165,7 +165,7 @@ func TestRemoteConfigureListEmpty(t *testing.T) {
 	checkServersRunning(t)
 
 	// Just list configurations - should not error even if empty
-	output, err := runWeedShellWithOutput(t, "remote.configure")
+	output, err := runS3ShellWithOutput(t, "remote.configure")
 	require.NoError(t, err, "failed to list configurations")
 	t.Logf("List output: %s", output)
 

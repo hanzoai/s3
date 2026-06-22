@@ -11,14 +11,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hanzoai/s3/weed/cluster"
-	"github.com/hanzoai/s3/weed/mq/client/pub_client"
-	"github.com/hanzoai/s3/weed/mq/pub_balancer"
-	"github.com/hanzoai/s3/weed/mq/topic"
-	"github.com/hanzoai/s3/weed/pb"
-	"github.com/hanzoai/s3/weed/pb/filer_pb"
-	"github.com/hanzoai/s3/weed/pb/master_pb"
-	"github.com/hanzoai/s3/weed/pb/schema_pb"
+	"github.com/hanzoai/s3/s3/cluster"
+	"github.com/hanzoai/s3/s3/mq/client/pub_client"
+	"github.com/hanzoai/s3/s3/mq/pub_balancer"
+	"github.com/hanzoai/s3/s3/mq/topic"
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/master_pb"
+	"github.com/hanzoai/s3/s3/pb/schema_pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -64,7 +64,7 @@ type ProductView struct {
 }
 
 func main() {
-	// Get SeaweedFS configuration from environment
+	// Get Hanzo configuration from environment
 	masterAddr := getEnv("SEAWEEDFS_MASTER", "localhost:9333")
 	filerAddr := getEnv("SEAWEEDFS_FILER", "localhost:8888")
 
@@ -72,8 +72,8 @@ func main() {
 	log.Printf("Master: %s", masterAddr)
 	log.Printf("Filer: %s", filerAddr)
 
-	// Wait for SeaweedFS to be ready
-	log.Println("Waiting for SeaweedFS to be ready...")
+	// Wait for Hanzo to be ready
+	log.Println("Waiting for Hanzo to be ready...")
 	time.Sleep(10 * time.Second)
 
 	// Create topics and populate with data
@@ -117,7 +117,7 @@ func main() {
 	log.Println("  - ecommerce (product_views, user_events)")
 	log.Println("  - logs (application_logs, error_logs)")
 	log.Println("\nYou can now test with PostgreSQL clients:")
-	log.Println("  psql -h localhost -p 5432 -U seaweedfs -d analytics")
+	log.Println("  psql -h localhost -p 5432 -U hanzo -d analytics")
 	log.Println("  postgres=> SHOW TABLES;")
 	log.Println("  postgres=> SELECT COUNT(*) FROM user_events;")
 }
@@ -305,7 +305,7 @@ func discoverFiler(masterHTTPAddress string) (string, error) {
 	}
 	defer conn.Close()
 
-	client := master_pb.NewSeaweedClient(conn)
+	client := master_pb.NewHanzoClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -340,7 +340,7 @@ func discoverBroker(masterHTTPAddress string) (string, error) {
 	}
 	defer conn.Close()
 
-	client := filer_pb.NewSeaweedFilerClient(conn)
+	client := filer_pb.NewHanzoFilerClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

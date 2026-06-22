@@ -1,12 +1,12 @@
 # Metadata Subscribe Integration Tests
 
-This directory contains integration tests for the SeaweedFS metadata subscription functionality.
+This directory contains integration tests for the Hanzo metadata subscription functionality.
 
 ## Tests
 
 ### TestMetadataSubscribeBasic
 Tests basic metadata subscription functionality:
-- Start a SeaweedFS cluster (master, volume, filer)
+- Start a Hanzo cluster (master, volume, filer)
 - Subscribe to metadata changes
 - Upload files and verify events are received
 
@@ -31,7 +31,7 @@ Tests that subscription can resume from disk:
 ## Running Tests
 
 ```bash
-# Run all tests (requires weed binary in PATH or built)
+# Run all tests (requires s3 binary in PATH or built)
 go test -v ./test/metadata_subscribe/...
 
 # Skip integration tests
@@ -43,7 +43,7 @@ go test -v -timeout 5m ./test/metadata_subscribe/...
 
 ## Requirements
 
-- `weed` binary must be available in PATH or in the parent directories
+- `s3` binary must be available in PATH or in the parent directories
 - Tests create temporary directories that are cleaned up after completion
 - Tests use ports 9333 (master), 8080 (volume), 8888 (filer)
 

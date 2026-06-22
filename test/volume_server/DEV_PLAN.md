@@ -12,15 +12,15 @@ Create a Go integration test suite under `test/volume_server` that validates **d
 
 ## Ground Truth (API Surface)
 - HTTP handlers:
-  - `weed/server/volume_server.go`
-  - `weed/server/volume_server_handlers.go`
-  - `weed/server/volume_server_handlers_read.go`
-  - `weed/server/volume_server_handlers_write.go`
-  - `weed/server/volume_server_handlers_admin.go`
-  - `weed/server/common.go` (path parsing and range handling)
+  - `s3/server/volume_server.go`
+  - `s3/server/volume_server_handlers.go`
+  - `s3/server/volume_server_handlers_read.go`
+  - `s3/server/volume_server_handlers_write.go`
+  - `s3/server/volume_server_handlers_admin.go`
+  - `s3/server/common.go` (path parsing and range handling)
 - gRPC service and handlers:
-  - `weed/pb/volume_server.proto`
-  - `weed/server/volume_grpc_*.go`
+  - `s3/pb/volume_server.proto`
+  - `s3/server/volume_grpc_*.go`
 
 ## Proposed Test Directory Tree
 
@@ -86,7 +86,7 @@ Each API should be exercised across the smallest set of profiles that still cove
 - [ ] `GET /ui/index.html`
   - [ ] enabled path renders page
   - [ ] disabled/secured behavior matches current config
-- [ ] static assets (`/favicon.ico`, `/seaweedfsstatic/*`) reachable
+- [ ] static assets (`/favicon.ico`, `/hanzostatic/*`) reachable
 
 ### 2. Data read endpoints (`GET`/`HEAD` on `/...`)
 - [ ] URL shape variants
@@ -464,7 +464,7 @@ Update this section during implementation:
 - Commit: `21c10a9ec`
 
 - Date: 2026-02-12
-- Change: Added integration harness, profile matrix, and auto-build support for missing `weed` binary. Master now starts with `-peers=none` and low `-volumeSizeLimitMB`.
+- Change: Added integration harness, profile matrix, and auto-build support for missing `s3` binary. Master now starts with `-peers=none` and low `-volumeSizeLimitMB`.
 - APIs covered: Harness only.
 - Profiles covered: P1, P2, P3, P8 definitions in place.
 - Gaps introduced/remaining: Full API case matrix still pending.
@@ -612,7 +612,7 @@ Update this section during implementation:
 
 - Date: 2026-02-12
 - Change: Added HTTP passthrough header and static resource coverage.
-- APIs covered: query-based `response-*` header passthrough, `dl=true` content-disposition attachment handling, `/favicon.ico`, `/seaweedfsstatic/seaweed50x50.png`.
+- APIs covered: query-based `response-*` header passthrough, `dl=true` content-disposition attachment handling, `/favicon.ico`, `/hanzostatic/hanzo50x50.png`.
 - Profiles covered: P1.
 - Gaps introduced/remaining: Additional static resource variants and multi-range response formatting checks remain.
 - Commit: `f1ad1ec50`
@@ -927,7 +927,7 @@ Update this section during implementation:
 
 - Date: 2026-02-12
 - Change: Tightened HTTP admin endpoint header parity checks.
-- APIs covered: `/status` and `/healthz` now assert `Server` header format (`SeaweedFS Volume ...`) in addition to status and payload checks.
+- APIs covered: `/status` and `/healthz` now assert `Server` header format (`Hanzo Volume ...`) in addition to status and payload checks.
 - Profiles covered: P1.
 - Gaps introduced/remaining: none for baseline admin header checks.
 - Commit: `cad34314b`
@@ -948,7 +948,7 @@ Update this section during implementation:
 
 - Date: 2026-02-12
 - Change: Expanded static-resource coverage to split public-port topology.
-- APIs covered: public-port static endpoints (`/favicon.ico`, `/seaweedfsstatic/seaweed50x50.png`) under P2.
+- APIs covered: public-port static endpoints (`/favicon.ico`, `/hanzostatic/hanzo50x50.png`) under P2.
 - Profiles covered: P2.
 - Gaps introduced/remaining: static asset baseline coverage is now present for both admin and public ports.
 - Commit: `e4c329811`

@@ -6,9 +6,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/hanzoai/s3/weed/mq/client/agent_client"
-	"github.com/hanzoai/s3/weed/mq/schema"
-	"github.com/hanzoai/s3/weed/pb/schema_pb"
+	"github.com/hanzoai/s3/s3/mq/client/agent_client"
+	"github.com/hanzoai/s3/s3/mq/schema"
+	"github.com/hanzoai/s3/s3/pb/schema_pb"
 )
 
 var (

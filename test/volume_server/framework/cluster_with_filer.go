@@ -53,7 +53,7 @@ func StartSingleVolumeClusterWithFiler(t testing.TB, profile matrix.Profile) *Cl
 		"-defaultStoreDir=" + filerDataDir,
 	}
 
-	filerCmd := exec.Command(baseCluster.weedBinary, args...)
+	filerCmd := exec.Command(baseCluster.s3Binary, args...)
 	filerCmd.Dir = baseCluster.baseDir
 	filerCmd.Stdout = logFile
 	filerCmd.Stderr = logFile

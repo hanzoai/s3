@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/hanzoai/s3/weed/operation"
-	"github.com/hanzoai/s3/weed/pb"
-	"github.com/hanzoai/s3/weed/pb/volume_server_pb"
-	"github.com/hanzoai/s3/weed/security"
-	"github.com/hanzoai/s3/weed/util"
-	util_http "github.com/hanzoai/s3/weed/util/http"
+	"github.com/hanzoai/s3/s3/operation"
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
+	"github.com/hanzoai/s3/s3/security"
+	"github.com/hanzoai/s3/s3/util"
+	util_http "github.com/hanzoai/s3/s3/util/http"
 	"google.golang.org/grpc"
 )
 

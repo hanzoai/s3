@@ -1,0 +1,46 @@
+{{- include "hanzo.compat" . -}}
+{{- if and .Values.global.s3.enableSecurity (not .Values.certificates.externalCertificates.enabled)}}
+apiVersion: cert-manager.io/v1{{ if .Values.global.s3.certificates.alphacrds }}alpha1{{ end }}
+kind: Certificate
+metadata:
+  name: {{ include "hanzo.fullname" . }}-filer-cert
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ template "hanzo.name" . }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: filer
+  {{- if .Values.filer.annotations }}
+  annotations:
+    {{- toYaml .Values.filer.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  secretName: {{ include "hanzo.fullname" . }}-filer-cert
+  issuerRef:
+    name: {{ include "hanzo.fullname" . }}-ca-issuer
+    kind: Issuer
+  commonName: {{ .Values.certificates.commonName }}
+  subject:
+    organizations:
+    - "Hanzo CA"
+  dnsNames:
+    - '*.{{ .Release.Namespace }}'
+    - '*.{{ .Release.Namespace }}.svc'
+    - '*.{{ .Release.Namespace }}.svc.cluster.local'
+    - '*.{{ include "hanzo.fullname" . }}-master'
+    - '*.{{ include "hanzo.fullname" . }}-master.{{ .Release.Namespace }}'
+    - '*.{{ include "hanzo.fullname" . }}-master.{{ .Release.Namespace }}.svc'
+    - '*.{{ include "hanzo.fullname" . }}-master.{{ .Release.Namespace }}.svc.cluster.local'
+{{- if .Values.certificates.ipAddresses }}
+  ipAddresses:
+    {{- range .Values.certificates.ipAddresses }}
+    - {{ . }}
+    {{- end }}
+{{- end }}
+  privateKey:
+    algorithm: {{ .Values.certificates.keyAlgorithm }}
+    size: {{ .Values.certificates.keySize }}
+  duration: {{ .Values.certificates.duration }}
+  renewBefore: {{ .Values.certificates.renewBefore }}
+{{- end }}

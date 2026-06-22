@@ -13,7 +13,7 @@ NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo -e "${BLUE}🎯 SeaweedFS S3 IAM Complete Test Suite${NC}"
+echo -e "${BLUE}🎯 Hanzo S3 IAM Complete Test Suite${NC}"
 echo -e "${BLUE}=====================================${NC}"
 
 # Set environment variables to enable all tests

@@ -21,7 +21,7 @@ type MixedVolumeCluster struct {
 	testingTB testing.TB
 	profile   matrix.Profile
 
-	weedBinary       string // Go weed binary (master + Go volume servers)
+	s3Binary       string // Go s3 binary (master + Go volume servers)
 	rustVolumeBinary string // Rust volume binary
 
 	baseDir   string
@@ -56,9 +56,9 @@ func StartMixedVolumeCluster(t testing.TB, profile matrix.Profile, goCount, rust
 		t.Fatalf("need at least 2 volume servers, got %d", total)
 	}
 
-	weedBinary, err := FindOrBuildWeedBinary()
+	s3Binary, err := FindOrBuildS3Binary()
 	if err != nil {
-		t.Fatalf("resolve weed binary: %v", err)
+		t.Fatalf("resolve s3 binary: %v", err)
 	}
 
 	// Only build the Rust binary when Rust servers are requested.
@@ -113,7 +113,7 @@ func StartMixedVolumeCluster(t testing.TB, profile matrix.Profile, goCount, rust
 	c := &MixedVolumeCluster{
 		testingTB:        t,
 		profile:          profile,
-		weedBinary:       weedBinary,
+		s3Binary:       s3Binary,
 		rustVolumeBinary: rustBinary,
 		baseDir:          baseDir,
 		configDir:        configDir,
@@ -224,7 +224,7 @@ func (c *MixedVolumeCluster) startMaster(dataDir string) error {
 		"-defaultReplication=000",
 	}
 
-	c.masterCmd = exec.Command(c.weedBinary, args...)
+	c.masterCmd = exec.Command(c.s3Binary, args...)
 	c.masterCmd.Dir = c.baseDir
 	c.masterCmd.Stdout = logFile
 	c.masterCmd.Stderr = logFile
@@ -266,7 +266,7 @@ func (c *MixedVolumeCluster) startGoVolume(index int, dataDir string) error {
 		args = append(args, "-inflightDownloadDataTimeout="+c.profile.InflightDownloadTimeout.String())
 	}
 
-	cmd := exec.Command(c.weedBinary, args...)
+	cmd := exec.Command(c.s3Binary, args...)
 	cmd.Dir = c.baseDir
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
@@ -352,7 +352,7 @@ func (c *MixedVolumeCluster) BaseDir() string {
 	return c.baseDir
 }
 
-// VolumeServerAddress returns SeaweedFS server address format: ip:httpPort.grpcPort
+// VolumeServerAddress returns Hanzo server address format: ip:httpPort.grpcPort
 func (c *MixedVolumeCluster) VolumeServerAddress(index int) string {
 	if index < 0 || index >= len(c.volumePorts) {
 		return ""

@@ -34,68 +34,68 @@ if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
     exit 1
 fi
 
-echo -e "${BLUE}Waiting for SeaweedFS to be ready...${NC}"
+echo -e "${BLUE}Waiting for Hanzo to be ready...${NC}"
 
-# Wait for SeaweedFS master
+# Wait for Hanzo master
 MAX_ATTEMPTS=20
 ATTEMPT=0
 
 while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
     if curl -s http://127.0.0.1:9333/cluster/status > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ SeaweedFS master is ready${NC}"
+        echo -e "${GREEN}✅ Hanzo master is ready${NC}"
         break
     fi
     
     ATTEMPT=$((ATTEMPT + 1))
-    echo -e "${YELLOW}Attempt $ATTEMPT/$MAX_ATTEMPTS - waiting for SeaweedFS master...${NC}"
+    echo -e "${YELLOW}Attempt $ATTEMPT/$MAX_ATTEMPTS - waiting for Hanzo master...${NC}"
     sleep 3
 done
 
 if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
-    echo -e "${RED}❌ SeaweedFS master failed to start${NC}"
-    docker-compose logs seaweedfs
+    echo -e "${RED}❌ Hanzo master failed to start${NC}"
+    docker-compose logs hanzo
     exit 1
 fi
 
-# Wait for SeaweedFS filer
+# Wait for Hanzo filer
 MAX_ATTEMPTS=20
 ATTEMPT=0
 
 while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
     if curl -s http://127.0.0.1:8888/ > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ SeaweedFS filer is ready${NC}"
+        echo -e "${GREEN}✅ Hanzo filer is ready${NC}"
         break
     fi
     
     ATTEMPT=$((ATTEMPT + 1))
-    echo -e "${YELLOW}Attempt $ATTEMPT/$MAX_ATTEMPTS - waiting for SeaweedFS filer...${NC}"
+    echo -e "${YELLOW}Attempt $ATTEMPT/$MAX_ATTEMPTS - waiting for Hanzo filer...${NC}"
     sleep 3
 done
 
 if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
-    echo -e "${RED}❌ SeaweedFS filer failed to start${NC}"
-    docker-compose logs seaweedfs
+    echo -e "${RED}❌ Hanzo filer failed to start${NC}"
+    docker-compose logs hanzo
     exit 1
 fi
 
-# Wait for SeaweedFS S3 API
+# Wait for Hanzo S3 API
 MAX_ATTEMPTS=20
 ATTEMPT=0
 
 while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
     if curl -s http://127.0.0.1:8333/ > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ SeaweedFS S3 API is ready${NC}"
+        echo -e "${GREEN}✅ Hanzo S3 API is ready${NC}"
         break
     fi
     
     ATTEMPT=$((ATTEMPT + 1))
-    echo -e "${YELLOW}Attempt $ATTEMPT/$MAX_ATTEMPTS - waiting for SeaweedFS S3 API...${NC}"
+    echo -e "${YELLOW}Attempt $ATTEMPT/$MAX_ATTEMPTS - waiting for Hanzo S3 API...${NC}"
     sleep 3
 done
 
 if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
-    echo -e "${RED}❌ SeaweedFS S3 API failed to start${NC}"
-    docker-compose logs seaweedfs
+    echo -e "${RED}❌ Hanzo S3 API failed to start${NC}"
+    docker-compose logs hanzo
     exit 1
 fi
 
@@ -105,5 +105,5 @@ echo -e "${GREEN}🎉 All services are ready!${NC}"
 echo -e "${BLUE}Final status check:${NC}"
 docker-compose exec -T fdb1 fdbcli --exec 'status'
 echo ""
-echo -e "${BLUE}SeaweedFS cluster info:${NC}"
+echo -e "${BLUE}Hanzo cluster info:${NC}"
 curl -s http://127.0.0.1:9333/cluster/status | head -20

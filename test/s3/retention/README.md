@@ -1,6 +1,6 @@
-# SeaweedFS S3 Object Retention Tests
+# Hanzo S3 Object Retention Tests
 
-This directory contains comprehensive tests for SeaweedFS S3 Object Retention functionality, including Object Lock, Legal Hold, and WORM (Write Once Read Many) capabilities.
+This directory contains comprehensive tests for Hanzo S3 Object Retention functionality, including Object Lock, Legal Hold, and WORM (Write Once Read Many) capabilities.
 
 ## Overview
 
@@ -24,7 +24,7 @@ The test suite validates AWS S3-compatible object retention features including:
 ## Prerequisites
 
 - Go 1.21 or later
-- SeaweedFS binary built (`make build-weed`)
+- Hanzo binary built (`make build-s3`)
 - AWS SDK Go v2
 - Testify testing framework
 
@@ -32,7 +32,7 @@ The test suite validates AWS S3-compatible object retention features including:
 
 ### 1. Build and Start Server
 ```bash
-# Build SeaweedFS and start test server
+# Build Hanzo and start test server
 make start-server
 ```
 
@@ -208,15 +208,15 @@ make install-deps
 make check-deps
 ```
 
-## Integration with SeaweedFS
+## Integration with Hanzo
 
 These tests validate the retention implementation in:
-- `weed/s3api/s3api_object_retention.go` - Core retention logic
-- `weed/s3api/s3api_object_handlers_retention.go` - HTTP handlers
-- `weed/s3api/s3_constants/extend_key.go` - Extended attribute keys
-- `weed/s3api/s3err/s3api_errors.go` - Error definitions
-- `weed/s3api/s3api_object_handlers_delete.go` - Deletion enforcement
-- `weed/s3api/s3api_object_handlers_put.go` - Upload enforcement
+- `s3/s3api/s3api_object_retention.go` - Core retention logic
+- `s3/s3api/s3api_object_handlers_retention.go` - HTTP handlers
+- `s3/s3api/s3_constants/extend_key.go` - Extended attribute keys
+- `s3/s3api/s3err/s3api_errors.go` - Error definitions
+- `s3/s3api/s3api_object_handlers_delete.go` - Deletion enforcement
+- `s3/s3api/s3api_object_handlers_put.go` - Upload enforcement
 
 ## AWS CLI Compatibility
 
@@ -261,4 +261,4 @@ When adding new retention tests:
 
 - [AWS S3 Object Lock Documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html)
 - [AWS S3 API Reference - Object Retention](https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObjectRetention.html)
-- [SeaweedFS S3 API Documentation](https://github.com/hanzoai/s3/wiki/Amazon-S3-API) 
+- [Hanzo S3 API Documentation](https://github.com/hanzoai/s3/wiki/Amazon-S3-API) 

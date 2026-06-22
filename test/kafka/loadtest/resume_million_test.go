@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/glog"
+	"github.com/hanzoai/s3/s3/glog"
 )
 
 // TestResumeMillionRecords_Fixed - Fixed version with better concurrency handling

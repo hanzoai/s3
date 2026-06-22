@@ -21,8 +21,8 @@ import (
 )
 
 type TestEnvironment struct {
-	seaweedDir      string
-	weedBinary      string
+	hanzoDir      string
+	s3Binary      string
 	dataDir         string
 	bindIP          string
 	s3Port          int
@@ -34,8 +34,8 @@ type TestEnvironment struct {
 	filerGrpcPort   int
 	volumePort      int
 	volumeGrpcPort  int
-	weedProcess     *exec.Cmd
-	weedCancel      context.CancelFunc
+	s3Process     *exec.Cmd
+	s3Cancel      context.CancelFunc
 	trinoContainer  string
 	dockerAvailable bool
 	accessKey       string
@@ -54,9 +54,9 @@ func TestTrinoIcebergCatalog(t *testing.T) {
 		t.Skip("Docker not available, skipping Trino integration test")
 	}
 
-	fmt.Printf(">>> Starting SeaweedFS...\n")
-	env.StartSeaweedFS(t)
-	fmt.Printf(">>> SeaweedFS started.\n")
+	fmt.Printf(">>> Starting Hanzo...\n")
+	env.StartHanzo(t)
+	fmt.Printf(">>> Hanzo started.\n")
 
 	tableBucket := "iceberg-tables"
 	catalogBucket := tableBucket
@@ -96,8 +96,8 @@ func TestTrinoMultiLevelNamespace(t *testing.T) {
 		t.Skip("Docker not available, skipping Trino integration test")
 	}
 
-	t.Logf(">>> Starting SeaweedFS...")
-	env.StartSeaweedFS(t)
+	t.Logf(">>> Starting Hanzo...")
+	env.StartHanzo(t)
 
 	tableBucket := "iceberg-tables"
 	createTableBucket(t, env, tableBucket)
@@ -184,29 +184,29 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 		t.Fatalf("Failed to get working directory: %v", err)
 	}
 
-	seaweedDir := wd
+	hanzoDir := wd
 	for i := 0; i < 6; i++ {
-		if _, err := os.Stat(filepath.Join(seaweedDir, "go.mod")); err == nil {
+		if _, err := os.Stat(filepath.Join(hanzoDir, "go.mod")); err == nil {
 			break
 		}
-		seaweedDir = filepath.Dir(seaweedDir)
+		hanzoDir = filepath.Dir(hanzoDir)
 	}
 
-	weedBinary := filepath.Join(seaweedDir, "weed", "weed")
-	info, err := os.Stat(weedBinary)
+	s3Binary := filepath.Join(hanzoDir, "s3", "s3")
+	info, err := os.Stat(s3Binary)
 	if err != nil || info.IsDir() {
-		// Try looking for weed/weed/weed
-		weedBinary = filepath.Join(seaweedDir, "weed", "weed", "weed")
-		info, err = os.Stat(weedBinary)
+		// Try looking for s3/s3/s3
+		s3Binary = filepath.Join(hanzoDir, "s3", "s3", "s3")
+		info, err = os.Stat(s3Binary)
 		if err != nil || info.IsDir() {
-			weedBinary = "weed"
-			if _, err := exec.LookPath(weedBinary); err != nil {
-				t.Skip("weed binary not found, skipping integration test")
+			s3Binary = "s3"
+			if _, err := exec.LookPath(s3Binary); err != nil {
+				t.Skip("s3 binary not found, skipping integration test")
 			}
 		}
 	}
 
-	dataDir, err := os.MkdirTemp("", "seaweed-trino-test-*")
+	dataDir, err := os.MkdirTemp("", "hanzo-trino-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -217,8 +217,8 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 	ports := testutil.MustAllocatePorts(t, 9)
 
 	env := &TestEnvironment{
-		seaweedDir:     seaweedDir,
-		weedBinary:     weedBinary,
+		hanzoDir:     hanzoDir,
+		s3Binary:     s3Binary,
 		dataDir:        dataDir,
 		bindIP:         bindIP,
 		masterPort:     ports[0],
@@ -239,7 +239,7 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 	return env
 }
 
-func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
+func (env *TestEnvironment) StartHanzo(t *testing.T) {
 	t.Helper()
 
 	// Create IAM config file
@@ -254,9 +254,9 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	env.weedCancel = cancel
+	env.s3Cancel = cancel
 
-	cmd := exec.CommandContext(ctx, env.weedBinary, "mini",
+	cmd := exec.CommandContext(ctx, env.s3Binary, "mini",
 		"-master.port", fmt.Sprintf("%d", env.masterPort),
 		"-master.port.grpc", fmt.Sprintf("%d", env.masterGrpcPort),
 		"-volume.port", fmt.Sprintf("%d", env.volumePort),
@@ -284,9 +284,9 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 	)
 
 	if err := cmd.Start(); err != nil {
-		t.Fatalf("Failed to start SeaweedFS: %v", err)
+		t.Fatalf("Failed to start Hanzo: %v", err)
 	}
-	env.weedProcess = cmd
+	env.s3Process = cmd
 
 	// Try to check if Iceberg API is ready
 	// First try checking the /v1/config endpoint (requires auth, so will return 401 if server is up)
@@ -312,13 +312,13 @@ func (env *TestEnvironment) Cleanup(t *testing.T) {
 		_ = exec.Command("docker", "rm", "-f", env.trinoContainer).Run()
 	}
 
-	if env.weedCancel != nil {
-		env.weedCancel()
+	if env.s3Cancel != nil {
+		env.s3Cancel()
 	}
 
-	if env.weedProcess != nil {
+	if env.s3Process != nil {
 		time.Sleep(2 * time.Second)
-		_ = env.weedProcess.Wait()
+		_ = env.s3Process.Wait()
 	}
 
 	if env.dataDir != "" {
@@ -459,7 +459,7 @@ func withDeterministicTableLocation() func(*trinoConfigOptions) {
 func (env *TestEnvironment) startTrinoContainer(t *testing.T, configDir string) {
 	t.Helper()
 
-	containerName := "seaweed-trino-" + randomString(8)
+	containerName := "hanzo-trino-" + randomString(8)
 	env.trinoContainer = containerName
 
 	cmd := exec.Command("docker", "run", "-d",
@@ -533,10 +533,10 @@ func runTrinoSQL(t *testing.T, containerName, sql string) string {
 func createTableBucket(t *testing.T, env *TestEnvironment, bucketName string) {
 	t.Helper()
 
-	// Use weed shell to create the table bucket
+	// Use s3 shell to create the table bucket
 	// Create with "000000000000" account ID (matches AccountAdmin.Id from auth_credentials.go)
 	// This ensures bucket owner matches authenticated identity's Account.Id
-	cmd := exec.Command(env.weedBinary, "shell",
+	cmd := exec.Command(env.s3Binary, "shell",
 		fmt.Sprintf("-master=%s:%d.%d", env.bindIP, env.masterPort, env.masterGrpcPort),
 	)
 	cmd.Stdin = strings.NewReader(fmt.Sprintf("s3tables.bucket -create -name %s -account 000000000000\nexit\n", bucketName))
@@ -544,7 +544,7 @@ func createTableBucket(t *testing.T, env *TestEnvironment, bucketName string) {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Printf(">>> ERROR Output: %s\n", string(output))
-		t.Fatalf("Failed to create table bucket %s via weed shell: %v\nOutput: %s", bucketName, err, string(output))
+		t.Fatalf("Failed to create table bucket %s via s3 shell: %v\nOutput: %s", bucketName, err, string(output))
 	}
 	fmt.Printf(">>> SUCCESS: Created table bucket %s\n", bucketName)
 

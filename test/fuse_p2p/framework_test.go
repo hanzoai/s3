@@ -15,11 +15,11 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/test/testutil"
-	"github.com/hanzoai/s3/weed/pb"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/stretchr/testify/require"
 )
 
-// p2pTestCluster manages a minimal SeaweedFS cluster exercising the peer
+// p2pTestCluster manages a minimal Hanzo cluster exercising the peer
 // chunk-sharing (p2p) read path: 1 master, 1 volume, 1 filer, and N FUSE
 // mounts that all have -peer.enable set. Three mounts is the sweet spot
 // for integration testing — with 2 mounts the HRW owner of a chunk is
@@ -29,7 +29,7 @@ import (
 type p2pTestCluster struct {
 	t          testing.TB
 	baseDir    string
-	weedBinary string
+	s3Binary string
 
 	masterPort     int
 	masterGrpcPort int
@@ -56,17 +56,17 @@ type p2pTestCluster struct {
 // can grep them to verify the p2p path fired.
 func startP2PTestCluster(t testing.TB, numMounts int) *p2pTestCluster {
 	require.GreaterOrEqual(t, numMounts, 2, "need at least 2 mounts to exercise p2p")
-	binary := findWeedBinary()
+	binary := findS3Binary()
 	if binary == "" {
-		t.Skip("weed binary not found; set WEED_BINARY or ensure it is on PATH")
+		t.Skip("s3 binary not found; set WEED_BINARY or ensure it is on PATH")
 	}
-	baseDir, err := os.MkdirTemp("", "seaweedfs_fuse_p2p_test_")
+	baseDir, err := os.MkdirTemp("", "hanzo_fuse_p2p_test_")
 	require.NoError(t, err)
 
 	c := &p2pTestCluster{
 		t:              t,
 		baseDir:        baseDir,
-		weedBinary:     binary,
+		s3Binary:     binary,
 		mountPeerPorts: make([]int, numMounts),
 		mountPoints:    make([]string, numMounts),
 		mountCmds:      make([]*exec.Cmd, numMounts),
@@ -145,7 +145,7 @@ func (c *p2pTestCluster) Stop() {
 // MountDir returns the filesystem path of the i-th mount.
 func (c *p2pTestCluster) MountDir(i int) string { return c.mountPoints[i] }
 
-// masterAddress / filerAddress return SeaweedFS-style addresses encoding
+// masterAddress / filerAddress return Hanzo-style addresses encoding
 // both ports as "host:httpPort.grpcPort". Without this, downstream
 // components fall back to the grpcPort = httpPort + 10000 default,
 // which doesn't match the random port we allocate.
@@ -163,7 +163,7 @@ func (c *p2pTestCluster) MountLog(i int) string {
 }
 
 func (c *p2pTestCluster) startMaster(configDir string) error {
-	c.masterCmd = exec.Command(c.weedBinary,
+	c.masterCmd = exec.Command(c.s3Binary,
 		"-logdir="+filepath.Join(c.baseDir, "logs"),
 		"master",
 		"-ip=127.0.0.1",
@@ -180,7 +180,7 @@ func (c *p2pTestCluster) startVolume(configDir string) error {
 	if err := os.MkdirAll(volDir, 0755); err != nil {
 		return fmt.Errorf("create volume dir: %w", err)
 	}
-	c.volumeCmd = exec.Command(c.weedBinary,
+	c.volumeCmd = exec.Command(c.s3Binary,
 		"-logdir="+filepath.Join(c.baseDir, "logs"),
 		"volume",
 		"-ip=127.0.0.1",
@@ -199,7 +199,7 @@ func (c *p2pTestCluster) startFiler(configDir string) error {
 	if err := os.MkdirAll(filerDir, 0755); err != nil {
 		return fmt.Errorf("create filer dir: %w", err)
 	}
-	c.filerCmd = exec.Command(c.weedBinary,
+	c.filerCmd = exec.Command(c.s3Binary,
 		"-logdir="+filepath.Join(c.baseDir, "logs"),
 		"filer",
 		"-ip=127.0.0.1",
@@ -217,7 +217,7 @@ func (c *p2pTestCluster) startMount(idx int, configDir string) error {
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
 		return fmt.Errorf("create cache dir: %w", err)
 	}
-	c.mountCmds[idx] = exec.Command(c.weedBinary,
+	c.mountCmds[idx] = exec.Command(c.s3Binary,
 		"-logdir="+filepath.Join(c.baseDir, "logs"),
 		"-v=4",
 		"mount",
@@ -272,7 +272,7 @@ func (c *p2pTestCluster) tailLogFull(name string) string {
 }
 
 func (c *p2pTestCluster) copyLogsForCI() {
-	ciLogDir := "/tmp/seaweedfs-fuse-p2p-logs"
+	ciLogDir := "/tmp/hanzo-fuse-p2p-logs"
 	os.MkdirAll(ciLogDir, 0755)
 	logsDir := filepath.Join(c.baseDir, "logs")
 	entries, err := os.ReadDir(logsDir)
@@ -355,13 +355,13 @@ func (c *p2pTestCluster) waitForMount(mountPoint string, timeout time.Duration) 
 // returning them in a batch — safer than the per-listener
 // close-then-reserve pattern fuse_dlm originally used.
 
-func findWeedBinary() string {
+func findS3Binary() string {
 	if env := os.Getenv("WEED_BINARY"); env != "" {
 		if _, err := os.Stat(env); err == nil {
 			return env
 		}
 	}
-	if p, err := exec.LookPath("weed"); err == nil {
+	if p, err := exec.LookPath("s3"); err == nil {
 		return p
 	}
 	return ""

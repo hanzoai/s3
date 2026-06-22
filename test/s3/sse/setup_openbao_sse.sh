@@ -51,7 +51,7 @@ declare -a keys=(
     "test-multipart-key:SSE-KMS multipart upload test key"
     "invalid-test-key:SSE-KMS error testing key"
     "test-kms-range-key:SSE-KMS range request test key"
-    "seaweedfs-test-key:General SeaweedFS SSE test key"
+    "hanzo-test-key:General Hanzo SSE test key"
     "bucket-default-key:Default bucket encryption key"
     "high-security-key:High security encryption key"
     "performance-key:Performance testing key"
@@ -87,7 +87,7 @@ done
 
 # Test basic encryption/decryption functionality
 echo "🧪 Testing basic encryption/decryption..."
-test_plaintext="Hello, SeaweedFS SSE Integration!"
+test_plaintext="Hello, Hanzo SSE Integration!"
 test_key="test-key-123"
 
 # Encrypt

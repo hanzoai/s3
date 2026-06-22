@@ -83,7 +83,7 @@ func TestEdgeCaseFileNamePatterns(t *testing.T) {
 	// Copy all created files to remote to ensure they are cached
 	t.Log("Copying all pattern files to remote...")
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -include=*", testBucket)
-	_, err := runWeedShellWithOutput(t, cmd)
+	_, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "copy.local for pattern files failed")
 	time.Sleep(1 * time.Second) // Give time for caching
 
@@ -92,7 +92,7 @@ func TestEdgeCaseFileNamePatterns(t *testing.T) {
 		t.Run(fmt.Sprintf("uncache_pattern_%s_for_file_%s", p.pattern, p.name), func(t *testing.T) {
 			// Uncache using the pattern
 			uncacheCmd := fmt.Sprintf("remote.uncache -dir=/buckets/%s -include=%s", testBucket, p.pattern)
-			output, err := runWeedShellWithOutput(t, uncacheCmd)
+			output, err := runS3ShellWithOutput(t, uncacheCmd)
 			require.NoError(t, err, "uncache with pattern failed for %s", p.pattern)
 			t.Logf("Pattern '%s' output: %s", p.pattern, output)
 
@@ -123,7 +123,7 @@ func TestEdgeCaseVeryLargeFile(t *testing.T) {
 	// Copy to remote
 	t.Log("Copying very large file to remote...")
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -include=%s", testBucket, testKey)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "copy.local very large file failed")
 	t.Logf("Large file copy output: %s", output)
 
@@ -165,14 +165,14 @@ func TestEdgeCaseManySmallFiles(t *testing.T) {
 	// Copy all to remote
 	t.Log("Copying all files to remote...")
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -include=%s/*", testBucket, prefix)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "copy.local many files failed")
 	t.Logf("Many files copy output: %s", output)
 
 	// Uncache all
 	t.Log("Uncaching all files...")
 	cmd = fmt.Sprintf("remote.uncache -dir=/buckets/%s -include=%s/*", testBucket, prefix)
-	_, err = runWeedShellWithOutput(t, cmd)
+	_, err = runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "uncache many files failed")
 	time.Sleep(2 * time.Second)
 
@@ -209,7 +209,7 @@ func TestEdgeCaseConcurrentCommands(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		cmd := fmt.Sprintf("remote.cache -dir=/buckets/%s", testBucket)
-		_, err := runWeedShellWithOutput(t, cmd)
+		_, err := runS3ShellWithOutput(t, cmd)
 		if err != nil {
 			errors <- fmt.Errorf("cache: %w", err)
 		}
@@ -220,7 +220,7 @@ func TestEdgeCaseConcurrentCommands(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s", testBucket)
-		_, err := runWeedShellWithOutput(t, cmd)
+		_, err := runS3ShellWithOutput(t, cmd)
 		if err != nil {
 			errors <- fmt.Errorf("copy.local: %w", err)
 		}
@@ -231,7 +231,7 @@ func TestEdgeCaseConcurrentCommands(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		cmd := fmt.Sprintf("remote.meta.sync -dir=/buckets/%s", testBucket)
-		_, err := runWeedShellWithOutput(t, cmd)
+		_, err := runS3ShellWithOutput(t, cmd)
 		if err != nil {
 			errors <- fmt.Errorf("meta.sync: %w", err)
 		}
@@ -269,7 +269,7 @@ func TestEdgeCaseInvalidPaths(t *testing.T) {
 			}
 
 			for _, cmd := range commands {
-				output, err := runWeedShellWithOutput(t, cmd)
+				output, err := runS3ShellWithOutput(t, cmd)
 				// Commands should handle invalid paths gracefully (may or may not error)
 				t.Logf("Command '%s' result: err=%v, output: %s", cmd, err, output)
 				// Main goal is to ensure commands don't crash
@@ -294,7 +294,7 @@ func TestEdgeCaseZeroByteFiles(t *testing.T) {
 
 	// Copy to remote
 	cmd := fmt.Sprintf("remote.copy.local -dir=/buckets/%s -include=%s", testBucket, testKey)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "copy.local zero-byte file failed")
 	t.Logf("Zero-byte copy output: %s", output)
 

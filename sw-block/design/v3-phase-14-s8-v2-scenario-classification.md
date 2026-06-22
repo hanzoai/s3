@@ -2,7 +2,7 @@
 
 Date: 2026-04-20
 Status: draft (S8 scenario classification)
-Purpose: classify every V2 testrunner scenario (`weed/storage/blockvol/testrunner/scenarios/`) as P14-runnable / P15-blocked / deferred, producing the table required by `v3-phase-14-s8-assignment.md` §3.C
+Purpose: classify every V2 testrunner scenario (`s3/storage/blockvol/testrunner/scenarios/`) as P14-runnable / P15-blocked / deferred, producing the table required by `v3-phase-14-s8-assignment.md` §3.C
 
 ## 1. Classification Vocabulary
 
@@ -17,7 +17,7 @@ Purpose: classify every V2 testrunner scenario (`weed/storage/blockvol/testrunne
 
 ## 2. Testrunner Machinery (port decision)
 
-`weed/storage/blockvol/testrunner/` — YAML-driven runner with action vocabulary, artifact collection, report generation. V3 acceptance pack (P14 S8 carries scenario SHAPES forward; actual V3 testrunner integration is a P15 Cluster Validation track deliverable).
+`s3/storage/blockvol/testrunner/` — YAML-driven runner with action vocabulary, artifact collection, report generation. V3 acceptance pack (P14 S8 carries scenario SHAPES forward; actual V3 testrunner integration is a P15 Cluster Validation track deliverable).
 
 | Component | Classification | S8 action |
 |---|---|---|
@@ -29,7 +29,7 @@ Purpose: classify every V2 testrunner scenario (`weed/storage/blockvol/testrunne
 
 ## 3. Public Scenarios Table
 
-Path: `weed/storage/blockvol/testrunner/scenarios/public/`.
+Path: `s3/storage/blockvol/testrunner/scenarios/public/`.
 
 | # | Scenario | P14 route it touches | Class | Notes |
 |---|---|---|---|---|
@@ -64,7 +64,7 @@ Path: `weed/storage/blockvol/testrunner/scenarios/public/`.
 
 ## 4. Internal Scenarios Table (selected, by category)
 
-Path: `weed/storage/blockvol/testrunner/scenarios/internal/`. 50+ files; classifying by category rather than per-file.
+Path: `s3/storage/blockvol/testrunner/scenarios/internal/`. 50+ files; classifying by category rather than per-file.
 
 | Category | Example files | Class | Notes |
 |---|---|---|---|

@@ -18,9 +18,9 @@ func TestRisingWaveIcebergCatalog(t *testing.T) {
 		t.Skip("Docker not available, skipping RisingWave integration test")
 	}
 
-	t.Log(">>> Starting SeaweedFS...")
-	env.StartSeaweedFS(t)
-	t.Log(">>> SeaweedFS started.")
+	t.Log(">>> Starting Hanzo...")
+	env.StartHanzo(t)
+	t.Log(">>> Hanzo started.")
 
 	tableBucket := "iceberg-tables"
 	t.Logf(">>> Creating table bucket: %s", tableBucket)
@@ -33,7 +33,7 @@ func TestRisingWaveIcebergCatalog(t *testing.T) {
 	// Create Iceberg namespace
 	createIcebergNamespace(t, env, "default")
 
-	// Create a catalog in RisingWave that points to SeaweedFS Iceberg REST API
+	// Create a catalog in RisingWave that points to Hanzo Iceberg REST API
 	icebergUri := env.dockerIcebergEndpoint()
 	s3Endpoint := env.dockerS3Endpoint()
 

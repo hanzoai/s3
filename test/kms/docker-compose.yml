@@ -46,56 +46,56 @@ services:
       retries: 5
       start_period: 10s
 
-  # SeaweedFS components for end-to-end testing
-  seaweedfs-master:
-    image: chrislusf/seaweedfs:latest
+  # Hanzo components for end-to-end testing
+  hanzo-master:
+    image: chrislusf/hanzo:latest
     ports:
       - "9333:9333"
     command: 
       - master
-      - -ip=seaweedfs-master
+      - -ip=hanzo-master
       - -volumeSizeLimitMB=1024
     volumes:
-      - seaweedfs-master-data:/data
+      - hanzo-master-data:/data
 
-  seaweedfs-volume:
-    image: chrislusf/seaweedfs:latest
+  hanzo-volume:
+    image: chrislusf/hanzo:latest
     ports:
       - "8080:8080"
     command:
       - volume
-      - -master=seaweedfs-master:9333
-      - -ip=seaweedfs-volume
-      - -publicUrl=seaweedfs-volume:8080
+      - -master=hanzo-master:9333
+      - -ip=hanzo-volume
+      - -publicUrl=hanzo-volume:8080
     depends_on:
-      - seaweedfs-master
+      - hanzo-master
     volumes:
-      - seaweedfs-volume-data:/data
+      - hanzo-volume-data:/data
 
-  seaweedfs-filer:
-    image: chrislusf/seaweedfs:latest
+  hanzo-filer:
+    image: chrislusf/hanzo:latest
     ports:
       - "8888:8888"
       - "8333:8333" # S3 API port
     command:
       - filer
-      - -master=seaweedfs-master:9333
-      - -ip=seaweedfs-filer
+      - -master=hanzo-master:9333
+      - -ip=hanzo-filer
       - -s3
       - -s3.port=8333
     depends_on:
-      - seaweedfs-master
-      - seaweedfs-volume
+      - hanzo-master
+      - hanzo-volume
     volumes:
-      - ./filer.toml:/etc/seaweedfs/filer.toml
-      - seaweedfs-filer-data:/data
+      - ./filer.toml:/etc/hanzo/filer.toml
+      - hanzo-filer-data:/data
 
 volumes:
   openbao-data:
-  seaweedfs-master-data:
-  seaweedfs-volume-data:
-  seaweedfs-filer-data:
+  hanzo-master-data:
+  hanzo-volume-data:
+  hanzo-filer-data:
 
 networks:
   default:
-    name: seaweedfs-kms-test
+    name: hanzo-kms-test

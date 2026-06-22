@@ -12,7 +12,7 @@ import (
 )
 
 // TestConsumerGroups tests consumer group functionality
-// This test requires SeaweedFS masters to be running and will skip if not available
+// This test requires Hanzo masters to be running and will skip if not available
 func TestConsumerGroups(t *testing.T) {
 	gateway := testutil.NewGatewayTestServerWithSMQ(t, testutil.SMQRequired)
 	defer gateway.CleanupAndClose()

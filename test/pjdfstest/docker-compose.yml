@@ -1,6 +1,6 @@
 services:
   master:
-    image: chrislusf/seaweedfs:e2e
+    image: chrislusf/hanzo:e2e
     command: "-v=4 master -ip=master -ip.bind=0.0.0.0 -raftBootstrap"
     healthcheck:
       test: ["CMD", "curl", "--fail", "-I", "http://localhost:9333/cluster/healthz"]
@@ -10,7 +10,7 @@ services:
       start_period: 10s
 
   volume:
-    image: chrislusf/seaweedfs:e2e
+    image: chrislusf/hanzo:e2e
     command: "-v=4 volume -master=master:9333 -ip=volume -ip.bind=0.0.0.0 -preStopSeconds=1"
     healthcheck:
       test: ["CMD", "curl", "--fail", "-I", "http://localhost:8080/healthz"]
@@ -23,7 +23,7 @@ services:
         condition: service_healthy
 
   filer:
-    image: chrislusf/seaweedfs:e2e
+    image: chrislusf/hanzo:e2e
     command: "-v=4 filer -master=master:9333 -ip=filer -ip.bind=0.0.0.0"
     healthcheck:
       test: ["CMD", "curl", "--fail", "-I", "http://localhost:8888/healthz"]
@@ -36,10 +36,10 @@ services:
         condition: service_healthy
 
   mount:
-    image: chrislusf/seaweedfs:pjdfstest
+    image: chrislusf/hanzo:pjdfstest
     build:
       context: .
-    command: "-v=4 mount -filer=filer:8888 -filer.path=/ -dirAutoCreate -dir=/mnt/seaweedfs -allowOthers"
+    command: "-v=4 mount -filer=filer:8888 -filer.path=/ -dirAutoCreate -dir=/mnt/hanzo -allowOthers"
     cap_add:
       - SYS_ADMIN
     devices:
@@ -47,7 +47,7 @@ services:
     security_opt:
       - apparmor:unconfined
     healthcheck:
-      test: ["CMD", "mountpoint", "-q", "--", "/mnt/seaweedfs"]
+      test: ["CMD", "mountpoint", "-q", "--", "/mnt/hanzo"]
       interval: 2s
       timeout: 10s
       retries: 15

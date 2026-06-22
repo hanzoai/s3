@@ -41,11 +41,11 @@ proto:
 
 # Build Docker image
 docker-build:
-	docker build -t seaweedfs-telemetry .
+	docker build -t hanzo-telemetry .
 
 # Run with Docker
 docker-run:
-	docker run -p 8080:8080 seaweedfs-telemetry -port=8080 -dashboard=true
+	docker run -p 8080:8080 hanzo-telemetry -port=8080 -dashboard=true
 
 # Development with auto-reload (requires air: go install github.com/cosmtrek/air@latest)
 dev:

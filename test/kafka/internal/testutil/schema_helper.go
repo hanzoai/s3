@@ -3,7 +3,7 @@ package testutil
 import (
 	"testing"
 
-	kschema "github.com/hanzoai/s3/weed/mq/kafka/schema"
+	kschema "github.com/hanzoai/s3/s3/mq/kafka/schema"
 )
 
 // EnsureValueSchema registers a minimal Avro value schema for the given topic if not present.

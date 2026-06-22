@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Stress Test Runner for SeaweedFS S3 IAM
+# Stress Test Runner for Hanzo S3 IAM
 
 set -e
 

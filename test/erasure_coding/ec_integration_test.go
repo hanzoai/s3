@@ -13,21 +13,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/operation"
-	"github.com/hanzoai/s3/weed/pb"
-	"github.com/hanzoai/s3/weed/pb/volume_server_pb"
-	"github.com/hanzoai/s3/weed/shell"
-	"github.com/hanzoai/s3/weed/storage/needle"
-	"github.com/hanzoai/s3/weed/storage/types"
-	"github.com/hanzoai/s3/weed/util"
-	"github.com/hanzoai/s3/weed/wdclient"
+	"github.com/hanzoai/s3/s3/operation"
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
+	"github.com/hanzoai/s3/s3/shell"
+	"github.com/hanzoai/s3/s3/storage/needle"
+	"github.com/hanzoai/s3/s3/storage/types"
+	"github.com/hanzoai/s3/s3/util"
+	"github.com/hanzoai/s3/s3/wdclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 )
 
 // TestECEncodingVolumeLocationTimingBug tests the actual bug we fixed
-// This test starts real SeaweedFS servers and calls the real EC encoding command
+// This test starts real Hanzo servers and calls the real EC encoding command
 func TestECEncodingVolumeLocationTimingBug(t *testing.T) {
 	// Skip if not running integration tests
 	if testing.Short() {
@@ -38,11 +38,11 @@ func TestECEncodingVolumeLocationTimingBug(t *testing.T) {
 	// Using t.TempDir() automatically preserves logs when tests fail
 	testDir := t.TempDir()
 
-	// Start SeaweedFS cluster with multiple volume servers
+	// Start Hanzo cluster with multiple volume servers
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	cluster, err := startSeaweedFSCluster(ctx, testDir)
+	cluster, err := startHanzoCluster(ctx, testDir)
 	require.NoError(t, err)
 	defer cluster.Stop()
 
@@ -248,11 +248,11 @@ func TestECEncodingMasterTimingRaceCondition(t *testing.T) {
 	// Using t.TempDir() automatically preserves logs when tests fail
 	testDir := t.TempDir()
 
-	// Start SeaweedFS cluster
+	// Start Hanzo cluster
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	cluster, err := startSeaweedFSCluster(ctx, testDir)
+	cluster, err := startHanzoCluster(ctx, testDir)
 	require.NoError(t, err)
 	defer cluster.Stop()
 
@@ -384,11 +384,11 @@ func (c *TestCluster) Stop() {
 	}
 }
 
-func startSeaweedFSCluster(ctx context.Context, dataDir string) (*TestCluster, error) {
-	// Find weed binary
-	weedBinary := findWeedBinary()
-	if weedBinary == "" {
-		return nil, fmt.Errorf("weed binary not found - build with 'go build' or 'make' first")
+func startHanzoCluster(ctx context.Context, dataDir string) (*TestCluster, error) {
+	// Find s3 binary
+	s3Binary := findS3Binary()
+	if s3Binary == "" {
+		return nil, fmt.Errorf("s3 binary not found - build with 'go build' or 'make' first")
 	}
 
 	cluster := &TestCluster{}
@@ -398,12 +398,12 @@ func startSeaweedFSCluster(ctx context.Context, dataDir string) (*TestCluster, e
 	os.MkdirAll(masterDir, 0755)
 
 	// Create an empty security.toml to disable JWT authentication in tests
-	// This prevents the test from picking up ~/.seaweedfs/security.toml
+	// This prevents the test from picking up ~/.s3/security.toml
 	securityToml := filepath.Join(dataDir, "security.toml")
 	os.WriteFile(securityToml, []byte("# Empty security config for testing\n"), 0644)
 
 	// Start master server
-	masterCmd := exec.CommandContext(ctx, weedBinary, "master",
+	masterCmd := exec.CommandContext(ctx, s3Binary, "master",
 		"-port", "9333",
 		"-mdir", masterDir,
 		"-volumeSizeLimitMB", "10", // Small volumes for testing
@@ -434,7 +434,7 @@ func startSeaweedFSCluster(ctx context.Context, dataDir string) (*TestCluster, e
 
 		port := fmt.Sprintf("808%d", i)
 		rack := fmt.Sprintf("rack%d", i)
-		volumeCmd := exec.CommandContext(ctx, weedBinary, "volume",
+		volumeCmd := exec.CommandContext(ctx, s3Binary, "volume",
 			"-port", port,
 			"-dir", volumeDir,
 			"-max", "10",
@@ -466,14 +466,14 @@ func startSeaweedFSCluster(ctx context.Context, dataDir string) (*TestCluster, e
 	return cluster, nil
 }
 
-func findWeedBinary() string {
+func findS3Binary() string {
 	// Try different locations
 	candidates := []string{
-		"../../../weed/weed",
-		"../../weed/weed",
-		"../weed/weed",
-		"./weed/weed",
-		"weed",
+		"../../../s3/s3",
+		"../../s3/s3",
+		"../s3/s3",
+		"./s3/s3",
+		"s3",
 	}
 
 	for _, candidate := range candidates {
@@ -487,7 +487,7 @@ func findWeedBinary() string {
 	}
 
 	// Try to find in PATH
-	if path, err := exec.LookPath("weed"); err == nil {
+	if path, err := exec.LookPath("s3"); err == nil {
 		return path
 	}
 
@@ -1017,11 +1017,11 @@ func (c *MultiDiskCluster) Stop() {
 	}
 }
 
-// startMultiDiskCluster starts a SeaweedFS cluster with multiple disks per volume server
+// startMultiDiskCluster starts a Hanzo cluster with multiple disks per volume server
 func startMultiDiskCluster(ctx context.Context, dataDir string) (*MultiDiskCluster, error) {
-	weedBinary := findWeedBinary()
-	if weedBinary == "" {
-		return nil, fmt.Errorf("weed binary not found")
+	s3Binary := findS3Binary()
+	if s3Binary == "" {
+		return nil, fmt.Errorf("s3 binary not found")
 	}
 
 	cluster := &MultiDiskCluster{testDir: dataDir}
@@ -1031,7 +1031,7 @@ func startMultiDiskCluster(ctx context.Context, dataDir string) (*MultiDiskClust
 	os.MkdirAll(masterDir, 0755)
 
 	// Start master server on a different port to avoid conflict
-	masterCmd := exec.CommandContext(ctx, weedBinary, "master",
+	masterCmd := exec.CommandContext(ctx, s3Binary, "master",
 		"-port", "9334",
 		"-mdir", masterDir,
 		"-volumeSizeLimitMB", "10",
@@ -1077,7 +1077,7 @@ func startMultiDiskCluster(ctx context.Context, dataDir string) (*MultiDiskClust
 		port := fmt.Sprintf("809%d", i)
 		rack := fmt.Sprintf("rack%d", i)
 
-		volumeCmd := exec.CommandContext(ctx, weedBinary, "volume",
+		volumeCmd := exec.CommandContext(ctx, s3Binary, "volume",
 			"-port", port,
 			"-dir", strings.Join(diskDirs, ","),
 			"-max", strings.Join(maxVolumes, ","),
@@ -1421,11 +1421,11 @@ func TestECDiskTypeSupport(t *testing.T) {
 	})
 }
 
-// startClusterWithDiskType starts a SeaweedFS cluster with a specific disk type
+// startClusterWithDiskType starts a Hanzo cluster with a specific disk type
 func startClusterWithDiskType(ctx context.Context, dataDir string, diskType string) (*MultiDiskCluster, error) {
-	weedBinary := findWeedBinary()
-	if weedBinary == "" {
-		return nil, fmt.Errorf("weed binary not found")
+	s3Binary := findS3Binary()
+	if s3Binary == "" {
+		return nil, fmt.Errorf("s3 binary not found")
 	}
 
 	cluster := &MultiDiskCluster{testDir: dataDir}
@@ -1435,7 +1435,7 @@ func startClusterWithDiskType(ctx context.Context, dataDir string, diskType stri
 	os.MkdirAll(masterDir, 0755)
 
 	// Start master server on a different port to avoid conflict with other tests
-	masterCmd := exec.CommandContext(ctx, weedBinary, "master",
+	masterCmd := exec.CommandContext(ctx, s3Binary, "master",
 		"-port", "9335",
 		"-mdir", masterDir,
 		"-volumeSizeLimitMB", "10",
@@ -1473,7 +1473,7 @@ func startClusterWithDiskType(ctx context.Context, dataDir string, diskType stri
 		port := fmt.Sprintf("810%d", i)
 		rack := fmt.Sprintf("rack%d", i)
 
-		volumeCmd := exec.CommandContext(ctx, weedBinary, "volume",
+		volumeCmd := exec.CommandContext(ctx, s3Binary, "volume",
 			"-port", port,
 			"-dir", diskDir,
 			"-max", "10",
@@ -1654,9 +1654,9 @@ func TestECDiskTypeMixedCluster(t *testing.T) {
 
 // startMixedDiskTypeCluster starts a cluster with both HDD and SSD volume servers
 func startMixedDiskTypeCluster(ctx context.Context, dataDir string) (*MultiDiskCluster, error) {
-	weedBinary := findWeedBinary()
-	if weedBinary == "" {
-		return nil, fmt.Errorf("weed binary not found")
+	s3Binary := findS3Binary()
+	if s3Binary == "" {
+		return nil, fmt.Errorf("s3 binary not found")
 	}
 
 	cluster := &MultiDiskCluster{testDir: dataDir}
@@ -1666,7 +1666,7 @@ func startMixedDiskTypeCluster(ctx context.Context, dataDir string) (*MultiDiskC
 	os.MkdirAll(masterDir, 0755)
 
 	// Start master server
-	masterCmd := exec.CommandContext(ctx, weedBinary, "master",
+	masterCmd := exec.CommandContext(ctx, s3Binary, "master",
 		"-port", "9336",
 		"-mdir", masterDir,
 		"-volumeSizeLimitMB", "10",
@@ -1703,7 +1703,7 @@ func startMixedDiskTypeCluster(ctx context.Context, dataDir string) (*MultiDiskC
 		port := fmt.Sprintf("811%d", i)
 		rack := fmt.Sprintf("rack%d", i)
 
-		volumeCmd := exec.CommandContext(ctx, weedBinary, "volume",
+		volumeCmd := exec.CommandContext(ctx, s3Binary, "volume",
 			"-port", port,
 			"-dir", diskDir,
 			"-max", "10",
@@ -1970,9 +1970,9 @@ func TestCrossRackECPlacement(t *testing.T) {
 
 // startLimitedSsdCluster starts a cluster with limited SSD capacity (1 SSD, 2 HDD)
 func startLimitedSsdCluster(ctx context.Context, dataDir string) (*MultiDiskCluster, error) {
-	weedBinary := findWeedBinary()
-	if weedBinary == "" {
-		return nil, fmt.Errorf("weed binary not found")
+	s3Binary := findS3Binary()
+	if s3Binary == "" {
+		return nil, fmt.Errorf("s3 binary not found")
 	}
 
 	cluster := &MultiDiskCluster{testDir: dataDir}
@@ -1982,7 +1982,7 @@ func startLimitedSsdCluster(ctx context.Context, dataDir string) (*MultiDiskClus
 	os.MkdirAll(masterDir, 0755)
 
 	// Start master server on port 9337
-	masterCmd := exec.CommandContext(ctx, weedBinary, "master",
+	masterCmd := exec.CommandContext(ctx, s3Binary, "master",
 		"-port", "9337",
 		"-mdir", masterDir,
 		"-volumeSizeLimitMB", "10",
@@ -2025,7 +2025,7 @@ func startLimitedSsdCluster(ctx context.Context, dataDir string) (*MultiDiskClus
 
 		port := fmt.Sprintf("812%d", i)
 
-		volumeCmd := exec.CommandContext(ctx, weedBinary, "volume",
+		volumeCmd := exec.CommandContext(ctx, s3Binary, "volume",
 			"-port", port,
 			"-dir", diskDir,
 			"-max", "10",
@@ -2061,9 +2061,9 @@ func startLimitedSsdCluster(ctx context.Context, dataDir string) (*MultiDiskClus
 
 // startMultiRackCluster starts a cluster with 4 servers across 4 racks
 func startMultiRackCluster(ctx context.Context, dataDir string) (*MultiDiskCluster, error) {
-	weedBinary := findWeedBinary()
-	if weedBinary == "" {
-		return nil, fmt.Errorf("weed binary not found")
+	s3Binary := findS3Binary()
+	if s3Binary == "" {
+		return nil, fmt.Errorf("s3 binary not found")
 	}
 
 	cluster := &MultiDiskCluster{testDir: dataDir}
@@ -2073,7 +2073,7 @@ func startMultiRackCluster(ctx context.Context, dataDir string) (*MultiDiskClust
 	os.MkdirAll(masterDir, 0755)
 
 	// Start master server on port 9338
-	masterCmd := exec.CommandContext(ctx, weedBinary, "master",
+	masterCmd := exec.CommandContext(ctx, s3Binary, "master",
 		"-port", "9338",
 		"-mdir", masterDir,
 		"-volumeSizeLimitMB", "10",
@@ -2107,7 +2107,7 @@ func startMultiRackCluster(ctx context.Context, dataDir string) (*MultiDiskClust
 		port := fmt.Sprintf("813%d", i)
 		rack := fmt.Sprintf("rack%d", i)
 
-		volumeCmd := exec.CommandContext(ctx, weedBinary, "volume",
+		volumeCmd := exec.CommandContext(ctx, s3Binary, "volume",
 			"-port", port,
 			"-dir", diskDir,
 			"-max", "10",
@@ -2194,11 +2194,11 @@ func TestECEncodeReplicatedVolumeSync(t *testing.T) {
 	// Using t.TempDir() automatically preserves logs when tests fail
 	testDir := t.TempDir()
 
-	// Start SeaweedFS cluster
+	// Start Hanzo cluster
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	cluster, err := startSeaweedFSCluster(ctx, testDir)
+	cluster, err := startHanzoCluster(ctx, testDir)
 	require.NoError(t, err)
 	defer cluster.Stop()
 

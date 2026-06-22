@@ -2,13 +2,13 @@ version: '3.9'
 
 services:
   master:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 9333:9333
       - 19333:19333
     command: "master -ip=master"
   volume:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 7455:8080
       - 9325:9325
@@ -18,7 +18,7 @@ services:
     depends_on:
       - master
   filer:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8888:8888
       - 18888:18888
@@ -32,7 +32,7 @@ services:
       - master
       - volume
   mount:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     privileged: true
     cap_add:
       - SYS_ADMIN
@@ -40,7 +40,7 @@ services:
       - fuse
     volumes:
       - /Volumes/mobile_disk/99:/data
-    entrypoint: '/bin/sh -c "mkdir -p t1 && weed -v=4 mount -filer=filer:8888 -dir=./t1 -cacheCapacityMB=0 -memprofile=/data/mount.mem.pprof"'
+    entrypoint: '/bin/sh -c "mkdir -p t1 && s3 -v=4 mount -filer=filer:8888 -dir=./t1 -cacheCapacityMB=0 -memprofile=/data/mount.mem.pprof"'
     depends_on:
       - master
       - volume

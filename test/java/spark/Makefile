@@ -1,16 +1,16 @@
 .PHONY: help build test test-local test-docker clean run-example docker-up docker-down
 
 help:
-	@echo "SeaweedFS Spark Integration Tests"
+	@echo "Hanzo Spark Integration Tests"
 	@echo ""
 	@echo "Available targets:"
 	@echo "  build          - Build the project"
-	@echo "  test           - Run integration tests (requires SeaweedFS running)"
-	@echo "  test-local     - Run tests against local SeaweedFS"
-	@echo "  test-docker    - Run tests in Docker with SeaweedFS"
+	@echo "  test           - Run integration tests (requires Hanzo running)"
+	@echo "  test-local     - Run tests against local Hanzo"
+	@echo "  test-docker    - Run tests in Docker with Hanzo"
 	@echo "  run-example    - Run the example Spark application"
-	@echo "  docker-up      - Start SeaweedFS in Docker"
-	@echo "  docker-down    - Stop SeaweedFS Docker containers"
+	@echo "  docker-up      - Start Hanzo in Docker"
+	@echo "  docker-down    - Stop Hanzo Docker containers"
 	@echo "  clean          - Clean build artifacts"
 
 build:
@@ -23,7 +23,7 @@ test:
 	SEAWEEDFS_TEST_ENABLED=true mvn test
 
 test-local:
-	@echo "Testing against local SeaweedFS (localhost:8888)..."
+	@echo "Testing against local Hanzo (localhost:8888)..."
 	./run-tests.sh
 
 test-docker:
@@ -32,16 +32,16 @@ test-docker:
 	docker compose down
 
 docker-up:
-	@echo "Starting SeaweedFS in Docker..."
-	docker compose up -d seaweedfs-master seaweedfs-volume seaweedfs-filer
+	@echo "Starting Hanzo in Docker..."
+	docker compose up -d hanzo-master hanzo-volume hanzo-filer
 	@echo "Waiting for services to be ready..."
 	@sleep 5
-	@echo "SeaweedFS is ready!"
+	@echo "Hanzo is ready!"
 	@echo "  Master: http://localhost:9333"
 	@echo "  Filer:  http://localhost:8888"
 
 docker-down:
-	@echo "Stopping SeaweedFS Docker containers..."
+	@echo "Stopping Hanzo Docker containers..."
 	docker compose down -v
 
 run-example:
@@ -51,25 +51,25 @@ run-example:
 		exit 1; \
 	fi
 	spark-submit \
-		--class seaweed.spark.SparkSeaweedFSExample \
+		--class hanzo.spark.SparkHanzoExample \
 		--master local[2] \
-		--conf spark.hadoop.fs.seaweedfs.impl=seaweed.hdfs.SeaweedFileSystem \
-		--conf spark.hadoop.fs.seaweed.filer.host=localhost \
-		--conf spark.hadoop.fs.seaweed.filer.port=8888 \
-		--conf spark.hadoop.fs.seaweed.filer.port.grpc=18888 \
-		--conf spark.hadoop.fs.seaweed.replication="" \
-		target/seaweedfs-spark-integration-tests-1.0-SNAPSHOT.jar \
-		seaweedfs://localhost:8888/spark-example-output
+		--conf spark.hadoop.fs.s3.impl=hanzo.hdfs.HanzoFileSystem \
+		--conf spark.hadoop.fs.hanzo.filer.host=localhost \
+		--conf spark.hadoop.fs.hanzo.filer.port=8888 \
+		--conf spark.hadoop.fs.hanzo.filer.port.grpc=18888 \
+		--conf spark.hadoop.fs.hanzo.replication="" \
+		target/hanzo-spark-integration-tests-1.0-SNAPSHOT.jar \
+		hanzo://localhost:8888/spark-example-output
 
 clean:
 	mvn clean
 	@echo "Build artifacts cleaned"
 
-verify-seaweedfs:
-	@echo "Verifying SeaweedFS connection..."
+verify-hanzo:
+	@echo "Verifying Hanzo connection..."
 	@curl -f http://localhost:8888/ > /dev/null 2>&1 && \
-		echo "✓ SeaweedFS filer is accessible" || \
-		(echo "✗ SeaweedFS filer is not accessible at http://localhost:8888"; exit 1)
+		echo "✓ Hanzo filer is accessible" || \
+		(echo "✗ Hanzo filer is not accessible at http://localhost:8888"; exit 1)
 
 .DEFAULT_GOAL := help
 

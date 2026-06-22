@@ -1,0 +1,14 @@
+{{- include "hanzo.compat" . -}}
+{{- if and .Values.global.s3.enableSecurity (not .Values.certificates.externalCertificates.enabled)}}
+apiVersion: cert-manager.io/v1{{ if .Values.global.s3.certificates.alphacrds }}alpha1{{ end }}
+kind: Issuer
+metadata:
+  name: {{ include "hanzo.fullname" . }}-issuer
+  labels:
+    app.kubernetes.io/name: {{ template "hanzo.name" . }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  selfSigned: {}
+{{- end }}

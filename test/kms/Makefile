@@ -1,4 +1,4 @@
-# SeaweedFS KMS Integration Testing Makefile
+# Hanzo KMS Integration Testing Makefile
 
 # Configuration
 OPENBAO_ADDR ?= http://127.0.0.1:8200
@@ -7,8 +7,8 @@ SEAWEEDFS_S3_ENDPOINT ?= http://127.0.0.1:8333
 TEST_TIMEOUT ?= 5m
 DOCKER_COMPOSE ?= docker-compose
 
-# CI configuration (build weed from source, run natively)
-SEAWEEDFS_BINARY ?= weed
+# CI configuration (build s3 from source, run natively)
+SEAWEEDFS_BINARY ?= s3
 S3_PORT ?= 8333
 ACCESS_KEY ?= some_access_key1
 SECRET_KEY ?= some_secret_key1
@@ -23,17 +23,17 @@ RED := \033[31m
 NC := \033[0m # No Color
 
 .PHONY: help setup test test-unit test-integration test-e2e clean logs status \
-       build-weed check-binary start-openbao-ci stop-openbao-ci \
-       start-seaweedfs-ci stop-seaweedfs-ci clean-ci \
+       build-s3 check-binary start-openbao-ci stop-openbao-ci \
+       start-hanzo-ci stop-hanzo-ci clean-ci \
        test-provider-ci test-s3-kms-ci
 
 help: ## Show this help message
-	@echo "$(BLUE)SeaweedFS KMS Integration Testing$(NC)"
+	@echo "$(BLUE)Hanzo KMS Integration Testing$(NC)"
 	@echo ""
 	@echo "Available targets:"
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  $(GREEN)%-15s$(NC) %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-setup: ## Set up test environment (OpenBao + SeaweedFS)
+setup: ## Set up test environment (OpenBao + Hanzo)
 	@echo "$(YELLOW)Setting up test environment...$(NC)"
 	@chmod +x setup_openbao.sh
 	@$(DOCKER_COMPOSE) up -d openbao
@@ -46,7 +46,7 @@ test: setup test-unit test-integration ## Run all tests
 
 test-unit: ## Run unit tests for KMS providers
 	@echo "$(YELLOW)Running KMS provider unit tests...$(NC)"
-	@cd ../../ && go test -v -timeout=$(TEST_TIMEOUT) ./weed/kms/...
+	@cd ../../ && go test -v -timeout=$(TEST_TIMEOUT) ./s3/kms/...
 
 test-integration: ## Run integration tests with OpenBao
 	@echo "$(YELLOW)Running KMS integration tests...$(NC)"
@@ -56,13 +56,13 @@ test-benchmark: ## Run performance benchmarks
 	@echo "$(YELLOW)Running KMS performance benchmarks...$(NC)"
 	@cd ../../ && go test -v -timeout=$(TEST_TIMEOUT) -bench=. ./test/kms/...
 
-test-e2e: setup-seaweedfs ## Run end-to-end tests with SeaweedFS + KMS
+test-e2e: setup-hanzo ## Run end-to-end tests with Hanzo + KMS
 	@echo "$(YELLOW)Running end-to-end KMS tests...$(NC)"
-	@sleep 10  # Wait for SeaweedFS to be ready
+	@sleep 10  # Wait for Hanzo to be ready
 	@./test_s3_kms.sh
 
-setup-seaweedfs: ## Start complete SeaweedFS cluster with KMS
-	@echo "$(YELLOW)Starting SeaweedFS cluster...$(NC)"
+setup-hanzo: ## Start complete Hanzo cluster with KMS
+	@echo "$(YELLOW)Starting Hanzo cluster...$(NC)"
 	@$(DOCKER_COMPOSE) up -d
 	@echo "$(BLUE)Waiting for services to be ready...$(NC)"
 	@./wait_for_services.sh
@@ -83,8 +83,8 @@ logs: ## Show logs from all services
 logs-openbao: ## Show OpenBao logs
 	@$(DOCKER_COMPOSE) logs --tail=100 -f openbao
 
-logs-seaweedfs: ## Show SeaweedFS logs
-	@$(DOCKER_COMPOSE) logs --tail=100 -f seaweedfs-filer seaweedfs-master seaweedfs-volume
+logs-hanzo: ## Show Hanzo logs
+	@$(DOCKER_COMPOSE) logs --tail=100 -f hanzo-filer hanzo-master hanzo-volume
 
 status: ## Show status of all services
 	@echo "$(BLUE)Service Status:$(NC)"
@@ -93,18 +93,18 @@ status: ## Show status of all services
 	@echo "$(BLUE)OpenBao Status:$(NC)"
 	@curl -s $(OPENBAO_ADDR)/v1/sys/health | jq '.' || echo "OpenBao not accessible"
 	@echo ""
-	@echo "$(BLUE)SeaweedFS S3 Status:$(NC)"
-	@curl -s $(SEAWEEDFS_S3_ENDPOINT) || echo "SeaweedFS S3 not accessible"
+	@echo "$(BLUE)Hanzo S3 Status:$(NC)"
+	@curl -s $(SEAWEEDFS_S3_ENDPOINT) || echo "Hanzo S3 not accessible"
 
 debug: ## Debug test environment
 	@echo "$(BLUE)Debug Information:$(NC)"
 	@echo "OpenBao Address: $(OPENBAO_ADDR)"
-	@echo "SeaweedFS S3 Endpoint: $(SEAWEEDFS_S3_ENDPOINT)"
+	@echo "Hanzo S3 Endpoint: $(SEAWEEDFS_S3_ENDPOINT)"
 	@echo "Docker Compose Status:"
 	@$(DOCKER_COMPOSE) ps
 	@echo ""
 	@echo "Network connectivity:"
-	@docker network ls | grep seaweedfs || echo "No SeaweedFS network found"
+	@docker network ls | grep hanzo || echo "No Hanzo network found"
 	@echo ""
 	@echo "OpenBao health:"
 	@curl -v $(OPENBAO_ADDR)/v1/sys/health 2>&1 || true
@@ -145,22 +145,22 @@ ci-test: ## Run tests in CI environment (docker-compose)
 
 ci-e2e: ## Run end-to-end tests in CI (docker-compose)
 	@echo "$(YELLOW)Running CI end-to-end tests...$(NC)"
-	@make setup-seaweedfs
+	@make setup-hanzo
 	@make test-e2e
 	@make clean
 
 ####################################################
-# GitHub Actions CI targets (build weed from source)
+# GitHub Actions CI targets (build s3 from source)
 ####################################################
 
-build-weed: ## Build SeaweedFS binary from source
-	@echo "Building SeaweedFS binary..."
-	@cd $(SEAWEEDFS_ROOT)/weed && go install -buildvcs=false
-	@echo "$(GREEN)SeaweedFS binary built successfully$(NC)"
+build-s3: ## Build Hanzo binary from source
+	@echo "Building Hanzo binary..."
+	@cd $(SEAWEEDFS_ROOT)/s3 && go install -buildvcs=false
+	@echo "$(GREEN)Hanzo binary built successfully$(NC)"
 
 check-binary:
 	@if ! command -v $(SEAWEEDFS_BINARY) > /dev/null 2>&1; then \
-		echo "$(RED)Error: SeaweedFS binary '$(SEAWEEDFS_BINARY)' not found in PATH$(NC)"; \
+		echo "$(RED)Error: Hanzo binary '$(SEAWEEDFS_BINARY)' not found in PATH$(NC)"; \
 		exit 1; \
 	fi
 
@@ -194,24 +194,24 @@ stop-openbao-ci: ## Stop OpenBao CI container
 	@docker stop openbao-ci 2>/dev/null || true
 	@docker rm openbao-ci 2>/dev/null || true
 
-start-seaweedfs-ci: check-binary ## Start weed mini with OpenBao KMS config
-	@echo "Starting SeaweedFS with OpenBao KMS..."
-	@mkdir -p /tmp/seaweedfs-test-kms
-	@rm -f /tmp/seaweedfs-kms-*.log || true
+start-hanzo-ci: check-binary ## Start s3 mini with OpenBao KMS config
+	@echo "Starting Hanzo with OpenBao KMS..."
+	@mkdir -p /tmp/hanzo-test-kms
+	@rm -f /tmp/hanzo-kms-*.log || true
 	@sed -e 's/ACCESS_KEY_PLACEHOLDER/$(ACCESS_KEY)/g' \
 	     -e 's/SECRET_KEY_PLACEHOLDER/$(SECRET_KEY)/g' \
 	     -e 's|OPENBAO_ADDR_PLACEHOLDER|$(OPENBAO_ADDR)|g' \
 	     -e 's/OPENBAO_TOKEN_PLACEHOLDER/$(OPENBAO_TOKEN)/g' \
-	     s3-config-openbao-template.json > /tmp/seaweedfs-kms-s3.json
-	@# Start weed mini from the data dir to avoid picking up test/kms/filer.toml
+	     s3-config-openbao-template.json > /tmp/hanzo-kms-s3.json
+	@# Start s3 mini from the data dir to avoid picking up test/kms/filer.toml
 	@# (filer.toml is read from "." first, and the one here has Docker-only paths)
-	@cd /tmp/seaweedfs-test-kms && \
+	@cd /tmp/hanzo-test-kms && \
 		AWS_ACCESS_KEY_ID=$(ACCESS_KEY) AWS_SECRET_ACCESS_KEY=$(SECRET_KEY) GLOG_v=4 $(SEAWEEDFS_BINARY) mini \
-		-dir=/tmp/seaweedfs-test-kms \
+		-dir=/tmp/hanzo-test-kms \
 		-s3.port=$(S3_PORT) \
-		-s3.config=/tmp/seaweedfs-kms-s3.json \
+		-s3.config=/tmp/hanzo-kms-s3.json \
 		-ip=127.0.0.1 \
-		> /tmp/seaweedfs-kms-mini.log 2>&1 & echo $$! > /tmp/weed-kms-mini.pid
+		> /tmp/hanzo-kms-mini.log 2>&1 & echo $$! > /tmp/s3-kms-mini.pid
 	@echo "Checking S3 service is ready..."
 	@for i in $$(seq 1 30); do \
 		if curl -s http://127.0.0.1:$(S3_PORT) > /dev/null 2>&1; then \
@@ -221,17 +221,17 @@ start-seaweedfs-ci: check-binary ## Start weed mini with OpenBao KMS config
 		if [ $$i -eq 30 ]; then \
 			echo "$(RED)Timeout waiting for S3 service$(NC)"; \
 			echo "=== Last 50 lines of server log ==="; \
-			tail -50 /tmp/seaweedfs-kms-mini.log 2>/dev/null || echo "No server log found"; \
+			tail -50 /tmp/hanzo-kms-mini.log 2>/dev/null || echo "No server log found"; \
 			exit 1; \
 		fi; \
 		sleep 1; \
 	done
 
-stop-seaweedfs-ci: ## Stop weed mini (CI-safe)
-	@echo "Stopping SeaweedFS..."
-	@if [ -f /tmp/weed-kms-mini.pid ]; then \
-		kill $$(cat /tmp/weed-kms-mini.pid) 2>/dev/null || true; \
-		rm -f /tmp/weed-kms-mini.pid; \
+stop-hanzo-ci: ## Stop s3 mini (CI-safe)
+	@echo "Stopping Hanzo..."
+	@if [ -f /tmp/s3-kms-mini.pid ]; then \
+		kill $$(cat /tmp/s3-kms-mini.pid) 2>/dev/null || true; \
+		rm -f /tmp/s3-kms-mini.pid; \
 	fi
 	@if command -v lsof >/dev/null 2>&1; then \
 		lsof -ti :$(S3_PORT) 2>/dev/null | head -5 | while read pid; do kill -TERM $$pid 2>/dev/null || true; done; \
@@ -239,11 +239,11 @@ stop-seaweedfs-ci: ## Stop weed mini (CI-safe)
 	@sleep 2
 
 clean-ci: ## Clean up CI test artifacts
-	@rm -rf /tmp/seaweedfs-test-kms
-	@rm -f /tmp/seaweedfs-kms-*.log /tmp/seaweedfs-kms-s3.json /tmp/weed-kms-mini.pid
+	@rm -rf /tmp/hanzo-test-kms
+	@rm -f /tmp/hanzo-kms-*.log /tmp/hanzo-kms-s3.json /tmp/s3-kms-mini.pid
 
 # Run KMS provider Go integration tests (GitHub Actions compatible)
-test-provider-ci: build-weed ## Run KMS provider tests with OpenBao in CI
+test-provider-ci: build-s3 ## Run KMS provider tests with OpenBao in CI
 	@echo "$(YELLOW)Starting KMS provider integration tests...$(NC)"
 	@if $(MAKE) start-openbao-ci > /tmp/openbao-ci-setup.log 2>&1; then \
 		echo "$(GREEN)OpenBao started and configured$(NC)"; \
@@ -257,20 +257,20 @@ test-provider-ci: build-weed ## Run KMS provider tests with OpenBao in CI
 	fi
 
 # Run S3 KMS end-to-end tests (GitHub Actions compatible)
-test-s3-kms-ci: build-weed ## Run S3 KMS e2e tests with weed mini + OpenBao in CI
+test-s3-kms-ci: build-s3 ## Run S3 KMS e2e tests with s3 mini + OpenBao in CI
 	@echo "$(YELLOW)Starting S3 KMS end-to-end tests...$(NC)"
 	@if $(MAKE) start-openbao-ci > /tmp/openbao-ci-setup.log 2>&1; then \
 		echo "$(GREEN)OpenBao started and configured$(NC)"; \
-		trap 'docker logs openbao-ci > /tmp/openbao-ci-container.log 2>&1 || true; $(MAKE) -C $(TEST_DIR) stop-seaweedfs-ci || true; $(MAKE) -C $(TEST_DIR) stop-openbao-ci || true; $(MAKE) -C $(TEST_DIR) clean-ci || true' EXIT; \
-		if $(MAKE) start-seaweedfs-ci > /tmp/weed-kms-ci-setup.log 2>&1; then \
-			echo "$(GREEN)SeaweedFS started with OpenBao KMS$(NC)"; \
+		trap 'docker logs openbao-ci > /tmp/openbao-ci-container.log 2>&1 || true; $(MAKE) -C $(TEST_DIR) stop-hanzo-ci || true; $(MAKE) -C $(TEST_DIR) stop-openbao-ci || true; $(MAKE) -C $(TEST_DIR) clean-ci || true' EXIT; \
+		if $(MAKE) start-hanzo-ci > /tmp/s3-kms-ci-setup.log 2>&1; then \
+			echo "$(GREEN)Hanzo started with OpenBao KMS$(NC)"; \
 			sleep 3; \
 			chmod +x test_s3_kms.sh; \
 			SEAWEEDFS_S3_ENDPOINT=http://127.0.0.1:$(S3_PORT) ACCESS_KEY=$(ACCESS_KEY) SECRET_KEY=$(SECRET_KEY) ./test_s3_kms.sh || exit 1; \
 			echo "$(GREEN)S3 KMS e2e tests completed successfully$(NC)"; \
 		else \
-			echo "$(RED)Failed to start SeaweedFS$(NC)"; \
-			cat /tmp/weed-kms-ci-setup.log 2>/dev/null || true; \
+			echo "$(RED)Failed to start Hanzo$(NC)"; \
+			cat /tmp/s3-kms-ci-setup.log 2>/dev/null || true; \
 			exit 1; \
 		fi; \
 	else \

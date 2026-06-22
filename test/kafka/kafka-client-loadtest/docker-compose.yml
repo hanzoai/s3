@@ -1,14 +1,14 @@
-# SeaweedFS Kafka Client Load Test
-# Tests the full stack: Kafka Clients -> SeaweedFS Kafka Gateway -> SeaweedFS MQ Broker -> Storage
+# Hanzo Kafka Client Load Test
+# Tests the full stack: Kafka Clients -> Hanzo Kafka Gateway -> Hanzo MQ Broker -> Storage
 
-x-seaweedfs-build: &seaweedfs-build
+x-hanzo-build: &hanzo-build
   build:
     context: .
-    dockerfile: Dockerfile.seaweedfs
+    dockerfile: Dockerfile.s3
     args:
       TARGETARCH: ${GOARCH:-arm64}
       CACHE_BUST: ${CACHE_BUST:-latest}
-  image: kafka-client-loadtest-seaweedfs
+  image: kafka-client-loadtest-hanzo
 
 services:
   # Schema Registry (for Avro/Protobuf support) 
@@ -78,25 +78,25 @@ services:
     networks:
       - kafka-loadtest-net
 
-  # SeaweedFS Master (coordinator)
-  seaweedfs-master:
-    <<: *seaweedfs-build
-    container_name: loadtest-seaweedfs-master
+  # Hanzo Master (coordinator)
+  hanzo-master:
+    <<: *hanzo-build
+    container_name: loadtest-hanzo-master
     ports:
       - "9333:9333"
       - "19333:19333"
     command: 
       - master
-      - -ip=seaweedfs-master
+      - -ip=hanzo-master
       - -port=9333
       - -port.grpc=19333
       - -volumeSizeLimitMB=48
       - -defaultReplication=000
       - -garbageThreshold=0.3
     volumes:
-      - ./data/seaweedfs-master:/data
+      - ./data/hanzo-master:/data
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://seaweedfs-master:9333/cluster/status || exit 1"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://hanzo-master:9333/cluster/status || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -104,31 +104,31 @@ services:
     networks:
       - kafka-loadtest-net
 
-  # SeaweedFS Volume Server (storage)
-  seaweedfs-volume:
-    <<: *seaweedfs-build
-    container_name: loadtest-seaweedfs-volume
+  # Hanzo Volume Server (storage)
+  hanzo-volume:
+    <<: *hanzo-build
+    container_name: loadtest-hanzo-volume
     ports:
       - "8080:8080"
       - "18080:18080"
     command:
       - volume
-      - -master=seaweedfs-master:9333
-      - -ip=seaweedfs-volume
+      - -master=hanzo-master:9333
+      - -ip=hanzo-volume
       - -port=8080
       - -port.grpc=18080
-      - -publicUrl=seaweedfs-volume:8080
+      - -publicUrl=hanzo-volume:8080
       - -preStopSeconds=1
       - -compactionMBps=50
       - -max=0
       - -dir=/data
     depends_on:
-      seaweedfs-master:
+      hanzo-master:
         condition: service_healthy
     volumes:
-      - ./data/seaweedfs-volume:/data
+      - ./data/hanzo-volume:/data
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://seaweedfs-volume:8080/status"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://hanzo-volume:8080/status"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -136,31 +136,31 @@ services:
     networks:
       - kafka-loadtest-net
 
-  # SeaweedFS Filer (metadata)
-  seaweedfs-filer:
-    <<: *seaweedfs-build
-    container_name: loadtest-seaweedfs-filer
+  # Hanzo Filer (metadata)
+  hanzo-filer:
+    <<: *hanzo-build
+    container_name: loadtest-hanzo-filer
     ports:
       - "8888:8888"
       - "18888:18888"
       - "18889:18889"
     command:
       - filer
-      - -master=seaweedfs-master:9333
-      - -ip=seaweedfs-filer
+      - -master=hanzo-master:9333
+      - -ip=hanzo-filer
       - -port=8888
       - -port.grpc=18888
       - -metricsPort=18889
       - -defaultReplicaPlacement=000
     depends_on:
-      seaweedfs-master:
+      hanzo-master:
         condition: service_healthy
-      seaweedfs-volume:
+      hanzo-volume:
         condition: service_healthy
     volumes:
-      - ./data/seaweedfs-filer:/data
+      - ./data/hanzo-filer:/data
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://seaweedfs-filer:8888/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://hanzo-filer:8888/"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -168,26 +168,26 @@ services:
     networks:
       - kafka-loadtest-net
 
-  # SeaweedFS MQ Broker (message handling)
-  seaweedfs-mq-broker:
-    <<: *seaweedfs-build
-    container_name: loadtest-seaweedfs-mq-broker
+  # Hanzo MQ Broker (message handling)
+  hanzo-mq-broker:
+    <<: *hanzo-build
+    container_name: loadtest-hanzo-mq-broker
     ports:
       - "17777:17777"
       - "18777:18777"  # pprof profiling port
     command:
       - mq.broker
-      - -master=seaweedfs-master:9333
-      - -ip=seaweedfs-mq-broker
+      - -master=hanzo-master:9333
+      - -ip=hanzo-mq-broker
       - -port=17777
       - -logFlushInterval=0
       - -debug
       - -debug.port=18777
     depends_on:
-      seaweedfs-filer:
+      hanzo-filer:
         condition: service_healthy
     volumes:
-      - ./data/seaweedfs-mq:/data
+      - ./data/hanzo-mq:/data
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "17777"]
       interval: 10s
@@ -197,16 +197,16 @@ services:
     networks:
       - kafka-loadtest-net
 
-  # SeaweedFS Kafka Gateway (Kafka protocol compatibility)
+  # Hanzo Kafka Gateway (Kafka protocol compatibility)
   kafka-gateway:
-    <<: *seaweedfs-build
+    <<: *hanzo-build
     container_name: loadtest-kafka-gateway
     ports:
       - "9093:9093"
       - "10093:10093"  # pprof profiling port
     command:
       - mq.kafka.gateway
-      - -master=seaweedfs-master:9333
+      - -master=hanzo-master:9333
       - -ip=kafka-gateway
       - -ip.bind=0.0.0.0
       - -port=9093
@@ -214,12 +214,12 @@ services:
       - -schema-registry-url=http://schema-registry:8081
       - -port.pprof=10093
     depends_on:
-      seaweedfs-filer:
+      hanzo-filer:
         condition: service_healthy
-      seaweedfs-mq-broker:
+      hanzo-mq-broker:
         condition: service_healthy
     environment:
-      - SEAWEEDFS_MASTERS=seaweedfs-master:9333
+      - SEAWEEDFS_MASTERS=hanzo-master:9333
       # - KAFKA_DEBUG=1  # Enable debug logging for Schema Registry troubleshooting
       - KAFKA_ADVERTISED_HOST=kafka-gateway
     volumes:
