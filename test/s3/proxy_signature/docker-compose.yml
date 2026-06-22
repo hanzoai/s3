@@ -1,17 +1,17 @@
 services:
-  seaweedfs:
+  hanzo:
     build:
       context: .
       dockerfile: Dockerfile
     command: >
-      /usr/bin/weed mini
-      -s3.config=/etc/seaweedfs/s3.json
+      /usr/bin/s3 mini
+      -s3.config=/etc/hanzo/s3.json
       -s3.externalUrl=http://localhost:9000
-      -ip=seaweedfs
+      -ip=hanzo
     volumes:
-      - ./s3.json:/etc/seaweedfs/s3.json:ro
+      - ./s3.json:/etc/hanzo/s3.json:ro
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://seaweedfs:8333/status"]
+      test: ["CMD", "curl", "-sf", "http://hanzo:8333/status"]
       interval: 3s
       timeout: 2s
       retries: 20
@@ -24,5 +24,5 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      seaweedfs:
+      hanzo:
         condition: service_healthy

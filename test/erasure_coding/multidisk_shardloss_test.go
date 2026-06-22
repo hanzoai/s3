@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/pb/master_pb"
-	"github.com/hanzoai/s3/weed/shell"
-	"github.com/hanzoai/s3/weed/storage/needle"
+	"github.com/hanzoai/s3/s3/pb/master_pb"
+	"github.com/hanzoai/s3/s3/shell"
+	"github.com/hanzoai/s3/s3/storage/needle"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -200,7 +200,7 @@ func disksWithShards(testDir string, volumeId uint32) int {
 func nodeVolumeDiskCounts(t *testing.T, commandEnv *shell.CommandEnv) map[string]int {
 	t.Helper()
 	var resp *master_pb.VolumeListResponse
-	err := commandEnv.MasterClient.WithClient(false, func(client master_pb.SeaweedClient) error {
+	err := commandEnv.MasterClient.WithClient(false, func(client master_pb.HanzoClient) error {
 		var e error
 		resp, e = client.VolumeList(context.Background(), &master_pb.VolumeListRequest{})
 		return e

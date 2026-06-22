@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# Run the pjdfstest POSIX compliance suite against a SeaweedFS FUSE mount.
+# Run the pjdfstest POSIX compliance suite against a Hanzo FUSE mount.
 #
 # This script:
-#   1. Starts a self-contained "weed mini" server (master+volume+filer in one)
-#   2. Mounts the filesystem with "weed mount"
+#   1. Starts a self-contained "s3 mini" server (master+volume+filer in one)
+#   2. Mounts the filesystem with "s3 mount"
 #   3. Builds pjdfstest from upstream and runs it under prove(1)
 #
-# Requirements: weed in $PATH, fusermount3, perl with TAP::Harness::Archive,
+# Requirements: s3 in $PATH, fusermount3, perl with TAP::Harness::Archive,
 # autoconf, make, sudo (pjdfstest exercises chown/chmod which need root).
 #
 # Usage:
@@ -16,8 +16,8 @@
 
 set -euo pipefail
 
-WEED_BIN="${WEED_BIN:-weed}"
-WORK_DIR="${WORK_DIR:-$(mktemp -d /tmp/seaweedfs-pjdfstest.XXXXXX)}"
+WEED_BIN="${WEED_BIN:-s3}"
+WORK_DIR="${WORK_DIR:-$(mktemp -d /tmp/hanzo-pjdfstest.XXXXXX)}"
 MOUNT_DIR="${MOUNT_DIR:-${WORK_DIR}/mnt}"
 DATA_DIR="${DATA_DIR:-${WORK_DIR}/data}"
 LOG_DIR="${LOG_DIR:-${WORK_DIR}/logs}"
@@ -33,7 +33,7 @@ PJDFSTEST_TESTS="${PJDFSTEST_TESTS:-tests/}"
 mini_pid=""
 mount_pid=""
 
-CI_LOG_DIR="/tmp/seaweedfs-pjdfstest-logs"
+CI_LOG_DIR="/tmp/hanzo-pjdfstest-logs"
 
 cleanup() {
   set +e
@@ -58,7 +58,7 @@ trap cleanup EXIT INT TERM
 
 mkdir -p "${MOUNT_DIR}" "${DATA_DIR}" "${LOG_DIR}"
 
-echo "==> Starting weed mini on ${FILER_ADDR}"
+echo "==> Starting s3 mini on ${FILER_ADDR}"
 "${WEED_BIN}" mini \
   -dir="${DATA_DIR}" \
   -ip=127.0.0.1 \
@@ -75,7 +75,7 @@ for i in $(seq 1 60); do
     break
   fi
   if ! kill -0 "${mini_pid}" 2>/dev/null; then
-    echo "weed mini exited early; log tail:" >&2
+    echo "s3 mini exited early; log tail:" >&2
     tail -n 100 "${LOG_DIR}/mini.log" >&2 || true
     exit 1
   fi
@@ -83,12 +83,12 @@ for i in $(seq 1 60); do
 done
 
 if ! (echo > "/dev/tcp/127.0.0.1/${FILER_PORT}") 2>/dev/null; then
-  echo "weed mini filer did not become reachable within 30s; log tail:" >&2
+  echo "s3 mini filer did not become reachable within 30s; log tail:" >&2
   tail -n 100 "${LOG_DIR}/mini.log" >&2 || true
   exit 1
 fi
 
-echo "==> Mounting SeaweedFS at ${MOUNT_DIR}"
+echo "==> Mounting Hanzo at ${MOUNT_DIR}"
 # allowOthers is required so that pjdfstest's setuid/setgid sub-tests (run via
 # sudo) can access files created as the invoking user.
 sudo "${WEED_BIN}" mount \
@@ -105,7 +105,7 @@ for i in $(seq 1 60); do
     break
   fi
   if ! kill -0 "${mount_pid}" 2>/dev/null; then
-    echo "weed mount exited early; log tail:" >&2
+    echo "s3 mount exited early; log tail:" >&2
     tail -n 100 "${LOG_DIR}/mount.log" >&2 || true
     exit 1
   fi

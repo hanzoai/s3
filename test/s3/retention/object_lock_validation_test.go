@@ -115,5 +115,5 @@ func TestObjectLockValidation(t *testing.T) {
 	t.Log("   - Object Lock retention functionality works")
 	t.Log("   - Objects are properly protected from deletion")
 	t.Log("")
-	t.Log("S3 clients will now recognize SeaweedFS as supporting Object Lock!")
+	t.Log("S3 clients will now recognize Hanzo as supporting Object Lock!")
 }

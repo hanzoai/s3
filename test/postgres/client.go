@@ -31,14 +31,14 @@ func clientMain() {
 	// Get PostgreSQL connection details from environment
 	host := getEnv("POSTGRES_HOST", defaultPostgresHost)
 	port := getEnv("POSTGRES_PORT", "5432")
-	user := getEnv("POSTGRES_USER", "seaweedfs")
+	user := getEnv("POSTGRES_USER", "hanzo")
 	dbname := getEnv("POSTGRES_DB", "default")
 
 	// Build connection string
 	connStr := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable",
 		host, port, user, dbname)
 
-	log.Println("SeaweedFS PostgreSQL Client Test")
+	log.Println("Hanzo PostgreSQL Client Test")
 	log.Println("=================================")
 	log.Printf("Connecting to: %s\n", connStr)
 
@@ -120,7 +120,7 @@ func testSystemInfo(db *sql.DB) error {
 	// Use individual connections for each query to avoid protocol issues
 	connStr := getEnv("POSTGRES_HOST", defaultPostgresHost)
 	port := getEnv("POSTGRES_PORT", "5432")
-	user := getEnv("POSTGRES_USER", "seaweedfs")
+	user := getEnv("POSTGRES_USER", "hanzo")
 	dbname := getEnv("POSTGRES_DB", "logs")
 
 	for _, q := range queries {
@@ -331,7 +331,7 @@ func testDatabaseSwitching(db *sql.DB) error {
 	// Use fresh connections to avoid protocol issues
 	connStr := getEnv("POSTGRES_HOST", defaultPostgresHost)
 	port := getEnv("POSTGRES_PORT", "5432")
-	user := getEnv("POSTGRES_USER", "seaweedfs")
+	user := getEnv("POSTGRES_USER", "hanzo")
 
 	for _, dbName := range databases {
 		log.Printf("  Attempting to switch to database: %s", dbName)
@@ -389,7 +389,7 @@ func testSystemColumns(db *sql.DB) error {
 		connStr := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable",
 			getEnv("POSTGRES_HOST", defaultPostgresHost),
 			getEnv("POSTGRES_PORT", "5432"),
-			getEnv("POSTGRES_USER", "seaweedfs"),
+			getEnv("POSTGRES_USER", "hanzo"),
 			getEnv("POSTGRES_DB", "logs"))
 
 		tempDB, err := sql.Open("postgres", connStr)
@@ -450,7 +450,7 @@ func testComplexQueries(db *sql.DB) error {
 		connStr := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable",
 			getEnv("POSTGRES_HOST", "postgres-server"),
 			getEnv("POSTGRES_PORT", "5432"),
-			getEnv("POSTGRES_USER", "seaweedfs"),
+			getEnv("POSTGRES_USER", "hanzo"),
 			getEnv("POSTGRES_DB", "logs"))
 
 		tempDB, err := sql.Open("postgres", connStr)

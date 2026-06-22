@@ -254,7 +254,7 @@ func TestKeycloakS3Operations(t *testing.T) {
 
 	t.Run("object_operations", func(t *testing.T) {
 		objectKey := "test-object.txt"
-		objectContent := "Hello from Keycloak-authenticated SeaweedFS!"
+		objectContent := "Hello from Keycloak-authenticated Hanzo!"
 
 		// Put object
 		err = framework.PutTestObject(s3Client, bucketName, objectKey, objectContent)

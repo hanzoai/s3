@@ -1,8 +1,8 @@
-# SeaweedFS PostgreSQL Test Setup - Complete Overview
+# Hanzo PostgreSQL Test Setup - Complete Overview
 
 ## 🎯 What Was Created
 
-A comprehensive Docker Compose test environment that validates the SeaweedFS PostgreSQL wire protocol implementation with real MQ data.
+A comprehensive Docker Compose test environment that validates the Hanzo PostgreSQL wire protocol implementation with real MQ data.
 
 ## 📁 Complete File Structure
 
@@ -10,7 +10,7 @@ A comprehensive Docker Compose test environment that validates the SeaweedFS Pos
 test/postgres/
 ├── docker-compose.yml          # Multi-service orchestration
 ├── config/
-│   └── s3config.json          # SeaweedFS S3 API configuration
+│   └── s3config.json          # Hanzo S3 API configuration
 ├── producer.go                # MQ test data generator (7 topics, 4400+ records)
 ├── client.go                  # Comprehensive PostgreSQL test client
 ├── Dockerfile.producer        # Producer service container
@@ -51,7 +51,7 @@ cd test/postgres
 
 ```
 ┌──────────────────┐   ┌───────────────────┐   ┌─────────────────┐
-│   Docker Host    │   │   SeaweedFS       │   │   PostgreSQL    │
+│   Docker Host    │   │   Hanzo       │   │   PostgreSQL    │
 │                  │   │   Cluster         │   │   Wire Protocol │
 │   psql clients   │◄──┤   - Master:9333   │◄──┤   Server:5432   │
 │   Go clients     │   │   - Filer:8888    │   │                 │
@@ -73,7 +73,7 @@ cd test/postgres
 
 | Service | Purpose | Port | Health Check |
 |---------|---------|------|--------------|
-| **seaweedfs** | Complete SeaweedFS cluster | 9333,8888,8333,8085,26777→16777,27777→17777 | `/cluster/status` |
+| **hanzo** | Complete Hanzo cluster | 9333,8888,8333,8085,26777→16777,27777→17777 | `/cluster/status` |
 | **postgres-server** | PostgreSQL wire protocol | 5432 | TCP connection |
 | **mq-producer** | Test data generator | - | One-time execution |
 | **postgres-client** | Automated test suite | - | On-demand |
@@ -280,14 +280,14 @@ This test setup proves:
 - Comprehensive error handling
 
 ### ✅ Performance and Scalability
-- Direct SQL engine integration (same as `weed-sql`)
+- Direct SQL engine integration (same as `s3-sql`)
 - No translation overhead for real queries
 - Efficient data access from stored formats
 - Scalable architecture with service discovery
 
 ## 🚀 Ready for Production
 
-The test environment demonstrates that SeaweedFS can serve as a **drop-in PostgreSQL replacement** for:
+The test environment demonstrates that Hanzo can serve as a **drop-in PostgreSQL replacement** for:
 - **Analytics workloads** on MQ data
 - **BI tool integration** with standard PostgreSQL drivers
 - **Application integration** using existing PostgreSQL libraries
@@ -304,4 +304,4 @@ The test environment demonstrates that SeaweedFS can serve as a **drop-in Postgr
 - ✅ **Complete automation** with health checks
 - ✅ **Comprehensive documentation** provided
 
-This test setup validates that the PostgreSQL wire protocol implementation is **production-ready** and provides **enterprise-grade database access** to SeaweedFS MQ data.
+This test setup validates that the PostgreSQL wire protocol implementation is **production-ready** and provides **enterprise-grade database access** to Hanzo MQ data.

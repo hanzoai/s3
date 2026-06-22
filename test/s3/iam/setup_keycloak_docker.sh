@@ -5,11 +5,11 @@ set -e
 KEYCLOAK_URL="http://keycloak:8080"
 KEYCLOAK_ADMIN_USER="admin"
 KEYCLOAK_ADMIN_PASSWORD="admin"
-REALM_NAME="seaweedfs-test"
-CLIENT_ID="seaweedfs-s3"
-CLIENT_SECRET="seaweedfs-s3-secret"
+REALM_NAME="hanzo-test"
+CLIENT_ID="hanzo-s3"
+CLIENT_SECRET="hanzo-s3-secret"
 
-echo "🔧 Setting up Keycloak realm and users for SeaweedFS S3 IAM testing..."
+echo "🔧 Setting up Keycloak realm and users for Hanzo S3 IAM testing..."
 echo "Keycloak URL: $KEYCLOAK_URL"
 
 # Wait for Keycloak to be ready
@@ -153,7 +153,7 @@ cat > iam_config.json << 'EOF'
   "sts": {
     "tokenDuration": "1h",
     "maxSessionLength": "12h",
-    "issuer": "seaweedfs-sts",
+    "issuer": "hanzo-sts",
     "signingKey": "dGVzdC1zaWduaW5nLWtleS0zMi1jaGFyYWN0ZXJzLWxvbmc="
   },
   "providers": [
@@ -162,11 +162,11 @@ cat > iam_config.json << 'EOF'
       "type": "oidc",
       "enabled": true,
       "config": {
-        "issuer": "http://keycloak:8080/realms/seaweedfs-test",
-        "clientId": "seaweedfs-s3",
-        "clientSecret": "seaweedfs-s3-secret",
-        "jwksUri": "http://keycloak:8080/realms/seaweedfs-test/protocol/openid-connect/certs",
-        "userInfoUri": "http://keycloak:8080/realms/seaweedfs-test/protocol/openid-connect/userinfo",
+        "issuer": "http://keycloak:8080/realms/hanzo-test",
+        "clientId": "hanzo-s3",
+        "clientSecret": "hanzo-s3-secret",
+        "jwksUri": "http://keycloak:8080/realms/hanzo-test/protocol/openid-connect/certs",
+        "userInfoUri": "http://keycloak:8080/realms/hanzo-test/protocol/openid-connect/userinfo",
         "scopes": ["openid", "profile", "email"],
         "claimsMapping": {
           "username": "preferred_username",

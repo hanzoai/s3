@@ -16,7 +16,7 @@ func (h *Handler) ServeIndex(w http.ResponseWriter, r *http.Request) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SeaweedFS Telemetry Dashboard</title>
+    <title>Hanzo Telemetry Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -86,8 +86,8 @@ func (h *Handler) ServeIndex(w http.ResponseWriter, r *http.Request) {
 <body>
     <div class="container">
         <div class="header">
-            <h1>SeaweedFS Telemetry Dashboard</h1>
-            <p>Privacy-respecting usage analytics for SeaweedFS</p>
+            <h1>Hanzo Telemetry Dashboard</h1>
+            <p>Privacy-respecting usage analytics for Hanzo</p>
         </div>
 
         <div id="loading" class="loading">Loading telemetry data...</div>

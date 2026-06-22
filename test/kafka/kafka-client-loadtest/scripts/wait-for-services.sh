@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Wait for SeaweedFS and Kafka Gateway services to be ready
+# Wait for Hanzo and Kafka Gateway services to be ready
 # This script checks service health and waits until all services are operational
 
 set -euo pipefail
@@ -61,16 +61,16 @@ check_tcp_service() {
     fi
 }
 
-# Check SeaweedFS Master
-check_seaweedfs_master() {
-    if check_http_service "$SEAWEEDFS_MASTER_URL/cluster/status" "SeaweedFS Master"; then
+# Check Hanzo Master
+check_hanzo_master() {
+    if check_http_service "$SEAWEEDFS_MASTER_URL/cluster/status" "Hanzo Master"; then
         # Additional check: ensure cluster has volumes
         local status_json
         status_json=$(curl -s "$SEAWEEDFS_MASTER_URL/cluster/status" 2>/dev/null || echo "{}")
         
         # Check if we have at least one volume server
         if echo "$status_json" | grep -q '"Max":0'; then
-            log_warning "SeaweedFS Master is running but no volumes are available"
+            log_warning "Hanzo Master is running but no volumes are available"
             return 1
         fi
         
@@ -79,9 +79,9 @@ check_seaweedfs_master() {
     return 1
 }
 
-# Check SeaweedFS Filer
-check_seaweedfs_filer() {
-    check_http_service "$SEAWEEDFS_FILER_URL/" "SeaweedFS Filer"
+# Check Hanzo Filer
+check_hanzo_filer() {
+    check_http_service "$SEAWEEDFS_FILER_URL/" "Hanzo Filer"
 }
 
 # Check Kafka Gateway
@@ -135,7 +135,7 @@ check_schema_registry() {
 
 # Check MQ Broker
 check_mq_broker() {
-    check_tcp_service "localhost" "17777" "SeaweedFS MQ Broker"
+    check_tcp_service "localhost" "17777" "Hanzo MQ Broker"
 }
 
 # Main health check function
@@ -144,27 +144,27 @@ check_all_services() {
     
     log_info "Checking service health..."
     
-    # Check SeaweedFS Master
-    if check_seaweedfs_master; then
-        log_success "✓ SeaweedFS Master is healthy"
+    # Check Hanzo Master
+    if check_hanzo_master; then
+        log_success "✓ Hanzo Master is healthy"
     else
-        log_error "✗ SeaweedFS Master is not ready"
+        log_error "✗ Hanzo Master is not ready"
         all_healthy=false
     fi
     
-    # Check SeaweedFS Filer
-    if check_seaweedfs_filer; then
-        log_success "✓ SeaweedFS Filer is healthy"
+    # Check Hanzo Filer
+    if check_hanzo_filer; then
+        log_success "✓ Hanzo Filer is healthy"
     else
-        log_error "✗ SeaweedFS Filer is not ready"
+        log_error "✗ Hanzo Filer is not ready"
         all_healthy=false
     fi
     
     # Check MQ Broker
     if check_mq_broker; then
-        log_success "✓ SeaweedFS MQ Broker is healthy"
+        log_success "✓ Hanzo MQ Broker is healthy"
     else
-        log_error "✗ SeaweedFS MQ Broker is not ready"
+        log_error "✗ Hanzo MQ Broker is not ready"
         all_healthy=false
     fi
     
@@ -244,7 +244,7 @@ wait_for_services() {
     
     log_error "MQ Broker Logs (last 30 lines):"
     log_error "==========================================="
-    docker compose logs --tail=30 seaweedfs-mq-broker 2>&1 || echo "Failed to get MQ Broker logs"
+    docker compose logs --tail=30 hanzo-mq-broker 2>&1 || echo "Failed to get MQ Broker logs"
     log_error "==========================================="
     
     return 1

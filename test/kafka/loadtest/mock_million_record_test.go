@@ -14,11 +14,11 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 
-	"github.com/hanzoai/s3/weed/pb"
+	"github.com/hanzoai/s3/s3/pb"
 
-	"github.com/hanzoai/s3/weed/glog"
-	"github.com/hanzoai/s3/weed/pb/mq_pb"
-	"github.com/hanzoai/s3/weed/pb/schema_pb"
+	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/pb/mq_pb"
+	"github.com/hanzoai/s3/s3/pb/schema_pb"
 )
 
 // TestRecord represents a record with reasonable fields for integration testing
@@ -43,7 +43,7 @@ func GenerateMockTestRecord(id int) MockTestRecord {
 
 	data := map[string]interface{}{
 		"session_id": fmt.Sprintf("sess_%d_%d", id, time.Now().Unix()),
-		"user_agent": "Mozilla/5.0 (compatible; SeaweedFS-Test/1.0)",
+		"user_agent": "Mozilla/5.0 (compatible; Hanzo-Test/1.0)",
 		"referrer":   "https://example.com/page" + strconv.Itoa(rand.Intn(100)),
 		"duration":   rand.Intn(3600), // seconds
 		"score":      rand.Float64() * 100,
@@ -102,7 +102,7 @@ func SerializeMockTestRecord(record MockTestRecord) ([]byte, []byte) {
 type DirectBrokerClient struct {
 	brokerAddress string
 	conn          *grpc.ClientConn
-	client        mq_pb.SeaweedMessagingClient
+	client        mq_pb.HanzoMessagingClient
 
 	// Publisher streams: topic-partition -> stream info
 	publishersLock sync.RWMutex
@@ -112,11 +112,11 @@ type DirectBrokerClient struct {
 	cancel context.CancelFunc
 }
 
-// PublisherSession tracks a publishing stream to SeaweedMQ broker
+// PublisherSession tracks a publishing stream to HanzoMQ broker
 type PublisherSession struct {
 	Topic        string
 	Partition    int32
-	Stream       mq_pb.SeaweedMessaging_PublishMessageClient
+	Stream       mq_pb.HanzoMessaging_PublishMessageClient
 	MessageCount int64 // Track messages sent for batch ack handling
 }
 
@@ -143,7 +143,7 @@ func NewDirectBrokerClient(brokerAddr string) (*DirectBrokerClient, error) {
 	// in the returned DirectBrokerClient so callers can cancel when done.
 	clientCtx, clientCancel := context.WithCancel(context.Background())
 
-	client := mq_pb.NewSeaweedMessagingClient(conn)
+	client := mq_pb.NewHanzoMessagingClient(conn)
 
 	return &DirectBrokerClient{
 		brokerAddress: brokerAddr,

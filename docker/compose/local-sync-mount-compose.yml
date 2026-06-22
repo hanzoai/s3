@@ -1,7 +1,7 @@
 version: '3.9'
 services:
   node1:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     command: "server -master -volume -filer"
     ports:
       - 8888:8888
@@ -12,7 +12,7 @@ services:
       start_period: 10s
       timeout: 30s
   mount1:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     privileged: true
     command: "mount -filer=node1:8888 -dir=/mnt -dirAutoCreate"
     healthcheck:
@@ -24,7 +24,7 @@ services:
       node1:
         condition: service_healthy
   node2:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 7888:8888
       - 17888:18888
@@ -35,7 +35,7 @@ services:
       start_period: 10s
       timeout: 30s
   mount2:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     privileged: true
     command: "mount -filer=node2:8888 -dir=/mnt -dirAutoCreate"
     healthcheck:
@@ -47,7 +47,7 @@ services:
       node2:
         condition: service_healthy
   sync:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     command: "-v=4 filer.sync -a=node1:8888 -b=node2:8888 -a.debug -b.debug"
     depends_on:
       mount1:

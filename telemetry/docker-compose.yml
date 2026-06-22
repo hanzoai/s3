@@ -41,7 +41,7 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana-dashboard.json:/var/lib/grafana/dashboards/seaweedfs-telemetry.json
+      - ./grafana-dashboard.json:/var/lib/grafana/dashboards/hanzo-telemetry.json
       - ./grafana-provisioning:/etc/grafana/provisioning
     networks:
       - telemetry

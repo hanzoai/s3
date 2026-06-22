@@ -12,7 +12,7 @@ echo "========================================================="
 echo "Checking if Kafka gateway is running on localhost:9093..."
 if ! nc -z localhost 9093 2>/dev/null; then
     echo "[FAIL] Kafka gateway is not running on localhost:9093"
-    echo "Please start SeaweedMQ with Kafka gateway enabled first"
+    echo "Please start HanzoMQ with Kafka gateway enabled first"
     exit 1
 fi
 echo "[OK] Kafka gateway is running"
@@ -68,7 +68,7 @@ echo
 echo "Summary:"
 echo "- [OK] Topics with '_' prefix bypass schema validation"
 echo "- [OK] Raw messages are stored as bytes in the 'value' field"
-echo "- [OK] kafka-go client works with SeaweedMQ"
+echo "- [OK] kafka-go client works with HanzoMQ"
 echo "- [OK] No schema validation errors for '_raw_messages' topic"
 echo
 echo "The SMQ schema bypass functionality is working correctly!"

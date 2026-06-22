@@ -182,7 +182,7 @@ register_loadtest_schemas() {
     local avro_value_schema='{
         "type": "record",
         "name": "LoadTestMessage",
-        "namespace": "com.seaweedfs.loadtest",
+        "namespace": "com.s3.loadtest",
         "fields": [
             {"name": "id", "type": "string"},
             {"name": "timestamp", "type": "long"},
@@ -217,7 +217,7 @@ register_loadtest_schemas() {
     # Define the Protobuf schema for load test messages
     local protobuf_value_schema='syntax = "proto3";
 
-package com.seaweedfs.loadtest;
+package com.s3.loadtest;
 
 message LoadTestMessage {
   string id = 1;

@@ -1,7 +1,7 @@
 #!/bin/bash
-# Identical SQLite + MySQL + raw-fs workloads on HOST (local APFS) vs the SeaweedFS
+# Identical SQLite + MySQL + raw-fs workloads on HOST (local APFS) vs the Hanzo
 # FUSE mount. Same disk underneath, same DB durability settings -> the delta is the
-# SeaweedFS+FUSE stack.
+# Hanzo+FUSE stack.
 BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$BIN/lib.sh"
 HOSTDIR=$WORK/hostdir          # local disk, NOT under the FUSE mount
@@ -19,7 +19,7 @@ mysqld_run() {
 echo "###### FUSE vs HOST   $(date) ######"
 echo "ROWS=$ROWS  payload=4096B incompressible  SQLite(journal=DELETE,sync=FULL)  InnoDB(trx_commit=1,flush=fsync)"
 
-# ===================== HOST (local APFS, no SeaweedFS) =====================
+# ===================== HOST (local APFS, no Hanzo) =====================
 clean_state >/dev/null 2>&1
 rm -rf "$HOSTDIR"; mkdir -p "$HOSTDIR/sqlite" "$HOSTDIR/fsb"
 echo; echo "===== HOST: raw fs ====="; python3 "$BIN/fsbench.py" "$HOSTDIR/fsb"
@@ -29,7 +29,7 @@ mysqld_init_at "$HOSTDIR/mysql/data"; mysqld_run "$HOSTDIR/mysql/data"
 python3 "$BIN/mysql_bench.py" "$MYSQL_SOCK" cmp $ROWS $MBATCH $OLTP
 mysql_stop_graceful
 
-# ===================== FUSE (SeaweedFS mount) =====================
+# ===================== FUSE (Hanzo mount) =====================
 cluster_start || exit 1; mount_start || exit 1
 mkdir -p "$MNT/sqlite" "$MNT/fsb"
 echo; echo "===== FUSE: raw fs ====="; python3 "$BIN/fsbench.py" "$MNT/fsb"

@@ -22,15 +22,15 @@ import (
 )
 
 // Test configuration
-// Uses two SeaweedFS instances:
+// Uses two Hanzo instances:
 // - Primary: The one being tested (has remote caching)
 // - Remote: Acts as the "remote" S3 storage
 const (
-	// Primary SeaweedFS
+	// Primary Hanzo
 	primaryEndpoint   = "http://localhost:8333"
 	primaryMasterPort = "9333"
 
-	// Remote SeaweedFS (acts as remote storage)
+	// Remote Hanzo (acts as remote storage)
 	remoteEndpoint = "http://localhost:8334"
 
 	// Credentials (anonymous access for testing)
@@ -40,8 +40,8 @@ const (
 	// Bucket name - mounted on primary as remote storage
 	testBucket = "remotemounted"
 
-	// Path to weed binary
-	weedBinary = "../../../weed/weed_binary"
+	// Path to s3 binary
+	s3Binary = "../../../s3/s3_binary"
 )
 
 var (
@@ -73,15 +73,15 @@ func createS3Client(endpoint string) *s3.S3 {
 // checkServersRunning ensures the servers are running and fails if they aren't
 func checkServersRunning(t *testing.T) {
 	resp, err := http.Get(primaryEndpoint)
-	require.NoErrorf(t, err, "Primary SeaweedFS not running at %s", primaryEndpoint)
+	require.NoErrorf(t, err, "Primary Hanzo not running at %s", primaryEndpoint)
 	resp.Body.Close()
 
 	resp, err = http.Get(remoteEndpoint)
-	require.NoErrorf(t, err, "Remote SeaweedFS not running at %s", remoteEndpoint)
+	require.NoErrorf(t, err, "Remote Hanzo not running at %s", remoteEndpoint)
 	resp.Body.Close()
 }
 
-// stripLogs removes SeaweedFS log lines from the output
+// stripLogs removes Hanzo log lines from the output
 func stripLogs(output string) string {
 	lines := strings.Split(output, "\n")
 	var filtered []string
@@ -99,27 +99,27 @@ func isDigit(b byte) bool {
 	return b >= '0' && b <= '9'
 }
 
-// runWeedShell executes a weed shell command
-func runWeedShell(t *testing.T, command string) (string, error) {
-	cmd := exec.Command(weedBinary, "shell", "-master=localhost:"+primaryMasterPort)
+// runS3Shell executes a s3 shell command
+func runS3Shell(t *testing.T, command string) (string, error) {
+	cmd := exec.Command(s3Binary, "shell", "-master=localhost:"+primaryMasterPort)
 	cmd.Stdin = strings.NewReader(command + "\nexit\n")
 	output, err := cmd.CombinedOutput()
 	result := stripLogs(string(output))
 	if err != nil {
-		t.Logf("weed shell command '%s' failed: %v, output: %s", command, err, result)
+		t.Logf("s3 shell command '%s' failed: %v, output: %s", command, err, result)
 		return result, err
 	}
 	return result, nil
 }
 
-// runWeedShellWithOutput executes a weed shell command and returns output even on error
-func runWeedShellWithOutput(t *testing.T, command string) (output string, err error) {
-	cmd := exec.Command(weedBinary, "shell", "-master=localhost:"+primaryMasterPort)
+// runS3ShellWithOutput executes a s3 shell command and returns output even on error
+func runS3ShellWithOutput(t *testing.T, command string) (output string, err error) {
+	cmd := exec.Command(s3Binary, "shell", "-master=localhost:"+primaryMasterPort)
 	cmd.Stdin = strings.NewReader(command + "\nexit\n")
 	outputBytes, err := cmd.CombinedOutput()
 	output = stripLogs(string(outputBytes))
 	if err != nil {
-		t.Logf("weed shell command '%s' output: %s", command, output)
+		t.Logf("s3 shell command '%s' output: %s", command, output)
 	}
 	return output, err
 }
@@ -162,23 +162,23 @@ func fileExists(t *testing.T, key string) bool {
 	return err == nil
 }
 
-// uploadToPrimary uploads an object to the primary SeaweedFS (local write)
+// uploadToPrimary uploads an object to the primary Hanzo (local write)
 func uploadToPrimary(t *testing.T, key string, data []byte) {
 	_, err := getPrimaryClient().PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(testBucket),
 		Key:    aws.String(key),
 		Body:   bytes.NewReader(data),
 	})
-	require.NoError(t, err, "failed to upload to primary SeaweedFS")
+	require.NoError(t, err, "failed to upload to primary Hanzo")
 }
 
-// getFromPrimary gets an object from primary SeaweedFS
+// getFromPrimary gets an object from primary Hanzo
 func getFromPrimary(t *testing.T, key string) []byte {
 	resp, err := getPrimaryClient().GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(testBucket),
 		Key:    aws.String(key),
 	})
-	require.NoError(t, err, "failed to get from primary SeaweedFS")
+	require.NoError(t, err, "failed to get from primary Hanzo")
 	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
@@ -189,7 +189,7 @@ func getFromPrimary(t *testing.T, key string) []byte {
 // uncacheLocal purges the local cache, forcing data to be fetched from remote
 func uncacheLocal(t *testing.T, pattern string) {
 	t.Logf("Purging local cache for pattern: %s", pattern)
-	output, err := runWeedShell(t, fmt.Sprintf("remote.uncache -dir=/buckets/%s -include=%s", testBucket, pattern))
+	output, err := runS3Shell(t, fmt.Sprintf("remote.uncache -dir=/buckets/%s -include=%s", testBucket, pattern))
 	if err != nil {
 		t.Logf("uncacheLocal warning: %v", err)
 	}
@@ -208,7 +208,7 @@ func TestRemoteCacheBasic(t *testing.T) {
 	testData := []byte("Hello, this is test data for remote caching!")
 
 	// Step 1: Write to local
-	t.Log("Step 1: Writing object to primary SeaweedFS (local)...")
+	t.Log("Step 1: Writing object to primary Hanzo (local)...")
 	uploadToPrimary(t, testKey, testData)
 
 	// Verify it's readable
@@ -253,7 +253,7 @@ func TestRemoteCacheConcurrent(t *testing.T) {
 	}
 
 	// Step 1: Write to local
-	t.Log("Step 1: Writing 1MB object to primary SeaweedFS...")
+	t.Log("Step 1: Writing 1MB object to primary Hanzo...")
 	uploadToPrimary(t, testKey, testData)
 
 	// Verify it's readable
@@ -332,7 +332,7 @@ func TestRemoteCacheLargeObject(t *testing.T) {
 	}
 
 	// Step 1: Write to local
-	t.Log("Step 1: Writing 5MB object to primary SeaweedFS...")
+	t.Log("Step 1: Writing 5MB object to primary Hanzo...")
 	uploadToPrimary(t, testKey, testData)
 
 	// Verify it's readable
@@ -408,11 +408,11 @@ func TestRemoteCacheNotFound(t *testing.T) {
 // TestMain sets up and tears down the test environment
 func TestMain(m *testing.M) {
 	if !isServerRunning(primaryEndpoint) {
-		fmt.Println("WARNING: Primary SeaweedFS not running at", primaryEndpoint)
+		fmt.Println("WARNING: Primary Hanzo not running at", primaryEndpoint)
 		fmt.Println("   Run 'make test-with-server' to start servers automatically")
 	}
 	if !isServerRunning(remoteEndpoint) {
-		fmt.Println("WARNING: Remote SeaweedFS not running at", remoteEndpoint)
+		fmt.Println("WARNING: Remote Hanzo not running at", remoteEndpoint)
 		fmt.Println("   Run 'make test-with-server' to start servers automatically")
 	}
 

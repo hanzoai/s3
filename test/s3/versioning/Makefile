@@ -1,10 +1,10 @@
 # S3 API Test Makefile
 # This Makefile provides comprehensive targets for running S3 versioning tests
 
-.PHONY: all test help build-weed setup-server start-server stop-server test-versioning test-versioning-quick test-versioning-regressions test-versioning-comprehensive test-all clean logs check-deps
+.PHONY: all test help build-s3 setup-server start-server stop-server test-versioning test-versioning-quick test-versioning-regressions test-versioning-comprehensive test-all clean logs check-deps
 
 # Configuration
-WEED_BINARY := ../../../weed/weed_binary
+WEED_BINARY := ../../../s3/s3_binary
 S3_PORT := 8333
 MASTER_PORT := 9333
 VOLUME_PORT := 8080
@@ -28,11 +28,11 @@ help:
 	@echo ""
 	@echo "Available targets:"
 	@echo "  help                    - Show this help message"
-	@echo "  build-weed             - Build the SeaweedFS binary"
+	@echo "  build-s3             - Build the Hanzo binary"
 	@echo "  check-deps             - Check dependencies and build binary if needed"
-	@echo "  start-server           - Start SeaweedFS server for testing"
+	@echo "  start-server           - Start Hanzo server for testing"
 	@echo "  start-server-simple    - Start server without process cleanup (for CI)"
-	@echo "  stop-server            - Stop SeaweedFS server"
+	@echo "  stop-server            - Stop Hanzo server"
 	@echo "  test-versioning        - Run all versioning tests"
 	@echo "  test-versioning-quick  - Run core versioning tests only"
 	@echo "  test-versioning-regressions - Run targeted versioning regression tests"
@@ -49,20 +49,20 @@ help:
 	@echo "  TEST_TIMEOUT=${TEST_TIMEOUT}"
 
 # Check dependencies
-# Build the SeaweedFS binary
-build-weed:
-	@echo "Building SeaweedFS binary..."
-	@cd ../../../weed && go build -o weed_binary .
+# Build the Hanzo binary
+build-s3:
+	@echo "Building Hanzo binary..."
+	@cd ../../../s3 && go build -o s3_binary .
 	@chmod +x $(WEED_BINARY)
-	@echo "OK SeaweedFS binary built at $(WEED_BINARY)"
+	@echo "OK Hanzo binary built at $(WEED_BINARY)"
 
-check-deps: build-weed
+check-deps: build-s3
 	@echo "Checking dependencies..."
 	@echo "DEBUG: Checking Go installation..."
 	@command -v go >/dev/null 2>&1 || (echo "Go is required but not installed" && exit 1)
 	@echo "DEBUG: Go version: $$(go version)"
 	@echo "🔍 DEBUG: Checking binary at $(WEED_BINARY)..."
-	@test -f $(WEED_BINARY) || (echo "SeaweedFS binary not found at $(WEED_BINARY)" && exit 1)
+	@test -f $(WEED_BINARY) || (echo "Hanzo binary not found at $(WEED_BINARY)" && exit 1)
 	@echo "🔍 DEBUG: Binary size: $$(ls -lh $(WEED_BINARY) | awk '{print $$5}')"
 	@echo "🔍 DEBUG: Binary permissions: $$(ls -la $(WEED_BINARY) | awk '{print $$1}')"
 	@echo "🔍 DEBUG: Checking Go module dependencies..."
@@ -70,14 +70,14 @@ check-deps: build-weed
 	@go list -m github.com/stretchr/testify >/dev/null 2>&1 || (echo "Testify not found. Run 'go mod tidy'." && exit 1)
 	@echo "OK All dependencies are available"
 
-# Start SeaweedFS server for testing
+# Start Hanzo server for testing
 start-server: check-deps
-	@echo "Starting SeaweedFS server..."
+	@echo "Starting Hanzo server..."
 	@echo "🔍 DEBUG: Current working directory: $$(pwd)"
-	@echo "🔍 DEBUG: Checking for existing weed processes..."
-	@ps aux | grep weed | grep -v grep || echo "No existing weed processes found"
+	@echo "🔍 DEBUG: Checking for existing s3 processes..."
+	@ps aux | grep s3 | grep -v grep || echo "No existing s3 processes found"
 	@echo "🔍 DEBUG: Cleaning up any existing PID file..."
-	@rm -f weed-server.pid
+	@rm -f s3-server.pid
 	@echo "🔍 DEBUG: Checking for port conflicts..."
 	@if netstat -tlnp 2>/dev/null | grep $(S3_PORT) >/dev/null; then \
 		echo "⚠️  Port $(S3_PORT) is already in use, trying to find the process..."; \
@@ -91,18 +91,18 @@ start-server: check-deps
 	@ls -la ../../../docker/compose/s3.json || echo "⚠️  Config file not found, continuing without it"
 	@echo "🔍 DEBUG: Creating volume directory..."
 	@mkdir -p ./test-volume-data
-	@echo "🔍 DEBUG: Launching SeaweedFS server in background..."
+	@echo "🔍 DEBUG: Launching Hanzo server in background..."
 	@echo "🔍 DEBUG: Command: $(WEED_BINARY) mini -dir=./test-volume-data -s3.port=$(S3_PORT) -s3.config=../../../docker/compose/s3.json"
 	@$(WEED_BINARY) mini \
 		-dir=./test-volume-data \
 		-s3.port=$(S3_PORT) \
 		-s3.config=../../../docker/compose/s3.json \
-		> weed-test.log 2>&1 & echo $$! > weed-server.pid
-	@echo "🔍 DEBUG: Server PID: $$(cat weed-server.pid 2>/dev/null || echo 'PID file not found')"
+		> s3-test.log 2>&1 & echo $$! > s3-server.pid
+	@echo "🔍 DEBUG: Server PID: $$(cat s3-server.pid 2>/dev/null || echo 'PID file not found')"
 	@echo "🔍 DEBUG: Checking if PID is still running..."
 	@sleep 2
-	@if [ -f weed-server.pid ]; then \
-		SERVER_PID=$$(cat weed-server.pid); \
+	@if [ -f s3-server.pid ]; then \
+		SERVER_PID=$$(cat s3-server.pid); \
 		ps -p $$SERVER_PID || echo "⚠️  Server PID $$SERVER_PID not found after 2 seconds"; \
 	else \
 		echo "⚠️  PID file not found"; \
@@ -111,15 +111,15 @@ start-server: check-deps
 	@for i in $$(seq 1 90); do \
 		echo "🔍 DEBUG: Attempt $$i/90 - checking port $(S3_PORT)"; \
 		if curl -s http://localhost:$(S3_PORT) >/dev/null 2>&1; then \
-			echo "✅ SeaweedFS server started successfully on port $(S3_PORT) after $$i seconds"; \
+			echo "✅ Hanzo server started successfully on port $(S3_PORT) after $$i seconds"; \
 			exit 0; \
 		fi; \
 		if [ $$i -eq 5 ]; then \
 			echo "🔍 DEBUG: After 5 seconds, checking process and logs..."; \
-			ps aux | grep weed | grep -v grep || echo "No weed processes found"; \
-			if [ -f weed-test.log ]; then \
+			ps aux | grep s3 | grep -v grep || echo "No s3 processes found"; \
+			if [ -f s3-test.log ]; then \
 				echo "=== First server logs ==="; \
-				head -20 weed-test.log; \
+				head -20 s3-test.log; \
 			fi; \
 		fi; \
 		if [ $$i -eq 15 ]; then \
@@ -130,31 +130,31 @@ start-server: check-deps
 		fi; \
 		if [ $$i -eq 30 ]; then \
 			echo "⚠️  Server taking longer than expected (30s), checking logs..."; \
-			if [ -f weed-test.log ]; then \
+			if [ -f s3-test.log ]; then \
 				echo "=== Recent server logs ==="; \
-				tail -20 weed-test.log; \
+				tail -20 s3-test.log; \
 			fi; \
 		fi; \
 		sleep 1; \
 	done; \
 	echo "❌ Server failed to start within 90 seconds"; \
 	echo "🔍 DEBUG: Final process check:"; \
-	ps aux | grep weed | grep -v grep || echo "No weed processes found"; \
+	ps aux | grep s3 | grep -v grep || echo "No s3 processes found"; \
 	echo "🔍 DEBUG: Final port check:"; \
 	netstat -tlnp 2>/dev/null | grep -E "(8333|9333|8080)" || echo "No ports bound"; \
 	echo "=== Full server logs ==="; \
-	if [ -f weed-test.log ]; then \
-		cat weed-test.log; \
+	if [ -f s3-test.log ]; then \
+		cat s3-test.log; \
 	else \
 		echo "No log file found"; \
 	fi; \
 	exit 1
 
-# Stop SeaweedFS server
+# Stop Hanzo server
 stop-server:
-	@echo "Stopping SeaweedFS server..."
-	@if [ -f weed-server.pid ]; then \
-		SERVER_PID=$$(cat weed-server.pid); \
+	@echo "Stopping Hanzo server..."
+	@if [ -f s3-server.pid ]; then \
+		SERVER_PID=$$(cat s3-server.pid); \
 		echo "Killing server PID $$SERVER_PID"; \
 		if ps -p $$SERVER_PID >/dev/null 2>&1; then \
 			kill -TERM $$SERVER_PID 2>/dev/null || true; \
@@ -167,19 +167,19 @@ stop-server:
 		else \
 			echo "Process $$SERVER_PID not found (already stopped)"; \
 		fi; \
-		rm -f weed-server.pid; \
+		rm -f s3-server.pid; \
 	else \
 		echo "No PID file found, checking for running processes..."; \
 		echo "⚠️  Skipping automatic process cleanup to avoid CI issues"; \
-		echo "Note: Any remaining weed processes should be cleaned up by the CI environment"; \
+		echo "Note: Any remaining s3 processes should be cleaned up by the CI environment"; \
 	fi
-	@echo "✅ SeaweedFS server stopped"
+	@echo "✅ Hanzo server stopped"
 
 # Show server logs
 logs:
-	@if test -f weed-test.log; then \
-		echo "=== SeaweedFS Server Logs ==="; \
-		tail -f weed-test.log; \
+	@if test -f s3-test.log; then \
+		echo "=== Hanzo Server Logs ==="; \
+		tail -f s3-test.log; \
 	else \
 		echo "No log file found. Server may not be running."; \
 	fi
@@ -221,7 +221,7 @@ test-with-server: start-server
 	@echo "🔍 DEBUG: Test timeout: $(TEST_TIMEOUT)"
 	@echo "Running versioning tests with managed server..."
 	@trap "$(MAKE) stop-server" EXIT; \
-	$(MAKE) test-versioning || (echo "❌ Tests failed, showing server logs:" && echo "=== Last 50 lines of server logs ===" && tail -50 weed-test.log && echo "=== End of server logs ===" && exit 1)
+	$(MAKE) test-versioning || (echo "❌ Tests failed, showing server logs:" && echo "=== Last 50 lines of server logs ===" && tail -50 s3-test.log && echo "=== End of server logs ===" && exit 1)
 	@$(MAKE) stop-server
 	@echo "✅ Tests completed and server stopped"
 
@@ -229,16 +229,16 @@ test-with-server: start-server
 test-versioning-with-configs: check-deps
 	@echo "Testing with different S3 configurations..."
 	@echo "Testing with empty folder allowed..."
-	@$(WEED_BINARY) mini -s3.port=$(S3_PORT) > weed-test-config1.log 2>&1 & echo $$! > weed-config1.pid
+	@$(WEED_BINARY) mini -s3.port=$(S3_PORT) > s3-test-config1.log 2>&1 & echo $$! > s3-config1.pid
 	@sleep 5
 	@go test -v -timeout=5m -run "TestVersioningBasicWorkflow" . || true
-	@if [ -f weed-config1.pid ]; then kill -TERM $$(cat weed-config1.pid) 2>/dev/null || true; rm -f weed-config1.pid; fi
+	@if [ -f s3-config1.pid ]; then kill -TERM $$(cat s3-config1.pid) 2>/dev/null || true; rm -f s3-config1.pid; fi
 	@sleep 2
 	@echo "Testing with delete bucket not empty disabled..."
-	@$(WEED_BINARY) mini -s3.port=$(S3_PORT) -s3.allowDeleteBucketNotEmpty=false > weed-test-config2.log 2>&1 & echo $$! > weed-config2.pid
+	@$(WEED_BINARY) mini -s3.port=$(S3_PORT) -s3.allowDeleteBucketNotEmpty=false > s3-test-config2.log 2>&1 & echo $$! > s3-config2.pid
 	@sleep 5
 	@go test -v -timeout=5m -run "TestVersioningBasicWorkflow" . || true
-	@if [ -f weed-config2.pid ]; then kill -TERM $$(cat weed-config2.pid) 2>/dev/null || true; rm -f weed-config2.pid; fi
+	@if [ -f s3-config2.pid ]; then kill -TERM $$(cat s3-config2.pid) 2>/dev/null || true; rm -f s3-config2.pid; fi
 	@echo "✅ Configuration tests completed"
 
 # Performance/stress testing
@@ -267,7 +267,7 @@ test-report: check-deps
 clean:
 	@echo "Cleaning up test artifacts..."
 	@$(MAKE) stop-server
-	@rm -f weed-test*.log weed-server.pid weed-config*.pid
+	@rm -f s3-test*.log s3-server.pid s3-config*.pid
 	@rm -rf reports/
 	@rm -rf test-volume-data/
 	@go clean -testcache
@@ -275,7 +275,7 @@ clean:
 
 # Debug mode - start server with verbose logging
 debug-server:
-	@echo "Starting SeaweedFS server in debug mode..."
+	@echo "Starting Hanzo server in debug mode..."
 	@$(MAKE) stop-server
 	@mkdir -p ./test-volume-data
 	@$(WEED_BINARY) mini \
@@ -321,14 +321,14 @@ health-check:
 
 # Simple server start without process cleanup (for CI troubleshooting)
 start-server-simple: check-deps
-	@echo "Starting SeaweedFS server (simple mode)..."
+	@echo "Starting Hanzo server (simple mode)..."
 	@$(WEED_BINARY) mini \
 		-dir=$(SERVER_DIR) \
 		-s3 \
 		-s3.port=$(S3_PORT) \
 		-s3.config=$(S3_CONFIG) \
-		> weed-server.log 2>&1 & \
-		echo $$! > weed-server.pid
+		> s3-server.log 2>&1 & \
+		echo $$! > s3-server.pid
 	
 	@echo "Waiting for S3 server to be ready..."
 	@for i in $$(seq 1 30); do \
@@ -347,15 +347,15 @@ test-versioning-simple: check-deps
 	@go test -v -timeout=$(TEST_TIMEOUT) -run "$(TEST_PATTERN)" .
 	@echo "✅ Tests completed"
 
-# Force cleanup all weed processes (use with caution)
+# Force cleanup all s3 processes (use with caution)
 force-cleanup:
-	@echo "⚠️  Force cleaning up all weed processes..."
-	@echo "This will attempt to kill ALL weed processes on the system"
-	@ps aux | grep weed | grep -v grep || echo "No weed processes found"
-	@killall -TERM weed_binary 2>/dev/null || echo "No weed_binary processes to terminate"
+	@echo "⚠️  Force cleaning up all s3 processes..."
+	@echo "This will attempt to kill ALL s3 processes on the system"
+	@ps aux | grep s3 | grep -v grep || echo "No s3 processes found"
+	@killall -TERM s3_binary 2>/dev/null || echo "No s3_binary processes to terminate"
 	@sleep 2
-	@killall -KILL weed_binary 2>/dev/null || echo "No weed_binary processes to kill"
-	@rm -f weed-server.pid weed-config*.pid
+	@killall -KILL s3_binary 2>/dev/null || echo "No s3_binary processes to kill"
+	@rm -f s3-server.pid s3-config*.pid
 	@echo "✅ Force cleanup completed"
 
 # Compare with Python s3tests (if available)

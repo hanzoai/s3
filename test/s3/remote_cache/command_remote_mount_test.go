@@ -18,20 +18,20 @@ func TestRemoteMountBasic(t *testing.T) {
 
 	// Mount the remote bucket
 	t.Logf("Mounting remote bucket to %s...", testDir)
-	cmd := fmt.Sprintf("remote.mount -dir=%s -remote=seaweedremote/remotesourcebucket", testDir)
-	output, err := runWeedShellWithOutput(t, cmd)
+	cmd := fmt.Sprintf("remote.mount -dir=%s -remote=hanzoremote/remotesourcebucket", testDir)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to mount remote")
 	t.Logf("Mount output: %s", output)
 
 	// Verify mount exists in list
-	output, err = runWeedShellWithOutput(t, "remote.mount")
+	output, err = runS3ShellWithOutput(t, "remote.mount")
 	require.NoError(t, err, "failed to list mounts")
 	assert.Contains(t, output, testDir, "mount not found in list")
 
 	// Clean up - unmount
 	t.Logf("Unmounting %s...", testDir)
 	cmd = fmt.Sprintf("remote.unmount -dir=%s", testDir)
-	_, err = runWeedShellWithOutput(t, cmd)
+	_, err = runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to unmount")
 }
 
@@ -43,8 +43,8 @@ func TestRemoteMountNonEmpty(t *testing.T) {
 	testFile := fmt.Sprintf("testfile-%d.txt", time.Now().UnixNano())
 
 	// First mount to create the directory
-	cmd := fmt.Sprintf("remote.mount -dir=%s -remote=seaweedremote/remotesourcebucket", testDir)
-	_, err := runWeedShellWithOutput(t, cmd)
+	cmd := fmt.Sprintf("remote.mount -dir=%s -remote=hanzoremote/remotesourcebucket", testDir)
+	_, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to initial mount")
 
 	// Upload a file to make it non-empty
@@ -53,19 +53,19 @@ func TestRemoteMountNonEmpty(t *testing.T) {
 
 	// Unmount
 	cmd = fmt.Sprintf("remote.unmount -dir=%s", testDir)
-	_, err = runWeedShellWithOutput(t, cmd)
+	_, err = runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to unmount")
 
 	// Try to mount again with -nonempty flag (directory may have residual data)
 	t.Logf("Mounting with -nonempty flag...")
-	cmd = fmt.Sprintf("remote.mount -dir=%s -remote=seaweedremote/remotesourcebucket -nonempty=true", testDir)
-	output, err := runWeedShellWithOutput(t, cmd)
+	cmd = fmt.Sprintf("remote.mount -dir=%s -remote=hanzoremote/remotesourcebucket -nonempty=true", testDir)
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to mount with -nonempty")
 	t.Logf("Mount output: %s", output)
 
 	// Clean up
 	cmd = fmt.Sprintf("remote.unmount -dir=%s", testDir)
-	_, err = runWeedShellWithOutput(t, cmd)
+	_, err = runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to unmount")
 }
 
@@ -78,7 +78,7 @@ func TestRemoteMountInvalidRemote(t *testing.T) {
 
 	// Try to mount with invalid remote
 	cmd := fmt.Sprintf("remote.mount -dir=%s -remote=%s", testDir, invalidRemote)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 
 	// Should fail with invalid remote
 	hasError := err != nil || strings.Contains(strings.ToLower(output), "invalid") || strings.Contains(strings.ToLower(output), "error") || strings.Contains(strings.ToLower(output), "not found")
@@ -91,7 +91,7 @@ func TestRemoteMountList(t *testing.T) {
 	checkServersRunning(t)
 
 	// List all mounts
-	output, err := runWeedShellWithOutput(t, "remote.mount")
+	output, err := runS3ShellWithOutput(t, "remote.mount")
 	require.NoError(t, err, "failed to list mounts")
 	t.Logf("Mount list: %s", output)
 
@@ -106,24 +106,24 @@ func TestRemoteUnmountBasic(t *testing.T) {
 	testDir := fmt.Sprintf("/buckets/testunmount%d", time.Now().UnixNano()%1000000)
 
 	// Mount first
-	cmd := fmt.Sprintf("remote.mount -dir=%s -remote=seaweedremote/remotesourcebucket", testDir)
-	_, err := runWeedShellWithOutput(t, cmd)
+	cmd := fmt.Sprintf("remote.mount -dir=%s -remote=hanzoremote/remotesourcebucket", testDir)
+	_, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to mount")
 
 	// Verify it's mounted
-	output, err := runWeedShellWithOutput(t, "remote.mount")
+	output, err := runS3ShellWithOutput(t, "remote.mount")
 	require.NoError(t, err, "failed to list mounts")
 	assert.Contains(t, output, testDir, "mount not found before unmount")
 
 	// Unmount
 	t.Logf("Unmounting %s...", testDir)
 	cmd = fmt.Sprintf("remote.unmount -dir=%s", testDir)
-	output, err = runWeedShellWithOutput(t, cmd)
+	output, err = runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to unmount")
 	t.Logf("Unmount output: %s", output)
 
 	// Verify it's no longer mounted
-	output, err = runWeedShellWithOutput(t, "remote.mount")
+	output, err = runS3ShellWithOutput(t, "remote.mount")
 	require.NoError(t, err, "failed to list mounts after unmount")
 	assert.NotContains(t, output, testDir, "mount still exists after unmount")
 }
@@ -136,7 +136,7 @@ func TestRemoteUnmountNotMounted(t *testing.T) {
 
 	// Try to unmount a directory that's not mounted
 	cmd := fmt.Sprintf("remote.unmount -dir=%s", testDir)
-	output, err := runWeedShellWithOutput(t, cmd)
+	output, err := runS3ShellWithOutput(t, cmd)
 
 	// Should fail or show error
 	hasError := err != nil || strings.Contains(strings.ToLower(output), "not mounted") || strings.Contains(strings.ToLower(output), "error")
@@ -150,8 +150,8 @@ func TestRemoteMountBucketsBasic(t *testing.T) {
 
 	// List buckets in dry-run mode (without -apply)
 	t.Log("Listing buckets without -apply flag...")
-	cmd := "remote.mount.buckets -remote=seaweedremote"
-	output, err := runWeedShellWithOutput(t, cmd)
+	cmd := "remote.mount.buckets -remote=hanzoremote"
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to list buckets")
 	t.Logf("Bucket list output: %s", output)
 
@@ -165,8 +165,8 @@ func TestRemoteMountBucketsWithPattern(t *testing.T) {
 
 	// Test with pattern matching
 	t.Log("Testing bucket pattern matching...")
-	cmd := "remote.mount.buckets -remote=seaweedremote -bucketPattern=remote*"
-	output, err := runWeedShellWithOutput(t, cmd)
+	cmd := "remote.mount.buckets -remote=hanzoremote -bucketPattern=remote*"
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to list buckets with pattern")
 	t.Logf("Pattern match output: %s", output)
 
@@ -174,8 +174,8 @@ func TestRemoteMountBucketsWithPattern(t *testing.T) {
 	assert.Contains(t, output, "remotesourcebucket", "matching bucket not found")
 
 	// Test with non-matching pattern
-	cmd = "remote.mount.buckets -remote=seaweedremote -bucketPattern=nonexistent*"
-	output, err = runWeedShellWithOutput(t, cmd)
+	cmd = "remote.mount.buckets -remote=hanzoremote -bucketPattern=nonexistent*"
+	output, err = runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to list buckets with non-matching pattern")
 	t.Logf("Non-matching pattern output: %s", output)
 }
@@ -185,18 +185,18 @@ func TestRemoteMountBucketsDryRun(t *testing.T) {
 	checkServersRunning(t)
 
 	// Get initial mount list
-	initialOutput, err := runWeedShellWithOutput(t, "remote.mount")
+	initialOutput, err := runS3ShellWithOutput(t, "remote.mount")
 	require.NoError(t, err, "failed to get initial mount list")
 
 	// Run mount.buckets without -apply (dry run)
 	t.Log("Running mount.buckets in dry-run mode...")
-	cmd := "remote.mount.buckets -remote=seaweedremote"
-	output, err := runWeedShellWithOutput(t, cmd)
+	cmd := "remote.mount.buckets -remote=hanzoremote"
+	output, err := runS3ShellWithOutput(t, cmd)
 	require.NoError(t, err, "failed to run dry-run mount.buckets")
 	t.Logf("Dry-run output: %s", output)
 
 	// Get mount list after dry run
-	afterOutput, err := runWeedShellWithOutput(t, "remote.mount")
+	afterOutput, err := runS3ShellWithOutput(t, "remote.mount")
 	require.NoError(t, err, "failed to get mount list after dry-run")
 
 	// Mount list should be unchanged (dry run doesn't actually mount)

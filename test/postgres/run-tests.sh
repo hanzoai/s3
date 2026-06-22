@@ -9,7 +9,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}=== SeaweedFS PostgreSQL Test Setup ===${NC}"
+echo -e "${BLUE}=== Hanzo PostgreSQL Test Setup ===${NC}"
 
 # Function to get the correct docker compose command
 get_docker_compose_cmd() {
@@ -59,13 +59,13 @@ show_logs() {
 # Parse command line arguments
 case "$1" in
     "start")
-        echo -e "${YELLOW}Starting SeaweedFS cluster and PostgreSQL server...${NC}"
-        $DOCKER_COMPOSE_CMD up -d seaweedfs postgres-server
+        echo -e "${YELLOW}Starting Hanzo cluster and PostgreSQL server...${NC}"
+        $DOCKER_COMPOSE_CMD up -d hanzo postgres-server
         
-        wait_for_service "seaweedfs" 30
+        wait_for_service "hanzo" 30
         wait_for_service "postgres-server" 15
         
-        echo -e "${GREEN}- SeaweedFS and PostgreSQL server are running${NC}"
+        echo -e "${GREEN}- Hanzo and PostgreSQL server are running${NC}"
         echo
         echo "You can now:"
         echo "  • Run data producer: $0 produce"
@@ -103,11 +103,11 @@ case "$1" in
         
     "psql")
         echo -e "${YELLOW}Connecting to PostgreSQL with psql...${NC}"
-        $DOCKER_COMPOSE_CMD run --rm psql-cli psql -h postgres-server -p 5432 -U seaweedfs -d default
+        $DOCKER_COMPOSE_CMD run --rm psql-cli psql -h postgres-server -p 5432 -U hanzo -d default
         ;;
         
     "logs")
-        service=${2:-"seaweedfs"}
+        service=${2:-"hanzo"}
         show_logs "$service"
         ;;
         
@@ -148,7 +148,7 @@ case "$1" in
         echo "Usage: $0 {start|produce|test|psql|logs|status|stop|clean|all}"
         echo
         echo "Commands:"
-        echo "  start     - Start SeaweedFS and PostgreSQL server"
+        echo "  start     - Start Hanzo and PostgreSQL server"
         echo "  produce   - Create MQ test data (run after start)"
         echo "  test      - Run PostgreSQL client tests (run after produce)"
         echo "  psql      - Connect with psql CLI"

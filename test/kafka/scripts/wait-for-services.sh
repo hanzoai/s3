@@ -65,25 +65,25 @@ wait_for_service "Kafka API" "timeout 5 kafka-broker-api-versions --bootstrap-se
 echo "=== Checking Schema Registry ==="
 wait_for_service "Schema Registry" "curl -f ${SCHEMA_REGISTRY_URL}/subjects" 60
 
-# Wait for SeaweedFS Master
-echo "=== Checking SeaweedFS Master ==="
-wait_for_service "SeaweedFS Master" "curl -f ${SEAWEEDFS_MASTER_URL}/cluster/status" 30
+# Wait for Hanzo Master
+echo "=== Checking Hanzo Master ==="
+wait_for_service "Hanzo Master" "curl -f ${SEAWEEDFS_MASTER_URL}/cluster/status" 30
 
-# Wait for SeaweedFS Volume
-echo "=== Checking SeaweedFS Volume ==="
-wait_for_service "SeaweedFS Volume" "curl -f http://localhost:8080/status" 30
+# Wait for Hanzo Volume
+echo "=== Checking Hanzo Volume ==="
+wait_for_service "Hanzo Volume" "curl -f http://localhost:8080/status" 30
 
-# Wait for SeaweedFS Filer
-echo "=== Checking SeaweedFS Filer ==="
-wait_for_service "SeaweedFS Filer" "curl -f http://localhost:8888/" 30
+# Wait for Hanzo Filer
+echo "=== Checking Hanzo Filer ==="
+wait_for_service "Hanzo Filer" "curl -f http://localhost:8888/" 30
 
-# Wait for SeaweedFS MQ Broker
-echo "=== Checking SeaweedFS MQ Broker ==="
-wait_for_service "SeaweedFS MQ Broker" "nc -z localhost 17777" 30
+# Wait for Hanzo MQ Broker
+echo "=== Checking Hanzo MQ Broker ==="
+wait_for_service "Hanzo MQ Broker" "nc -z localhost 17777" 30
 
-# Wait for SeaweedFS MQ Agent
-echo "=== Checking SeaweedFS MQ Agent ==="
-wait_for_service "SeaweedFS MQ Agent" "nc -z localhost 16777" 30
+# Wait for Hanzo MQ Agent
+echo "=== Checking Hanzo MQ Agent ==="
+wait_for_service "Hanzo MQ Agent" "nc -z localhost 16777" 30
 
 # Wait for Kafka Gateway
 echo "=== Checking Kafka Gateway ==="
@@ -127,9 +127,9 @@ echo "Service endpoints:"
 echo "  Kafka: ${KAFKA_HOST}:${KAFKA_PORT}"
 echo "  Schema Registry: ${SCHEMA_REGISTRY_URL}"
 echo "  Kafka Gateway: ${KAFKA_GATEWAY_HOST}:${KAFKA_GATEWAY_PORT}"
-echo "  SeaweedFS Master: ${SEAWEEDFS_MASTER_URL}"
-echo "  SeaweedFS Filer: http://localhost:8888"
-echo "  SeaweedFS MQ Broker: localhost:17777"
-echo "  SeaweedFS MQ Agent: localhost:16777"
+echo "  Hanzo Master: ${SEAWEEDFS_MASTER_URL}"
+echo "  Hanzo Filer: http://localhost:8888"
+echo "  Hanzo MQ Broker: localhost:17777"
+echo "  Hanzo MQ Agent: localhost:16777"
 echo ""
 echo "Ready to run integration tests!"

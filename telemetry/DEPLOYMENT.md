@@ -1,6 +1,6 @@
-# SeaweedFS Telemetry Server Deployment
+# Hanzo Telemetry Server Deployment
 
-This document describes how to deploy the SeaweedFS telemetry server to a remote server using GitHub Actions, or via Docker.
+This document describes how to deploy the Hanzo telemetry server to a remote server using GitHub Actions, or via Docker.
 
 ## Prerequisites
 
@@ -24,11 +24,11 @@ On your local machine, generate a new SSH key pair specifically for deployment:
 
 ```bash
 # Generate a new SSH key pair
-ssh-keygen -t ed25519 -C "seaweedfs-telemetry-deploy" -f ~/.ssh/seaweedfs_telemetry_deploy
+ssh-keygen -t ed25519 -C "hanzo-telemetry-deploy" -f ~/.ssh/hanzo_telemetry_deploy
 
 # This creates two files:
-# ~/.ssh/seaweedfs_telemetry_deploy     (private key)
-# ~/.ssh/seaweedfs_telemetry_deploy.pub (public key)
+# ~/.ssh/hanzo_telemetry_deploy     (private key)
+# ~/.ssh/hanzo_telemetry_deploy.pub (public key)
 ```
 
 ### Step 2: Configure Remote Server
@@ -37,17 +37,17 @@ Copy the public key to your remote server:
 
 ```bash
 # Copy public key to remote server
-ssh-copy-id -i ~/.ssh/seaweedfs_telemetry_deploy.pub user@your-server.com
+ssh-copy-id -i ~/.ssh/hanzo_telemetry_deploy.pub user@your-server.com
 
 # Or manually append to authorized_keys
-cat ~/.ssh/seaweedfs_telemetry_deploy.pub | ssh user@your-server.com "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+cat ~/.ssh/hanzo_telemetry_deploy.pub | ssh user@your-server.com "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
 ```
 
 Test the SSH connection:
 
 ```bash
 # Test SSH connection with the new key
-ssh -i ~/.ssh/seaweedfs_telemetry_deploy user@your-server.com "echo 'SSH connection successful'"
+ssh -i ~/.ssh/hanzo_telemetry_deploy user@your-server.com "echo 'SSH connection successful'"
 ```
 
 ### Step 3: Add Secrets to GitHub Repository
@@ -61,7 +61,7 @@ ssh -i ~/.ssh/seaweedfs_telemetry_deploy user@your-server.com "echo 'SSH connect
 
 ```bash
 # Display the private key content
-cat ~/.ssh/seaweedfs_telemetry_deploy
+cat ~/.ssh/hanzo_telemetry_deploy
 ```
 
 - **Name**: `TELEMETRY_SSH_PRIVATE_KEY`
@@ -94,17 +94,17 @@ If you're setting up a new server, here's a basic configuration:
 
 ```bash
 # On the remote server, create a dedicated user for deployment
-sudo useradd -m -s /bin/bash seaweedfs-deploy
-sudo usermod -aG sudo seaweedfs-deploy  # Only if sudo access is needed
+sudo useradd -m -s /bin/bash hanzo-deploy
+sudo usermod -aG sudo hanzo-deploy  # Only if sudo access is needed
 
 # Switch to the deployment user
-sudo su - seaweedfs-deploy
+sudo su - hanzo-deploy
 
 # Create SSH directory
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
 
-# Add your public key (paste the content of seaweedfs_telemetry_deploy.pub)
+# Add your public key (paste the content of hanzo_telemetry_deploy.pub)
 nano ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 ```
@@ -115,10 +115,10 @@ chmod 600 ~/.ssh/authorized_keys
 
 ```bash
 # Test SSH connection manually
-ssh -i ~/.ssh/seaweedfs_telemetry_deploy -v user@your-server.com
+ssh -i ~/.ssh/hanzo_telemetry_deploy -v user@your-server.com
 
 # Check SSH key permissions
-ls -la ~/.ssh/seaweedfs_telemetry_deploy*
+ls -la ~/.ssh/hanzo_telemetry_deploy*
 # Should show: -rw------- for private key, -rw-r--r-- for public key
 ```
 
@@ -177,7 +177,7 @@ docker compose -f telemetry/docker-compose.yml build telemetry-server
 - Using docker build directly (from the repository root):
 
 ```bash
-docker build -t seaweedfs-telemetry \
+docker build -t hanzo-telemetry \
   -f telemetry/server/Dockerfile \
   .
 ```
@@ -195,21 +195,21 @@ docker compose -f telemetry/docker-compose.yml up -d telemetry-server
 ```bash
 docker run -d --name telemetry-server \
   -p 8080:8080 \
-  seaweedfs-telemetry
+  hanzo-telemetry
 ```
 
 Notes:
 
 - The container runs as a non-root user by default.
 - The image listens on port `8080` inside the container. Map it with `-p <host_port>:8080`.
-- You can pass flags to the server by appending them after the image name, e.g. `docker run -d -p 8353:8080 seaweedfs-telemetry -port=8353 -dashboard=false`.
+- You can pass flags to the server by appending them after the image name, e.g. `docker run -d -p 8353:8080 hanzo-telemetry -port=8353 -dashboard=false`.
 
 ## Server Directory Structure
 
 After setup, the remote server will have:
 
 ```
-~/seaweedfs-telemetry/
+~/hanzo-telemetry/
 ├── bin/
 │   └── telemetry-server          # Binary executable
 ├── logs/
@@ -263,7 +263,7 @@ After deployment, the telemetry server will be available at (default ports shown
 2. Update `/etc/prometheus/prometheus.yml` to include:
    ```yaml
    scrape_configs:
-     - job_name: 'seaweedfs-telemetry'
+     - job_name: 'hanzo-telemetry'
        static_configs:
          - targets: ['localhost:8353']
        metrics_path: '/metrics'
@@ -272,7 +272,7 @@ After deployment, the telemetry server will be available at (default ports shown
 ### Grafana Setup
 
 1. Install Grafana on your server
-2. Import the dashboard from `~/seaweedfs-telemetry/grafana-dashboard.json`
+2. Import the dashboard from `~/hanzo-telemetry/grafana-dashboard.json`
 3. Configure Prometheus as a data source pointing to your Prometheus instance
 
 ## Troubleshooting
@@ -286,8 +286,8 @@ After deployment, the telemetry server will be available at (default ports shown
 ### Service Won't Start
 
 1. Check service logs: `sudo journalctl -u telemetry.service`
-2. Verify binary permissions: `ls -la ~/seaweedfs-telemetry/bin/`
-3. Test binary manually: `~/seaweedfs-telemetry/bin/telemetry-server -help`
+2. Verify binary permissions: `ls -la ~/hanzo-telemetry/bin/`
+3. Test binary manually: `~/hanzo-telemetry/bin/telemetry-server -help`
 
 ### Port Conflicts
 
@@ -298,7 +298,7 @@ If port 8353 is already in use:
    ```ini
    [Service]
    ExecStart=
-   ExecStart=/home/user/seaweedfs-telemetry/bin/telemetry-server -port=8354
+   ExecStart=/home/user/hanzo-telemetry/bin/telemetry-server -port=8354
    ```
 3. Reload and restart: `sudo systemctl daemon-reload && sudo systemctl restart telemetry.service`
 
@@ -315,6 +315,6 @@ Monitor the deployment and service health:
 
 - **GitHub Actions**: Check workflow runs for deployment status
 - **System Logs**: `sudo journalctl -u telemetry.service`
-- **Application Logs**: `tail -f ~/seaweedfs-telemetry/logs/telemetry.log`
+- **Application Logs**: `tail -f ~/hanzo-telemetry/logs/telemetry.log`
 - **Health Endpoint**: `curl http://localhost:8353/health`
 - **Metrics**: `curl http://localhost:8353/metrics` 

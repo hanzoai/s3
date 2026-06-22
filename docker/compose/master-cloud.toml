@@ -1,12 +1,12 @@
 
 # Put this file to one of the location, with descending priority
 #    ./master.toml
-#    $HOME/.seaweedfs/master.toml
-#    /etc/seaweedfs/master.toml
+#    $HOME/.s3/master.toml
+#    /etc/hanzo/master.toml
 # this file is read by master
 
 [master.maintenance]
-# periodically run these scripts are the same as running them from 'weed shell'
+# periodically run these scripts are the same as running them from 's3 shell'
 # Scripts are skipped while an admin server is connected.
 scripts = """
   lock

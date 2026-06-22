@@ -1,14 +1,14 @@
-# Kafka Client Load Test for SeaweedFS
+# Kafka Client Load Test for Hanzo
 
-This comprehensive load testing suite validates the SeaweedFS MQ stack using real Kafka client libraries. Unlike the existing SMQ tests, this uses actual Kafka clients (`sarama` and `confluent-kafka-go`) to test the complete integration through:
+This comprehensive load testing suite validates the Hanzo MQ stack using real Kafka client libraries. Unlike the existing SMQ tests, this uses actual Kafka clients (`sarama` and `confluent-kafka-go`) to test the complete integration through:
 
-- **Kafka Clients** → **SeaweedFS Kafka Gateway** → **SeaweedFS MQ Broker** → **SeaweedFS Storage**
+- **Kafka Clients** → **Hanzo Kafka Gateway** → **Hanzo MQ Broker** → **Hanzo Storage**
 
 ## Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────────┐
-│   Kafka Client  │    │  Kafka Gateway   │    │   SeaweedFS MQ      │
+│   Kafka Client  │    │  Kafka Gateway   │    │   Hanzo MQ      │
 │   Load Test     │───▶│  (Port 9093)     │───▶│   Broker            │
 │   - Producers   │    │                  │    │                     │
 │   - Consumers   │    │  Protocol        │    │   Topic Management  │
@@ -17,7 +17,7 @@ This comprehensive load testing suite validates the SeaweedFS MQ stack using rea
                                                              │
                                                              ▼
                                                 ┌─────────────────────┐
-                                                │  SeaweedFS Storage  │
+                                                │  Hanzo Storage  │
                                                 │  - Master           │
                                                 │  - Volume Server    │
                                                 │  - Filer            │
@@ -216,7 +216,7 @@ When monitoring is enabled:
 
 ### Grafana Dashboards
 - **Kafka Load Test**: Comprehensive test metrics
-- **SeaweedFS Cluster**: Storage system health
+- **Hanzo Cluster**: Storage system health
 - **Custom Dashboards**: Extensible monitoring
 
 ## Advanced Features
@@ -342,7 +342,7 @@ cd cmd/loadtest && go run main.go -config ../../config/loadtest.yaml
 | Stress   | 20        | 10        | 40,000       | <50ms         |
 | Endurance| 10        | 5         | 10,000       | <30ms         |
 
-*Results vary based on hardware, network, and SeaweedFS configuration*
+*Results vary based on hardware, network, and Hanzo configuration*
 
 ### Tuning for Maximum Performance
 ```yaml
@@ -362,7 +362,7 @@ consumers:
 
 | Feature | SMQ Tests | **Kafka Client Load Test** |
 |---------|-----------|----------------------------|
-| Protocol | SMQ (SeaweedFS native) | **Kafka (industry standard)** |
+| Protocol | SMQ (Hanzo native) | **Kafka (industry standard)** |
 | Clients | SMQ clients | **Real Kafka clients (Sarama, Confluent)** |
 | Schema Registry | ❌ | **✅ Full Avro/Protobuf support** |
 | Consumer Groups | Basic | **✅ Full Kafka consumer group features** |
@@ -370,7 +370,7 @@ consumers:
 | Test Scenarios | Limited | **✅ Multiple predefined scenarios** |
 | Real-world | Synthetic | **✅ Production-like workloads** |
 
-This load test provides comprehensive validation of the SeaweedFS Kafka Gateway using real-world Kafka clients and protocols.
+This load test provides comprehensive validation of the Hanzo Kafka Gateway using real-world Kafka clients and protocols.
 
 ---
 

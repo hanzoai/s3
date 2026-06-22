@@ -62,28 +62,28 @@ scrape_configs:
     scrape_interval: 5s
     metrics_path: '/metrics'
 
-  # Scrape SeaweedFS Master metrics
-  - job_name: 'seaweedfs-master'
+  # Scrape Hanzo Master metrics
+  - job_name: 'hanzo-master'
     static_configs:
-      - targets: ['seaweedfs-master:9333']
+      - targets: ['hanzo-master:9333']
     metrics_path: '/metrics'
 
-  # Scrape SeaweedFS Volume metrics  
-  - job_name: 'seaweedfs-volume'
+  # Scrape Hanzo Volume metrics  
+  - job_name: 'hanzo-volume'
     static_configs:
-      - targets: ['seaweedfs-volume:8080']
+      - targets: ['hanzo-volume:8080']
     metrics_path: '/metrics'
 
-  # Scrape SeaweedFS Filer metrics
-  - job_name: 'seaweedfs-filer'
+  # Scrape Hanzo Filer metrics
+  - job_name: 'hanzo-filer'
     static_configs:
-      - targets: ['seaweedfs-filer:8888']
+      - targets: ['hanzo-filer:8888']
     metrics_path: '/metrics'
 
-  # Scrape SeaweedFS MQ Broker metrics (if available)
-  - job_name: 'seaweedfs-mq-broker'
+  # Scrape Hanzo MQ Broker metrics (if available)
+  - job_name: 'hanzo-mq-broker'
     static_configs:
-      - targets: ['seaweedfs-mq-broker:17777']
+      - targets: ['hanzo-mq-broker:17777']
     metrics_path: '/metrics'
     scrape_interval: 10s
 
@@ -150,7 +150,7 @@ create_loadtest_dashboard() {
   "dashboard": {
     "id": null,
     "title": "Kafka Client Load Test Dashboard",
-    "tags": ["kafka", "loadtest", "seaweedfs"],
+    "tags": ["kafka", "loadtest", "hanzo"],
     "timezone": "browser",
     "panels": [
       {
@@ -257,16 +257,16 @@ EOF
     log_success "Kafka Load Test dashboard created"
 }
 
-# Create SeaweedFS dashboard
-create_seaweedfs_dashboard() {
-    log_info "Creating SeaweedFS Grafana dashboard..."
+# Create Hanzo dashboard
+create_hanzo_dashboard() {
+    log_info "Creating Hanzo Grafana dashboard..."
     
-    cat > "$MONITORING_DIR/grafana/dashboards/seaweedfs.json" << 'EOF'
+    cat > "$MONITORING_DIR/grafana/dashboards/hanzo.json" << 'EOF'
 {
   "dashboard": {
     "id": null,
-    "title": "SeaweedFS Cluster Dashboard",
-    "tags": ["seaweedfs", "storage"],
+    "title": "Hanzo Cluster Dashboard",
+    "tags": ["hanzo", "storage"],
     "timezone": "browser", 
     "panels": [
       {
@@ -275,7 +275,7 @@ create_seaweedfs_dashboard() {
         "type": "stat",
         "targets": [
           {
-            "expr": "up{job=\"seaweedfs-master\"}",
+            "expr": "up{job=\"hanzo-master\"}",
             "legendFormat": "Master Up"
           }
         ],
@@ -287,7 +287,7 @@ create_seaweedfs_dashboard() {
         "type": "stat",
         "targets": [
           {
-            "expr": "up{job=\"seaweedfs-volume\"}",
+            "expr": "up{job=\"hanzo-volume\"}",
             "legendFormat": "Volume Up"
           }
         ],
@@ -299,7 +299,7 @@ create_seaweedfs_dashboard() {
         "type": "stat",
         "targets": [
           {
-            "expr": "up{job=\"seaweedfs-filer\"}",
+            "expr": "up{job=\"hanzo-filer\"}",
             "legendFormat": "Filer Up"
           }
         ],
@@ -311,7 +311,7 @@ create_seaweedfs_dashboard() {
         "type": "stat", 
         "targets": [
           {
-            "expr": "up{job=\"seaweedfs-mq-broker\"}",
+            "expr": "up{job=\"hanzo-mq-broker\"}",
             "legendFormat": "MQ Broker Up"
           }
         ],
@@ -326,7 +326,7 @@ create_seaweedfs_dashboard() {
 }
 EOF
 
-    log_success "SeaweedFS dashboard created"
+    log_success "Hanzo dashboard created"
 }
 
 # Main setup function
@@ -338,7 +338,7 @@ main() {
     create_grafana_datasource 
     create_grafana_dashboard_provisioning
     create_loadtest_dashboard
-    create_seaweedfs_dashboard
+    create_hanzo_dashboard
     
     log_success "Monitoring setup completed!"
     log_info "You can now start the monitoring stack with:"

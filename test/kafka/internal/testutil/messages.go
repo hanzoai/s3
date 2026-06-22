@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/hanzoai/s3/weed/mq/kafka/schema"
+	"github.com/hanzoai/s3/s3/mq/kafka/schema"
 	"github.com/segmentio/kafka-go"
 )
 

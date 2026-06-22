@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/hanzoai/s3/weed/mq/kafka/schema"
+	"github.com/hanzoai/s3/s3/mq/kafka/schema"
 )
 
 // TestSchemaEndToEnd_AvroRoundTrip tests the complete Avro schema round-trip workflow

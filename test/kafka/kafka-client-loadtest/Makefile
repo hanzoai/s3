@@ -1,5 +1,5 @@
 # Kafka Client Load Test Makefile
-# Provides convenient targets for running load tests against SeaweedFS Kafka Gateway
+# Provides convenient targets for running load tests against Hanzo Kafka Gateway
 
 .PHONY: help build start stop restart clean test quick-test stress-test endurance-test monitor logs status
 
@@ -49,7 +49,7 @@ help: ## Show this help message
 	@echo "  make schema-test                       # Run schema integration test with Schema Registry"
 	@echo "  make schema-quick-test                 # Run quick schema test (30s timeout)"
 	@echo "  make schema-loadtest                   # Run load test with schemas enabled"
-	@echo "  make build-binary                      # Build SeaweedFS binary locally for Linux"
+	@echo "  make build-binary                      # Build Hanzo binary locally for Linux"
 	@echo "  make build-gateway                     # Build Kafka Gateway (builds binary + Docker image)"
 	@echo "  make build-gateway-clean               # Build Kafka Gateway with no cache (fresh build)"
 
@@ -58,15 +58,15 @@ build: ## Build the load test application
 	$(DOCKER_COMPOSE) build kafka-client-loadtest
 	@echo "$(GREEN)Build completed$(NC)"
 
-build-binary: ## Build the SeaweedFS binary locally for Linux
-	@echo "$(BLUE)Building SeaweedFS binary locally for $(GOOS) $(GOARCH)...$(NC)"
+build-binary: ## Build the Hanzo binary locally for Linux
+	@echo "$(BLUE)Building Hanzo binary locally for $(GOOS) $(GOARCH)...$(NC)"
 	cd ../../.. && \
 	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
 		-ldflags="-s -w" \
 		-tags "5BytesOffset" \
-		-o test/kafka/kafka-client-loadtest/weed-$(GOOS)-$(GOARCH) \
-		weed/weed.go
-	@echo "$(GREEN)Binary build completed: weed-$(GOOS)-$(GOARCH)$(NC)"
+		-o test/kafka/kafka-client-loadtest/s3-$(GOOS)-$(GOARCH) \
+		s3/s3.go
+	@echo "$(GREEN)Binary build completed: s3-$(GOOS)-$(GOARCH)$(NC)"
 
 build-gateway: build-binary ## Build the Kafka Gateway with latest changes
 	@echo "$(BLUE)Building Kafka Gateway Docker image...$(NC)"
@@ -84,12 +84,12 @@ setup: ## Set up monitoring and configuration
 	@echo "$(GREEN)Setup completed$(NC)"
 
 start: build-gateway ## Start the infrastructure services (without load test)
-	@echo "$(BLUE)Starting SeaweedFS infrastructure...$(NC)"
+	@echo "$(BLUE)Starting Hanzo infrastructure...$(NC)"
 	$(DOCKER_COMPOSE) up -d \
-		seaweedfs-master \
-		seaweedfs-volume \
-		seaweedfs-filer \
-		seaweedfs-mq-broker \
+		hanzo-master \
+		hanzo-volume \
+		hanzo-filer \
+		hanzo-mq-broker \
 		kafka-gateway \
 		schema-registry-init \
 		schema-registry
@@ -112,9 +112,9 @@ clean: ## Clean up all resources (containers, volumes, networks, local data)
 	@echo "$(BLUE)Cleaning up all resources...$(NC)"
 	$(DOCKER_COMPOSE) --profile loadtest --profile monitoring down -v --remove-orphans
 	docker system prune -f
-	@if [ -f "weed-linux-arm64" ]; then \
+	@if [ -f "s3-linux-arm64" ]; then \
 		echo "$(BLUE)Removing local binary...$(NC)"; \
-		rm -f weed-linux-arm64; \
+		rm -f s3-linux-arm64; \
 	fi
 	@if [ -d "data" ]; then \
 		echo "$(BLUE)Removing ALL local data directories (including offset state)...$(NC)"; \
@@ -124,7 +124,7 @@ clean: ## Clean up all resources (containers, volumes, networks, local data)
 
 clean-binary: ## Clean up only the local binary
 	@echo "$(BLUE)Removing local binary...$(NC)"
-	@rm -f weed-linux-arm64
+	@rm -f s3-linux-arm64
 	@echo "$(GREEN)Binary cleanup completed$(NC)"
 
 status: ## Show service status
@@ -416,21 +416,21 @@ debug: ## Start services in debug mode with verbose logging
 	SEAWEEDFS_LOG_LEVEL=debug \
 	KAFKA_LOG_LEVEL=debug \
 	$(DOCKER_COMPOSE) up \
-		seaweedfs-master \
-		seaweedfs-volume \
-		seaweedfs-filer \
-		seaweedfs-mq-broker \
+		hanzo-master \
+		hanzo-volume \
+		hanzo-filer \
+		hanzo-mq-broker \
 		kafka-gateway \
 		schema-registry
 
 attach-loadtest: ## Attach to running load test container
 	$(DOCKER_COMPOSE) exec kafka-client-loadtest-runner /bin/sh
 
-exec-master: ## Execute shell in SeaweedFS master container
-	$(DOCKER_COMPOSE) exec seaweedfs-master /bin/sh
+exec-master: ## Execute shell in Hanzo master container
+	$(DOCKER_COMPOSE) exec hanzo-master /bin/sh
 
-exec-filer: ## Execute shell in SeaweedFS filer container
-	$(DOCKER_COMPOSE) exec seaweedfs-filer /bin/sh
+exec-filer: ## Execute shell in Hanzo filer container
+	$(DOCKER_COMPOSE) exec hanzo-filer /bin/sh
 
 exec-gateway: ## Execute shell in Kafka gateway container
 	$(DOCKER_COMPOSE) exec kafka-gateway /bin/sh

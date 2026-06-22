@@ -1,19 +1,19 @@
 # Remote Storage Cache Integration Tests
 # Tests the remote object caching functionality with singleflight deduplication
-# Uses two SeaweedFS instances: primary (with caching) and secondary (as remote storage)
+# Uses two Hanzo instances: primary (with caching) and secondary (as remote storage)
 
-.PHONY: all help build-weed check-deps start-remote stop-remote start-primary stop-primary \
+.PHONY: all help build-s3 check-deps start-remote stop-remote start-primary stop-primary \
         setup-remote test test-with-server clean logs logs-primary logs-remote health
 
 all: test-with-server
 
 # Configuration
-WEED_BINARY := ../../../weed/weed_binary
+WEED_BINARY := ../../../s3/s3_binary
 
 ACCESS_KEY ?= some_access_key1
 SECRET_KEY ?= some_secret_key1
 
-# Primary SeaweedFS (the one being tested - has remote caching)
+# Primary Hanzo (the one being tested - has remote caching)
 PRIMARY_S3_PORT := 8333
 PRIMARY_MASTER_PORT := 9333
 PRIMARY_FILER_PORT := 8888
@@ -22,7 +22,7 @@ PRIMARY_WEBDAV_PORT := 7333
 PRIMARY_METRICS_PORT := 9324
 PRIMARY_DIR := ./test-primary-data
 
-# Secondary SeaweedFS (acts as "remote" S3 storage)
+# Secondary Hanzo (acts as "remote" S3 storage)
 REMOTE_S3_PORT := 8334
 REMOTE_MASTER_PORT := 9334
 REMOTE_FILER_PORT := 8889
@@ -42,18 +42,18 @@ REMOTE_BUCKET := remotesourcebucket
 help:
 	@echo "Remote Storage Cache Integration Tests"
 	@echo ""
-	@echo "Uses two SeaweedFS instances:"
+	@echo "Uses two Hanzo instances:"
 	@echo "  - Primary (port $(PRIMARY_S3_PORT)): Being tested, has remote caching"
 	@echo "  - Remote  (port $(REMOTE_S3_PORT)): Acts as remote S3 storage"
 	@echo ""
 	@echo "Available targets:"
 	@echo "  help              - Show this help message"
-	@echo "  build-weed        - Build the SeaweedFS binary"
+	@echo "  build-s3        - Build the Hanzo binary"
 	@echo "  check-deps        - Check dependencies"
-	@echo "  start-remote      - Start remote SeaweedFS (secondary)"
-	@echo "  stop-remote       - Stop remote SeaweedFS"
-	@echo "  start-primary     - Start primary SeaweedFS"
-	@echo "  stop-primary      - Stop primary SeaweedFS"
+	@echo "  start-remote      - Start remote Hanzo (secondary)"
+	@echo "  stop-remote       - Stop remote Hanzo"
+	@echo "  start-primary     - Start primary Hanzo"
+	@echo "  stop-primary      - Stop primary Hanzo"
 	@echo "  setup-remote      - Configure remote storage mount"
 	@echo "  test              - Run tests (assumes servers are running)"
 	@echo "  test-with-server  - Start servers, run tests, stop servers"
@@ -61,22 +61,22 @@ help:
 	@echo "  logs              - Show server logs"
 	@echo "  health            - Check server health"
 
-# Build the SeaweedFS binary
-build-weed:
-	@echo "Building SeaweedFS binary..."
-	@cd ../../../weed && go build -o weed_binary .
+# Build the Hanzo binary
+build-s3:
+	@echo "Building Hanzo binary..."
+	@cd ../../../s3 && go build -o s3_binary .
 	@chmod +x $(WEED_BINARY)
-	@echo "SeaweedFS binary built"
+	@echo "Hanzo binary built"
 
-check-deps: build-weed
+check-deps: build-s3
 	@echo "Checking dependencies..."
 	@command -v go >/dev/null 2>&1 || (echo "Go is required" && exit 1)
-	@test -f $(WEED_BINARY) || (echo "SeaweedFS binary not found" && exit 1)
+	@test -f $(WEED_BINARY) || (echo "Hanzo binary not found" && exit 1)
 	@echo "All dependencies available"
 
-# Start remote SeaweedFS (acts as the "remote" S3 storage)
+# Start remote Hanzo (acts as the "remote" S3 storage)
 start-remote: check-deps
-	@echo "Starting remote SeaweedFS (secondary instance)..."
+	@echo "Starting remote Hanzo (secondary instance)..."
 	@rm -f remote-server.pid
 	@mkdir -p $(REMOTE_DIR)
 	@$(WEED_BINARY) mini \
@@ -91,32 +91,32 @@ start-remote: check-deps
 		-ip=127.0.0.1 \
 		-ip.bind=127.0.0.1 \
 		-metricsPort=$(REMOTE_METRICS_PORT) \
-		> remote-weed.log 2>&1 & echo $$! > remote-server.pid
-	@echo "Waiting for remote SeaweedFS to start..."
+		> remote-s3.log 2>&1 & echo $$! > remote-server.pid
+	@echo "Waiting for remote Hanzo to start..."
 	@for i in $$(seq 1 60); do \
 		if curl -s http://localhost:$(REMOTE_S3_PORT) >/dev/null 2>&1; then \
-			echo "Remote SeaweedFS started on port $(REMOTE_S3_PORT)"; \
+			echo "Remote Hanzo started on port $(REMOTE_S3_PORT)"; \
 			exit 0; \
 		fi; \
 		sleep 3; \
 	done; \
-	echo "ERROR: Remote SeaweedFS failed to start"; \
-	cat remote-weed.log; \
+	echo "ERROR: Remote Hanzo failed to start"; \
+	cat remote-s3.log; \
 	exit 1
 
 stop-remote:
-	@echo "Stopping remote SeaweedFS..."
+	@echo "Stopping remote Hanzo..."
 	@if [ -f remote-server.pid ]; then \
 		kill -TERM $$(cat remote-server.pid) 2>/dev/null || true; \
 		sleep 2; \
 		kill -KILL $$(cat remote-server.pid) 2>/dev/null || true; \
 		rm -f remote-server.pid; \
 	fi
-	@echo "Remote SeaweedFS stopped"
+	@echo "Remote Hanzo stopped"
 
-# Start primary SeaweedFS (the one being tested)
+# Start primary Hanzo (the one being tested)
 start-primary: check-deps
-	@echo "Starting primary SeaweedFS..."
+	@echo "Starting primary Hanzo..."
 	@rm -f primary-server.pid
 	@mkdir -p $(PRIMARY_DIR)
 	@$(WEED_BINARY) mini \
@@ -132,45 +132,45 @@ start-primary: check-deps
 		-ip=127.0.0.1 \
 		-ip.bind=127.0.0.1 \
 		-metricsPort=$(PRIMARY_METRICS_PORT) \
-		> primary-weed.log 2>&1 & echo $$! > primary-server.pid
-	@echo "Waiting for primary SeaweedFS to start..."
+		> primary-s3.log 2>&1 & echo $$! > primary-server.pid
+	@echo "Waiting for primary Hanzo to start..."
 	@for i in $$(seq 1 60); do \
 		if curl -s http://localhost:$(PRIMARY_S3_PORT) >/dev/null 2>&1; then \
-			echo "Primary SeaweedFS started on port $(PRIMARY_S3_PORT)"; \
+			echo "Primary Hanzo started on port $(PRIMARY_S3_PORT)"; \
 			exit 0; \
 		fi; \
 		sleep 3; \
 	done; \
-	echo "ERROR: Primary SeaweedFS failed to start"; \
-	cat primary-weed.log; \
+	echo "ERROR: Primary Hanzo failed to start"; \
+	cat primary-s3.log; \
 	exit 1
 
 stop-primary:
-	@echo "Stopping primary SeaweedFS..."
+	@echo "Stopping primary Hanzo..."
 	@if [ -f primary-server.pid ]; then \
 		kill -TERM $$(cat primary-server.pid) 2>/dev/null || true; \
 		sleep 2; \
 		kill -KILL $$(cat primary-server.pid) 2>/dev/null || true; \
 		rm -f primary-server.pid; \
 	fi
-	@echo "Primary SeaweedFS stopped"
+	@echo "Primary Hanzo stopped"
 
 # Create bucket on remote and configure remote storage mount on primary
 setup-remote:
-	@echo "Creating bucket on remote SeaweedFS..."
+	@echo "Creating bucket on remote Hanzo..."
 	@go run utils/create_bucket.go http://localhost:$(REMOTE_S3_PORT) $(ACCESS_KEY) $(SECRET_KEY) $(REMOTE_BUCKET)
 	@sleep 3
 	@echo "Configuring remote storage on primary..."
-	@printf 'remote.configure -name=seaweedremote -type=s3 -s3.access_key=$(ACCESS_KEY) -s3.secret_key=$(SECRET_KEY) -s3.endpoint=http://localhost:$(REMOTE_S3_PORT) -s3.region=us-east-1\nexit\n' | $(WEED_BINARY) shell -master=localhost:$(PRIMARY_MASTER_PORT)
+	@printf 'remote.configure -name=hanzoremote -type=s3 -s3.access_key=$(ACCESS_KEY) -s3.secret_key=$(SECRET_KEY) -s3.endpoint=http://localhost:$(REMOTE_S3_PORT) -s3.region=us-east-1\nexit\n' | $(WEED_BINARY) shell -master=localhost:$(PRIMARY_MASTER_PORT)
 	@sleep 2
 	@echo "Mounting remote bucket on primary..."
-	@printf 'remote.mount -dir=/buckets/remotemounted -remote=seaweedremote/$(REMOTE_BUCKET) -nonempty\nexit\n' | $(WEED_BINARY) shell -master=localhost:$(PRIMARY_MASTER_PORT)
+	@printf 'remote.mount -dir=/buckets/remotemounted -remote=hanzoremote/$(REMOTE_BUCKET) -nonempty\nexit\n' | $(WEED_BINARY) shell -master=localhost:$(PRIMARY_MASTER_PORT)
 	@sleep 5
 	@printf 'remote.mount\nexit\n' | $(WEED_BINARY) shell -master=localhost:$(PRIMARY_MASTER_PORT) | grep -q "/buckets/remotemounted" || (echo "Mount failed" && exit 1)
 	@echo "Remote storage configured and verified"
 
 # Run tests
-test: build-weed
+test: build-s3
 	@echo "Running remote cache tests..."
 	@go test -v -timeout=$(TEST_TIMEOUT) -run "$(TEST_PATTERN)" .
 	@echo "Tests completed"
@@ -181,30 +181,30 @@ test-with-server: start-remote start-primary
 	@$(MAKE) setup-remote || (echo "Remote setup failed" && $(MAKE) stop-primary stop-remote && exit 1)
 	@sleep 5
 	@echo "Running remote cache tests..."
-	@$(MAKE) test || (echo "Tests failed" && tail -50 primary-weed.log && $(MAKE) stop-primary stop-remote && exit 1)
+	@$(MAKE) test || (echo "Tests failed" && tail -50 primary-s3.log && $(MAKE) stop-primary stop-remote && exit 1)
 	@$(MAKE) stop-primary stop-remote
 	@echo "All tests passed"
 
 
 # Show logs
 logs:
-	@echo "=== Primary SeaweedFS Logs ==="
-	@if [ -f primary-weed.log ]; then tail -50 primary-weed.log; else echo "No log file"; fi
+	@echo "=== Primary Hanzo Logs ==="
+	@if [ -f primary-s3.log ]; then tail -50 primary-s3.log; else echo "No log file"; fi
 	@echo ""
-	@echo "=== Remote SeaweedFS Logs ==="
-	@if [ -f remote-weed.log ]; then tail -50 remote-weed.log; else echo "No log file"; fi
+	@echo "=== Remote Hanzo Logs ==="
+	@if [ -f remote-s3.log ]; then tail -50 remote-s3.log; else echo "No log file"; fi
 
 logs-primary:
-	@if [ -f primary-weed.log ]; then tail -f primary-weed.log; else echo "No log file"; fi
+	@if [ -f primary-s3.log ]; then tail -f primary-s3.log; else echo "No log file"; fi
 
 logs-remote:
-	@if [ -f remote-weed.log ]; then tail -f remote-weed.log; else echo "No log file"; fi
+	@if [ -f remote-s3.log ]; then tail -f remote-s3.log; else echo "No log file"; fi
 
 # Clean up
 clean:
 	@$(MAKE) stop-primary
 	@$(MAKE) stop-remote
-	@rm -f primary-weed.log remote-weed.log primary-server.pid remote-server.pid
+	@rm -f primary-s3.log remote-s3.log primary-server.pid remote-server.pid
 	@rm -rf $(PRIMARY_DIR) $(REMOTE_DIR)
 	@rm -f remote_cache.test
 	@go clean -testcache

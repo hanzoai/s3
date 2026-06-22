@@ -1,6 +1,6 @@
 package iam
 
-// Integration tests for SeaweedFS service accounts.
+// Integration tests for Hanzo service accounts.
 // These tests ensure comprehensive coverage of service account functionality
 // including security, access control, and expiration.
 
@@ -30,8 +30,8 @@ func TestServiceAccountS3Access(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	if !isSeaweedFSRunning(t) {
-		t.Skip("SeaweedFS is not running at", TestIAMEndpoint)
+	if !isHanzoRunning(t) {
+		t.Skip("Hanzo is not running at", TestIAMEndpoint)
 	}
 
 	// Setup: Create a parent user
@@ -153,8 +153,8 @@ func TestServiceAccountExpiration(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	if !isSeaweedFSRunning(t) {
-		t.Skip("SeaweedFS is not running at", TestIAMEndpoint)
+	if !isHanzoRunning(t) {
+		t.Skip("Hanzo is not running at", TestIAMEndpoint)
 	}
 
 	// Setup: Create a parent user
@@ -273,8 +273,8 @@ func TestServiceAccountInheritedPermissions(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	if !isSeaweedFSRunning(t) {
-		t.Skip("SeaweedFS is not running at", TestIAMEndpoint)
+	if !isHanzoRunning(t) {
+		t.Skip("Hanzo is not running at", TestIAMEndpoint)
 	}
 
 	// Setup: Create a parent user
@@ -368,8 +368,8 @@ func TestServiceAccountAccessKeyFormat(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	if !isSeaweedFSRunning(t) {
-		t.Skip("SeaweedFS is not running at", TestIAMEndpoint)
+	if !isHanzoRunning(t) {
+		t.Skip("Hanzo is not running at", TestIAMEndpoint)
 	}
 
 	// Setup: Create a parent user

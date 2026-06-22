@@ -39,7 +39,7 @@ type S3TestConfig struct {
 // Default test configuration - should match test_config.json
 var defaultConfig = &S3TestConfig{
 	Endpoint:       "http://127.0.0.1:8000", // Use explicit IPv4 address
-	MasterEndpoint: "http://127.0.0.1:9333", // Default SeaweedFS master HTTP port
+	MasterEndpoint: "http://127.0.0.1:9333", // Default Hanzo master HTTP port
 	AccessKey:      "some_access_key1",
 	SecretKey:      "some_secret_key1",
 	Region:         "us-east-1",
@@ -79,7 +79,7 @@ func getS3Client(t *testing.T) *s3.Client {
 	require.NoError(t, err)
 
 	return s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.UsePathStyle = true // Important for SeaweedFS
+		o.UsePathStyle = true // Important for Hanzo
 	})
 }
 
@@ -138,7 +138,7 @@ func cleanupTestBuckets(t *testing.T, client *s3.Client) {
 func createBucket(t *testing.T, client *s3.Client, bucketName string) {
 	// Sweep stale buckets from prior tests/runs so each new bucket starts on a
 	// fresh slate. Without this, leaked collection volumes from a panicked or
-	// interrupted earlier run accumulate on a single `weed mini` data node and
+	// interrupted earlier run accumulate on a single `s3 mini` data node and
 	// the suite eventually exhausts its volume slots.
 	cleanupTestBuckets(t, client)
 	// First, try to delete the bucket if it exists (cleanup from previous failed tests)
@@ -156,7 +156,7 @@ func createBucket(t *testing.T, client *s3.Client, bucketName string) {
 // DeleteBucket can race with concurrent `volume_grow` requests (the warm-create
 // batch keeps registering volumes after the master's collection-delete sweep has
 // already snapshotted the layout), so 1-3 volumes per bucket can leak. Without
-// this, running enough tests on a single `weed mini` server exhausts the data
+// this, running enough tests on a single `s3 mini` server exhausts the data
 // node's volume slots and every subsequent PutObject 500s with "Not enough data
 // nodes found".
 func deleteBucket(t *testing.T, client *s3.Client, bucketName string) {
@@ -176,7 +176,7 @@ func deleteBucket(t *testing.T, client *s3.Client, bucketName string) {
 	}
 }
 
-// forceDeleteCollection drops the SeaweedFS collection backing a test bucket via the master's
+// forceDeleteCollection drops the Hanzo collection backing a test bucket via the master's
 // /col/delete admin endpoint. The S3 layer normally drops the collection on DeleteBucket, but
 // in-flight `volume_grow` requests can register volumes after the master's first sweep, leaking
 // them. Best-effort: a 400 from the master means the collection was already gone, which is the
@@ -332,7 +332,7 @@ func TestBasicPutGet(t *testing.T) {
 	// Test 1: Put and get a simple text object
 	t.Run("Simple text object", func(t *testing.T) {
 		key := "test-simple.txt"
-		content := "Hello, SeaweedFS S3!"
+		content := "Hello, Hanzo S3!"
 
 		// Put object
 		putResp := putObject(t, client, bucketName, key, content)
@@ -1049,7 +1049,7 @@ func TestCopyObjectIfMatchFailed(t *testing.T) {
 
 	// Should fail with precondition failed
 	require.Error(t, err)
-	// Note: We could check for specific error types, but SeaweedFS might return different error codes
+	// Note: We could check for specific error types, but Hanzo might return different error codes
 }
 
 // TestCopyObjectIfNoneMatchGood tests copying with matching ETag condition (should fail)

@@ -31,7 +31,7 @@ deletion within the polling window.
 
 | variable             | default                  | description                |
 |----------------------|--------------------------|----------------------------|
-| `WEED_BINARY`        | _required_               | path to `weed_binary`      |
+| `WEED_BINARY`        | _required_               | path to `s3_binary`      |
 | `S3_ENDPOINT`        | `http://localhost:8333`  | S3 API URL                 |
 | `S3_GRPC_ENDPOINT`   | `localhost:18333`        | S3 gRPC for lifecycle dispatch |
 | `MASTER_ENDPOINT`    | `http://localhost:9333`  | master HTTP                |

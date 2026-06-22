@@ -29,7 +29,7 @@ type SftpTestFramework struct {
 	volumeAddr    string
 	filerAddr     string
 	sftpAddr      string
-	weedBinary    string
+	s3Binary    string
 	userStoreFile string
 	hostKeyFile   string
 	isSetup       bool
@@ -60,7 +60,7 @@ func NewSftpTestFramework(t *testing.T, config *TestConfig) *SftpTestFramework {
 		config = DefaultTestConfig()
 	}
 
-	tempDir, err := os.MkdirTemp("", "seaweedfs_sftp_test_")
+	tempDir, err := os.MkdirTemp("", "hanzo_sftp_test_")
 	require.NoError(t, err)
 
 	// Generate SSH host key for SFTP server
@@ -89,14 +89,14 @@ func NewSftpTestFramework(t *testing.T, config *TestConfig) *SftpTestFramework {
 		volumeAddr:    "127.0.0.1:18080",
 		filerAddr:     "127.0.0.1:18888",
 		sftpAddr:      "127.0.0.1:12022",
-		weedBinary:    findWeedBinary(),
+		s3Binary:    findS3Binary(),
 		userStoreFile: userStoreFile,
 		hostKeyFile:   hostKeyFile,
 		isSetup:       false,
 	}
 }
 
-// Setup starts SeaweedFS cluster with SFTP server
+// Setup starts Hanzo cluster with SFTP server
 func (f *SftpTestFramework) Setup(config *TestConfig) error {
 	if f.isSetup {
 		return fmt.Errorf("framework already setup")
@@ -240,7 +240,7 @@ func (f *SftpTestFramework) getHostKeyCallback() (ssh.HostKeyCallback, error) {
 	return ssh.FixedHostKey(pubKey), nil
 }
 
-// startMaster starts the SeaweedFS master server
+// startMaster starts the Hanzo master server
 func (f *SftpTestFramework) startMaster(config *TestConfig) error {
 	args := []string{
 		"master",
@@ -251,7 +251,7 @@ func (f *SftpTestFramework) startMaster(config *TestConfig) error {
 		"-peers=none",
 	}
 
-	cmd := exec.Command(f.weedBinary, args...)
+	cmd := exec.Command(f.s3Binary, args...)
 	cmd.Dir = f.tempDir
 	if config.EnableDebug {
 		cmd.Stdout = os.Stdout
@@ -264,7 +264,7 @@ func (f *SftpTestFramework) startMaster(config *TestConfig) error {
 	return nil
 }
 
-// startVolumeServer starts SeaweedFS volume server
+// startVolumeServer starts Hanzo volume server
 func (f *SftpTestFramework) startVolumeServer(config *TestConfig) error {
 	args := []string{
 		"volume",
@@ -275,7 +275,7 @@ func (f *SftpTestFramework) startVolumeServer(config *TestConfig) error {
 		fmt.Sprintf("-max=%d", config.NumVolumes),
 	}
 
-	cmd := exec.Command(f.weedBinary, args...)
+	cmd := exec.Command(f.s3Binary, args...)
 	cmd.Dir = f.tempDir
 	if config.EnableDebug {
 		cmd.Stdout = os.Stdout
@@ -288,7 +288,7 @@ func (f *SftpTestFramework) startVolumeServer(config *TestConfig) error {
 	return nil
 }
 
-// startFiler starts the SeaweedFS filer server
+// startFiler starts the Hanzo filer server
 func (f *SftpTestFramework) startFiler(config *TestConfig) error {
 	args := []string{
 		"filer",
@@ -297,7 +297,7 @@ func (f *SftpTestFramework) startFiler(config *TestConfig) error {
 		"-port=18888",
 	}
 
-	cmd := exec.Command(f.weedBinary, args...)
+	cmd := exec.Command(f.s3Binary, args...)
 	cmd.Dir = f.tempDir
 	if config.EnableDebug {
 		cmd.Stdout = os.Stdout
@@ -310,7 +310,7 @@ func (f *SftpTestFramework) startFiler(config *TestConfig) error {
 	return nil
 }
 
-// startSftpServer starts the SeaweedFS SFTP server
+// startSftpServer starts the Hanzo SFTP server
 func (f *SftpTestFramework) startSftpServer(config *TestConfig) error {
 	args := []string{
 		"sftp",
@@ -321,7 +321,7 @@ func (f *SftpTestFramework) startSftpServer(config *TestConfig) error {
 		"-userStoreFile=" + f.userStoreFile,
 	}
 
-	cmd := exec.Command(f.weedBinary, args...)
+	cmd := exec.Command(f.s3Binary, args...)
 	cmd.Dir = f.tempDir
 	if config.EnableDebug {
 		cmd.Stdout = os.Stdout
@@ -348,18 +348,18 @@ func (f *SftpTestFramework) waitForService(addr string, timeout time.Duration) e
 	return fmt.Errorf("service at %s not ready within timeout", addr)
 }
 
-// findWeedBinary locates the weed binary
-// Prefers local build over system-installed weed to ensure we test the latest code
-func findWeedBinary() string {
+// findS3Binary locates the s3 binary
+// Prefers local build over system-installed s3 to ensure we test the latest code
+func findS3Binary() string {
 	// Get the directory where this source file is located
-	// This ensures we find the locally built weed binary first
+	// This ensures we find the locally built s3 binary first
 	_, thisFile, _, ok := runtime.Caller(0)
 	if ok {
 		thisDir := filepath.Dir(thisFile)
-		// From test/sftp/, the weed binary should be at ../../weed/weed
+		// From test/sftp/, the s3 binary should be at ../../s3/s3
 		candidates := []string{
-			filepath.Join(thisDir, "../../weed/weed"),
-			filepath.Join(thisDir, "../weed/weed"),
+			filepath.Join(thisDir, "../../s3/s3"),
+			filepath.Join(thisDir, "../s3/s3"),
 		}
 		for _, candidate := range candidates {
 			if _, err := os.Stat(candidate); err == nil {
@@ -372,9 +372,9 @@ func findWeedBinary() string {
 	// Try relative paths from current working directory
 	cwd, _ := os.Getwd()
 	candidates := []string{
-		filepath.Join(cwd, "../../weed/weed"),
-		filepath.Join(cwd, "../weed/weed"),
-		filepath.Join(cwd, "./weed"),
+		filepath.Join(cwd, "../../s3/s3"),
+		filepath.Join(cwd, "../s3/s3"),
+		filepath.Join(cwd, "./s3"),
 	}
 	for _, candidate := range candidates {
 		if _, err := os.Stat(candidate); err == nil {
@@ -384,12 +384,12 @@ func findWeedBinary() string {
 	}
 
 	// Fallback to PATH only if local build not found
-	if path, err := exec.LookPath("weed"); err == nil {
+	if path, err := exec.LookPath("s3"); err == nil {
 		return path
 	}
 
 	// Default fallback
-	return "weed"
+	return "s3"
 }
 
 // findTestDataPath locates the testdata directory

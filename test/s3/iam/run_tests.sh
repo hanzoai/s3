@@ -1,6 +1,6 @@
 #!/bin/bash
 # Test runner for S3 policy variables integration tests
-# This script starts a SeaweedFS server with the required IAM configuration
+# This script starts a Hanzo server with the required IAM configuration
 # and runs the integration tests.
 
 set -e
@@ -18,24 +18,24 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 # Always build to ensure latest changes are tested
-echo -e "${YELLOW}Building weed binary...${NC}"
-cd "$PROJECT_ROOT/weed" && go install
-if ! command -v weed &> /dev/null; then
-    echo -e "${RED}Failed to build weed binary${NC}"
+echo -e "${YELLOW}Building s3 binary...${NC}"
+cd "$PROJECT_ROOT/s3" && go install
+if ! command -v s3 &> /dev/null; then
+    echo -e "${RED}Failed to build s3 binary${NC}"
     exit 1
 fi
 
-# Kill any existing weed server on port 8333
-echo "Checking for existing weed server..."
+# Kill any existing s3 server on port 8333
+echo "Checking for existing s3 server..."
 if lsof -Pi :8333 -sTCP:LISTEN -t >/dev/null 2>&1 ; then
-    echo -e "${YELLOW}Killing existing weed server on port 8333...${NC}"
+    echo -e "${YELLOW}Killing existing s3 server on port 8333...${NC}"
     kill $(lsof -t -i:8333) 2>/dev/null || true
     sleep 2
 fi
 
-# Start weed server with IAM configuration
-echo -e "${GREEN}Starting weed server with IAM configuration...${NC}"
-weed server \
+# Start s3 server with IAM configuration
+echo -e "${GREEN}Starting s3 server with IAM configuration...${NC}"
+s3 server \
     -s3 \
     -s3.port=8333 \
     -s3.iam.config="$SCRIPT_DIR/test_iam_config.json" \
@@ -44,7 +44,7 @@ weed server \
     -master.volumeSizeLimitMB=100 \
     -s3.allowDeleteBucketNotEmpty=true \
     -s3.iam.readOnly=false \
-    > /tmp/weed_test_server.log 2>&1 &
+    > /tmp/s3_test_server.log 2>&1 &
 
 SERVER_PID=$!
 echo "Server started with PID: $SERVER_PID"
@@ -59,7 +59,7 @@ while ! curl -s http://localhost:8333/status > /dev/null 2>&1; do
     if [ $COUNTER -ge $MAX_WAIT ]; then
         echo -e "${RED}Server failed to start within ${MAX_WAIT} seconds${NC}"
         echo "Server log:"
-        cat /tmp/weed_test_server.log
+        cat /tmp/s3_test_server.log
         kill $SERVER_PID 2>/dev/null || true
         exit 1
     fi
@@ -84,7 +84,7 @@ if [ $TEST_RESULT -eq 0 ]; then
 else
     echo -e "${RED}=== Tests failed ===${NC}"
     echo "Server log (last 50 lines):"
-    tail -50 /tmp/weed_test_server.log
+    tail -50 /tmp/s3_test_server.log
 fi
 
 exit $TEST_RESULT

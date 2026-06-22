@@ -18,10 +18,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hanzoai/s3/weed/pb"
-	"github.com/hanzoai/s3/weed/pb/master_pb"
-	"github.com/hanzoai/s3/weed/pb/volume_server_pb"
-	"github.com/hanzoai/s3/weed/storage/erasure_coding"
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/pb/master_pb"
+	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
+	"github.com/hanzoai/s3/s3/storage/erasure_coding"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -301,7 +301,7 @@ func (r *runner) fetchVolumeList(ctx context.Context) (*master_pb.VolumeListResp
 		}
 
 		var response *master_pb.VolumeListResponse
-		err := pb.WithMasterClient(context.Background(), false, pb.ServerAddress(masterAddress), r.grpcDialOption, false, func(client master_pb.SeaweedClient) error {
+		err := pb.WithMasterClient(context.Background(), false, pb.ServerAddress(masterAddress), r.grpcDialOption, false, func(client master_pb.HanzoClient) error {
 			callCtx, cancel := context.WithTimeout(ctx, r.cfg.RequestTimeout)
 			defer cancel()
 

@@ -12,10 +12,10 @@ import (
 
 	"github.com/hanzoai/s3/test/volume_server/framework"
 	"github.com/hanzoai/s3/test/volume_server/matrix"
-	"github.com/hanzoai/s3/weed/pb/volume_server_pb"
-	"github.com/hanzoai/s3/weed/storage/erasure_coding"
-	"github.com/hanzoai/s3/weed/storage/needle"
-	"github.com/hanzoai/s3/weed/storage/volume_info"
+	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
+	"github.com/hanzoai/s3/s3/storage/erasure_coding"
+	"github.com/hanzoai/s3/s3/storage/needle"
+	"github.com/hanzoai/s3/s3/storage/volume_info"
 )
 
 // TestEcLifecycleAcrossMultipleDisks drives encode, mount, read, drop-dat,
@@ -513,7 +513,7 @@ func plantPartialEc(t testing.TB, dir, collection string, volumeID uint32, shard
 	}
 }
 
-// mirrors calculateExpectedShardSize in weed/storage/disk_location_ec.go
+// mirrors calculateExpectedShardSize in s3/storage/disk_location_ec.go
 func plantedShardSize(datFileSize int64) int64 {
 	const dataShards = int64(erasure_coding.DataShardsCount)
 	largeBatch := int64(erasure_coding.ErasureCodingLargeBlockSize) * dataShards

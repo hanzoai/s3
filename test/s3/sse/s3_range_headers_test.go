@@ -25,7 +25,7 @@ func TestPlainObjectRangeAndHeadHeaders(t *testing.T) {
 	require.NoError(t, err, "failed to create test bucket")
 	defer cleanupTestBucket(ctx, client, bucketName)
 
-	// SeaweedFS S3 auto-chunks uploads at 8MiB (see chunkSize in putToFiler).
+	// Hanzo S3 auto-chunks uploads at 8MiB (see chunkSize in putToFiler).
 	// Using 16MiB ensures at least two chunks without stressing CI resources.
 	const chunkSize = 8 * 1024 * 1024
 	const objectSize = 2 * chunkSize

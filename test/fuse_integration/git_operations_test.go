@@ -52,7 +52,7 @@ func testGitCloneAndPull(t *testing.T, mountPoint, localDir string) {
 	// ---- Phase 2: Clone locally, make initial commits, push ----
 	t.Log("Phase 2: clone locally, commit, push")
 	gitRun(t, "", "clone", bareRepo, localClone)
-	gitRun(t, localClone, "config", "user.email", "test@seaweedfs.test")
+	gitRun(t, localClone, "config", "user.email", "test@hanzo.test")
 	gitRun(t, localClone, "config", "user.name", "Test")
 
 	// Commit 1
@@ -577,7 +577,7 @@ func TestTryEnsureBareRepoPreservesCurrentBranch(t *testing.T) {
 
 	gitRun(t, "", "init", "--bare", bareRepo)
 	gitRun(t, "", "clone", bareRepo, localClone)
-	gitRun(t, localClone, "config", "user.email", "test@seaweedfs.test")
+	gitRun(t, localClone, "config", "user.email", "test@hanzo.test")
 	gitRun(t, localClone, "config", "user.name", "Test")
 
 	writeFile(t, localClone, "README.md", "hello recovery\n")
@@ -610,7 +610,7 @@ func TestEnsureMountCloneFromBareWithRecoveryRecreatesMissingBareRepo(t *testing
 
 	gitRun(t, "", "init", "--bare", bareRepo)
 	gitRun(t, "", "clone", bareRepo, localClone)
-	gitRun(t, localClone, "config", "user.email", "test@seaweedfs.test")
+	gitRun(t, localClone, "config", "user.email", "test@hanzo.test")
 	gitRun(t, localClone, "config", "user.name", "Test")
 
 	writeFile(t, localClone, "README.md", "hello clone recovery\n")

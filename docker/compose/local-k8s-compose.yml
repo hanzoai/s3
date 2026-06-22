@@ -2,13 +2,13 @@ version: '3.9'
 
 services:
   master:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 9333:9333
       - 19333:19333
     command: "master -ip=master"
   volume:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8080:8080
       - 18080:18080
@@ -20,22 +20,22 @@ services:
     ports:
       - 3306:3306
     volumes:
-      - ./seaweedfs.sql:/docker-entrypoint-initdb.d/seaweedfs.sql
+      - ./hanzo.sql:/docker-entrypoint-initdb.d/hanzo.sql
     environment:
       - MYSQL_ROOT_PASSWORD=secret
-      - MYSQL_DATABASE=seaweedfs
+      - MYSQL_DATABASE=hanzo
       - MYSQL_PASSWORD=secret
-      - MYSQL_USER=seaweedfs
+      - MYSQL_USER=hanzo
   filer:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8888:8888
       - 18888:18888
     environment:
       - WEED_MYSQL_HOSTNAME=mysql
       - WEED_MYSQL_PORT=3306
-      - WEED_MYSQL_DATABASE=seaweedfs
-      - WEED_MYSQL_USERNAME=seaweedfs
+      - WEED_MYSQL_DATABASE=hanzo
+      - WEED_MYSQL_USERNAME=hanzo
       - WEED_MYSQL_PASSWORD=secret
       - WEED_MYSQL_ENABLED=true
       - WEED_MYSQL_CONNECTION_MAX_IDLE=5
@@ -58,7 +58,7 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock:ro
       - ./nginx/proxy.conf:/etc/nginx/proxy.conf
   s3:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8333:8333
     command: '-v 9 s3 -filer="filer:8888"'
@@ -72,7 +72,7 @@ services:
   registry:
     image: registry:2
     environment:
-      REGISTRY_HTTP_ADDR: "0.0.0.0:5001" # seaweedfs s3
+      REGISTRY_HTTP_ADDR: "0.0.0.0:5001" # hanzo s3
       REGISTRY_LOG_LEVEL: "debug"
       REGISTRY_STORAGE: "s3"
       REGISTRY_STORAGE_S3_REGION: "us-east-1"

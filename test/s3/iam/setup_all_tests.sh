@@ -14,7 +14,7 @@ NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo -e "${BLUE}🚀 Setting up complete test environment for SeaweedFS S3 IAM...${NC}"
+echo -e "${BLUE}🚀 Setting up complete test environment for Hanzo S3 IAM...${NC}"
 echo -e "${BLUE}==========================================================${NC}"
 
 # Check prerequisites
@@ -71,8 +71,8 @@ setup_ldap() {
         -p 389:389 \
         -p 636:636 \
         -e LDAP_ADMIN_PASSWORD=adminpassword \
-        -e LDAP_ORGANISATION="SeaweedFS" \
-        -e LDAP_DOMAIN="seaweedfs.test" \
+        -e LDAP_ORGANISATION="Hanzo" \
+        -e LDAP_DOMAIN="hanzo.test" \
         osixia/openldap:latest || {
             echo -e "${YELLOW}⚠️  OpenLDAP setup failed (optional for basic STS tests)${NC}"
             return 0  # Don't fail - LDAP is optional
@@ -81,7 +81,7 @@ setup_ldap() {
     # Wait for LDAP to be ready
     echo -e "${YELLOW}⏳ Waiting for OpenLDAP to be ready...${NC}"
     for i in $(seq 1 30); do
-        if docker exec openldap-iam-test ldapsearch -x -H ldap://localhost -b "dc=seaweedfs,dc=test" -D "cn=admin,dc=seaweedfs,dc=test" -w adminpassword "(objectClass=*)" >/dev/null 2>&1; then
+        if docker exec openldap-iam-test ldapsearch -x -H ldap://localhost -b "dc=hanzo,dc=test" -D "cn=admin,dc=hanzo,dc=test" -w adminpassword "(objectClass=*)" >/dev/null 2>&1; then
             break
         fi
         sleep 1
@@ -89,19 +89,19 @@ setup_ldap() {
     
     # Add test users for LDAP STS testing
     echo -e "${YELLOW}📝 Adding test users for LDAP STS...${NC}"
-    docker exec -i openldap-iam-test ldapadd -x -D "cn=admin,dc=seaweedfs,dc=test" -w adminpassword <<EOF 2>/dev/null || true
-dn: ou=users,dc=seaweedfs,dc=test
+    docker exec -i openldap-iam-test ldapadd -x -D "cn=admin,dc=hanzo,dc=test" -w adminpassword <<EOF 2>/dev/null || true
+dn: ou=users,dc=hanzo,dc=test
 objectClass: organizationalUnit
 ou: users
 
-dn: cn=testuser,ou=users,dc=seaweedfs,dc=test
+dn: cn=testuser,ou=users,dc=hanzo,dc=test
 objectClass: inetOrgPerson
 cn: testuser
 sn: Test User
 uid: testuser
 userPassword: testpass
 
-dn: cn=ldapadmin,ou=users,dc=seaweedfs,dc=test
+dn: cn=ldapadmin,ou=users,dc=hanzo,dc=test
 objectClass: inetOrgPerson
 cn: ldapadmin
 sn: LDAP Admin
@@ -111,7 +111,7 @@ EOF
     
     # Verify test users were created successfully
     echo -e "${YELLOW}🔍 Verifying LDAP test users...${NC}"
-    if docker exec openldap-iam-test ldapsearch -x -D "cn=admin,dc=seaweedfs,dc=test" -w adminpassword -b "ou=users,dc=seaweedfs,dc=test" "(cn=testuser)" cn 2>/dev/null | grep -q "cn: testuser"; then
+    if docker exec openldap-iam-test ldapsearch -x -D "cn=admin,dc=hanzo,dc=test" -w adminpassword -b "ou=users,dc=hanzo,dc=test" "(cn=testuser)" cn 2>/dev/null | grep -q "cn: testuser"; then
         echo -e "${GREEN}[OK] Test user 'testuser' verified${NC}"
     else
         echo -e "${RED}[WARN] Could not verify test user 'testuser' - LDAP tests may fail${NC}"
@@ -119,22 +119,22 @@ EOF
     
     # Set environment for LDAP tests
     export LDAP_URL="ldap://localhost:389"
-    export LDAP_BASE_DN="dc=seaweedfs,dc=test"
-    export LDAP_BIND_DN="cn=admin,dc=seaweedfs,dc=test"
+    export LDAP_BASE_DN="dc=hanzo,dc=test"
+    export LDAP_BIND_DN="cn=admin,dc=hanzo,dc=test"
     export LDAP_BIND_PASSWORD="adminpassword"
     
     echo -e "${GREEN}[OK] LDAP setup completed${NC}"
 }
 
-# Set up SeaweedFS test cluster
-setup_seaweedfs_cluster() {
-    echo -e "\n${BLUE}2. Setting up SeaweedFS test cluster...${NC}"
+# Set up Hanzo test cluster
+setup_hanzo_cluster() {
+    echo -e "\n${BLUE}2. Setting up Hanzo test cluster...${NC}"
     
-    # Build SeaweedFS binary if needed
-    echo -e "${YELLOW}🔧 Building SeaweedFS binary...${NC}"
-    cd "${SCRIPT_DIR}/../../../"  # Go to seaweedfs root
+    # Build Hanzo binary if needed
+    echo -e "${YELLOW}🔧 Building Hanzo binary...${NC}"
+    cd "${SCRIPT_DIR}/../../../"  # Go to hanzo root
     if ! make > /dev/null 2>&1; then
-        echo -e "${RED}[FAIL] Failed to build SeaweedFS binary${NC}"
+        echo -e "${RED}[FAIL] Failed to build Hanzo binary${NC}"
         return 1
     fi
     
@@ -144,7 +144,7 @@ setup_seaweedfs_cluster() {
     echo -e "${YELLOW}🧹 Cleaning up existing test data...${NC}"
     rm -rf test-volume-data/* 2>/dev/null || true
     
-    echo -e "${GREEN}[OK] SeaweedFS cluster setup completed${NC}"
+    echo -e "${GREEN}[OK] Hanzo cluster setup completed${NC}"
 }
 
 # Set up test data and configurations
@@ -259,10 +259,10 @@ main() {
     setup_ldap
     setup_steps+=("ldap")
     
-    if setup_seaweedfs_cluster; then
-        setup_steps+=("seaweedfs")
+    if setup_hanzo_cluster; then
+        setup_steps+=("hanzo")
     else
-        echo -e "${RED}[FAIL] Failed to set up SeaweedFS cluster${NC}"
+        echo -e "${RED}[FAIL] Failed to set up Hanzo cluster${NC}"
         exit 1
     fi
     

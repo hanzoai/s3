@@ -9,7 +9,7 @@
 //
 // Variables (set by the Makefile):
 //
-//	WEED_BINARY         - path to the built `weed` binary
+//	WEED_BINARY         - path to the built `s3` binary
 //	S3_ENDPOINT         - http://host:port for the S3 API
 //	FILER_GRPC_ADDRESS  - host:port of the filer's gRPC listener
 package lifecycle
@@ -31,7 +31,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/hanzoai/s3/weed/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -177,12 +177,12 @@ func ensureClusterWritable(t *testing.T, c *s3.Client) {
 	})
 }
 
-func filerClient(t *testing.T) (filer_pb.SeaweedFilerClient, func()) {
+func filerClient(t *testing.T) (filer_pb.HanzoFilerClient, func()) {
 	t.Helper()
 	addr := envOr("FILER_GRPC_ADDRESS", defaultFilerGRPC)
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	return filer_pb.NewSeaweedFilerClient(conn), func() { conn.Close() }
+	return filer_pb.NewHanzoFilerClient(conn), func() { conn.Close() }
 }
 
 // uniqueBucket returns a fresh bucket name; the shell command picks up all
@@ -278,7 +278,7 @@ func putObject(t *testing.T, c *s3.Client, bucket, key, body string) {
 // backdateMtime rewrites the object's filer entry attributes so its Mtime
 // is daysOld days in the past. This sidesteps the AWS-spec minimum of one
 // day for Expiration.Days, letting the lifecycle dispatcher fire on demand.
-func backdateMtime(t *testing.T, fc filer_pb.SeaweedFilerClient, bucket, key string, daysOld int) {
+func backdateMtime(t *testing.T, fc filer_pb.HanzoFilerClient, bucket, key string, daysOld int) {
 	t.Helper()
 	dir, name := splitBucketKey(bucket, key)
 	resp, err := fc.LookupDirectoryEntry(context.Background(), &filer_pb.LookupDirectoryEntryRequest{
@@ -306,7 +306,7 @@ func splitBucketKey(bucket, key string) (dir, name string) {
 	return full, ""
 }
 
-// runShellCommand invokes `weed shell` with a one-shot s3.lifecycle.run-shard
+// runShellCommand invokes `s3 shell` with a one-shot s3.lifecycle.run-shard
 // command piped via stdin and returns the combined stdout+stderr.
 func runShellCommand(t *testing.T, command string) string {
 	t.Helper()

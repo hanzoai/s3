@@ -1,12 +1,12 @@
 # Iceberg REST Catalog Compatibility Test Docker Compose
 #
 # This compose file sets up a test environment for validating
-# the SeaweedFS Iceberg REST Catalog implementation.
+# the Hanzo Iceberg REST Catalog implementation.
 #
 # Usage:
 #   docker compose -f docker-compose.test.yaml up --build
 #
-# Note: SeaweedFS must be running on the host with the Iceberg REST port exposed.
+# Note: Hanzo must be running on the host with the Iceberg REST port exposed.
 # Set ICEBERG_CATALOG_URL environment variable to point to your catalog.
 
 services:

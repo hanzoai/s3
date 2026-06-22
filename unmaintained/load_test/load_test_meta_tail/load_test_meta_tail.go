@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hanzoai/s3/weed/glog"
-	"github.com/hanzoai/s3/weed/pb"
-	"github.com/hanzoai/s3/weed/pb/filer_pb"
-	"github.com/hanzoai/s3/weed/util"
-	util_http "github.com/hanzoai/s3/weed/util/http"
+	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/util"
+	util_http "github.com/hanzoai/s3/s3/util/http"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -57,7 +57,7 @@ func main() {
 }
 
 func startGenerateMetadata() {
-	pb.WithFilerClient(false, util.RandomInt32(), pb.ServerAddress(*tailFiler), grpc.WithTransportCredentials(insecure.NewCredentials()), func(client filer_pb.SeaweedFilerClient) error {
+	pb.WithFilerClient(false, util.RandomInt32(), pb.ServerAddress(*tailFiler), grpc.WithTransportCredentials(insecure.NewCredentials()), func(client filer_pb.HanzoFilerClient) error {
 
 		for i := 0; i < *n; i++ {
 			name := fmt.Sprintf("file%d", i)

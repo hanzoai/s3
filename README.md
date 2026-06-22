@@ -1,23 +1,23 @@
-# SeaweedFS
+# Hanzo
 
 
-[![Slack](https://img.shields.io/badge/slack-purple)](https://join.slack.com/t/seaweedfs/shared_invite/enQtMzI4MTMwMjU2MzA3LTEyYzZmZWYzOGQ3MDJlZWMzYmI0OTE4OTJiZjJjODBmMzUxNmYwODg0YjY3MTNlMjBmZDQ1NzQ5NDJhZWI2ZmY)
-[![Twitter](https://img.shields.io/twitter/follow/seaweedfs.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=seaweedfs)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/seaweedfs/seaweedfs/go.yml)](https://github.com/hanzoai/s3/actions/workflows/go.yml)
-[![GoDoc](https://godoc.org/github.com/hanzoai/s3/weed?status.svg)](https://godoc.org/github.com/hanzoai/s3/weed)
+[![Slack](https://img.shields.io/badge/slack-purple)](https://join.slack.com/t/hanzo/shared_invite/enQtMzI4MTMwMjU2MzA3LTEyYzZmZWYzOGQ3MDJlZWMzYmI0OTE4OTJiZjJjODBmMzUxNmYwODg0YjY3MTNlMjBmZDQ1NzQ5NDJhZWI2ZmY)
+[![Twitter](https://img.shields.io/twitter/follow/hanzo.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=hanzo)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/hanzo/hanzo/go.yml)](https://github.com/hanzoai/s3/actions/workflows/go.yml)
+[![GoDoc](https://godoc.org/github.com/hanzoai/s3/s3?status.svg)](https://godoc.org/github.com/hanzoai/s3/s3)
 [![Wiki](https://img.shields.io/badge/docs-wiki-blue.svg)](https://github.com/hanzoai/s3/wiki)
-[![Docker Pulls](https://img.shields.io/docker/pulls/chrislusf/seaweedfs?maxAge=4800)](https://hub.docker.com/r/chrislusf/seaweedfs/)
-[![SeaweedFS on Maven Central](https://img.shields.io/maven-central/v/com.github.chrislusf/seaweedfs-client)](https://search.maven.org/search?q=g:com.github.chrislusf)
-[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/seaweedfs)](https://artifacthub.io/packages/search?repo=seaweedfs)
+[![Docker Pulls](https://img.shields.io/docker/pulls/chrislusf/hanzo?maxAge=4800)](https://hub.docker.com/r/chrislusf/hanzo/)
+[![Hanzo on Maven Central](https://img.shields.io/maven-central/v/com.github.chrislusf/hanzo-client)](https://search.maven.org/search?q=g:com.github.chrislusf)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/hanzo)](https://artifacthub.io/packages/search?repo=hanzo)
 
-![SeaweedFS Logo](https://raw.githubusercontent.com/seaweedfs/seaweedfs/master/note/seaweedfs.png)
+![Hanzo Logo](https://raw.githubusercontent.com/hanzo/hanzo/master/note/hanzo.png)
 
-<h2 align="center"><a href="https://www.patreon.com/seaweedfs">Sponsor SeaweedFS via Patreon</a></h2>
+<h2 align="center"><a href="https://www.patreon.com/hanzo">Sponsor Hanzo via Patreon</a></h2>
 
-SeaweedFS is an independent Apache-licensed open source project with its ongoing development made
+Hanzo is an independent Apache-licensed open source project with its ongoing development made
 possible entirely thanks to the support of these awesome [backers](https://github.com/hanzoai/s3/blob/master/backers.md).
-If you'd like to grow SeaweedFS even stronger, please consider joining our
-<a href="https://www.patreon.com/seaweedfs">sponsors on Patreon</a>.
+If you'd like to grow Hanzo even stronger, please consider joining our
+<a href="https://www.patreon.com/hanzo">sponsors on Patreon</a>.
 
 Your support will be really appreciated by me and other supporters!
 
@@ -32,36 +32,36 @@ Your support will be really appreciated by me and other supporters!
 -->
 
 ### Gold Sponsors
-[![nodion](https://raw.githubusercontent.com/seaweedfs/seaweedfs/master/note/sponsor_nodion.png)](https://www.nodion.com)
-[![piknik](https://raw.githubusercontent.com/seaweedfs/seaweedfs/master/note/piknik.png)](https://www.piknik.com)
-[![keepsec](https://raw.githubusercontent.com/seaweedfs/seaweedfs/master/note/keepsec.png)](https://www.keepsec.ca)
-[![zyner](https://raw.githubusercontent.com/seaweedfs/seaweedfs/master/note/sponsor_zyner.png)](https://zyner.org)
+[![nodion](https://raw.githubusercontent.com/hanzo/hanzo/master/note/sponsor_nodion.png)](https://www.nodion.com)
+[![piknik](https://raw.githubusercontent.com/hanzo/hanzo/master/note/piknik.png)](https://www.piknik.com)
+[![keepsec](https://raw.githubusercontent.com/hanzo/hanzo/master/note/keepsec.png)](https://www.keepsec.ca)
+[![zyner](https://raw.githubusercontent.com/hanzo/hanzo/master/note/sponsor_zyner.png)](https://zyner.org)
 
 ---
 
 - [Download Binaries for different platforms](https://github.com/hanzoai/s3/releases/latest)
-- [SeaweedFS on Slack](https://join.slack.com/t/seaweedfs/shared_invite/enQtMzI4MTMwMjU2MzA3LTEyYzZmZWYzOGQ3MDJlZWMzYmI0OTE4OTJiZjJjODBmMzUxNmYwODg0YjY3MTNlMjBmZDQ1NzQ5NDJhZWI2ZmY)
-- [SeaweedFS on Twitter](https://twitter.com/SeaweedFS)
-- [SeaweedFS on Telegram](https://t.me/Seaweedfs) 
-- [SeaweedFS on Reddit](https://www.reddit.com/r/SeaweedFS/)
-- [SeaweedFS Mailing List](https://groups.google.com/d/forum/seaweedfs)
+- [Hanzo on Slack](https://join.slack.com/t/hanzo/shared_invite/enQtMzI4MTMwMjU2MzA3LTEyYzZmZWYzOGQ3MDJlZWMzYmI0OTE4OTJiZjJjODBmMzUxNmYwODg0YjY3MTNlMjBmZDQ1NzQ5NDJhZWI2ZmY)
+- [Hanzo on Twitter](https://twitter.com/Hanzo)
+- [Hanzo on Telegram](https://t.me/Hanzo) 
+- [Hanzo on Reddit](https://www.reddit.com/r/Hanzo/)
+- [Hanzo Mailing List](https://groups.google.com/d/forum/hanzo)
 - [Wiki Documentation](https://github.com/hanzoai/s3/wiki)
-- [SeaweedFS White Paper](https://github.com/hanzoai/s3/wiki/SeaweedFS_Architecture.pdf)
-- [SeaweedFS Introduction Slides 2025.5](https://docs.google.com/presentation/d/1tdkp45J01oRV68dIm4yoTXKJDof-EhainlA0LMXexQE/edit?usp=sharing)
-- [SeaweedFS Introduction Slides 2021.5](https://docs.google.com/presentation/d/1DcxKWlINc-HNCjhYeERkpGXXm6nTCES8mi2W5G0Z4Ts/edit?usp=sharing)
-- [SeaweedFS Introduction Slides 2019.3](https://www.slideshare.net/chrislusf/seaweedfs-introduction)
+- [Hanzo White Paper](https://github.com/hanzoai/s3/wiki/Hanzo_Architecture.pdf)
+- [Hanzo Introduction Slides 2025.5](https://docs.google.com/presentation/d/1tdkp45J01oRV68dIm4yoTXKJDof-EhainlA0LMXexQE/edit?usp=sharing)
+- [Hanzo Introduction Slides 2021.5](https://docs.google.com/presentation/d/1DcxKWlINc-HNCjhYeERkpGXXm6nTCES8mi2W5G0Z4Ts/edit?usp=sharing)
+- [Hanzo Introduction Slides 2019.3](https://www.slideshare.net/chrislusf/hanzo-introduction)
 
 Table of Contents
 =================
 
 * [Quick Start](#quick-start)
-    * [Quick Start with weed mini](#quick-start-with-weed-mini)
+    * [Quick Start with s3 mini](#quick-start-with-s3-mini)
     * [Quick Start for S3 API on Docker](#quick-start-for-s3-api-on-docker)
 * [Introduction](#introduction)
 * [Features](#features)
     * [Additional Features](#additional-features)
     * [Filer Features](#filer-features)
-* [Example: Using Seaweed Object Store](#example-using-seaweed-object-store)
+* [Example: Using Hanzo Object Store](#example-using-hanzo-object-store)
 * [Architecture](#object-store-architecture)
 * [Compared to Other File Systems](#compared-to-other-file-systems)
     * [Compared to HDFS](#compared-to-hdfs)
@@ -79,15 +79,15 @@ Table of Contents
 # Quick Start #
 
 
-## Quick Start with weed mini ##
+## Quick Start with s3 mini ##
 
-Download the latest binary from https://github.com/hanzoai/s3/releases and unzip the single `weed` (or `weed.exe`) file, or run `go install github.com/hanzoai/s3/weed@latest`. Then start a ready-to-use S3 object store with credentials and a pre-created bucket in one command:
+Download the latest binary from https://github.com/hanzoai/s3/releases and unzip the single `s3` (or `s3.exe`) file, or run `go install github.com/hanzoai/s3/s3@latest`. Then start a ready-to-use S3 object store with credentials and a pre-created bucket in one command:
 
 ```bash
 AWS_ACCESS_KEY_ID=admin \
 AWS_SECRET_ACCESS_KEY=secret \
 S3_BUCKET=my-bucket \
-./weed mini -dir=/data
+./s3 mini -dir=/data
 ```
 
 That's it — the S3 endpoint is at http://localhost:8333, `my-bucket` already exists, and `admin`/`secret` are valid credentials. `S3_BUCKET` accepts a comma-separated list (e.g. `raw,processed`); use `S3_TABLE_BUCKET` for S3 Tables (Iceberg) buckets. Drop any of the env vars to skip that piece (no AWS keys → S3 runs in unauthenticated "Allow All" mode for development).
@@ -100,9 +100,9 @@ The same command starts everything else too:
 - **WebDAV**: http://localhost:7333
 - **Admin UI**: http://localhost:23646
 
-> macOS: if the binary is quarantined, run `xattr -d com.apple.quarantine ./weed` first.
+> macOS: if the binary is quarantined, run `xattr -d com.apple.quarantine ./s3` first.
 
-Perfect for development, testing, learning SeaweedFS, and single-node deployments. To scale out, add more volume servers by running `weed volume -dir="/some/data/dir2" -master="<master_host>:9333" -port=8081` locally, on another machine, or on thousands of machines.
+Perfect for development, testing, learning Hanzo, and single-node deployments. To scale out, add more volume servers by running `s3 volume -dir="/some/data/dir2" -master="<master_host>:9333" -port=8081` locally, on another machine, or on thousands of machines.
 
 ## Quick Start for S3 API on Docker ##
 
@@ -111,19 +111,19 @@ docker run -p 8333:8333 \
   -e AWS_ACCESS_KEY_ID=admin \
   -e AWS_SECRET_ACCESS_KEY=secret \
   -e S3_BUCKET=my-bucket \
-  chrislusf/seaweedfs
+  chrislusf/hanzo
 ```
 
-Same behavior as the `weed mini` command above — the S3 endpoint is at http://localhost:8333 with `my-bucket` pre-created. Drop the env vars to run anonymously for development.
+Same behavior as the `s3 mini` command above — the S3 endpoint is at http://localhost:8333 with `my-bucket` pre-created. Drop the env vars to run anonymously for development.
 
 # Introduction #
 
-SeaweedFS is a simple and highly scalable distributed file system. There are two objectives:
+Hanzo is a simple and highly scalable distributed file system. There are two objectives:
 
 1. to store billions of files!
 2. to serve the files fast!
 
-SeaweedFS started as a blob store to handle small files efficiently. 
+Hanzo started as a blob store to handle small files efficiently. 
 Instead of managing all file metadata in a central master, 
 the central master only manages volumes on volume servers, 
 and these volume servers manage files and their metadata. 
@@ -133,21 +133,21 @@ allowing faster file access (O(1), usually just one disk read operation).
 There is only 40 bytes of disk storage overhead for each file's metadata. 
 It is so simple with O(1) disk reads that you are welcome to challenge the performance with your actual use cases.
 
-SeaweedFS started by implementing [Facebook's Haystack design paper](http://www.usenix.org/event/osdi10/tech/full_papers/Beaver.pdf). 
-Also, SeaweedFS implements erasure coding with ideas from 
+Hanzo started by implementing [Facebook's Haystack design paper](http://www.usenix.org/event/osdi10/tech/full_papers/Beaver.pdf). 
+Also, Hanzo implements erasure coding with ideas from 
 [f4: Facebook’s Warm BLOB Storage System](https://www.usenix.org/system/files/conference/osdi14/osdi14-paper-muralidhar.pdf), and has a lot of similarities with [Facebook’s Tectonic Filesystem](https://www.usenix.org/system/files/fast21-pan.pdf) and [Google's Colossus File System](https://cloud.google.com/blog/products/storage-data-transfer/a-peek-behind-colossus-googles-file-system)
 
 On top of the blob store, optional [Filer] can support directories and POSIX attributes. 
 Filer is a separate linearly-scalable stateless server with customizable metadata stores, 
 e.g., MySql, Postgres, Redis, Cassandra, HBase, Mongodb, Elastic Search, LevelDB, RocksDB, Sqlite, MemSql, TiDB, Etcd, CockroachDB, YDB, etc.
 
-SeaweedFS can transparently integrate with the cloud. 
+Hanzo can transparently integrate with the cloud. 
 With hot data on local cluster, and warm data on the cloud with O(1) access time, 
-SeaweedFS can achieve both fast local access time and elastic cloud storage capacity.
+Hanzo can achieve both fast local access time and elastic cloud storage capacity.
 What's more, the cloud storage access API cost is minimized. 
 Faster and cheaper than direct cloud storage!
 
-SeaweedFS also ships a built-in **Iceberg REST Catalog**, turning the same cluster into a self-contained lakehouse.
+Hanzo also ships a built-in **Iceberg REST Catalog**, turning the same cluster into a self-contained lakehouse.
 Spark, Trino, Dremio, DuckDB, and RisingWave can query Iceberg tables directly — no Hive Metastore, Glue, or
 external catalog service required. Storage and table metadata live in one system, simplifying on-prem and
 small-team analytics stacks.
@@ -196,8 +196,8 @@ small-team analytics stacks.
 * Granular IAM at the bucket, namespace, and table level via standard S3 bucket policies.
 
 ## Kubernetes ##
-* [Kubernetes CSI Driver][SeaweedFsCsiDriver] A Container Storage Interface (CSI) Driver. [![Docker Pulls](https://img.shields.io/docker/pulls/chrislusf/seaweedfs-csi-driver.svg?maxAge=4800)](https://hub.docker.com/r/chrislusf/seaweedfs-csi-driver/)
-* [SeaweedFS Operator](https://github.com/hanzoai/s3-operator)
+* [Kubernetes CSI Driver][HanzoFsCsiDriver] A Container Storage Interface (CSI) Driver. [![Docker Pulls](https://img.shields.io/docker/pulls/chrislusf/hanzo-csi-driver.svg?maxAge=4800)](https://hub.docker.com/r/chrislusf/hanzo-csi-driver/)
+* [Hanzo Operator](https://github.com/hanzoai/s3-operator)
 
 [Filer]: https://github.com/hanzoai/s3/wiki/Directories-and-Files
 [SuperLargeFiles]: https://github.com/hanzoai/s3/wiki/Data-Structure-for-Large-Files
@@ -212,14 +212,14 @@ small-team analytics stacks.
 [FilerDataEncryption]: https://github.com/hanzoai/s3/wiki/Filer-Data-Encryption
 [FilerTTL]: https://github.com/hanzoai/s3/wiki/Filer-Stores
 [VolumeServerTTL]: https://github.com/hanzoai/s3/wiki/Store-file-with-a-Time-To-Live
-[SeaweedFsCsiDriver]: https://github.com/hanzoai/s3-csi-driver
+[HanzoFsCsiDriver]: https://github.com/hanzoai/s3-csi-driver
 [ActiveActiveAsyncReplication]: https://github.com/hanzoai/s3/wiki/Filer-Active-Active-cross-cluster-continuous-synchronization
 [FilerStoreReplication]: https://github.com/hanzoai/s3/wiki/Filer-Store-Replication
 [KeyLargeValueStore]: https://github.com/hanzoai/s3/wiki/Filer-as-a-Key-Large-Value-Store
 [CloudDrive]: https://github.com/hanzoai/s3/wiki/Cloud-Drive-Architecture
 [GatewayToRemoteObjectStore]: https://github.com/hanzoai/s3/wiki/Gateway-to-Remote-Object-Storage
 [S3TableBucket]: https://github.com/hanzoai/s3/wiki/S3-Table-Bucket
-[IcebergCatalog]: https://github.com/hanzoai/s3/wiki/SeaweedFS-Iceberg-Catalog
+[IcebergCatalog]: https://github.com/hanzoai/s3/wiki/Hanzo-Iceberg-Catalog
 [IcebergMaintenance]: https://github.com/hanzoai/s3/wiki/Iceberg-Table-Maintenance
 [SparkIceberg]: https://github.com/hanzoai/s3/wiki/Spark-Iceberg-Integration
 [TrinoIceberg]: https://github.com/hanzoai/s3/wiki/Trino-Iceberg-Integration
@@ -230,24 +230,24 @@ small-team analytics stacks.
 
 [Back to TOC](#table-of-contents)
 
-## Example: Using Seaweed Blob Store ##
+## Example: Using Hanzo Blob Store ##
 
 By default, the master node runs on port 9333, and the volume nodes run on port 8080.
 Let's start one master node, and two volume nodes on port 8080 and 8081. Ideally, they should be started from different machines. We'll use localhost as an example.
 
-SeaweedFS uses HTTP REST operations to read, write, and delete. The responses are in JSON or JSONP format.
+Hanzo uses HTTP REST operations to read, write, and delete. The responses are in JSON or JSONP format.
 
 ### Start Master Server ###
 
 ```
-> ./weed master
+> ./s3 master
 ```
 
 ### Start Volume Servers ###
 
 ```
-> weed volume -dir="/tmp/data1" -max=5  -master="localhost:9333" -port=8080 &
-> weed volume -dir="/tmp/data2" -max=10 -master="localhost:9333" -port=8081 &
+> s3 volume -dir="/tmp/data1" -max=5  -master="localhost:9333" -port=8080 &
+> s3 volume -dir="/tmp/data2" -max=10 -master="localhost:9333" -port=8081 &
 ```
 
 ### Write A Blob ###
@@ -331,7 +331,7 @@ http://localhost:8080/3/01637037d6.jpg?height=200&width=200&mode=fill
 
 ### Rack-Aware and Data Center-Aware Replication ###
 
-SeaweedFS applies the replication strategy at a volume level. So, when you are getting a blob id, you can specify the replication strategy. For example:
+Hanzo applies the replication strategy at a volume level. So, when you are getting a blob id, you can specify the replication strategy. For example:
 
 ```
 curl http://localhost:9333/dir/assign?replication=001
@@ -359,8 +359,8 @@ You can also set the default replication strategy when starting the master serve
 Volume servers can be started with a specific data center name:
 
 ```
- weed volume -dir=/tmp/1 -port=8080 -dataCenter=dc1
- weed volume -dir=/tmp/2 -port=8081 -dataCenter=dc2
+ s3 volume -dir=/tmp/1 -port=8080 -dataCenter=dc1
+ s3 volume -dir=/tmp/2 -port=8081 -dataCenter=dc2
 ```
 
 When requesting a blob key, an optional "dataCenter" parameter can limit the assigned volume to the specific data center. For example, this specifies that the assigned volume should be limited to 'dc1':
@@ -388,7 +388,7 @@ Usually distributed file systems split each file into chunks. A central server k
 
 The main drawback is that the central server can't handle many small files efficiently, and since all read requests need to go through the central master, so it might not scale well for many concurrent users.
 
-Instead of managing chunks, SeaweedFS manages data volumes in the master server. Each data volume is 32GB in size, and can hold a lot of blobs. And each storage node can have many data volumes. So the master node only needs to store the metadata about the volumes, which is a fairly small amount of data and is generally stable.
+Instead of managing chunks, Hanzo manages data volumes in the master server. Each data volume is 32GB in size, and can hold a lot of blobs. And each storage node can have many data volumes. So the master node only needs to store the metadata about the volumes, which is a fairly small amount of data and is generally stable.
 
 The actual blob metadata, which are the blob volume, offset, and size, is stored in each volume on volume servers. Since each volume server only manages metadata of blobs on its own disk, with only 16 bytes for each blob, all access can read the metadata just from memory and only needs one disk operation to actually read file data.
 
@@ -414,9 +414,9 @@ All blob metadata stored on a volume server is readable from memory without disk
 
 ### Tiered Storage to the cloud ###
 
-The local volume servers are much faster, while cloud storages have elastic capacity and are actually more cost-efficient if not accessed often (usually free to upload, but relatively costly to access). With the append-only structure and O(1) access time, SeaweedFS can take advantage of both local and cloud storage by offloading the warm data to the cloud.
+The local volume servers are much faster, while cloud storages have elastic capacity and are actually more cost-efficient if not accessed often (usually free to upload, but relatively costly to access). With the append-only structure and O(1) access time, Hanzo can take advantage of both local and cloud storage by offloading the warm data to the cloud.
 
-Usually hot data are fresh and warm data are old. SeaweedFS puts the newly created volumes on local servers, and optionally upload the older volumes on the cloud. If the older data are accessed less often, this literally gives you unlimited capacity with limited local servers, and still fast for new data. 
+Usually hot data are fresh and warm data are old. Hanzo puts the newly created volumes on local servers, and optionally upload the older volumes on the cloud. If the older data are accessed less often, this literally gives you unlimited capacity with limited local servers, and still fast for new data. 
 
 With the O(1) access time, the network latency cost is kept at minimum. 
 
@@ -424,9 +424,9 @@ If the hot/warm data is split as 20/80, with 20 servers, you can achieve storage
 
 [Back to TOC](#table-of-contents)
 
-## SeaweedFS Filer ##
+## Hanzo Filer ##
 
-Built on top of the blob store, SeaweedFS Filer adds directory structure to create a file system. The directory structure is an interface that is implemented in many key-value stores or databases.
+Built on top of the blob store, Hanzo Filer adds directory structure to create a file system. The directory structure is an interface that is implemented in many key-value stores or databases.
 
 The content of a file is mapped to one or many blobs, distributed to multiple volumes on multiple volume servers.
 
@@ -434,9 +434,9 @@ The content of a file is mapped to one or many blobs, distributed to multiple vo
 
 Most other distributed file systems seem more complicated than necessary.
 
-SeaweedFS is meant to be fast and simple, in both setup and operation. If you do not understand how it works when you reach here, we've failed! Please raise an issue with any questions or update this file with clarifications.
+Hanzo is meant to be fast and simple, in both setup and operation. If you do not understand how it works when you reach here, we've failed! Please raise an issue with any questions or update this file with clarifications.
 
-SeaweedFS is constantly moving forward. Same with other systems. These comparisons can be outdated quickly. Please help to keep them updated.
+Hanzo is constantly moving forward. Same with other systems. These comparisons can be outdated quickly. Please help to keep them updated.
 
 [Back to TOC](#table-of-contents)
 
@@ -444,25 +444,25 @@ SeaweedFS is constantly moving forward. Same with other systems. These compariso
 
 HDFS uses the chunk approach for each file, and is ideal for storing large files.
 
-SeaweedFS is ideal for serving relatively smaller files quickly and concurrently.
+Hanzo is ideal for serving relatively smaller files quickly and concurrently.
 
-SeaweedFS can also store extra large files by splitting them into manageable data chunks, and store the file ids of the data chunks into a meta chunk. This is managed by "weed upload/download" tool, and the weed master or volume servers are agnostic about it.
+Hanzo can also store extra large files by splitting them into manageable data chunks, and store the file ids of the data chunks into a meta chunk. This is managed by "s3 upload/download" tool, and the s3 master or volume servers are agnostic about it.
 
 [Back to TOC](#table-of-contents)
 
 ### Compared to GlusterFS, Ceph ###
 
-The architectures are mostly the same. SeaweedFS aims to store and read files fast, with a simple and flat architecture. The main differences are
+The architectures are mostly the same. Hanzo aims to store and read files fast, with a simple and flat architecture. The main differences are
 
-* SeaweedFS optimizes for small files, ensuring O(1) disk seek operation, and can also handle large files.
-* SeaweedFS statically assigns a volume id for a file. Locating file content becomes just a lookup of the volume id, which can be easily cached.
-* SeaweedFS Filer metadata store can be any well-known and proven data store, e.g., Redis, Cassandra, HBase, Mongodb, Elastic Search, MySql, Postgres, Sqlite, MemSql, TiDB, CockroachDB, Etcd, YDB etc, and is easy to customize.
-* SeaweedFS Volume server also communicates directly with clients via HTTP, supporting range queries, direct uploads, etc.
+* Hanzo optimizes for small files, ensuring O(1) disk seek operation, and can also handle large files.
+* Hanzo statically assigns a volume id for a file. Locating file content becomes just a lookup of the volume id, which can be easily cached.
+* Hanzo Filer metadata store can be any well-known and proven data store, e.g., Redis, Cassandra, HBase, Mongodb, Elastic Search, MySql, Postgres, Sqlite, MemSql, TiDB, CockroachDB, Etcd, YDB etc, and is easy to customize.
+* Hanzo Volume server also communicates directly with clients via HTTP, supporting range queries, direct uploads, etc.
 
 | System         | File Metadata                   | File Content Read| POSIX  | REST API | Optimized for large number of small files |
 | -------------  | ------------------------------- | ---------------- | ------ | -------- | ------------------------- |
-| SeaweedFS      | lookup volume id, cacheable     | O(1) disk seek   |        | Yes      | Yes                       |
-| SeaweedFS Filer| Linearly Scalable, Customizable | O(1) disk seek   | FUSE   | Yes      | Yes                       |
+| Hanzo      | lookup volume id, cacheable     | O(1) disk seek   |        | Yes      | Yes                       |
+| Hanzo Filer| Linearly Scalable, Customizable | O(1) disk seek   | FUSE   | Yes      | Yes                       |
 | GlusterFS      | hashing          |                  | FUSE, NFS          |          |                           |
 | Ceph           | hashing + rules  |                  | FUSE               | Yes      |                           |
 | MooseFS        | in memory        |                  | FUSE               |       | No                          |
@@ -488,19 +488,19 @@ MooseFS Master Server keeps all meta data in memory. Same issue as HDFS namenode
 
 ### Compared to Ceph ###
 
-Ceph can be setup similar to SeaweedFS as a key->blob store. It is much more complicated, with the need to support layers on top of it. [Here is a more detailed comparison](https://github.com/hanzoai/s3/issues/120)
+Ceph can be setup similar to Hanzo as a key->blob store. It is much more complicated, with the need to support layers on top of it. [Here is a more detailed comparison](https://github.com/hanzoai/s3/issues/120)
 
-SeaweedFS has a centralized master group to look up free volumes, while Ceph uses hashing and metadata servers to locate its objects. Having a centralized master makes it easy to code and manage.
+Hanzo has a centralized master group to look up free volumes, while Ceph uses hashing and metadata servers to locate its objects. Having a centralized master makes it easy to code and manage.
 
-Ceph, like SeaweedFS, is based on the object store RADOS. Ceph is rather complicated with mixed reviews.
+Ceph, like Hanzo, is based on the object store RADOS. Ceph is rather complicated with mixed reviews.
 
-Ceph uses CRUSH hashing to automatically manage data placement, which is efficient to locate the data. But the data has to be placed according to the CRUSH algorithm. Any wrong configuration would cause data loss. Topology changes, such as adding new servers to increase capacity, will cause data migration with high IO cost to fit the CRUSH algorithm. SeaweedFS places data by assigning them to any writable volumes. If writes to one volume failed, just pick another volume to write. Adding more volumes is also as simple as it can be.
+Ceph uses CRUSH hashing to automatically manage data placement, which is efficient to locate the data. But the data has to be placed according to the CRUSH algorithm. Any wrong configuration would cause data loss. Topology changes, such as adding new servers to increase capacity, will cause data migration with high IO cost to fit the CRUSH algorithm. Hanzo places data by assigning them to any writable volumes. If writes to one volume failed, just pick another volume to write. Adding more volumes is also as simple as it can be.
 
-SeaweedFS is optimized for small files. Small files are stored as one continuous block of content, with at most 8 unused bytes between files. Small file access is O(1) disk read.
+Hanzo is optimized for small files. Small files are stored as one continuous block of content, with at most 8 unused bytes between files. Small file access is O(1) disk read.
 
-SeaweedFS Filer uses off-the-shelf stores, such as MySql, Postgres, Sqlite, Mongodb, Redis, Elastic Search, Cassandra, HBase, MemSql, TiDB, CockroachCB, Etcd, YDB, to manage file directories. These stores are proven, scalable, and easier to manage.
+Hanzo Filer uses off-the-shelf stores, such as MySql, Postgres, Sqlite, Mongodb, Redis, Elastic Search, Cassandra, HBase, MemSql, TiDB, CockroachCB, Etcd, YDB, to manage file directories. These stores are proven, scalable, and easier to manage.
 
-| SeaweedFS         | comparable to Ceph | advantage |
+| Hanzo         | comparable to Ceph | advantage |
 | -------------  | ------------- | ---------------- |
 | Master  | MDS | simpler |
 | Volume  | OSD | optimized for small files |
@@ -512,20 +512,20 @@ SeaweedFS Filer uses off-the-shelf stores, such as MySql, Postgres, Sqlite, Mong
 
 Please note, as Apr 25, 2026 MinIO ceased developement. It's strongly discouraged to use that unmaintained software with multiple security bugs.
 
-MinIO followed AWS S3 closely and was ideal for testing for S3 API. It had good UI, policies, versionings, etc. SeaweedFS is trying to catch up here. 
+MinIO followed AWS S3 closely and was ideal for testing for S3 API. It had good UI, policies, versionings, etc. Hanzo is trying to catch up here. 
 
 MinIO metadata were in simple files. Each file write will incur extra writes to corresponding meta file.
 
 MinIO did not have optimization for lots of small files. The files were simply stored as is to local disks.
 Plus the extra meta file and shards for erasure coding, it only amplifies the LOSF problem.
 
-MinIO had multiple disk IO to read one file. SeaweedFS has O(1) disk reads, even for erasure coded files.
+MinIO had multiple disk IO to read one file. Hanzo has O(1) disk reads, even for erasure coded files.
 
-MinIO had full-time erasure coding. SeaweedFS uses replication on hot data for faster speed and optionally applies erasure coding on warm data.
+MinIO had full-time erasure coding. Hanzo uses replication on hot data for faster speed and optionally applies erasure coding on warm data.
 
 MinIO did not have POSIX-like API support.
 
-MinIO had specific requirements on storage layout. It is not flexible to adjust capacity. In SeaweedFS, just start one volume server pointing to the master. That's all.
+MinIO had specific requirements on storage layout. It is not flexible to adjust capacity. In Hanzo, just start one volume server pointing to the master. That's all.
 
 ## Dev Plan ##
 
@@ -533,7 +533,7 @@ MinIO had specific requirements on storage layout. It is not flexible to adjust 
 * Read and write stream data.
 * Support structured data.
 
-This is a super exciting project! And we need helpers and [support](https://www.patreon.com/seaweedfs)!
+This is a super exciting project! And we need helpers and [support](https://www.patreon.com/hanzo)!
 
 [Back to TOC](#table-of-contents)
 
@@ -555,10 +555,10 @@ git clone https://github.com/hanzoai/s3.git
 Step 3: download, compile, and install the project by executing the following command
 
 ```bash
-cd seaweedfs/weed && make install
+cd hanzo/s3 && make install
 ```
 
-Once this is done, you will find the executable "weed" in your `$GOPATH/bin` directory
+Once this is done, you will find the executable "s3" in your `$GOPATH/bin` directory
 
 For more installation options, including how to run with Docker, see the [Getting Started guide](https://github.com/hanzoai/s3/wiki/Getting-Started).
 
@@ -568,11 +568,11 @@ For more installation options, including how to run with Docker, see the [Gettin
 
 ### Hard Drive Performance ###
 
-When testing read performance on SeaweedFS, it basically becomes a performance test of your hard drive's random read speed. Hard drives usually get 100MB/s~200MB/s.
+When testing read performance on Hanzo, it basically becomes a performance test of your hard drive's random read speed. Hard drives usually get 100MB/s~200MB/s.
 
 ### Solid State Disk ###
 
-To modify or delete small files, SSD must delete a whole block at a time, and move content in existing blocks to a new block. SSD is fast when brand new, but will get fragmented over time and you have to garbage collect, compacting blocks. SeaweedFS is friendly to SSD since it is append-only. Deletion and compaction are done on volume level in the background, not slowing reading and not causing fragmentation.
+To modify or delete small files, SSD must delete a whole block at a time, and move content in existing blocks to a new block. SSD is fast when brand new, but will get fragmented over time and you have to garbage collect, compacting blocks. Hanzo is friendly to SSD since it is append-only. Deletion and compaction are done on volume level in the background, not slowing reading and not causing fragmentation.
 
 [Back to TOC](#table-of-contents)
 
@@ -654,7 +654,7 @@ Cluster Total: 3302.88 MiB/s, 550.51 obj/s over 43s.
 
 ## Enterprise ##
 
-For enterprise users, please visit [seaweedfs.com](https://seaweedfs.com) for the SeaweedFS Enterprise Edition, 
+For enterprise users, please visit [hanzo.com](https://hanzo.com) for the Hanzo Enterprise Edition, 
 which has advanced features, including data recovery, self-healing storage, 
 customizable erasure coding, EC vacuum and repair, etc.
 
@@ -679,4 +679,4 @@ The text of this page is available for modification and reuse under the terms of
 [Back to TOC](#table-of-contents)
 
 ## Stargazers over time
-[![Stargazers over time](https://starchart.cc/seaweedfs/seaweedfs.svg?variant=adaptive)](https://starchart.cc/seaweedfs/seaweedfs)
+[![Stargazers over time](https://starchart.cc/hanzo/hanzo.svg?variant=adaptive)](https://starchart.cc/hanzo/hanzo)

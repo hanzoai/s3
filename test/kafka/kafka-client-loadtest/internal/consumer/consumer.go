@@ -180,7 +180,7 @@ func (c *Consumer) initAvroCodec() error {
 	loadTestSchema := `{
 		"type": "record",
 		"name": "LoadTestMessage",
-		"namespace": "com.seaweedfs.loadtest",
+		"namespace": "com.s3.loadtest",
 		"fields": [
 			{"name": "id", "type": "string"},
 			{"name": "timestamp", "type": "long"},

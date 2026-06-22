@@ -1,4 +1,4 @@
-// Package testutil provides shared test utilities for SeaweedFS integration tests.
+// Package testutil provides shared test utilities for Hanzo integration tests.
 package testutil
 
 import (
@@ -8,10 +8,10 @@ import (
 	"testing"
 )
 
-// GrpcPortOffset is the offset weed mini uses to derive gRPC ports from HTTP ports.
+// GrpcPortOffset is the offset s3 mini uses to derive gRPC ports from HTTP ports.
 const GrpcPortOffset = 10000
 
-// miniDefaultPorts are the weed mini flag defaults (see weed/command/mini.go).
+// miniDefaultPorts are the s3 mini flag defaults (see s3/command/mini.go).
 // A test only overrides services it uses; unspecified services still bind
 // these defaults, so allocation must avoid handing them out (or any value
 // whose gRPC offset would collide with them).
@@ -72,14 +72,14 @@ func MustAllocatePorts(t *testing.T, count int) []int {
 // with any other allocated port or its gRPC counterpart. All listeners
 // are held open until the entire batch is allocated, preventing the OS
 // from recycling ports between allocations. Use this when ports will be
-// passed to weed mini without explicit gRPC port flags, so mini will
+// passed to s3 mini without explicit gRPC port flags, so mini will
 // derive gRPC ports as HTTP + 10000.
 //
 // Listeners are bound on all interfaces (":port") rather than 127.0.0.1
-// to match weed mini's availability check (isPortAvailable). A port can
+// to match s3 mini's availability check (isPortAvailable). A port can
 // be free on loopback but held by another process on a different
 // interface; reserving only on loopback lets mini's check fail and
-// trigger gRPC port shifting, which then causes weed shell to dial the
+// trigger gRPC port shifting, which then causes s3 shell to dial the
 // wrong port and hang.
 func AllocateMiniPorts(count int) ([]int, error) {
 	const (
@@ -131,7 +131,7 @@ func AllocateMiniPorts(count int) ([]int, error) {
 	return ports, nil
 }
 
-// MustFreeMiniPorts allocates n ports suitable for weed mini, ensuring
+// MustFreeMiniPorts allocates n ports suitable for s3 mini, ensuring
 // each port's gRPC offset (port + 10000) doesn't collide with any other
 // allocated port. names is used only for error messages.
 func MustFreeMiniPorts(t *testing.T, names []string) []int {
@@ -143,7 +143,7 @@ func MustFreeMiniPorts(t *testing.T, names []string) []int {
 	return ports
 }
 
-// MustFreeMiniPort allocates a single weed mini port.
+// MustFreeMiniPort allocates a single s3 mini port.
 func MustFreeMiniPort(t *testing.T, name string) int {
 	t.Helper()
 	return MustFreeMiniPorts(t, []string{name})[0]

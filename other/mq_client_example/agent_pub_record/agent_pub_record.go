@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/other/mq_client_example/example"
-	"github.com/hanzoai/s3/weed/mq/client/agent_client"
-	"github.com/hanzoai/s3/weed/mq/schema"
+	"github.com/hanzoai/s3/s3/mq/client/agent_client"
+	"github.com/hanzoai/s3/s3/mq/schema"
 )
 
 var (

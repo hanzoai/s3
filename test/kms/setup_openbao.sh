@@ -43,7 +43,7 @@ echo "🔑 Creating test encryption keys..."
 declare -a TEST_KEYS=(
     "test-key-1:aes256-gcm96:Test key 1 for basic operations"
     "test-key-2:aes256-gcm96:Test key 2 for multi-key scenarios" 
-    "seaweedfs-test-key:aes256-gcm96:SeaweedFS integration test key"
+    "hanzo-test-key:aes256-gcm96:Hanzo integration test key"
     "bucket-default-key:aes256-gcm96:Default key for bucket encryption"
     "high-security-key:aes256-gcm96:High security test key"
     "performance-key:aes256-gcm96:Performance testing key"
@@ -78,7 +78,7 @@ done
 echo "🧪 Testing basic encryption/decryption..."
 
 # Test basic encrypt/decrypt operation
-TEST_PLAINTEXT="Hello, SeaweedFS KMS Integration!"
+TEST_PLAINTEXT="Hello, Hanzo KMS Integration!"
 PLAINTEXT_B64=$(echo -n "$TEST_PLAINTEXT" | base64)
 
 echo "   Testing with key: test-key-1"

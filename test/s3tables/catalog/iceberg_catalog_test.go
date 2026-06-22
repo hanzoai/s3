@@ -26,7 +26,7 @@ import (
 // sharedEnv is the single TestEnvironment shared across all tests in this package.
 var sharedEnv *TestEnvironment
 
-// TestMain starts one weed mini instance for the whole package and tears it down
+// TestMain starts one s3 mini instance for the whole package and tears it down
 // after all tests have run.
 func TestMain(m *testing.M) {
 	flag.Parse()
@@ -42,8 +42,8 @@ func TestMain(m *testing.M) {
 	}
 	sharedEnv = env
 
-	if startErr := sharedEnv.startSeaweedFSForMain(); startErr != nil {
-		fmt.Fprintf(os.Stderr, "SKIP: weed mini failed to start: %v\n", startErr)
+	if startErr := sharedEnv.startHanzoForMain(); startErr != nil {
+		fmt.Fprintf(os.Stderr, "SKIP: s3 mini failed to start: %v\n", startErr)
 		sharedEnv.cleanupForMain()
 		os.Exit(0)
 	}
@@ -56,8 +56,8 @@ func TestMain(m *testing.M) {
 
 // TestEnvironment contains the test environment configuration
 type TestEnvironment struct {
-	seaweedDir      string
-	weedBinary      string
+	hanzoDir      string
+	s3Binary      string
 	dataDir         string
 	s3Port          int
 	s3GrpcPort      int
@@ -68,39 +68,39 @@ type TestEnvironment struct {
 	filerGrpcPort   int
 	volumePort      int
 	volumeGrpcPort  int
-	weedProcess     *exec.Cmd
-	weedCancel      context.CancelFunc
+	s3Process     *exec.Cmd
+	s3Cancel      context.CancelFunc
 	dockerAvailable bool
 }
 
 // newTestEnvironmentForMain creates a TestEnvironment without calling t.Fatalf so it
 // can be used from TestMain (which has no *testing.T).
 func newTestEnvironmentForMain() (*TestEnvironment, error) {
-	// Find the SeaweedFS root directory
+	// Find the Hanzo root directory
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("get working directory: %w", err)
 	}
 
-	seaweedDir := wd
+	hanzoDir := wd
 	for i := 0; i < 5; i++ {
-		if _, err := os.Stat(filepath.Join(seaweedDir, "go.mod")); err == nil {
+		if _, err := os.Stat(filepath.Join(hanzoDir, "go.mod")); err == nil {
 			break
 		}
-		seaweedDir = filepath.Dir(seaweedDir)
+		hanzoDir = filepath.Dir(hanzoDir)
 	}
 
-	// Check for weed binary
-	weedBinary := filepath.Join(seaweedDir, "weed", "weed")
-	if _, err := os.Stat(weedBinary); os.IsNotExist(err) {
-		weedBinary = "weed"
-		if _, err := exec.LookPath(weedBinary); err != nil {
-			return nil, fmt.Errorf("weed binary not found")
+	// Check for s3 binary
+	s3Binary := filepath.Join(hanzoDir, "s3", "s3")
+	if _, err := os.Stat(s3Binary); os.IsNotExist(err) {
+		s3Binary = "s3"
+		if _, err := exec.LookPath(s3Binary); err != nil {
+			return nil, fmt.Errorf("s3 binary not found")
 		}
 	}
 
 	// Create temporary data directory
-	dataDir, err := os.MkdirTemp("", "seaweed-iceberg-test-*")
+	dataDir, err := os.MkdirTemp("", "hanzo-iceberg-test-*")
 	if err != nil {
 		return nil, fmt.Errorf("create temp dir: %w", err)
 	}
@@ -113,8 +113,8 @@ func newTestEnvironmentForMain() (*TestEnvironment, error) {
 	}
 
 	return &TestEnvironment{
-		seaweedDir:      seaweedDir,
-		weedBinary:      weedBinary,
+		hanzoDir:      hanzoDir,
+		s3Binary:      s3Binary,
 		dataDir:         dataDir,
 		s3Port:          ports[0],
 		s3GrpcPort:      ports[1],
@@ -129,10 +129,10 @@ func newTestEnvironmentForMain() (*TestEnvironment, error) {
 	}, nil
 }
 
-// startSeaweedFSForMain starts weed mini without a *testing.T (for use in TestMain).
-func (env *TestEnvironment) startSeaweedFSForMain() error {
+// startHanzoForMain starts s3 mini without a *testing.T (for use in TestMain).
+func (env *TestEnvironment) startHanzoForMain() error {
 	ctx, cancel := context.WithCancel(context.Background())
-	env.weedCancel = cancel
+	env.s3Cancel = cancel
 
 	masterDir := filepath.Join(env.dataDir, "master")
 	filerDir := filepath.Join(env.dataDir, "filer")
@@ -145,7 +145,7 @@ func (env *TestEnvironment) startSeaweedFSForMain() error {
 		}
 	}
 
-	cmd := exec.CommandContext(ctx, env.weedBinary, "mini",
+	cmd := exec.CommandContext(ctx, env.s3Binary, "mini",
 		"-master.port", fmt.Sprintf("%d", env.masterPort),
 		"-master.port.grpc", fmt.Sprintf("%d", env.masterGrpcPort),
 		"-volume.port", fmt.Sprintf("%d", env.volumePort),
@@ -163,9 +163,9 @@ func (env *TestEnvironment) startSeaweedFSForMain() error {
 
 	if err := cmd.Start(); err != nil {
 		cancel()
-		return fmt.Errorf("start SeaweedFS: %w", err)
+		return fmt.Errorf("start Hanzo: %w", err)
 	}
-	env.weedProcess = cmd
+	env.s3Process = cmd
 
 	if !env.waitForService(fmt.Sprintf("http://127.0.0.1:%d/v1/config", env.icebergPort), 30*time.Second) {
 		cancel()
@@ -175,14 +175,14 @@ func (env *TestEnvironment) startSeaweedFSForMain() error {
 	return nil
 }
 
-// cleanupForMain stops SeaweedFS and cleans up resources (no *testing.T needed).
+// cleanupForMain stops Hanzo and cleans up resources (no *testing.T needed).
 func (env *TestEnvironment) cleanupForMain() {
-	if env.weedCancel != nil {
-		env.weedCancel()
+	if env.s3Cancel != nil {
+		env.s3Cancel()
 	}
-	if env.weedProcess != nil {
+	if env.s3Process != nil {
 		time.Sleep(2 * time.Second)
-		env.weedProcess.Wait()
+		env.s3Process.Wait()
 	}
 	if env.dataDir != "" {
 		os.RemoveAll(env.dataDir)
@@ -487,7 +487,7 @@ func createTableBucket(t *testing.T, env *TestEnvironment, bucketName string) {
 }
 
 // signS3TablesRequest signs req with AWS V4 for SERVICE=s3tables. The
-// underlying weed mini instance runs in default-allow mode so the
+// underlying s3 mini instance runs in default-allow mode so the
 // signature itself is not verified; only the credential scope matters,
 // because the S3 Tables route matcher requires SERVICE=s3tables to
 // distinguish S3 Tables traffic from regular S3 calls on the same paths.

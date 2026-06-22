@@ -350,7 +350,7 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func printHelp() {
-	fmt.Printf(`Kafka Client Load Test for SeaweedFS
+	fmt.Printf(`Kafka Client Load Test for Hanzo
 
 Usage: %s [options]
 

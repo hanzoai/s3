@@ -5,8 +5,8 @@ import (
 	"net"
 	"sync"
 
-	"github.com/hanzoai/s3/weed/pb"
-	"github.com/hanzoai/s3/weed/pb/master_pb"
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"testing"
@@ -14,7 +14,7 @@ import (
 
 // MasterServer provides a stub master gRPC service for topology responses.
 type MasterServer struct {
-	master_pb.UnimplementedSeaweedServer
+	master_pb.UnimplementedHanzoServer
 
 	t *testing.T
 
@@ -44,7 +44,7 @@ func NewMasterServer(t *testing.T, response *master_pb.VolumeListResponse) *Mast
 		response: response,
 	}
 
-	master_pb.RegisterSeaweedServer(server, ms)
+	master_pb.RegisterHanzoServer(server, ms)
 	go func() {
 		_ = server.Serve(listener)
 	}()

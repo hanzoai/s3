@@ -3,15 +3,15 @@
 #   make start      - Start the test cluster (master + 6 volume servers + filer)
 #   make stop       - Stop the test cluster
 #   make populate   - Populate test data (~300MB across 7 volumes)
-#   make shell      - Open weed shell connected to the test cluster
+#   make shell      - Open s3 shell connected to the test cluster
 #   make clean      - Stop cluster and remove all test data
 #   make setup      - Start cluster and populate data (one command)
 #
 # Requirements: curl, jq
 
-WEED_BINARY := $(shell pwd)/../../weed/weed
+WEED_BINARY := $(shell pwd)/../../s3/s3
 TEST_DIR := /tmp/ec_manual_test
-# Use non-standard ports to avoid conflicts with existing SeaweedFS servers
+# Use non-standard ports to avoid conflicts with existing Hanzo servers
 MASTER_PORT := 29333
 FILER_PORT := 28888
 VOLUME_BASE_PORT := 28080
@@ -19,16 +19,16 @@ NUM_VOLUME_SERVERS := 6
 VOLUME_SIZE_LIMIT_MB := 30
 MAX_VOLUMES_PER_SERVER := 10
 
-# Build weed binary if it doesn't exist
+# Build s3 binary if it doesn't exist
 $(WEED_BINARY):
-	cd ../../weed && go build -o weed .
+	cd ../../s3 && go build -o s3 .
 
 .PHONY: build
 build: $(WEED_BINARY)
 
 .PHONY: start
 start: build
-	@echo "=== Starting SeaweedFS test cluster ==="
+	@echo "=== Starting Hanzo test cluster ==="
 	@mkdir -p $(TEST_DIR)/master $(TEST_DIR)/filer
 	@for i in $$(seq 0 $$(($(NUM_VOLUME_SERVERS)-1))); do mkdir -p $(TEST_DIR)/volume$$i; done
 	@# Create security.toml with JWT disabled
@@ -82,12 +82,12 @@ start: build
 	@echo "Filer:  http://127.0.0.1:$(FILER_PORT)"
 	@echo "Volume servers: http://127.0.0.1:$(VOLUME_BASE_PORT) - http://127.0.0.1:$$(($(VOLUME_BASE_PORT) + $(NUM_VOLUME_SERVERS) - 1))"
 	@echo ""
-	@echo "Run 'make shell' to open weed shell"
+	@echo "Run 'make shell' to open s3 shell"
 	@echo "Run 'make populate' to add test data"
 
 .PHONY: stop
 stop:
-	@echo "=== Stopping SeaweedFS test cluster ==="
+	@echo "=== Stopping Hanzo test cluster ==="
 	@# Stop filer by PID
 	@-[ -f $(TEST_DIR)/filer.pid ] && kill $$(cat $(TEST_DIR)/filer.pid) 2>/dev/null && rm -f $(TEST_DIR)/filer.pid || true
 	@# Stop volume servers by PID
@@ -97,9 +97,9 @@ stop:
 	@# Stop master by PID
 	@-[ -f $(TEST_DIR)/master.pid ] && kill $$(cat $(TEST_DIR)/master.pid) 2>/dev/null && rm -f $(TEST_DIR)/master.pid || true
 	@# Fallback: use pkill with specific patterns to ensure cleanup
-	@-pkill -f "weed filer.*-master=127.0.0.1:$(MASTER_PORT)" 2>/dev/null || true
-	@-pkill -f "weed volume.*-dir=$(TEST_DIR)/volume" 2>/dev/null || true
-	@-pkill -f "weed master.*-mdir=$(TEST_DIR)/master" 2>/dev/null || true
+	@-pkill -f "s3 filer.*-master=127.0.0.1:$(MASTER_PORT)" 2>/dev/null || true
+	@-pkill -f "s3 volume.*-dir=$(TEST_DIR)/volume" 2>/dev/null || true
+	@-pkill -f "s3 master.*-mdir=$(TEST_DIR)/master" 2>/dev/null || true
 	@echo "Cluster stopped."
 
 .PHONY: clean
@@ -138,7 +138,7 @@ populate:
 
 .PHONY: shell
 shell: build
-	@echo "Opening weed shell..."
+	@echo "Opening s3 shell..."
 	@echo "Commands to try:"
 	@echo "  lock"
 	@echo "  volume.list"
@@ -175,7 +175,7 @@ help:
 	@echo "  make start     - Start test cluster (master + 6 volume servers + filer)"
 	@echo "  make stop      - Stop test cluster"
 	@echo "  make populate  - Populate ~300MB of test data"
-	@echo "  make shell     - Open weed shell"
+	@echo "  make shell     - Open s3 shell"
 	@echo "  make setup     - Clean, start, and populate (all-in-one)"
 	@echo "  make status    - Show cluster and EC shard status"
 	@echo "  make clean     - Stop cluster and remove all test data"

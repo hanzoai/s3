@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package com.seaweedfs.loadtest;
+package com.hanzofs.loadtest;
 
 option go_package = "github.com/hanzoai/s3/test/kafka/kafka-client-loadtest/internal/schema/pb";
 

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/pb/volume_server_pb"
-	"github.com/hanzoai/s3/weed/storage/needle"
+	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
+	"github.com/hanzoai/s3/s3/storage/needle"
 )
 
 func AllocateVolume(t testing.TB, client volume_server_pb.VolumeServerClient, volumeID uint32, collection string) {

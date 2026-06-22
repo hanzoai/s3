@@ -79,7 +79,7 @@ func TestSTSGetFederationTokenValidation(t *testing.T) {
 	}
 
 	if !isSTSEndpointRunning(t) {
-		t.Fatal("SeaweedFS STS endpoint is not running at", TestSTSEndpoint, "- please run 'make setup-all-tests' first")
+		t.Fatal("Hanzo STS endpoint is not running at", TestSTSEndpoint, "- please run 'make setup-all-tests' first")
 	}
 
 	if !isGetFederationTokenImplemented(t) {
@@ -218,7 +218,7 @@ func TestSTSGetFederationTokenRejectTemporaryCredentials(t *testing.T) {
 	}
 
 	if !isSTSEndpointRunning(t) {
-		t.Skip("SeaweedFS STS endpoint is not running at", TestSTSEndpoint)
+		t.Skip("Hanzo STS endpoint is not running at", TestSTSEndpoint)
 	}
 
 	if !isGetFederationTokenImplemented(t) {
@@ -293,7 +293,7 @@ func TestSTSGetFederationTokenSuccess(t *testing.T) {
 	}
 
 	if !isSTSEndpointRunning(t) {
-		t.Skip("SeaweedFS STS endpoint is not running at", TestSTSEndpoint)
+		t.Skip("Hanzo STS endpoint is not running at", TestSTSEndpoint)
 	}
 
 	if !isGetFederationTokenImplemented(t) {
@@ -401,7 +401,7 @@ func TestSTSGetFederationTokenWithSessionPolicy(t *testing.T) {
 	}
 
 	if !isSTSEndpointRunning(t) {
-		t.Skip("SeaweedFS STS endpoint is not running at", TestSTSEndpoint)
+		t.Skip("Hanzo STS endpoint is not running at", TestSTSEndpoint)
 	}
 
 	if !isGetFederationTokenImplemented(t) {

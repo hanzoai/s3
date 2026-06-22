@@ -2,30 +2,30 @@ version: '3.9'
 
 services:
   server-left:
-    image: chrislusf/seaweedfs:local
-    command: "-v=0 server -ip=server-left -filer -filer.maxMB 5 -s3 -s3.config=/etc/seaweedfs/s3.json -volume.max=0 -master.volumeSizeLimitMB=100 -volume.preStopSeconds=1"
+    image: chrislusf/hanzo:local
+    command: "-v=0 server -ip=server-left -filer -filer.maxMB 5 -s3 -s3.config=/etc/hanzo/s3.json -volume.max=0 -master.volumeSizeLimitMB=100 -volume.preStopSeconds=1"
     volumes:
-      - ./s3.json:/etc/seaweedfs/s3.json
+      - ./s3.json:/etc/hanzo/s3.json
     healthcheck:
       test: [ "CMD", "curl", "--fail", "-I", "http://localhost:9333/cluster/healthz" ]
       interval: 3s
       start_period: 15s
       timeout: 30s
   server-right:
-    image: chrislusf/seaweedfs:local
-    command: "-v=0 server -ip=server-right -filer -filer.maxMB 64 -s3 -s3.config=/etc/seaweedfs/s3.json -volume.max=0 -master.volumeSizeLimitMB=100 -volume.preStopSeconds=1"
+    image: chrislusf/hanzo:local
+    command: "-v=0 server -ip=server-right -filer -filer.maxMB 64 -s3 -s3.config=/etc/hanzo/s3.json -volume.max=0 -master.volumeSizeLimitMB=100 -volume.preStopSeconds=1"
     volumes:
-      - ./s3.json:/etc/seaweedfs/s3.json
+      - ./s3.json:/etc/hanzo/s3.json
     healthcheck:
       test: [ "CMD", "curl", "--fail", "-I", "http://localhost:9333/cluster/healthz" ]
       interval: 3s
       start_period: 15s
       timeout: 30s
   filer-backup:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     command: "-v=0 filer.backup -debug -doDeleteFiles=False -filer server-left:8888"
     volumes:
-      - ./replication.toml:/etc/seaweedfs/replication.toml
+      - ./replication.toml:/etc/hanzo/replication.toml
     environment:
       WEED_SINK_LOCAL_INCREMENTAL_ENABLED: "false"
       WEED_SINK_S3_ENABLED: "true"

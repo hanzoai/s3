@@ -38,7 +38,7 @@ type masterNode struct {
 // MasterCluster manages a 3-node master raft cluster for integration tests.
 type MasterCluster struct {
 	t          testing.TB
-	weedBinary string
+	s3Binary string
 	baseDir    string
 	logsDir    string
 	keepLogs   bool
@@ -61,13 +61,13 @@ type clusterStatus struct {
 func StartMasterCluster(t testing.TB) *MasterCluster {
 	t.Helper()
 
-	weedBinary, err := findOrBuildWeedBinary()
+	s3Binary, err := findOrBuildS3Binary()
 	if err != nil {
-		t.Fatalf("resolve weed binary: %v", err)
+		t.Fatalf("resolve s3 binary: %v", err)
 	}
 
 	keepLogs := os.Getenv("MULTI_MASTER_IT_KEEP_LOGS") == "1"
-	baseDir, err := os.MkdirTemp("", "seaweedfs_multi_master_it_")
+	baseDir, err := os.MkdirTemp("", "hanzo_multi_master_it_")
 	if err != nil {
 		t.Fatalf("create temp dir: %v", err)
 	}
@@ -95,7 +95,7 @@ func StartMasterCluster(t testing.TB) *MasterCluster {
 
 	mc := &MasterCluster{
 		t:          t,
-		weedBinary: weedBinary,
+		s3Binary: s3Binary,
 		baseDir:    baseDir,
 		logsDir:    logsDir,
 		keepLogs:   keepLogs,
@@ -156,7 +156,7 @@ func (mc *MasterCluster) StartNode(i int) {
 		"-defaultReplication=000",
 	}
 
-	n.cmd = exec.Command(mc.weedBinary, args...)
+	n.cmd = exec.Command(mc.s3Binary, args...)
 	n.cmd.Dir = mc.baseDir
 	n.cmd.Stdout = logFile
 	n.cmd.Stderr = logFile
@@ -358,7 +358,7 @@ func (mc *MasterCluster) tailLog(i int) string {
 	return strings.Join(lines, "\n")
 }
 
-func findOrBuildWeedBinary() (string, error) {
+func findOrBuildS3Binary() (string, error) {
 	if fromEnv := os.Getenv("WEED_BINARY"); fromEnv != "" {
 		if isExecutableFile(fromEnv) {
 			return fromEnv, nil
@@ -375,20 +375,20 @@ func findOrBuildWeedBinary() (string, error) {
 	}
 
 	// Check if already built
-	binDir := filepath.Join(os.TempDir(), "seaweedfs_multi_master_it_bin")
+	binDir := filepath.Join(os.TempDir(), "hanzo_multi_master_it_bin")
 	os.MkdirAll(binDir, 0o755)
-	binPath := filepath.Join(binDir, "weed")
+	binPath := filepath.Join(binDir, "s3")
 	if isExecutableFile(binPath) {
 		return binPath, nil
 	}
 
 	cmd := exec.Command("go", "build", "-o", binPath, ".")
-	cmd.Dir = filepath.Join(repoRoot, "weed")
+	cmd.Dir = filepath.Join(repoRoot, "s3")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("build weed binary: %w\n%s", err, out.String())
+		return "", fmt.Errorf("build s3 binary: %w\n%s", err, out.String())
 	}
 	return binPath, nil
 }

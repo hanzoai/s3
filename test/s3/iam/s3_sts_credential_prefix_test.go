@@ -21,7 +21,7 @@ func TestSTSTemporaryCredentialPrefix(t *testing.T) {
 	}
 
 	if !isSTSEndpointRunning(t) {
-		t.Skip("SeaweedFS STS endpoint is not running at", TestSTSEndpoint)
+		t.Skip("Hanzo STS endpoint is not running at", TestSTSEndpoint)
 	}
 
 	// Use test credentials from environment or fall back to defaults

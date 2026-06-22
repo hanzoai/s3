@@ -2,13 +2,13 @@ version: '3.9'
 
 services:
   master:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 9333:9333
       - 19333:19333
     command: "master -ip=master"
   volume:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 7455:8080
       - 9325:9325
@@ -16,7 +16,7 @@ services:
     depends_on:
       - master
   filer:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     ports:
       - 8888:8888
       - 18888:18888
@@ -28,17 +28,17 @@ services:
       - master
       - volume
   mount_1:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     privileged: true
-    entrypoint: '/bin/sh -c "mkdir -p t1 && mkdir -p cache/t1 && weed -v=4 mount -filer=filer:8888 -cacheDir=./cache/t1 -dir=./t1 -filer.path=/c1 -volumeServerAccess=filerProxy"'
+    entrypoint: '/bin/sh -c "mkdir -p t1 && mkdir -p cache/t1 && s3 -v=4 mount -filer=filer:8888 -cacheDir=./cache/t1 -dir=./t1 -filer.path=/c1 -volumeServerAccess=filerProxy"'
     depends_on:
       - master
       - volume
       - filer
   mount_2:
-    image: chrislusf/seaweedfs:local
+    image: chrislusf/hanzo:local
     privileged: true
-    entrypoint: '/bin/sh -c "mkdir -p t2 && mkdir -p cache/t2 && weed -v=4  mount -filer=filer:8888 -cacheDir=./cache/t2 -dir=./t2 -filer.path=/c1"'
+    entrypoint: '/bin/sh -c "mkdir -p t2 && mkdir -p cache/t2 && s3 -v=4  mount -filer=filer:8888 -cacheDir=./cache/t2 -dir=./t2 -filer.path=/c1"'
     depends_on:
       - master
       - volume

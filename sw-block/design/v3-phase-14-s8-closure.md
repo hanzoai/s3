@@ -64,10 +64,10 @@ Sixteen claims; fifteen PROVEN at their target level; one (Claim 15) PARTIAL —
 
 ```
 $ go test ./core/engine ./core/adapter ./core/authority ./cmd/sparrow -count=1
-ok  github.com/seaweedfs/seaweed-block/core/engine     0.016s
-ok  github.com/seaweedfs/seaweed-block/core/adapter    2.344s
-ok  github.com/seaweedfs/seaweed-block/core/authority  4.569s
-ok  github.com/seaweedfs/seaweed-block/cmd/sparrow     2.264s
+ok  github.com/hanzo/hanzo-block/core/engine     0.016s
+ok  github.com/hanzo/hanzo-block/core/adapter    2.344s
+ok  github.com/hanzo/hanzo-block/core/authority  4.569s
+ok  github.com/hanzo/hanzo-block/cmd/sparrow     2.264s
 
 $ go test ./... -count=1
 (14 packages, all PASS)

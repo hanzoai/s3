@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# Runs pjdfstest inside the mount container against /mnt/seaweedfs.
+# Runs pjdfstest inside the mount container against /mnt/hanzo.
 # Invoked via: docker compose exec mount /run.sh
 #
 # Uses known_failures.txt to skip tests with known issues. Any failure
 # in a test NOT in the skip list causes a non-zero exit (regression).
 set -euo pipefail
 
-MOUNT_DIR="/mnt/seaweedfs"
+MOUNT_DIR="/mnt/hanzo"
 PJDFSTEST_TESTS="${PJDFSTEST_TESTS:-tests/}"
 KNOWN_FAILURES="/known_failures.txt"
 

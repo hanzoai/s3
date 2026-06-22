@@ -14,6 +14,6 @@ api_version = 740
 # timeout = "10s"
 # Optional: max retry delay for retryable errors (default: 1s)
 # max_retry_delay = "1s"
-# Optional: directory prefix for storing SeaweedFS data (default: "seaweedfs")
-# directory_prefix = "seaweedfs"
+# Optional: directory prefix for storing Hanzo data (default: "hanzo")
+# directory_prefix = "hanzo"
 

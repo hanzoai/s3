@@ -73,12 +73,12 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "seaweedfs_telemetry_total_clusters",
+          "expr": "hanzo_telemetry_total_clusters",
           "format": "time_series",
           "refId": "A"
         }
       ],
-             "title": "Total SeaweedFS Clusters",
+             "title": "Total Hanzo Clusters",
       "type": "stat"
     },
     {
@@ -132,7 +132,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "seaweedfs_telemetry_active_clusters",
+          "expr": "hanzo_telemetry_active_clusters",
           "format": "time_series",
           "refId": "A"
         }
@@ -193,13 +193,13 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "count by (version) (seaweedfs_telemetry_cluster_info)",
+          "expr": "count by (version) (hanzo_telemetry_cluster_info)",
           "format": "time_series",
           "legendFormat": "{{version}}",
           "refId": "A"
         }
       ],
-      "title": "SeaweedFS Version Distribution",
+      "title": "Hanzo Version Distribution",
       "type": "piechart"
     },
     {
@@ -255,7 +255,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "count by (os) (seaweedfs_telemetry_cluster_info)",
+          "expr": "count by (os) (hanzo_telemetry_cluster_info)",
           "format": "time_series",
           "legendFormat": "{{os}}",
           "refId": "A"
@@ -344,7 +344,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(seaweedfs_telemetry_volume_servers)",
+          "expr": "sum(hanzo_telemetry_volume_servers)",
           "format": "time_series",
           "legendFormat": "Total Volume Servers",
           "refId": "A"
@@ -434,7 +434,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(seaweedfs_telemetry_disk_bytes)",
+          "expr": "sum(hanzo_telemetry_disk_bytes)",
           "format": "time_series",
           "legendFormat": "Total Disk Usage",
           "refId": "A"
@@ -523,7 +523,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(seaweedfs_telemetry_volume_count)",
+          "expr": "sum(hanzo_telemetry_volume_count)",
           "format": "time_series",
           "legendFormat": "Total Volume Count",
           "refId": "A"
@@ -612,7 +612,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(seaweedfs_telemetry_filer_count)",
+          "expr": "sum(hanzo_telemetry_filer_count)",
           "format": "time_series",
           "legendFormat": "Total Filer Count",
           "refId": "A"
@@ -701,7 +701,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "sum(seaweedfs_telemetry_broker_count)",
+          "expr": "sum(hanzo_telemetry_broker_count)",
           "format": "time_series",
           "legendFormat": "Total Broker Count",
           "refId": "A"
@@ -715,7 +715,7 @@
   "schemaVersion": 38,
   "style": "dark",
   "tags": [
-    "seaweedfs",
+    "hanzo",
     "telemetry"
   ],
   "templating": {
@@ -727,8 +727,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "SeaweedFS Telemetry Dashboard",
-  "uid": "seaweedfs-telemetry",
+  "title": "Hanzo Telemetry Dashboard",
+  "uid": "hanzo-telemetry",
   "version": 1,
   "weekStart": ""
 } 

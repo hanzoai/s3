@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/weed/cluster/lock_manager"
-	"github.com/hanzoai/s3/weed/pb"
+	"github.com/hanzoai/s3/s3/cluster/lock_manager"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/stretchr/testify/require"
 )
 

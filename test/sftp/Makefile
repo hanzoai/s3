@@ -2,9 +2,9 @@
 
 all: build test
 
-# Build the weed binary first
+# Build the s3 binary first
 build:
-	cd ../../weed && go build -o weed .
+	cd ../../s3 && go build -o s3 .
 
 # Install test dependencies
 deps:
@@ -26,7 +26,7 @@ test-short: deps
 test-homedir: build deps
 	go test -v -timeout 5m -run TestHomeDirPathTranslation ./...
 
-# Run tests with debug output from SeaweedFS
+# Run tests with debug output from Hanzo
 test-debug: build deps
 	go test -v -timeout 5m ./... 2>&1 | tee test.log
 

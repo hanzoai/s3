@@ -1,5 +1,5 @@
 // Package maintenance contains integration tests for the iceberg table
-// maintenance plugin worker. Tests start a real weed mini cluster, create
+// maintenance plugin worker. Tests start a real s3 mini cluster, create
 // tables via the S3 Tables API, populate Iceberg metadata via the filer
 // gRPC API, and then exercise the iceberg.Handler operations against the
 // live filer.
@@ -40,12 +40,12 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/hanzoai/s3/test/testutil"
-	"github.com/hanzoai/s3/weed/command"
-	"github.com/hanzoai/s3/weed/filer"
-	"github.com/hanzoai/s3/weed/glog"
-	"github.com/hanzoai/s3/weed/pb/filer_pb"
-	"github.com/hanzoai/s3/weed/s3api/s3tables"
-	icebergHandler "github.com/hanzoai/s3/weed/worker/tasks/iceberg"
+	"github.com/hanzoai/s3/s3/command"
+	"github.com/hanzoai/s3/s3/filer"
+	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/s3api/s3tables"
+	icebergHandler "github.com/hanzoai/s3/s3/worker/tasks/iceberg"
 )
 
 // ---------------------------------------------------------------------------
@@ -71,7 +71,7 @@ func TestMain(m *testing.M) {
 		os.Exit(m.Run())
 	}
 
-	testDir, err := os.MkdirTemp("", "seaweed-iceberg-maint-*")
+	testDir, err := os.MkdirTemp("", "hanzo-iceberg-maint-*")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "SKIP: failed to create temp dir: %v\n", err)
 		os.Exit(0)
@@ -156,7 +156,7 @@ func startCluster(testDir string, extraArgs []string) (*testCluster, error) {
 			"-s3.iam.readOnly=false",
 		}
 		args = append(args, extraArgs...)
-		os.Args = append([]string{"weed"}, args...)
+		os.Args = append([]string{"s3"}, args...)
 		glog.MaxSize = 1024 * 1024
 		for _, cmd := range command.Commands {
 			if cmd.Name() == "mini" && cmd.Run != nil {
@@ -192,13 +192,13 @@ func (c *testCluster) stop() {
 	}
 }
 
-func (c *testCluster) filerConn(t *testing.T) (*grpc.ClientConn, filer_pb.SeaweedFilerClient) {
+func (c *testCluster) filerConn(t *testing.T) (*grpc.ClientConn, filer_pb.HanzoFilerClient) {
 	t.Helper()
 	addr := fmt.Sprintf("127.0.0.1:%d", c.filerGrpcPort)
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
-	return conn, filer_pb.NewSeaweedFilerClient(conn)
+	return conn, filer_pb.NewHanzoFilerClient(conn)
 }
 
 func waitReady(endpoint string, timeout time.Duration) error {
@@ -351,10 +351,10 @@ func s3putObject(t *testing.T, client *s3.Client, bucket, key string, body []byt
 }
 
 type testFilerClient struct {
-	client filer_pb.SeaweedFilerClient
+	client filer_pb.HanzoFilerClient
 }
 
-func (c testFilerClient) WithFilerClient(_ bool, fn func(filer_pb.SeaweedFilerClient) error) error {
+func (c testFilerClient) WithFilerClient(_ bool, fn func(filer_pb.HanzoFilerClient) error) error {
 	return fn(c.client)
 }
 
@@ -372,7 +372,7 @@ func (c testFilerClient) GetDataCenter() string {
 	return ""
 }
 
-func readFile(t *testing.T, client filer_pb.SeaweedFilerClient, dir, name string) []byte {
+func readFile(t *testing.T, client filer_pb.HanzoFilerClient, dir, name string) []byte {
 	t.Helper()
 
 	entry := lookupEntry(t, client, dir, name)
@@ -397,7 +397,7 @@ func readFile(t *testing.T, client filer_pb.SeaweedFilerClient, dir, name string
 // Tables API).
 func populateTableViaFiler(
 	t *testing.T,
-	client filer_pb.SeaweedFilerClient,
+	client filer_pb.HanzoFilerClient,
 	s3Endpoint, bucketName, namespace, tableName string,
 	snapshots []table.Snapshot,
 ) table.Metadata {
@@ -512,7 +512,7 @@ func populateTableViaFiler(
 	return meta
 }
 
-func writeFile(t *testing.T, ctx context.Context, client filer_pb.SeaweedFilerClient, dir, name string, content []byte) {
+func writeFile(t *testing.T, ctx context.Context, client filer_pb.HanzoFilerClient, dir, name string, content []byte) {
 	t.Helper()
 	resp, err := client.CreateEntry(ctx, &filer_pb.CreateEntryRequest{
 		Directory: dir,
@@ -529,7 +529,7 @@ func writeFile(t *testing.T, ctx context.Context, client filer_pb.SeaweedFilerCl
 	require.Empty(t, resp.Error, "writeFile(%s, %s): resp error", dir, name)
 }
 
-func upsertFile(t *testing.T, ctx context.Context, client filer_pb.SeaweedFilerClient, dir, name string, content []byte) {
+func upsertFile(t *testing.T, ctx context.Context, client filer_pb.HanzoFilerClient, dir, name string, content []byte) {
 	t.Helper()
 
 	entry := lookupEntry(t, client, dir, name)
@@ -553,7 +553,7 @@ func upsertFile(t *testing.T, ctx context.Context, client filer_pb.SeaweedFilerC
 	require.NotNil(t, resp, "upsertFile(%s, %s): nil response", dir, name)
 }
 
-func lookupEntry(t *testing.T, client filer_pb.SeaweedFilerClient, dir, name string) *filer_pb.Entry {
+func lookupEntry(t *testing.T, client filer_pb.HanzoFilerClient, dir, name string) *filer_pb.Entry {
 	t.Helper()
 	resp, err := filer_pb.LookupEntry(context.Background(), client, &filer_pb.LookupDirectoryEntryRequest{
 		Directory: dir, Name: name,
@@ -724,7 +724,7 @@ func testCompactDataFiles(t *testing.T) {
 	t.Logf("CompactDataFiles result: %s, metrics: %v", result, metrics)
 
 	var compacted *filer_pb.Entry
-	listErr := filer_pb.SeaweedList(ctx, client, dataDir, "", func(entry *filer_pb.Entry, isLast bool) error {
+	listErr := filer_pb.HanzoList(ctx, client, dataDir, "", func(entry *filer_pb.Entry, isLast bool) error {
 		// Compacted output uses compact-{snapID}-{newSnapID}-{binIdx}.parquet.
 		// The test inputs use compact-input-{n}.parquet and must not satisfy this check.
 		if strings.HasPrefix(entry.Name, "compact-") &&

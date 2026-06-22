@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	util_http "github.com/hanzoai/s3/weed/util/http"
+	util_http "github.com/hanzoai/s3/s3/util/http"
 )
 
 // Downloads an item from an S3 Bucket in the region configured in the shared config
@@ -23,7 +23,7 @@ import (
 //
 // For this exampl to work, the domainName is needd
 //
-//	weed s3 -domainName=localhost
+//	s3 s3 -domainName=localhost
 func main() {
 	util_http.InitGlobalHttpClient()
 

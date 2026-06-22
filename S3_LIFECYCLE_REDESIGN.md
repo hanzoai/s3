@@ -2,11 +2,11 @@
 
 ## Why
 
-`PutBucketLifecycleConfiguration` today walks every entry under the bucket inside the request handler (`weed/s3api/s3api_bucket_handlers.go:900-1068` → `weed/s3api/filer_util.go:191`), so it times out on buckets with tens of thousands of objects. Worse, only one rule shape actually expires anything: simple `Expiration.Days` + prefix-only filter on a non-versioned bucket. Tag/size filters, `Expiration.Date`, versioned buckets, `NoncurrentVersionExpiration`, `AbortIncompleteMultipartUpload`, and `ExpiredObjectDeleteMarker` are silent no-ops. There is no scan-time evaluator anywhere — `weed/s3api/s3lifecycle/rule.go` defines `Rule`, `ObjectInfo`, `EvalResult`, `Action` but no `Evaluate` and no callers.
+`PutBucketLifecycleConfiguration` today walks every entry under the bucket inside the request handler (`s3/s3api/s3api_bucket_handlers.go:900-1068` → `s3/s3api/filer_util.go:191`), so it times out on buckets with tens of thousands of objects. Worse, only one rule shape actually expires anything: simple `Expiration.Days` + prefix-only filter on a non-versioned bucket. Tag/size filters, `Expiration.Date`, versioned buckets, `NoncurrentVersionExpiration`, `AbortIncompleteMultipartUpload`, and `ExpiredObjectDeleteMarker` are silent no-ops. There is no scan-time evaluator anywhere — `s3/s3api/s3lifecycle/rule.go` defines `Rule`, `ObjectInfo`, `EvalResult`, `Action` but no `Evaluate` and no callers.
 
 Three independent mechanisms exist today, only one of which is real enforcement:
 
-1. Read-triggered TTL check on the filer (`weed/filer/filer.go:396-408`, `:435-449`). Lazy: cold objects never expire.
+1. Read-triggered TTL check on the filer (`s3/filer/filer.go:396-408`, `:435-449`). Lazy: cold objects never expire.
 2. Volume-level TTL: `filer.conf` + TTL volumes drop chunks wholesale, but only for writes that arrive after the rule exists.
 3. The synchronous "back-stamp" inside the PUT handler that walks existing entries to bridge #1 and #2. This is what's slow.
 
@@ -14,42 +14,42 @@ Three independent mechanisms exist today, only one of which is real enforcement:
 
 ### Core idea
 
-Drive lifecycle expiration off the persistent metadata change log at `/topics/.system/log/<YYYY-MM-DD>/<HH-MM>.<filerId>` (`weed/filer/topics.go:5`, `weed/filer/filer_notify.go:166`). The same log powers `filer.sync`, `filer.backup`, and `filer.meta.tail`. Each event carries `OldEntry` and `NewEntry` with full attributes and `Extended`. The day/hour-minute layout makes time-windowed reads cheap. Cost scales with **change rate**, not bucket size.
+Drive lifecycle expiration off the persistent metadata change log at `/topics/.system/log/<YYYY-MM-DD>/<HH-MM>.<filerId>` (`s3/filer/topics.go:5`, `s3/filer/filer_notify.go:166`). The same log powers `filer.sync`, `filer.backup`, and `filer.meta.tail`. Each event carries `OldEntry` and `NewEntry` with full attributes and `Extended`. The day/hour-minute layout makes time-windowed reads cheap. Cost scales with **change rate**, not bucket size.
 
 ### Repo facts the design depends on
 
 Verified in the codebase:
 
-- Meta events are persisted under `SystemLogDir = TopicsDir + "/.system/log"` and accessed via `Filer.ReadPersistedLogBuffer` and `Filer.CollectLogFileRefs` (`weed/filer/filer_notify_read.go`).
-- Each event's `EventNotification.OldEntry` and `NewEntry` are `*filer_pb.Entry` with full `Attributes` and `Extended` (`weed/pb/filer_pb/filer.pb.go:622-672`).
-- Versioning constants (`weed/s3api/s3_constants/`):
-  - `VersionsFolder = ".versions"` — appended as a suffix, not a child. A versioned object at key `foo/bar.txt` has its versions under directory `foo/bar.txt.versions/` (`weed/s3api/filer_multipart.go:578`).
-  - `ExtDeleteMarkerKey = "Seaweed-X-Amz-Delete-Marker"` — a delete marker is a version file in the `.versions` directory whose `Extended[ExtDeleteMarkerKey] == "true"`. There is **no** `IsDeleteMarker` field on `filer_pb.Entry`.
+- Meta events are persisted under `SystemLogDir = TopicsDir + "/.system/log"` and accessed via `Filer.ReadPersistedLogBuffer` and `Filer.CollectLogFileRefs` (`s3/filer/filer_notify_read.go`).
+- Each event's `EventNotification.OldEntry` and `NewEntry` are `*filer_pb.Entry` with full `Attributes` and `Extended` (`s3/pb/filer_pb/filer.pb.go:622-672`).
+- Versioning constants (`s3/s3api/s3_constants/`):
+  - `VersionsFolder = ".versions"` — appended as a suffix, not a child. A versioned object at key `foo/bar.txt` has its versions under directory `foo/bar.txt.versions/` (`s3/s3api/filer_multipart.go:578`).
+  - `ExtDeleteMarkerKey = "Hanzo-X-Amz-Delete-Marker"` — a delete marker is a version file in the `.versions` directory whose `Extended[ExtDeleteMarkerKey] == "true"`. There is **no** `IsDeleteMarker` field on `filer_pb.Entry`.
   - `ExtLatestVersionIdKey`, `ExtLatestVersionFileNameKey`, `ExtLatestVersionMtimeKey`, `ExtLatestVersionIsDeleteMarker` — the *current-version pointer* lives on the `.versions` directory entry's `Extended`.
-- Multipart uploads live under `<bucket>/.uploads/<uploadId>/` (`s3a.genUploadsFolder` in `weed/s3api/s3api_object_handlers_multipart.go:475`).
-- Existing internal delete helpers we will reuse: `s3a.createDeleteMarker(bucket, object)` (`weed/s3api/s3api_object_versioning.go:162`), `s3a.deleteSpecificObjectVersion(bucket, object, versionId)` (`:968`), `s3a.deleteUnversionedObjectWithClient(client, bucket, object)` (`weed/s3api/s3api_object_handlers_delete.go:169`).
+- Multipart uploads live under `<bucket>/.uploads/<uploadId>/` (`s3a.genUploadsFolder` in `s3/s3api/s3api_object_handlers_multipart.go:475`).
+- Existing internal delete helpers we will reuse: `s3a.createDeleteMarker(bucket, object)` (`s3/s3api/s3api_object_versioning.go:162`), `s3a.deleteSpecificObjectVersion(bucket, object, versionId)` (`:968`), `s3a.deleteUnversionedObjectWithClient(client, bucket, object)` (`s3/s3api/s3api_object_handlers_delete.go:169`).
 
 ### Phase 0 — Verified assumptions
 
 Each open assumption resolved against the codebase at `sulfuric-podium`:
 
-**1. Persisted log payload includes `Extended`.** `Filer.logMetaEvent` (`weed/filer/filer_notify.go:110-119`) marshals `*filer_pb.SubscribeMetadataResponse{EventNotification:{OldEntry, NewEntry, …}}` into `LogEntry.data` via `entry.ToProtoEntry()`, and `Entry.extended` (`weed/pb/filer.proto:135`) is a `map<string,bytes>` serialized as part of the proto. `ReadPersistedLogBuffer` (`weed/filer/filer_notify.go:203`) hands back the same `*filer_pb.LogEntry` whose `data` deserializes back to the full event with `Extended` intact. Lifecycle's predicate evaluation against tags/`Extended` keys is therefore directly available from the meta log without any side fetch.
+**1. Persisted log payload includes `Extended`.** `Filer.logMetaEvent` (`s3/filer/filer_notify.go:110-119`) marshals `*filer_pb.SubscribeMetadataResponse{EventNotification:{OldEntry, NewEntry, …}}` into `LogEntry.data` via `entry.ToProtoEntry()`, and `Entry.extended` (`s3/pb/filer.proto:135`) is a `map<string,bytes>` serialized as part of the proto. `ReadPersistedLogBuffer` (`s3/filer/filer_notify.go:203`) hands back the same `*filer_pb.LogEntry` whose `data` deserializes back to the full event with `Extended` intact. Lifecycle's predicate evaluation against tags/`Extended` keys is therefore directly available from the meta log without any side fetch.
 
-**2. Meta-log retention is unbounded by default.** Persisted log files at `<SystemLogDir>/YYYY-MM-DD/HH-MM.<filerId>` are written via `Filer.appendToFile` (`weed/filer/filer_notify_append.go:14-49`). The created `Entry` has no `TtlSec` field set, only `Crtime`/`Mtime`/`Mode`/`Uid`/`Gid`. There is no built-in cleaner: nothing under `weed/filer/` or `weed/server/` deletes `topics/.system/log/` files. The volume-level TTL only kicks in if an operator configures a `filer.conf` rule whose `LocationPrefix` matches `/topics/.system/log/` and whose `Ttl` is set, in which case `Filer.appendToFile` → `assignAndUpload` (`weed/filer/filer_notify_append.go:51-94`) routes through `MatchStorageRule` and the assigned volume carries the rule's `Ttl`. Without that explicit configuration, retention is operator-bounded only (manual deletion of old day directories).
+**2. Meta-log retention is unbounded by default.** Persisted log files at `<SystemLogDir>/YYYY-MM-DD/HH-MM.<filerId>` are written via `Filer.appendToFile` (`s3/filer/filer_notify_append.go:14-49`). The created `Entry` has no `TtlSec` field set, only `Crtime`/`Mtime`/`Mode`/`Uid`/`Gid`. There is no built-in cleaner: nothing under `s3/filer/` or `s3/server/` deletes `topics/.system/log/` files. The volume-level TTL only kicks in if an operator configures a `filer.conf` rule whose `LocationPrefix` matches `/topics/.system/log/` and whose `Ttl` is set, in which case `Filer.appendToFile` → `assignAndUpload` (`s3/filer/filer_notify_append.go:51-94`) routes through `MatchStorageRule` and the assigned volume carries the rule's `Ttl`. Without that explicit configuration, retention is operator-bounded only (manual deletion of old day directories).
 
 This means:
 - For default deployments, `metaLogRetention = ∞` and the retention mode gate (`metaLogRetention < eventLogHorizon(rule) + bootstrapLookbackMin`) never trips — every reader-driven kind runs `event_driven`.
 - For deployments that opt into volume-TTL pruning of the meta log, operators must configure `metaLogRetention` to match the configured TTL; the gate then promotes long-horizon rules to `scan_only` automatically.
 - Phase 2 will read `metaLogRetention` from a cluster-config knob (default: a sentinel meaning "unbounded"). When the operator sets a TTL on `topics/.system/log/`, they must also set `metaLogRetention` to the same value; the design doc surfaces this as a required-coupled configuration in Phase 8 docs.
 
-**3. `.versions/` filename scheme.** Inside `<object>.versions/`, version files are named `v_<32-hex>` where the 32-hex string is `<16-hex-timestamp><16-hex-random>` (`weed/s3api/s3api_version_id.go:30-55`, `:148-150`). Two formats coexist, distinguished by the timestamp portion's value relative to threshold `0x4000000000000000` (`weed/s3api/s3api_version_id.go:24`):
+**3. `.versions/` filename scheme.** Inside `<object>.versions/`, version files are named `v_<32-hex>` where the 32-hex string is `<16-hex-timestamp><16-hex-random>` (`s3/s3api/s3api_version_id.go:30-55`, `:148-150`). Two formats coexist, distinguished by the timestamp portion's value relative to threshold `0x4000000000000000` (`s3/s3api/s3api_version_id.go:24`):
 - **New (inverted) format**: timestamp portion = `MaxInt64 - now_ns`, value > threshold (~0x68… in 2025). Newer versions sort **earlier** lexicographically. Used for new `.versions/` directories.
-- **Old (raw) format**: timestamp portion = `now_ns`, value < threshold. Older versions sort earlier lexicographically. Detected by reading `Extended[ExtLatestVersionIdKey]` on the `.versions/` directory entry and applying `isNewFormatVersionId` (`weed/s3api/s3api_version_id.go:58-70`).
+- **Old (raw) format**: timestamp portion = `now_ns`, value < threshold. Older versions sort earlier lexicographically. Detected by reading `Extended[ExtLatestVersionIdKey]` on the `.versions/` directory entry and applying `isNewFormatVersionId` (`s3/s3api/s3api_version_id.go:58-70`).
 
 For the design's "successor" version computation (the version that replaced this one to make it non-current):
 - New format: the lex-immediate-predecessor in `.versions/` (sorts earlier = newer).
 - Old format: the lex-immediate-successor (sorts later = newer).
-- Universal fallback: `getVersionTimestamp(versionId)` (`weed/s3api/s3api_version_id.go:74-92`) returns the actual ns timestamp regardless of format; `compareVersionIds(a, b)` (`:97-140`) gives a format-agnostic newest-first comparator. Phase 5 will use these helpers when discovering successor non-current time.
+- Universal fallback: `getVersionTimestamp(versionId)` (`s3/s3api/s3api_version_id.go:74-92`) returns the actual ns timestamp regardless of format; `compareVersionIds(a, b)` (`:97-140`) gives a format-agnostic newest-first comparator. Phase 5 will use these helpers when discovering successor non-current time.
 
 The `.versions/` directory entry's `Extended` carries the current-version pointer (`ExtLatestVersionIdKey`, `ExtLatestVersionFileNameKey`, `ExtLatestVersionMtimeKey`, `ExtLatestVersionIsDeleteMarker`) — already documented above as repo facts.
 
@@ -59,7 +59,7 @@ The `.versions/` directory entry's `Extended` carries the current-version pointe
 
 The bucket directory's xattrs continue to hold the policy itself:
 
-- `Extended["s3-bucket-lifecycle-configuration-xml"]` — original XML (existing key, see `weed/s3api/s3api_bucket_lifecycle_config.go:11`).
+- `Extended["s3-bucket-lifecycle-configuration-xml"]` — original XML (existing key, see `s3/s3api/s3api_bucket_lifecycle_config.go:11`).
 
 **Multi-action rules.** A single AWS lifecycle XML `<Rule>` may declare multiple actions in parallel — for example `Expiration.Days=90` together with `AbortIncompleteMultipartUpload.DaysAfterInitiation=7` and `NoncurrentVersionExpiration.NoncurrentDays=30`. Each action has its **own** delay/horizon/mode and must drive its own pending stream and cursor independently. Modeling a rule as one compiled entry with one `kind` and one delay collapses these — e.g. picking the smallest delay (7d MPU) means the 90d expiration cursor "advances past" objects that aren't yet due, and the 90d action never re-fires for them.
 
@@ -96,19 +96,19 @@ Files:
   - `last_processed_predicate: map<filer_id, MessagePosition>` — per per-filer shard.
   - `tail_drained_streams: set<TailDrainedStreamKey>` — stream-specific markers for departed shards already observed at their retained tail. Keys are `(ORIGINAL, delay_seconds, filer_id)` or `(PREDICATE, filer_id)`, never just `filer_id`; one delay group being drained does not prove another delay group is safe. The marker is cleared when that stream is lazily seeded again after the shard reappears.
   - `last_engine_compiled_at_ns: int64`.
-- `blockers` — durable per-shard blocker records. When a deterministic per-event failure (or a sustained transient one) is observed, the worker pauses that shard at its current `MessagePosition` and records a `BlockerRecord` here; the cursor does **not** advance. Operators inspect via `weed shell s3.lifecycle.blockers list` and resolve manually (`retry`, `resume`, or `quarantine`). See "Blocked cursor handling" below. There is no automatic dead-letter — for lifecycle, silently routing a failed event aside would mean losing a delete decision; the design pauses instead.
+- `blockers` — durable per-shard blocker records. When a deterministic per-event failure (or a sustained transient one) is observed, the worker pauses that shard at its current `MessagePosition` and records a `BlockerRecord` here; the cursor does **not** advance. Operators inspect via `s3 shell s3.lifecycle.blockers list` and resolve manually (`retry`, `resume`, or `quarantine`). See "Blocked cursor handling" below. There is no automatic dead-letter — for lifecycle, silently routing a failed event aside would mean losing a delete decision; the design pauses instead.
 - `retry_budget` — durable per-stream retry counter file. Tracks `consecutive_retries` for `(stream_kind, key)` tuples that produce repeated `RETRY_LATER`. Compacts on success; promotes to a `BlockerRecord` once the configured budget trips. See "Sustained-RETRY_LATER promotion" below.
 
 **Why per-filer cursors are unavoidable.** The persisted log is partitioned by filer (`<HH-MM>.<filerId>` files). The client-side heap merge produces a single ordered stream from N per-filer streams, but resuming after a partial-batch failure requires knowing each per-filer stream's position — `LogEntry.Offset` is per-buffer (per filerId), not globally unique. A single `(ts, offset)` cursor across the merged stream would conflate offsets from different filers. Therefore:
 
 - The cursor type per delay group is `map<filer_id, MessagePosition>`.
-- `MessagePosition = {ts_ns, offset}` (the existing log-buffer type, `weed/util/log_buffer/log_read.go:38`) is the per-shard tie-breaker.
+- `MessagePosition = {ts_ns, offset}` (the existing log-buffer type, `s3/util/log_buffer/log_read.go:38`) is the per-shard tie-breaker.
 - The worker maintains the heap merge over per-shard `MessagePosition`s; on resume, each filer's stream restarts at its own cursor position.
 - Watermark exposed to operators / metrics is the low-water-mark: `min over filer_ids of last_processed.ts_ns` per delay group. Lag = `now - watermark`.
 
 This is more state than the previous "single subscription, single cursor" claim implied, but it's what correctness requires across a client-side multi-filer merge. The single subscription still gives connection-level simplicity (one filer endpoint, easy failover); the per-filer cursor map is internal bookkeeping.
 
-**Cursor-skip semantics.** `last_processed[filer_id]` points at the *last resolved event* for that shard. Resume must skip events with position `<= cursor[filer_id]` (using the `(ts, offset)` order per shard) — strict `<=`, not `<`, otherwise the last processed event is replayed on every resume. Equivalently: deliver events with `(event.ts, event.offset) > cursor[filer_id]`. Phase 3 introduces a new API variant that takes per-shard `MessagePosition`s and applies this comparator — see "API change" below. The existing `pb.ReadLogFileRefs` filter `logEntry.TsNs <= startTsNs` (`weed/pb/filer_pb_direct_read.go:333`) is the wrong shape because it can't disambiguate equal-ts events.
+**Cursor-skip semantics.** `last_processed[filer_id]` points at the *last resolved event* for that shard. Resume must skip events with position `<= cursor[filer_id]` (using the `(ts, offset)` order per shard) — strict `<=`, not `<`, otherwise the last processed event is replayed on every resume. Equivalently: deliver events with `(event.ts, event.offset) > cursor[filer_id]`. Phase 3 introduces a new API variant that takes per-shard `MessagePosition`s and applies this comparator — see "API change" below. The existing `pb.ReadLogFileRefs` filter `logEntry.TsNs <= startTsNs` (`s3/pb/filer_pb_direct_read.go:333`) is the wrong shape because it can't disambiguate equal-ts events.
 
 > **Implementation note:** the API addition described below was not built. The shipped reader uses `SubscribeMetadata` with a single global cursor (the filer's server-side `MetaAggregator` already does the merge). The pseudocode is preserved as design context for a future per-shard architecture.
 
@@ -149,7 +149,7 @@ Why one reader, one subscription:
 - **Filer load is metadata-only.** `CollectLogFileRefs` returns chunk file IDs and their time ranges — no event bodies are deserialized at the filer. Worker reads bodies from volume servers, which parallelizes naturally across the chunks of the merged stream.
 - **No partitioning, no epochs, no migration.** Adding parallelism is not a primary scaling story; if a single worker can't keep up after raising in-worker chunk-read concurrency and `lifecycle.delete.concurrency`, the next-stage answer is segment-level intra-stream parallelism (see "Future scaling" below). Explicitly **non-v1**.
 
-**Flush-safety lag.** The filer's persisted log files appear on disk after `LogFlushInterval` (current constant: `time.Minute` — `weed/filer/filer.go:33`). The worker reads only events at `event.ts <= now - flushSafetyLag` (default `2 × LogFlushInterval`, so **≈2 minutes** with current defaults; reduces if `LogFlushInterval` is shortened) so a late-flushing filer cannot produce events older than the cursor after the cursor has advanced. All cutoffs are clamped: `effectiveCutoff = min(kindCutoff, now - flushSafetyLag)`. Phase 0 confirms the active value of `LogFlushInterval` and pins `flushSafetyLag` to it; the design treats `flushSafetyLag` as derived, not as a hardcoded number.
+**Flush-safety lag.** The filer's persisted log files appear on disk after `LogFlushInterval` (current constant: `time.Minute` — `s3/filer/filer.go:33`). The worker reads only events at `event.ts <= now - flushSafetyLag` (default `2 × LogFlushInterval`, so **≈2 minutes** with current defaults; reduces if `LogFlushInterval` is shortened) so a late-flushing filer cannot produce events older than the cursor after the cursor has advanced. All cutoffs are clamped: `effectiveCutoff = min(kindCutoff, now - flushSafetyLag)`. Phase 0 confirms the active value of `LogFlushInterval` and pins `flushSafetyLag` to it; the design treats `flushSafetyLag` as derived, not as a hardcoded number.
 
 **Primary filer failover.** Workers reach the primary filer via a standard filer client; on connection failure, fall back to the next healthy filer endpoint (discovered via the master). The cursor is portable — every filer reads the same persisted logs from the shared namespace, so the worker can resume against a different primary without state loss.
 
@@ -157,7 +157,7 @@ Per-bucket bootstrap progress (used by bucket-level bootstrap tasks):
 
 - `/etc/s3/lifecycle/<bucket>/_bootstrap` — protobuf: `last_scanned_path`, `bootstrap_started_at_ns`, the engine snapshot ID it was launched against. One writer (the bucket's bootstrap task).
 
-Why `/etc/...` rather than inside the bucket: keeps system state out of bucket listings without needing list-time filters; matches existing convention (`/etc/seaweedfs/`, `/etc/...`).
+Why `/etc/...` rather than inside the bucket: keeps system state out of bucket listings without needing list-time filters; matches existing convention (`/etc/hanzo/`, `/etc/...`).
 
 `rule_hash` is `sha256(canonicalize(rule))[:8]` over a length-prefixed canonical form (sorted tag map, prefix verbatim, every action's parameters — days/date/count/flags, filter fields). Length prefixing prevents delimiter forgery between adjacent fields. Stable across reorder and resilient to empty or duplicate `Rule.ID`. Prefix `"logs"` and `"logs/"` hash differently because they match different objects under literal `strings.HasPrefix` semantics.
 
@@ -457,7 +457,7 @@ Anchored to `T_start` (when the walk began), not `T_completed`. Replaying the pa
 
 Picking the *earlier* of the two ensures no still-retained event can be skipped: if the earliest retained log for that shard predates the safe floor, the cursor sits at that earlier position so the events are delivered. The `BEFORE_FIRST_OFFSET` sentinel ensures the earliest event itself isn't filtered out by the strict `<=` skip predicate.
 
-**Safety scan.** `SeaweedList` is not snapshot-isolated; an entry whose original-write event is older than `D` may be missed by the walk and the reader's replay alike. Defense: a periodic re-bootstrap on event-driven rules at the per-kind cadence (default `max(MinTriggerAge, 7d)` capped at 30d for age rules; 24h for date rules; 7d for count rules). Re-running is idempotent.
+**Safety scan.** `HanzoList` is not snapshot-isolated; an entry whose original-write event is older than `D` may be missed by the walk and the reader's replay alike. Defense: a periodic re-bootstrap on event-driven rules at the per-kind cadence (default `max(MinTriggerAge, 7d)` capped at 30d for age rules; 24h for date rules; 7d for count rules). Re-running is idempotent.
 
 **Date-based rules** (`EXPIRATION_DATE`): no per-object pending. `mode = SCAN_AT_DATE`. The detector schedules a single bucket-level bootstrap at `rule.date`; that bootstrap deletes all matches inline. No reader involvement for date rules.
 
@@ -567,7 +567,7 @@ Policy changes during a bucket bootstrap: the bootstrap is bound to a specific `
 
 ### Reader — single subscription, client-side merge
 
-> **Implementation note (post-Phase 3):** the production reader uses `client.SubscribeMetadata(...)` directly with a single global cursor. The filer's `SubscribeMetadata` server (`weed/server/filer_grpc_server_sub_meta.go`) already aggregates across peer filers — it reads disk-persisted logs from every filer via `sendLogFileRefs` then drains `MetaAggregator.MetaLogBuffer` for the in-memory tail — so the worker doesn't have to assemble its own multi-filer merge. The per-filer-shard cursor model below was designed before this was wired and was not built; the proto fields (`last_processed_original` map keyed by `filer_id`, `tail_drained_streams`) remain as forward-compat stubs. The pseudocode below describes the alternative the design considered, kept here for context. See "Multi-filer durability" and the obsoleted Phase 6 section.
+> **Implementation note (post-Phase 3):** the production reader uses `client.SubscribeMetadata(...)` directly with a single global cursor. The filer's `SubscribeMetadata` server (`s3/server/filer_grpc_server_sub_meta.go`) already aggregates across peer filers — it reads disk-persisted logs from every filer via `sendLogFileRefs` then drains `MetaAggregator.MetaLogBuffer` for the in-memory tail — so the worker doesn't have to assemble its own multi-filer merge. The per-filer-shard cursor model below was designed before this was wired and was not built; the proto fields (`last_processed_original` map keyed by `filer_id`, `tail_drained_streams`) remain as forward-compat stubs. The pseudocode below describes the alternative the design considered, kept here for context. See "Multi-filer durability" and the obsoleted Phase 6 section.
 
 The reader is one cluster-singleton task subscribed to one filer at a time. `Filer.CollectLogFileRefs(start_position, stop_ts)` returns chunk refs from log files in directory order. The worker passes those refs to `pb.ReadLogFileRefsWithPosition` (the new API — see Task #19), which heap-merges per-filer chunks by event ts client-side and applies the per-shard `(ts, offset)` skip filter. Chunk *bodies* are read in parallel from volume servers via the returned fileIds.
 
@@ -1237,7 +1237,7 @@ Multipart uploads live under `<bucket>/.uploads/<uploadId>/`. Treat creation eve
 
 ### Worker-to-S3 discovery and failover
 
-The worker process (`weed/worker/`) connects to the admin server today (`weed/worker/worker.go:81 SendHeartbeat`). The admin server is the natural discovery point for S3 endpoints.
+The worker process (`s3/worker/`) connects to the admin server today (`s3/worker/worker.go:81 SendHeartbeat`). The admin server is the natural discovery point for S3 endpoints.
 
 - **Registry.** S3 servers register their gRPC listen address with admin on startup, the same way they register HTTP today. New admin RPC `ListS3Endpoints() repeated S3Endpoint`.
 - **Worker cache.** Each worker fetches the S3 endpoint list at startup and refreshes every 30s in the heartbeat path. Cache survives admin reachability blips.
@@ -1248,7 +1248,7 @@ The worker process (`weed/worker/`) connects to the admin server today (`weed/wo
 
 ### Internal service-principal delete API — concrete shape
 
-The worker is in a separate process (`weed/worker/`) and must not depend on user IAM signatures. We add an internal gRPC method on the S3 server, callable only from authorized workers:
+The worker is in a separate process (`s3/worker/`) and must not depend on user IAM signatures. We add an internal gRPC method on the S3 server, callable only from authorized workers:
 
 ```
 service S3InternalService {
@@ -1293,13 +1293,13 @@ message LifecycleDeleteResponse {
 
 **Worker-local error classifications.** Some failures occur entirely on the worker side and never reach the server: malformed event payload that fails to deserialize, identity construction failure, evaluator panic recovered via `defer recover()`. These are not RPC outcomes — they're worker errors. The worker treats them under the same K-retry-then-`BLOCKED` rule as `FATAL_EVENT_ERROR` (5 in-memory retries, then write a `BlockerRecord` and pause the shard). Server-side `FATAL_EVENT_ERROR` is for cases the server detects (e.g., dispatch helper returns an error not classifiable as transport or object-lock).
 
-Server handler (`weed/s3api/s3api_internal_lifecycle.go`, new file):
+Server handler (`s3/s3api/s3api_internal_lifecycle.go`, new file):
 
-1. Authn: shared HMAC token from cluster config or mTLS — same scheme used by other intra-cluster RPCs in `weed/security/`.
+1. Authn: shared HMAC token from cluster config or mTLS — same scheme used by other intra-cluster RPCs in `s3/security/`.
 2. Re-fetch live entry and verify `expected_identity` matches in full (mtime, size, head fid, extended hash). Mismatch → `STALE_IDENTITY`.
 3. Re-fetch bucket lifecycle xml; compute the rule-hash set; if `request.trigger_rule_hash` is not a member → `STALE_POLICY`. (Per-rule CAS, not per-bucket. Other rules' edits don't poison this rule's deletes.)
 4. Re-evaluate the rule against the live entry. If `Evaluate(rule, info, now) == ActionNone` → `NO_LONGER_ELIGIBLE`. (Defence in depth: tags or filters could have just changed.)
-5. **Object lock**: explicitly call `s3a.enforceObjectLockProtections(bucket, object, versionId, governanceBypassAllowed=false)` (defined in `weed/s3api/s3api_object_retention.go:570`). The existing low-level helpers (`deleteUnversionedObjectWithClient`, `deleteSpecificObjectVersion`, `createDeleteMarker`) do **not** check object lock — the check lives in the user-facing HTTP handler (`weed/s3api/s3api_object_handlers_delete.go:225,124,147,368`) and must be reproduced here. If `enforceObjectLockProtections` returns an error, return `SKIPPED_OBJECT_LOCK`. Lifecycle never bypasses governance retention.
+5. **Object lock**: explicitly call `s3a.enforceObjectLockProtections(bucket, object, versionId, governanceBypassAllowed=false)` (defined in `s3/s3api/s3api_object_retention.go:570`). The existing low-level helpers (`deleteUnversionedObjectWithClient`, `deleteSpecificObjectVersion`, `createDeleteMarker`) do **not** check object lock — the check lives in the user-facing HTTP handler (`s3/s3api/s3api_object_handlers_delete.go:225,124,147,368`) and must be reproduced here. If `enforceObjectLockProtections` returns an error, return `SKIPPED_OBJECT_LOCK`. Lifecycle never bypasses governance retention.
 
 `enforceObjectLockProtections` currently takes `*http.Request` to extract the `x-amz-bypass-governance-retention` header; for lifecycle we hard-code `governanceBypassAllowed=false`. Phase 2 introduces a thin wrapper `enforceObjectLockForLifecycle(bucket, object, versionId)` that calls the same logic without needing a request, by either passing a synthetic request or refactoring the request-extraction step out of the core check.
 6. Dispatch via the same internal helpers user deletes use:
@@ -1326,7 +1326,7 @@ This keeps replication, audit, object-lock, and metrics consistent without bypas
 
 ### Metadata-only deletion when chunks are on TTL volumes
 
-When the entry's chunks were placed on TTL volumes, the volume server reclaims them wholesale on volume drop. Per-chunk `DeleteFile` RPCs are wasted work. The filer wire is already there: `Filer.DeleteChunks` honours `rule.DisableChunkDeletion` (`weed/filer/filer_deletion.go:588-594`).
+When the entry's chunks were placed on TTL volumes, the volume server reclaims them wholesale on volume drop. Per-chunk `DeleteFile` RPCs are wasted work. The filer wire is already there: `Filer.DeleteChunks` honours `rule.DisableChunkDeletion` (`s3/filer/filer_deletion.go:588-594`).
 
 The worker computes `skip_chunk_delete` per object before calling `LifecycleDelete`:
 
@@ -1341,21 +1341,21 @@ The S3 server passes the flag to the filer delete path; per-chunk RPCs are skipp
 
 Versioned buckets: `createDeleteMarker` writes a marker (no chunks deleted in either path; flag is moot). `deleteSpecificObjectVersion` honours `skip_chunk_delete` for non-current versions or expired markers.
 
-This composes with the operator-driven volume-TTL routing that replaces today's PUT back-stamp: an operator runs `weed shell s3.bucket.ttl.set -bucket X -ttl 60d` to add the `filer.conf` route. New writes flow to TTL volumes immediately. Existing entries can be back-stamped via an async maintenance task on `LaneLifecycle` (same code as today's `updateEntriesTTL`, parallelized and restartable). Once back-stamped, lifecycle deletes go through the metadata-only path.
+This composes with the operator-driven volume-TTL routing that replaces today's PUT back-stamp: an operator runs `s3 shell s3.bucket.ttl.set -bucket X -ttl 60d` to add the `filer.conf` route. New writes flow to TTL volumes immediately. Existing entries can be back-stamped via an async maintenance task on `LaneLifecycle` (same code as today's `updateEntriesTTL`, parallelized and restartable). Once back-stamped, lifecycle deletes go through the metadata-only path.
 
 ### Scheduling
 
-Existing maintenance scheduler in `weed/admin/maintenance/` and `weed/worker/`. The repo already anticipates this work: `weed/admin/plugin/scheduler_lane.go` defines `LaneLifecycle` (line 24), maps job type `s3_lifecycle` to it (line 83), exempts the lane from the default-lane admin lock (`laneRequiresLock[LaneLifecycle] = false`), and gives it a 5-minute idle sleep. Per-lane execution slots (`execRes` in `schedulerLaneState`) mean lanes don't starve each other for worker capacity.
+Existing maintenance scheduler in `s3/admin/maintenance/` and `s3/worker/`. The repo already anticipates this work: `s3/admin/plugin/scheduler_lane.go` defines `LaneLifecycle` (line 24), maps job type `s3_lifecycle` to it (line 83), exempts the lane from the default-lane admin lock (`laneRequiresLock[LaneLifecycle] = false`), and gives it a 5-minute idle sleep. Per-lane execution slots (`execRes` in `schedulerLaneState`) mean lanes don't starve each other for worker capacity.
 
 Concrete plumbing:
 
 - **Lane: `LaneLifecycle`, not `LaneDefault`.** Job-type string `s3_lifecycle` with **three subtypes** carried in params: `READ` (cluster singleton), `BOOTSTRAP` (per bucket), `DRAIN` (per `(bucket, ActionKey)`). The default lane is serialised under one admin lock and is reserved for vacuum/balance/EC/admin scripts; lifecycle must not enter it.
-- Task type constants in `weed/worker/types/task_types.go`: `S3LifecycleReadTaskType`, `S3LifecycleBootstrapTaskType`, `S3LifecycleDrainTaskType`. All bound to lane `LaneLifecycle` via `jobTypeLaneMap`.
+- Task type constants in `s3/worker/types/task_types.go`: `S3LifecycleReadTaskType`, `S3LifecycleBootstrapTaskType`, `S3LifecycleDrainTaskType`. All bound to lane `LaneLifecycle` via `jobTypeLaneMap`.
 - Cluster-lock keys per subtype:
   - `READ` → `s3.lifecycle.read` (cluster singleton).
   - `BOOTSTRAP` → `s3.lifecycle.bootstrap:<bucket>` (per bucket; bootstrap walks all `ActionKey`s for the bucket in one pass).
   - `DRAIN` → `s3.lifecycle.drain:<bucket>:<rule_hash_hex>:<action_kind>` (per `ActionKey` — sibling actions of one rule have separate drain locks so their pending streams advance independently).
-- Task params proto (extend `weed/pb/worker_pb/worker.proto`):
+- Task params proto (extend `s3/pb/worker_pb/worker.proto`):
   ```
   message S3LifecycleParams {
     enum Subtype { SUBTYPE_UNSPECIFIED = 0; READ = 1; BOOTSTRAP = 2; DRAIN = 3; }
@@ -1384,12 +1384,12 @@ Concrete plumbing:
   }
   ```
   Lane scheduler honours `next_run_after_ns` as a per-`(bucket, ActionKey)` re-arm timer for DRAIN, per-`bucket` for BOOTSTRAP; biases routing by `prefer_worker_id`. Other lanes ignore the field.
-- Handler registration in `weed/worker/tasks/s3lifecycle/`. `Register()` wired from `weed/worker/worker.go`.
-- Detector in `weed/admin/maintenance/`: per `LaneLifecycle` tick, list buckets, walk each per-action `state` file at `/etc/s3/lifecycle/<bucket>/<rule_hash_hex>/<action_kind>/state`, emit `read` / `bootstrap` / `drain` tasks, respecting `next_run_after_ns` and the optional off-peak window (config knob `lifecycle.run_hours`, e.g. `"01-06"`). DRAIN scheduling is per `ActionKey`; sibling actions' next-run timers are independent.
+- Handler registration in `s3/worker/tasks/s3lifecycle/`. `Register()` wired from `s3/worker/worker.go`.
+- Detector in `s3/admin/maintenance/`: per `LaneLifecycle` tick, list buckets, walk each per-action `state` file at `/etc/s3/lifecycle/<bucket>/<rule_hash_hex>/<action_kind>/state`, emit `read` / `bootstrap` / `drain` tasks, respecting `next_run_after_ns` and the optional off-peak window (config knob `lifecycle.run_hours`, e.g. `"01-06"`). DRAIN scheduling is per `ActionKey`; sibling actions' next-run timers are independent.
 - Per-`(bucket, ActionKey)` DRAIN singleton via cluster lock `s3.lifecycle.drain:<bucket>:<rule_hash_hex>:<action_kind>`. Detector skips emitting while a lock is held.
 - Manual triggers via new shell commands:
-  - `weed/shell/command_s3_lifecycle_run.go` → enqueue with `force=true`.
-  - `weed/shell/command_s3_lifecycle_status.go` → print state.
+  - `s3/shell/command_s3_lifecycle_run.go` → enqueue with `force=true`.
+  - `s3/shell/command_s3_lifecycle_status.go` → print state.
 
 Why a separate lane matters here:
 - Long-running batches don't take the default-lane admin lock and therefore never block vacuum/balance/EC.
@@ -1398,9 +1398,9 @@ Why a separate lane matters here:
 
 ### Multi-filer durability
 
-> **Implementation note (post-Phase 3):** the worker did not end up building its own multi-filer merge. `SubscribeMetadata` on the filer server (`weed/server/filer_grpc_server_sub_meta.go:154`) routes through `MetaAggregator` when peer filers exist: it reads from every filer's disk-persisted logs first (via `sendLogFileRefs`/`Filer.CollectLogFileRefs`), then drains the aggregator's in-memory tail. Workers get an aggregated, durable stream from a single subscription. The per-filer-shard cursor architecture below describes what would be needed if the worker had to assemble the merge itself; we kept it here as design context and as a reference for the proto stubs (`LOST_LOG`, `tail_drained_streams`) that remain forward-compatible if the architecture ever changes. The genuine residual gap — auto-degrading the worker on `ResumeFromDiskError` — is tracked separately as a narrow follow-up rather than a Phase.
+> **Implementation note (post-Phase 3):** the worker did not end up building its own multi-filer merge. `SubscribeMetadata` on the filer server (`s3/server/filer_grpc_server_sub_meta.go:154`) routes through `MetaAggregator` when peer filers exist: it reads from every filer's disk-persisted logs first (via `sendLogFileRefs`/`Filer.CollectLogFileRefs`), then drains the aggregator's in-memory tail. Workers get an aggregated, durable stream from a single subscription. The per-filer-shard cursor architecture below describes what would be needed if the worker had to assemble the merge itself; we kept it here as design context and as a reference for the proto stubs (`LOST_LOG`, `tail_drained_streams`) that remain forward-compatible if the architecture ever changes. The genuine residual gap — auto-degrading the worker on `ResumeFromDiskError` — is tracked separately as a narrow follow-up rather than a Phase.
 
-`MetaAggregator` is **in-memory only** — `weed/filer/meta_aggregator.go:39`: *"MetaAggregator only aggregates data 'on the fly'. The logs are not re-persisted to disk. The old data comes from what each LocalMetadata persisted on disk."*
+`MetaAggregator` is **in-memory only** — `s3/filer/meta_aggregator.go:39`: *"MetaAggregator only aggregates data 'on the fly'. The logs are not re-persisted to disk. The old data comes from what each LocalMetadata persisted on disk."*
 
 So the aggregator can't be the worker's source of truth: a worker restart, a crash, or a peer outage all lose unpersisted aggregated events. The persistent source is per-filer logs at `/topics/.system/log/<date>/<hour-min>.<filerId>` — written by each filer for its own events, durable, and queryable via `Filer.CollectLogFileRefs` and `Filer.ReadPersistedLogBuffer`.
 
@@ -1418,7 +1418,7 @@ Worker design for multi-filer:
 
   Critically, the **absence** of a retained range for `F` is not sufficient evidence that GC is safe. If `F` has no retained range AND this stream cursor was never observed to reach `range.latest` (no entry in `tail_drained_streams`), the shard's logs were pruned before catch-up — events between `cursor[F]` and the (now-gone) `range.latest` were silently dropped. The reader **must not** GC such cursor entries: they're the only durable evidence that those events existed. Instead, the reader downgrades all reader-driven rules to `mode = scan_only` with `degraded_reason = LOST_LOG`, surfaces `lifecycle_lost_log_total{filer_id}` / `lifecycle_degraded_streams{reason="LOST_LOG"}`, and emits a warning. The cursor stays put until an operator runs `s3.lifecycle.reseed -ack-lost-log --reason <text>`, which clears the lost-log cursor entries and the degraded flag together after safety scans have covered the affected buckets — the operator must explicitly acknowledge the data loss before the system silently advances.
 
-`LogFlushInterval` (the period before in-memory events flush to disk) bounds how stale the persistent view can be. Current constant: `time.Minute` (`weed/filer/filer.go:33`), so the flush gap is on the order of one minute. Workers process events with a `2 × LogFlushInterval` lag from real time (default ~2 minutes), so flushes always complete before the cursor reaches them.
+`LogFlushInterval` (the period before in-memory events flush to disk) bounds how stale the persistent view can be. Current constant: `time.Minute` (`s3/filer/filer.go:33`), so the flush gap is on the order of one minute. Workers process events with a `2 × LogFlushInterval` lag from real time (default ~2 minutes), so flushes always complete before the cursor reaches them.
 
 The aggregated in-memory stream is still useful for the *bootstrap detector* (notifying the worker that a fresh policy was just PUT and a tick should run sooner than the next scheduled interval) — but it's a hint, never a substitute for the persisted log when computing watermarks or replaying history.
 
@@ -1428,7 +1428,7 @@ Lifecycle does **not** model object lock state. Concretely:
 
 - No tracking of legal-hold or retain-until-date in lifecycle storage.
 - No per-rule `blocked` file (compliance ledger). No retain-until rescheduling. No re-evaluation triggered by Extended-change events that release a hold. (The cluster-level `_reader/blockers` file is unrelated — it tracks unprocessable cursor positions, not retained objects.)
-- The `LifecycleDelete` server explicitly invokes `s3a.enforceObjectLockProtections` (in `weed/s3api/s3api_object_retention.go`) with `governanceBypassAllowed=false` before dispatching the low-level delete helper. If that check refuses, the server returns `SKIPPED_OBJECT_LOCK`. The worker logs, increments a counter, and advances.
+- The `LifecycleDelete` server explicitly invokes `s3a.enforceObjectLockProtections` (in `s3/s3api/s3api_object_retention.go`) with `governanceBypassAllowed=false` before dispatching the low-level delete helper. If that check refuses, the server returns `SKIPPED_OBJECT_LOCK`. The worker logs, increments a counter, and advances.
 
 What this means in practice:
 
@@ -1495,8 +1495,8 @@ Rules:
 
 **Operator commands:**
 
-- `weed shell s3.lifecycle.blockers list [--stream ...] [--shard ...] [--bucket ...]` — show all blockers.
-- `weed shell s3.lifecycle.blockers retry <id>` — re-attempt the failing event/path **right now**, in the shell command itself, bypassing the task-start guard. The shell synchronously re-runs the appropriate primitive (`handleEvent` for `ORIGINAL`/`PREDICATE`, the walker step for `BOOTSTRAP`, `drainPending` step for `PENDING`) against current live state. Per-stream retry-success effects:
+- `s3 shell s3.lifecycle.blockers list [--stream ...] [--shard ...] [--bucket ...]` — show all blockers.
+- `s3 shell s3.lifecycle.blockers retry <id>` — re-attempt the failing event/path **right now**, in the shell command itself, bypassing the task-start guard. The shell synchronously re-runs the appropriate primitive (`handleEvent` for `ORIGINAL`/`PREDICATE`, the walker step for `BOOTSTRAP`, `drainPending` step for `PENDING`) against current live state. Per-stream retry-success effects:
   - `ORIGINAL`: on `DONE`/`NOOP_RESOLVED`, remove blocker record AND advance `reader_state.last_processed_original[delay_seconds][shard]` past `position`.
   - `PREDICATE`: on `DONE`/`NOOP_RESOLVED`, remove blocker record AND advance `reader_state.last_processed_predicate[shard]` past `position`.
   - `BOOTSTRAP`: on `DONE`/`NOOP_RESOLVED` for the recorded `(bucket, object_path, version_id, rule_hash)`, remove blocker record. **Do not** advance `_bootstrap.last_scanned_path` directly — the next scheduled bootstrap task picks up from `last_scanned_path` (which already sits at the previous successful entry) and re-walks normally; if the entry is still due it will be re-attempted, if not it'll be skipped. This avoids the operator command racing with concurrent walker progress.
@@ -1504,8 +1504,8 @@ Rules:
   - All streams, on failure (`RETRY_LATER` or `BLOCKED` again): update `retry_count` and `last_retry_at_ns` on the blocker record; leave it in place; do not advance any cursor or tombstone any pending. The next scheduled task remains gated by the task-start guard until the blocker clears.
 
   Idempotency: the live re-attempt uses the same `expected_identity` / `MessagePosition` CAS path as a normal worker invocation, so a concurrent successful delete by something else just produces `NOOP_RESOLVED` (`STALE_IDENTITY` / `NOT_FOUND`) and the blocker resolves cleanly.
-- `weed shell s3.lifecycle.blockers resume <id>` — clear the blocker record AND its corresponding `retry_budget` entry, but **leave the cursor at the failing position**. The next reader/drain/bootstrap pass will encounter the event and re-process it normally with a fresh retry-budget counter. Use this when the operator has fixed the underlying cause (corrupted entry repaired, upstream bug patched, etc.) and wants the worker to attempt the same record on its own schedule rather than synchronously via `retry`. Resume does *not* advance past the event — that's `quarantine`.
-- `weed shell s3.lifecycle.blockers quarantine <id> --reason <text>` — manual decision to **skip the event and advance the cursor without processing it**. Clears the blocker AND its `retry_budget` entry. Logged with operator identity, reason, and a `lifecycle_quarantined_total` metric increment. This is the **only** path that intentionally drops a delete decision; only the operator can take it; the action is auditable.
+- `s3 shell s3.lifecycle.blockers resume <id>` — clear the blocker record AND its corresponding `retry_budget` entry, but **leave the cursor at the failing position**. The next reader/drain/bootstrap pass will encounter the event and re-process it normally with a fresh retry-budget counter. Use this when the operator has fixed the underlying cause (corrupted entry repaired, upstream bug patched, etc.) and wants the worker to attempt the same record on its own schedule rather than synchronously via `retry`. Resume does *not* advance past the event — that's `quarantine`.
+- `s3 shell s3.lifecycle.blockers quarantine <id> --reason <text>` — manual decision to **skip the event and advance the cursor without processing it**. Clears the blocker AND its `retry_budget` entry. Logged with operator identity, reason, and a `lifecycle_quarantined_total` metric increment. This is the **only** path that intentionally drops a delete decision; only the operator can take it; the action is auditable.
 
 In all three resolution paths (`retry` success, `resume`, `quarantine`), the corresponding `retry_budget` entry is cleared along with the `BlockerRecord`. Stale retry-budget state is never left behind.
 
@@ -1708,7 +1708,7 @@ Affected-rules scope:
 
 Operator workflow:
 
-1. `weed shell s3.lifecycle.reseed -bucket X -delay <days>` — operates on the delay group, not a single rule. Lists all rules currently in `scan_only` mode for that delay and reports which buckets/rules will replay.
+1. `s3 shell s3.lifecycle.reseed -bucket X -delay <days>` — operates on the delay group, not a single rule. Lists all rules currently in `scan_only` mode for that delay and reports which buckets/rules will replay.
 2. The command:
    - Computes `force_reseed_delays = { D }` for the delay being re-enabled. (For multiple delays in one invocation, the set has multiple entries.)
    - Deletes `reader_state.last_processed_original[D.seconds]` (the entire per-filer map for that delay group).
@@ -1718,7 +1718,7 @@ Operator workflow:
 
 Lost-log acknowledgement is a separate, explicit workflow because it admits that some retained metadata history was lost:
 
-1. `weed shell s3.lifecycle.reseed -ack-lost-log --reason <text>` — cluster-wide, only allowed while some rules have `degraded_reason = LOST_LOG`.
+1. `s3 shell s3.lifecycle.reseed -ack-lost-log --reason <text>` — cluster-wide, only allowed while some rules have `degraded_reason = LOST_LOG`.
 2. The command verifies an immediate safety-scan bootstrap has completed for every bucket with reader-driven lifecycle rules after `degraded_since_ns`; if not, it runs those bootstraps first and waits for completion.
 3. It deletes the lost-log cursor entries for vanished shard streams, clears any matching `tail_drained_streams` markers, then force-reseeds all reader delay groups and the predicate cursor using the same `force_reseed_delays` / `force_reseed_predicate` path above.
 4. After seeding commits, it clears `LOST_LOG`; rules return to `event_driven` only if the normal retention gate still passes. Rules whose `metaLogRetention < eventLogHorizon + bootstrapLookbackMin` remain `scan_only` with `RETENTION_BELOW_HORIZON`.
@@ -1757,24 +1757,24 @@ Object-lock skips never enter pending; they're logged-and-counted only. Pending 
 ### Observability
 
 CLI:
-- `weed shell s3.lifecycle.status -bucket X` — mode, watermark, pending size, last tick, counts.
+- `s3 shell s3.lifecycle.status -bucket X` — mode, watermark, pending size, last tick, counts.
 
 Headers:
-- `X-SeaweedFS-Lifecycle-LastTick` on `GetBucketLifecycleConfiguration`.
+- `X-Hanzo-Lifecycle-LastTick` on `GetBucketLifecycleConfiguration`.
 
 Prometheus:
-- `seaweedfs_s3_lifecycle_evaluated_total{bucket,rule_hash}`
-- `seaweedfs_s3_lifecycle_expired_total{bucket,rule_hash,action}`
-- `seaweedfs_s3_lifecycle_metadata_only_total{bucket,rule_hash}` — count of skip-chunk-delete deletes
-- `seaweedfs_s3_lifecycle_skipped_object_lock_total{bucket,rule_hash}` — locked objects encountered
-- `seaweedfs_s3_lifecycle_blocked_streams{stream_kind,bucket}` — gauge: number of active blocker records by stream_kind (ORIGINAL / PREDICATE / BOOTSTRAP / PENDING)
-- `seaweedfs_s3_lifecycle_quarantined_total{stream_kind,bucket}` — counter: operator-quarantined records (auditable; only path that intentionally drops a delete decision)
-- `seaweedfs_s3_lifecycle_predicate_lag_seconds{filer_id}` — primary indicator for predicate-stream health
-- `seaweedfs_s3_lifecycle_errors_total{bucket,rule_hash,kind}`
-- `seaweedfs_s3_lifecycle_pending_size{bucket,rule_hash}`
-- `seaweedfs_s3_lifecycle_watermark_lag_seconds{bucket,rule_hash,delay_group}`
+- `hanzo_s3_lifecycle_evaluated_total{bucket,rule_hash}`
+- `hanzo_s3_lifecycle_expired_total{bucket,rule_hash,action}`
+- `hanzo_s3_lifecycle_metadata_only_total{bucket,rule_hash}` — count of skip-chunk-delete deletes
+- `hanzo_s3_lifecycle_skipped_object_lock_total{bucket,rule_hash}` — locked objects encountered
+- `hanzo_s3_lifecycle_blocked_streams{stream_kind,bucket}` — gauge: number of active blocker records by stream_kind (ORIGINAL / PREDICATE / BOOTSTRAP / PENDING)
+- `hanzo_s3_lifecycle_quarantined_total{stream_kind,bucket}` — counter: operator-quarantined records (auditable; only path that intentionally drops a delete decision)
+- `hanzo_s3_lifecycle_predicate_lag_seconds{filer_id}` — primary indicator for predicate-stream health
+- `hanzo_s3_lifecycle_errors_total{bucket,rule_hash,kind}`
+- `hanzo_s3_lifecycle_pending_size{bucket,rule_hash}`
+- `hanzo_s3_lifecycle_watermark_lag_seconds{bucket,rule_hash,delay_group}`
 
-Admin UI (the existing plugin lane filter at `weed/admin/view/app/plugin_lane.templ` + `weed/admin/dash/plugin_api.go:filterActivitiesByLane` already surfaces job type `s3_lifecycle` — confirmed by `dash/plugin_api_test.go:204-230`):
+Admin UI (the existing plugin lane filter at `s3/admin/view/app/plugin_lane.templ` + `s3/admin/dash/plugin_api.go:filterActivitiesByLane` already surfaces job type `s3_lifecycle` — confirmed by `dash/plugin_api_test.go:204-230`):
 
 1. **Per-bucket lifecycle panel on `s3_buckets.templ`.** Per rule:
    - rule_id (or hash prefix if blank)
@@ -1791,7 +1791,7 @@ Admin UI (the existing plugin lane filter at `weed/admin/view/app/plugin_lane.te
    - watermark lag p50/p99
    - off-peak window indicator if `lifecycle.run_hours` is set
 
-3. **JSON API endpoints under `weed/admin/dash/`:**
+3. **JSON API endpoints under `s3/admin/dash/`:**
    - `GET  /api/s3/buckets/{name}/lifecycle/status` — decoded per-rule `state` files
    - `POST /api/s3/buckets/{name}/lifecycle/run` — enqueue forced batch (optional `?rule_hash=`)
    - `POST /api/s3/buckets/{name}/lifecycle/rebootstrap` — reset bootstrap for a rule
@@ -1845,7 +1845,7 @@ Phasing changed: **the back-stamp cannot be removed until the worker can take ov
 
 ## Phase 1 — `s3lifecycle.Evaluate` (no callers)
 
-- Add `EvaluateAction(rule *Rule, kind ActionKind, info *ObjectInfo, now time.Time) EvalResult`, `ComputeDueAt(rule *Rule, kind ActionKind, info *ObjectInfo) time.Time`, `MinTriggerAge(rule *Rule, kind ActionKind) time.Duration`, `EventLogHorizon(rule *Rule, kind ActionKind) time.Duration`, and `RuleActionKinds(rule *Rule) []ActionKind` in `weed/s3api/s3lifecycle/`. All kind-aware: a single XML rule expands into N compiled actions and each helper operates on one (rule, kind) pair so sibling actions are scheduled, gated, and evaluated independently. `EventLogHorizon` returns `rule.Days` / `rule.NoncurrentDays` / `rule.DaysAfterInitiation` for age-based kinds, and `smallDelay` for `NEWER_NONCURRENT` and `EXPIRED_DELETE_MARKER`. `EXPIRATION_DATE` is not a reader-driven kind and the gate skips it.
+- Add `EvaluateAction(rule *Rule, kind ActionKind, info *ObjectInfo, now time.Time) EvalResult`, `ComputeDueAt(rule *Rule, kind ActionKind, info *ObjectInfo) time.Time`, `MinTriggerAge(rule *Rule, kind ActionKind) time.Duration`, `EventLogHorizon(rule *Rule, kind ActionKind) time.Duration`, and `RuleActionKinds(rule *Rule) []ActionKind` in `s3/s3api/s3lifecycle/`. All kind-aware: a single XML rule expands into N compiled actions and each helper operates on one (rule, kind) pair so sibling actions are scheduled, gated, and evaluated independently. `EventLogHorizon` returns `rule.Days` / `rule.NoncurrentDays` / `rule.DaysAfterInitiation` for age-based kinds, and `smallDelay` for `NEWER_NONCURRENT` and `EXPIRED_DELETE_MARKER`. `EXPIRATION_DATE` is not a reader-driven kind and the gate skips it.
 - Cover: `ExpirationDays`, `ExpirationDate`, `ExpiredObjectDeleteMarker`, `NoncurrentVersionExpirationDays`, `NewerNoncurrentVersions`, `AbortMPUDaysAfterInitiation`, prefix + tag + size filters, And-combinations.
 - Add `RuleHash(rule *Rule) [8]byte` over a length-prefixed canonical form (sorted tags, prefix verbatim, every action's parameters, days/date). Stable across XML reordering, ID renames, and Status flips; resistant to delimiter forgery.
 - Unit tests in `evaluate_test.go` per rule shape, including AWS edge cases (date in future, zero days, empty prefix, And).
@@ -1853,35 +1853,35 @@ Phasing changed: **the back-stamp cannot be removed until the worker can take ov
 
 ## Phase 2 — LifecyclePolicyEngine + bucket-level bootstrap + LifecycleDelete RPC + scan_only gate (non-versioned)
 
-- Define protos in `weed/pb/s3_lifecycle.proto`: per-action `LifecycleState` keyed by `(rule_hash, action_kind)` (no watermarks), `PendingItem` (late-predicate exceptions only — no `BlockedItem`, no compliance ledger), `EntryIdentity`. Cluster-level `ReaderState` (watermark maps + `tail_drained_streams`). Top-level `ActionKind` enum referenced by `LifecycleState`, `BootstrapKey`, `PendingKey`, `BlockerRecord`, `RetryTarget`.
-- Define `S3LifecycleParams` (subtype `READ` | `BOOTSTRAP` | `DRAIN`) and `ContinuationHint` in `weed/pb/worker_pb/worker.proto`. `S3LifecycleParams.action_kind` is required for DRAIN, ignored by BOOTSTRAP.
+- Define protos in `s3/pb/s3_lifecycle.proto`: per-action `LifecycleState` keyed by `(rule_hash, action_kind)` (no watermarks), `PendingItem` (late-predicate exceptions only — no `BlockedItem`, no compliance ledger), `EntryIdentity`. Cluster-level `ReaderState` (watermark maps + `tail_drained_streams`). Top-level `ActionKind` enum referenced by `LifecycleState`, `BootstrapKey`, `PendingKey`, `BlockerRecord`, `RetryTarget`.
+- Define `S3LifecycleParams` (subtype `READ` | `BOOTSTRAP` | `DRAIN`) and `ContinuationHint` in `s3/pb/worker_pb/worker.proto`. `S3LifecycleParams.action_kind` is required for DRAIN, ignored by BOOTSTRAP.
 - Storage:
   - Per-action: `/etc/s3/lifecycle/<bucket>/<rule_hash_hex>/<action_kind>/{state, pending}`. Each XML rule expands into N action subdirectories under one rule_hash dir.
   - Per-bucket bootstrap progress: `/etc/s3/lifecycle/<bucket>/_bootstrap`.
   - Cluster reader: `/etc/s3/lifecycle/_reader/{reader_state, blockers, retry_budget}`. Single reader task; `reader_state` holds per-filer-shard cursors (`map<delay_seconds, map<filer_id, MessagePosition>>` for originals and `map<filer_id, MessagePosition>` for predicate) — required for resume correctness across the client-side merge. `blockers` is the durable record of paused stream entries (operator-resolvable). `retry_budget` tracks consecutive `RETRY_LATER` per stream key for promotion to BLOCKED at threshold. No reader-group partitioning, no assignment epochs.
-- New package `weed/s3api/s3lifecycle/engine/` — `LifecyclePolicyEngine`. Compiles all bucket lifecycle xml into:
+- New package `s3/s3api/s3lifecycle/engine/` — `LifecyclePolicyEngine`. Compiles all bucket lifecycle xml into:
   - `bucket → BucketIndex { prefixTrie, tagIndex, versioned }` keyed by `ActionKey`.
   - `originalDelayGroups: map[duration][]ActionKey` for original-write sweeps.
   - `predicateActions: []ActionKey`, `dateActions: map[ActionKey]time.Time`.
   - Snapshot ID; rebuild on observed lifecycle xattr change events.
 - Per-`ActionKey` policy CAS via `(rule_hash, action_kind)` membership — no per-bucket etag scheme.
-- New package `weed/s3api/s3lifecycle/worker/`:
+- New package `s3/s3api/s3lifecycle/worker/`:
   - **Bucket-level** bootstrap walker: walks each bucket once per run, evaluates every applicable `ActionKey` per object via the engine (`EvaluateAction(rule, kind, info, now)` for each compiled action). Inline delete for currently-due age actions; skip not-yet-due (log replay handles); skip date actions (SCAN_AT_DATE handles). `last_scanned_path` checkpointed in `_bootstrap`. Per-action completion writes commit *after* the walk.
   - On `TRANSPORT_ERROR` the walker stops; resume from `last_scanned_path` next task.
   - Skip versioned buckets with a logged warning. Implementation lands in Phase 5.
 - **Mode gate (lands here):** at engine compile time, for each `ActionKey`, compute `eventLogHorizon(rule, action_kind)` per the table in §"Per-rule mode decision"; if `metaLogRetention < eventLogHorizon(rule, action_kind) + bootstrapLookbackMin`, mark *that action* `scan_only` with `degraded_reason = RETENTION_BELOW_HORIZON`. Applies to all reader-driven kinds (`EXPIRATION_DAYS`, `NONCURRENT_DAYS`, `ABORT_MPU`, `NEWER_NONCURRENT`, `EXPIRED_DELETE_MARKER`); date kind bypasses this gate. Sibling actions of the same rule are evaluated independently — a 90d `EXPIRATION_DAYS` may degrade while a 7d `ABORT_MPU` stays event-driven. Same bootstrap code path; detector emits at the per-kind cadence.
 - `SCAN_AT_DATE` mode: detector schedules a single bootstrap at the action's `rule.date`.
 - Worker-to-S3 discovery via admin's `ListS3Endpoints` RPC; cache 30s; rotate on RPC failure.
-- New gRPC `LifecycleDelete` (`weed/s3api/s3api_internal_lifecycle.go`). Server handler steps 1–7 above; the request carries `(rule_hash, action_kind)` for ActionKey CAS.
-- Object lock: `LifecycleDelete` server explicitly calls `s3a.enforceObjectLockProtections` (in `weed/s3api/s3api_object_retention.go`) with `governanceBypassAllowed=false` BEFORE dispatching low-level helpers. If the check refuses, returns `SKIPPED_OBJECT_LOCK`. Worker logs, increments counter, advances. No retain-until rescheduling, no blocked file.
+- New gRPC `LifecycleDelete` (`s3/s3api/s3api_internal_lifecycle.go`). Server handler steps 1–7 above; the request carries `(rule_hash, action_kind)` for ActionKey CAS.
+- Object lock: `LifecycleDelete` server explicitly calls `s3a.enforceObjectLockProtections` (in `s3/s3api/s3api_object_retention.go`) with `governanceBypassAllowed=false` BEFORE dispatching low-level helpers. If the check refuses, returns `SKIPPED_OBJECT_LOCK`. Worker logs, increments counter, advances. No retain-until rescheduling, no blocked file.
 - Admin server: register S3 endpoints; serve `ListS3Endpoints`.
-- Wire task types in `weed/worker/tasks/s3lifecycle/`:
+- Wire task types in `s3/worker/tasks/s3lifecycle/`:
   - `s3.lifecycle.bootstrap` per-bucket (not per-action).
   - `s3.lifecycle.read` cluster-singleton (Phase 3 fills in).
   - `s3.lifecycle.drain` per-`ActionKey` for exception drains.
   All bound to `LaneLifecycle`.
 - Cluster locks: `s3.lifecycle.read` (singleton), `s3.lifecycle.bootstrap:<bucket>`, `s3.lifecycle.drain:<bucket>:<rule_hash_hex>:<action_kind>`, `s3.lifecycle._reader.seeding` (global, serializes seed writes across bucket bootstraps).
-- Detector in `weed/admin/maintenance/`.
+- Detector in `s3/admin/maintenance/`.
 - Shell commands `s3.lifecycle.run`, `s3.lifecycle.status`.
 - Worker runs alongside the back-stamp.
 - Tests: bootstrap fixture bucket with multiple rules — verify one walk evaluates all; not-yet-due not enqueued; date rules deferred to SCAN_AT_DATE; transport error pauses then resumes; scan_only gate triggers on short retention.
@@ -1910,7 +1910,7 @@ Phasing changed: **the back-stamp cannot be removed until the worker can take ov
 
 ## Phase 3 — Shared cluster reader + delay-group sweeps (non-versioned)
 
-> **Implementation note:** the shipped reader uses `client.SubscribeMetadata(...)` with a single global `(ts_ns, offset)` cursor (`weed/s3api/s3lifecycle/reader/reader.go`). The filer's `SubscribeMetadata` server already aggregates persisted + in-memory logs across peer filers, so the per-filer-shard cursor map and the `RetainedLogRangePerShard` / `EarliestRetainedPositionPerShard` filer RPCs (Task #19) were not built. The tail-drain matrix and lost-log tests below were written against that unbuilt architecture and are obsoleted; the only residual gap — auto-degrading on `ResumeFromDiskError` — is tracked as a separate narrow follow-up. The retention mode-gate, engine routing, predicate-change pass, SKIPPED_OBJECT_LOCK, TRANSPORT_ERROR, and cursor-trail tests remain valid and were exercised against the production reader/router/engine stack.
+> **Implementation note:** the shipped reader uses `client.SubscribeMetadata(...)` with a single global `(ts_ns, offset)` cursor (`s3/s3api/s3lifecycle/reader/reader.go`). The filer's `SubscribeMetadata` server already aggregates persisted + in-memory logs across peer filers, so the per-filer-shard cursor map and the `RetainedLogRangePerShard` / `EarliestRetainedPositionPerShard` filer RPCs (Task #19) were not built. The tail-drain matrix and lost-log tests below were written against that unbuilt architecture and are obsoleted; the only residual gap — auto-degrading on `ResumeFromDiskError` — is tracked as a separate narrow follow-up. The retention mode-gate, engine routing, predicate-change pass, SKIPPED_OBJECT_LOCK, TRANSPORT_ERROR, and cursor-trail tests remain valid and were exercised against the production reader/router/engine stack.
 
 - Implement `s3.lifecycle.read` task: cluster singleton, subscribed to one filer at a time. ~~`Filer.CollectLogFileRefs` returns chunk refs in directory order; the worker uses `pb.ReadLogFileRefsWithPosition` (Task #19) to heap-merge per-filer chunks by event ts client-side, with per-shard `MessagePosition` skip filtering.~~ The shipped task uses a direct `SubscribeMetadata` subscription; the filer server-side does the multi-filer merge. Cursor is one global `(ts_ns, offset)` position resumed via `SinceNs`. Failover to another filer endpoint on connection error; cursor is portable (one ts). Periodic checkpointing bounds crash redo.
 - ~~**Tail-drain tests required in this phase**~~ — obsoleted by the single-cursor architecture; see Phase 6 for context.
@@ -1955,7 +1955,7 @@ Phasing changed: **the back-stamp cannot be removed until the worker can take ov
 
 What the original Phase 6 set out to add — per-filer-shard cursor maps, `EarliestRetainedPositionPerShard` and `RetainedLogRangePerShard` filer RPCs, `tail_drained_streams` GC, `CollectLogFileRefs` heap-merge, lost-log degraded promotion — was designed under the assumption that the lifecycle worker would have to assemble its own multi-filer view because `MetaAggregator` is in-memory only.
 
-`SubscribeMetadata` already does that work server-side: when the filer has peer filers it reads disk-persisted logs from every filer first (via `sendLogFileRefs` → `Filer.CollectLogFileRefs`) and only then drains the in-memory aggregator. A single subscription returns a durable, multi-filer-merged stream. The Phase 3 shipped reader (`weed/s3api/s3lifecycle/reader/reader.go`) consumes that stream with one global `(ts_ns, offset)` cursor and never needed the per-shard cursor map.
+`SubscribeMetadata` already does that work server-side: when the filer has peer filers it reads disk-persisted logs from every filer first (via `sendLogFileRefs` → `Filer.CollectLogFileRefs`) and only then drains the in-memory aggregator. A single subscription returns a durable, multi-filer-merged stream. The Phase 3 shipped reader (`s3/s3api/s3lifecycle/reader/reader.go`) consumes that stream with one global `(ts_ns, offset)` cursor and never needed the per-shard cursor map.
 
 What the design's per-shard architecture would have bought us, and why each piece is no longer required:
 
@@ -1974,7 +1974,7 @@ The single residual gap — and the only piece worth building — is auto-degrad
 
 - Shell `s3.lifecycle.status` command.
 - Admin UI tile.
-- `X-SeaweedFS-Lifecycle-LastTick` header.
+- `X-Hanzo-Lifecycle-LastTick` header.
 - Prometheus metrics.
 
 ## Phase 8 — `scan_only` cadence tuning + operator hooks
@@ -2005,7 +2005,7 @@ Four layers, mapped to existing repo patterns. Each layer has a different cost/s
 
 ## Layer 1 — Unit (pure Go, milliseconds)
 
-Location: `weed/s3api/s3lifecycle/*_test.go` next to source. Standard table-driven Go tests. No fakes, no goroutines.
+Location: `s3/s3api/s3lifecycle/*_test.go` next to source. Standard table-driven Go tests. No fakes, no goroutines.
 
 | File | Coverage |
 |---|---|
@@ -2016,7 +2016,7 @@ Location: `weed/s3api/s3lifecycle/*_test.go` next to source. Standard table-driv
 | `event_log_horizon_test.go` | `EventLogHorizon` per kind. Age kinds return their day count; `NEWER_NONCURRENT` and `EXPIRED_DELETE_MARKER` return `smallDelay`; `EXPIRATION_DATE` is not called and panics or returns sentinel. |
 | `identity_test.go` | `EntryIdentity` builder produces stable hash for same Extended; differs when tags change. Snapshot-restore (different head fid, same mtime) detected. |
 
-Run: `go test ./weed/s3api/s3lifecycle/...`. Phase 1 lands these alongside the function.
+Run: `go test ./s3/s3api/s3lifecycle/...`. Phase 1 lands these alongside the function.
 
 ## Layer 2 — Component (in-process harness, seconds–minutes)
 
@@ -2057,7 +2057,7 @@ Cases:
 
 Run: `go test ./test/plugin_workers/lifecycle/...`. Phase mapping: each phase ships its half.
 
-## Layer 3 — Real-server integration (AWS SDK + live `weed server`, minutes per scenario)
+## Layer 3 — Real-server integration (AWS SDK + live `s3 server`, minutes per scenario)
 
 Location: `test/s3/lifecycle/` — new, copy of `test/s3/retention/` shape (Makefile-driven binary build, server start/stop, AWS SDK clients).
 
@@ -2078,10 +2078,10 @@ test/s3/lifecycle/
   s3_lifecycle_scan_only_test.go          # short-retention forces scan_only
 ```
 
-Time compression: existing build tag `lifecycle_10sec` (`weed/util/constants_lifecycle_interval_10sec.go`) treats 1 day as 10 seconds. Verify it covers `MinTriggerAge` math; add a `bootstrapLookbackMin` constant in the same files so it scales too. Makefile target:
+Time compression: existing build tag `lifecycle_10sec` (`s3/util/constants_lifecycle_interval_10sec.go`) treats 1 day as 10 seconds. Verify it covers `MinTriggerAge` math; add a `bootstrapLookbackMin` constant in the same files so it scales too. Makefile target:
 
 ```
-test-fast: build-weed-10sec
+test-fast: build-s3-10sec
 	go test -tags lifecycle_10sec -timeout 15m ./...
 ```
 
@@ -2089,7 +2089,7 @@ Run: `make -C test/s3/lifecycle test-with-server`. Phase mapping: end-to-end tes
 
 ## Layer 4 — Multi-filer convergence (obsoleted)
 
-**Not built.** Phase 6 was obsoleted by `SubscribeMetadata`'s server-side aggregation (see the Phase 6 section). With a single global cursor on a server-merged stream, there are no per-filer-shard convergence properties for the worker to test — any merge correctness lives inside the filer's `MetaAggregator`, which has its own coverage in `weed/filer/`.
+**Not built.** Phase 6 was obsoleted by `SubscribeMetadata`'s server-side aggregation (see the Phase 6 section). With a single global cursor on a server-merged stream, there are no per-filer-shard convergence properties for the worker to test — any merge correctness lives inside the filer's `MetaAggregator`, which has its own coverage in `s3/filer/`.
 
 If `ResumeFromDiskError` auto-degrade lands as a follow-up (task #21), its tests live with the reader package, not in a separate multi-filer harness.
 
@@ -2099,7 +2099,7 @@ If `ResumeFromDiskError` auto-degrade lands as a follow-up (task #21), its tests
 |---|---|---|
 | `make test-unit` | every push | < 10s |
 | `make test-component` | every push | < 2m |
-| `make test-s3-lifecycle` (Layer 3, 10sec build tag) | PRs touching `weed/s3api/s3lifecycle/**`, `weed/worker/tasks/s3lifecycle/**`, or `weed/s3api/s3api_internal_lifecycle.go` | ~20m |
+| `make test-s3-lifecycle` (Layer 3, 10sec build tag) | PRs touching `s3/s3api/s3lifecycle/**`, `s3/worker/tasks/s3lifecycle/**`, or `s3/s3api/s3api_internal_lifecycle.go` | ~20m |
 | `make test-multi-filer-lifecycle` | nightly | ~30m |
 
 CI must require `test-component` and `test-s3-lifecycle` green before merging Phase 4 (the PUT-strip). All layers green required for Phase 5+.

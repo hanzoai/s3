@@ -33,8 +33,8 @@ const (
 )
 
 type TestEnvironment struct {
-	seaweedDir       string
-	weedBinary       string
+	hanzoDir       string
+	s3Binary       string
 	dataDir          string
 	bindIP           string
 	s3Port           int
@@ -47,8 +47,8 @@ type TestEnvironment struct {
 	volumeGrpcPort   int
 	polarisPort      int
 	polarisAdminPort int
-	weedProcess      *exec.Cmd
-	weedCancel       context.CancelFunc
+	s3Process      *exec.Cmd
+	s3Cancel       context.CancelFunc
 	polarisContainer string
 	accessKey        string
 	secretKey        string
@@ -66,23 +66,23 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 		t.Fatalf("Failed to get working directory: %v", err)
 	}
 
-	seaweedDir := wd
+	hanzoDir := wd
 	for i := 0; i < 6; i++ {
-		if _, err := os.Stat(filepath.Join(seaweedDir, "go.mod")); err == nil {
+		if _, err := os.Stat(filepath.Join(hanzoDir, "go.mod")); err == nil {
 			break
 		}
-		seaweedDir = filepath.Dir(seaweedDir)
+		hanzoDir = filepath.Dir(hanzoDir)
 	}
 
-	weedBinary := filepath.Join(seaweedDir, "weed", "weed")
-	if _, err := os.Stat(weedBinary); err != nil {
-		weedBinary = "weed"
-		if _, err := exec.LookPath(weedBinary); err != nil {
-			t.Skip("weed binary not found, skipping integration test")
+	s3Binary := filepath.Join(hanzoDir, "s3", "s3")
+	if _, err := os.Stat(s3Binary); err != nil {
+		s3Binary = "s3"
+		if _, err := exec.LookPath(s3Binary); err != nil {
+			t.Skip("s3 binary not found, skipping integration test")
 		}
 	}
 
-	dataDir, err := os.MkdirTemp("", "seaweed-polaris-test-*")
+	dataDir, err := os.MkdirTemp("", "hanzo-polaris-test-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -99,8 +99,8 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 	polarisPort, polarisAdminPort := ports[8], ports[9]
 
 	return &TestEnvironment{
-		seaweedDir:       seaweedDir,
-		weedBinary:       weedBinary,
+		hanzoDir:       hanzoDir,
+		s3Binary:       s3Binary,
 		dataDir:          dataDir,
 		bindIP:           bindIP,
 		s3Port:           s3Port,
@@ -118,7 +118,7 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 	}
 }
 
-func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
+func (env *TestEnvironment) StartHanzo(t *testing.T) {
 	t.Helper()
 
 	iamConfigPath := filepath.Join(env.dataDir, "iam.json")
@@ -138,7 +138,7 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
   "sts": {
     "tokenDuration": "12h",
     "maxSessionLength": "24h",
-    "issuer": "seaweedfs-sts",
+    "issuer": "hanzo-sts",
     "signingKey": "%s"
   },
   "roles": [
@@ -180,9 +180,9 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	env.weedCancel = cancel
+	env.s3Cancel = cancel
 
-	cmd := exec.CommandContext(ctx, env.weedBinary, "-v", "4", "mini",
+	cmd := exec.CommandContext(ctx, env.s3Binary, "-v", "4", "mini",
 		"-master.port", fmt.Sprintf("%d", env.masterPort),
 		"-master.port.grpc", fmt.Sprintf("%d", env.masterGrpcPort),
 		"-volume.port", fmt.Sprintf("%d", env.volumePort),
@@ -203,9 +203,9 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Start(); err != nil {
-		t.Fatalf("Failed to start SeaweedFS: %v", err)
+		t.Fatalf("Failed to start Hanzo: %v", err)
 	}
-	env.weedProcess = cmd
+	env.s3Process = cmd
 
 	if !testutil.WaitForService(fmt.Sprintf("http://localhost:%d/status", env.s3Port), 30*time.Second) {
 		t.Fatalf("S3 API failed to become ready")
@@ -215,7 +215,7 @@ func (env *TestEnvironment) StartSeaweedFS(t *testing.T) {
 func (env *TestEnvironment) StartPolaris(t *testing.T) {
 	t.Helper()
 
-	containerName := fmt.Sprintf("seaweed-polaris-%d", time.Now().UnixNano())
+	containerName := fmt.Sprintf("hanzo-polaris-%d", time.Now().UnixNano())
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
@@ -252,12 +252,12 @@ func (env *TestEnvironment) StartPolaris(t *testing.T) {
 
 func (env *TestEnvironment) Cleanup(t *testing.T) {
 	t.Helper()
-	if env.weedCancel != nil {
-		env.weedCancel()
+	if env.s3Cancel != nil {
+		env.s3Cancel()
 	}
-	if env.weedProcess != nil {
+	if env.s3Process != nil {
 		time.Sleep(1 * time.Second)
-		_ = env.weedProcess.Wait()
+		_ = env.s3Process.Wait()
 	}
 	if env.polarisContainer != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

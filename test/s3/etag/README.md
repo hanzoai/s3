@@ -1,6 +1,6 @@
 # S3 ETag Format Integration Tests
 
-This test suite verifies that SeaweedFS returns correct ETag formats for S3 operations, ensuring compatibility with AWS S3 SDKs.
+This test suite verifies that Hanzo returns correct ETag formats for S3 operations, ensuring compatibility with AWS S3 SDKs.
 
 ## Background
 
@@ -8,7 +8,7 @@ This test suite verifies that SeaweedFS returns correct ETag formats for S3 oper
 
 ### Root Cause
 
-SeaweedFS internally auto-chunks large files (>8MB) for efficient storage. Previously, when a regular `PutObject` request resulted in multiple internal chunks, SeaweedFS returned a composite ETag format (`<md5>-<count>`) instead of a pure MD5 hash.
+Hanzo internally auto-chunks large files (>8MB) for efficient storage. Previously, when a regular `PutObject` request resulted in multiple internal chunks, Hanzo returned a composite ETag format (`<md5>-<count>`) instead of a pure MD5 hash.
 
 ### AWS S3 Specification
 
@@ -33,9 +33,9 @@ AWS S3 SDK v2 for Java validates `PutObject` ETags as hexadecimal, which fails w
 
 ## Prerequisites
 
-1. SeaweedFS running with S3 API enabled:
+1. Hanzo running with S3 API enabled:
    ```bash
-   weed server -s3
+   s3 server -s3
    ```
 
 2. Go 1.21 or later

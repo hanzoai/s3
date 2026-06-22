@@ -14,9 +14,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
-	"github.com/hanzoai/s3/weed/cluster/lock_manager"
-	"github.com/hanzoai/s3/weed/pb"
-	"github.com/hanzoai/s3/weed/s3api/s3_constants"
+	"github.com/hanzoai/s3/s3/cluster/lock_manager"
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -1,8 +1,8 @@
-x-seaweedfs-build: &seaweedfs-build
+x-hanzo-build: &hanzo-build
   build:
     context: ../..
-    dockerfile: test/kafka/Dockerfile.seaweedfs
-  image: kafka-seaweedfs-dev
+    dockerfile: test/kafka/Dockerfile.s3
+  image: kafka-hanzo-dev
 
 services:
   # Zookeeper for Kafka
@@ -77,24 +77,24 @@ services:
     networks:
       - kafka-test-net
 
-  # SeaweedFS Master
-  seaweedfs-master:
-    <<: *seaweedfs-build
-    container_name: seaweedfs-master
+  # Hanzo Master
+  hanzo-master:
+    <<: *hanzo-build
+    container_name: hanzo-master
     ports:
       - "9333:9333"
       - "19333:19333"  # gRPC port
     command: 
       - master
-      - -ip=seaweedfs-master
+      - -ip=hanzo-master
       - -port=9333
       - -port.grpc=19333
       - -volumeSizeLimitMB=1024
       - -defaultReplication=000
     volumes:
-      - seaweedfs-master-data:/data
+      - hanzo-master-data:/data
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://seaweedfs-master:9333/cluster/status || curl -sf http://seaweedfs-master:9333/cluster/status"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://hanzo-master:9333/cluster/status || curl -sf http://hanzo-master:9333/cluster/status"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -102,28 +102,28 @@ services:
     networks:
       - kafka-test-net
 
-  # SeaweedFS Volume Server
-  seaweedfs-volume:
-    <<: *seaweedfs-build
-    container_name: seaweedfs-volume
+  # Hanzo Volume Server
+  hanzo-volume:
+    <<: *hanzo-build
+    container_name: hanzo-volume
     ports:
       - "8080:8080"
       - "18080:18080"  # gRPC port
     command:
       - volume
-      - -master=seaweedfs-master:9333
-      - -ip=seaweedfs-volume
+      - -master=hanzo-master:9333
+      - -ip=hanzo-volume
       - -port=8080
       - -port.grpc=18080
-      - -publicUrl=seaweedfs-volume:8080
+      - -publicUrl=hanzo-volume:8080
       - -preStopSeconds=1
     depends_on:
-      seaweedfs-master:
+      hanzo-master:
         condition: service_healthy
     volumes:
-      - seaweedfs-volume-data:/data
+      - hanzo-volume-data:/data
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://seaweedfs-volume:8080/status"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://hanzo-volume:8080/status"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -131,28 +131,28 @@ services:
     networks:
       - kafka-test-net
 
-  # SeaweedFS Filer
-  seaweedfs-filer:
-    <<: *seaweedfs-build
-    container_name: seaweedfs-filer
+  # Hanzo Filer
+  hanzo-filer:
+    <<: *hanzo-build
+    container_name: hanzo-filer
     ports:
       - "8888:8888"
       - "18888:18888"  # gRPC port
     command:
       - filer
-      - -master=seaweedfs-master:9333
-      - -ip=seaweedfs-filer
+      - -master=hanzo-master:9333
+      - -ip=hanzo-filer
       - -port=8888
       - -port.grpc=18888
     depends_on:
-      seaweedfs-master:
+      hanzo-master:
         condition: service_healthy
-      seaweedfs-volume:
+      hanzo-volume:
         condition: service_healthy
     volumes:
-      - seaweedfs-filer-data:/data
+      - hanzo-filer-data:/data
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://seaweedfs-filer:8888/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://hanzo-filer:8888/"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -160,25 +160,25 @@ services:
     networks:
       - kafka-test-net
 
-  # SeaweedFS MQ Broker
-  seaweedfs-mq-broker:
-    <<: *seaweedfs-build
-    container_name: seaweedfs-mq-broker
+  # Hanzo MQ Broker
+  hanzo-mq-broker:
+    <<: *hanzo-build
+    container_name: hanzo-mq-broker
     ports:
       - "17777:17777"  # MQ Broker port
       - "18777:18777"  # pprof profiling port
     command:
       - mq.broker
-      - -master=seaweedfs-master:9333
-      - -ip=seaweedfs-mq-broker
+      - -master=hanzo-master:9333
+      - -ip=hanzo-mq-broker
       - -port=17777
       - -debug
       - -debug.port=18777
     depends_on:
-      seaweedfs-filer:
+      hanzo-filer:
         condition: service_healthy
     volumes:
-      - seaweedfs-mq-data:/data
+      - hanzo-mq-data:/data
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "17777"]
       interval: 10s
@@ -188,22 +188,22 @@ services:
     networks:
       - kafka-test-net
 
-  # SeaweedFS MQ Agent
-  seaweedfs-mq-agent:
-    <<: *seaweedfs-build
-    container_name: seaweedfs-mq-agent
+  # Hanzo MQ Agent
+  hanzo-mq-agent:
+    <<: *hanzo-build
+    container_name: hanzo-mq-agent
     ports:
       - "16777:16777"  # MQ Agent port
     command:
       - mq.agent
-      - -broker=seaweedfs-mq-broker:17777
+      - -broker=hanzo-mq-broker:17777
       - -ip=0.0.0.0
       - -port=16777
     depends_on:
-      seaweedfs-mq-broker:
+      hanzo-mq-broker:
         condition: service_healthy
     volumes:
-      - seaweedfs-mq-data:/data
+      - hanzo-mq-data:/data
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "16777"]
       interval: 10s
@@ -213,7 +213,7 @@ services:
     networks:
       - kafka-test-net
 
-  # Kafka Gateway (SeaweedFS with Kafka protocol)
+  # Kafka Gateway (Hanzo with Kafka protocol)
   kafka-gateway:
     build:
       context: ../..  # Build from project root
@@ -223,12 +223,12 @@ services:
       - "9093:9093"  # Kafka protocol port
       - "10093:10093"  # pprof profiling port
     depends_on:
-      seaweedfs-mq-agent:
+      hanzo-mq-agent:
         condition: service_healthy
       schema-registry:
         condition: service_healthy
     environment:
-      - SEAWEEDFS_MASTERS=seaweedfs-master:9333
+      - SEAWEEDFS_MASTERS=hanzo-master:9333
       - SEAWEEDFS_FILER_GROUP=
       - SCHEMA_REGISTRY_URL=http://schema-registry:8081
       - KAFKA_PORT=9093
@@ -314,10 +314,10 @@ services:
       --max-messages 10
 
 volumes:
-  seaweedfs-master-data:
-  seaweedfs-volume-data:
-  seaweedfs-filer-data:
-  seaweedfs-mq-data:
+  hanzo-master-data:
+  hanzo-volume-data:
+  hanzo-filer-data:
+  hanzo-mq-data:
   kafka-gateway-data:
 
 networks:

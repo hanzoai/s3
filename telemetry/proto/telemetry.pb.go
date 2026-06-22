@@ -28,7 +28,7 @@ type TelemetryData struct {
 
 	// Unique cluster identifier (generated in-memory)
 	TopologyId string `protobuf:"bytes,1,opt,name=topology_id,json=topologyId,proto3" json:"topology_id,omitempty"`
-	// SeaweedFS version
+	// HanzoFS version
 	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 	// Operating system (e.g., "linux/amd64")
 	Os string `protobuf:"bytes,3,opt,name=os,proto3" json:"os,omitempty"`
@@ -141,7 +141,7 @@ func (x *TelemetryData) GetTimestamp() int64 {
 	return 0
 }
 
-// TelemetryRequest is sent from SeaweedFS clusters to the telemetry server
+// TelemetryRequest is sent from HanzoFS clusters to the telemetry server
 type TelemetryRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

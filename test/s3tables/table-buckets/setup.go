@@ -13,7 +13,7 @@ import (
 // It is initialised by TestMain and must not be modified by individual tests.
 var sharedCluster *TestCluster
 
-// TestCluster manages the weed mini instance for integration testing
+// TestCluster manages the s3 mini instance for integration testing
 type TestCluster struct {
 	t          *testing.T
 	dataDir    string

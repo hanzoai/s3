@@ -89,8 +89,8 @@ func writeBufferCapConfig(debugPort int) *TestConfig {
 			"-debug=true",
 			fmt.Sprintf("-debug.port=%d", debugPort),
 			// Route glog to stderr so the framework's process log
-			// capture actually contains something — by default weed
-			// sends glog to /tmp/weed.* files which the CI artifact
+			// capture actually contains something — by default s3
+			// sends glog to /tmp/s3.* files which the CI artifact
 			// upload step never sees. Critical for diagnosing
 			// upload/saveToStorage errors on Linux runs.
 			"-logtostderr=true",

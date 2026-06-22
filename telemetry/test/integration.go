@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/telemetry/proto"
-	"github.com/hanzoai/s3/weed/telemetry"
+	"github.com/hanzoai/s3/s3/telemetry"
 	protobuf "google.golang.org/protobuf/proto"
 )
 
@@ -24,7 +24,7 @@ const (
 )
 
 func main() {
-	fmt.Println("Starting SeaweedFS Telemetry Integration Test")
+	fmt.Println("Starting Hanzo Telemetry Integration Test")
 
 	// Start telemetry server
 	fmt.Println("Starting telemetry server...")
@@ -245,14 +245,14 @@ func testMetricsEndpoint() error {
 
 	contentStr := string(content)
 	expectedMetrics := []string{
-		"seaweedfs_telemetry_total_clusters",
-		"seaweedfs_telemetry_active_clusters",
-		"seaweedfs_telemetry_reports_received_total",
-		"seaweedfs_telemetry_volume_servers",
-		"seaweedfs_telemetry_disk_bytes",
-		"seaweedfs_telemetry_volume_count",
-		"seaweedfs_telemetry_filer_count",
-		"seaweedfs_telemetry_broker_count",
+		"hanzo_telemetry_total_clusters",
+		"hanzo_telemetry_active_clusters",
+		"hanzo_telemetry_reports_received_total",
+		"hanzo_telemetry_volume_servers",
+		"hanzo_telemetry_disk_bytes",
+		"hanzo_telemetry_volume_count",
+		"hanzo_telemetry_filer_count",
+		"hanzo_telemetry_broker_count",
 	}
 
 	for _, metric := range expectedMetrics {
@@ -262,7 +262,7 @@ func testMetricsEndpoint() error {
 	}
 
 	// Check that we have at least one report received
-	if !strings.Contains(contentStr, "seaweedfs_telemetry_reports_received_total 1") {
+	if !strings.Contains(contentStr, "hanzo_telemetry_reports_received_total 1") {
 		fmt.Printf("   Warning: Expected at least 1 report received, metrics content:\n%s\n", contentStr)
 	}
 

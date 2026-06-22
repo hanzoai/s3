@@ -22,10 +22,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/hanzoai/s3/test/testutil"
 	"github.com/hanzoai/s3/test/volume_server/framework"
-	"github.com/hanzoai/s3/weed/cluster/lock_manager"
-	"github.com/hanzoai/s3/weed/pb"
-	"github.com/hanzoai/s3/weed/pb/filer_pb"
-	"github.com/hanzoai/s3/weed/pb/master_pb"
+	"github.com/hanzoai/s3/s3/cluster/lock_manager"
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -45,7 +45,7 @@ type distributedLockCluster struct {
 	logsDir   string
 	keepLogs  bool
 
-	weedBinary string
+	s3Binary string
 	filerGroup string
 	s3Config   string
 
@@ -85,10 +85,10 @@ type s3Credential struct {
 func startDistributedLockCluster(t *testing.T) *distributedLockCluster {
 	t.Helper()
 
-	weedBinary, err := framework.FindOrBuildWeedBinary()
-	require.NoError(t, err, "resolve weed binary")
+	s3Binary, err := framework.FindOrBuildS3Binary()
+	require.NoError(t, err, "resolve s3 binary")
 
-	baseDir, err := os.MkdirTemp("", "seaweedfs_s3_distributed_lock_")
+	baseDir, err := os.MkdirTemp("", "hanzo_s3_distributed_lock_")
 	require.NoError(t, err, "create temp directory")
 
 	cluster := &distributedLockCluster{
@@ -97,7 +97,7 @@ func startDistributedLockCluster(t *testing.T) *distributedLockCluster {
 		configDir:  filepath.Join(baseDir, "config"),
 		logsDir:    filepath.Join(baseDir, "logs"),
 		keepLogs:   os.Getenv("S3_DISTRIBUTED_LOCK_KEEP_LOGS") == "1",
-		weedBinary: weedBinary,
+		s3Binary: s3Binary,
 		filerGroup: distributedLockTestGroup,
 		filerCmds:  make([]*exec.Cmd, 0, 2),
 		s3Cmds:     make([]*exec.Cmd, 0, 2),
@@ -226,7 +226,7 @@ func (c *distributedLockCluster) startMaster() error {
 		"-defaultReplication=000",
 	}
 
-	c.masterCmd = exec.Command(c.weedBinary, args...)
+	c.masterCmd = exec.Command(c.s3Binary, args...)
 	c.masterCmd.Dir = c.baseDir
 	c.masterCmd.Stdout = logFile
 	c.masterCmd.Stderr = logFile
@@ -254,7 +254,7 @@ func (c *distributedLockCluster) startVolume() error {
 		"-readMode=proxy",
 	}
 
-	c.volumeCmd = exec.Command(c.weedBinary, args...)
+	c.volumeCmd = exec.Command(c.s3Binary, args...)
 	c.volumeCmd.Dir = c.baseDir
 	c.volumeCmd.Stdout = logFile
 	c.volumeCmd.Stderr = logFile
@@ -281,7 +281,7 @@ func (c *distributedLockCluster) startFiler(index int) error {
 		"-defaultStoreDir=" + filepath.Join(c.baseDir, fmt.Sprintf("filer%d", index)),
 	}
 
-	cmd := exec.Command(c.weedBinary, args...)
+	cmd := exec.Command(c.s3Binary, args...)
 	cmd.Dir = c.baseDir
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
@@ -315,7 +315,7 @@ func (c *distributedLockCluster) startS3(index int) error {
 		"-iam.readOnly=false",
 	}
 
-	cmd := exec.Command(c.weedBinary, args...)
+	cmd := exec.Command(c.s3Binary, args...)
 	cmd.Dir = c.baseDir
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
@@ -398,7 +398,7 @@ func (c *distributedLockCluster) waitForFilerCount(expected int, timeout time.Du
 	}
 	defer conn.Close()
 
-	client := master_pb.NewSeaweedClient(conn)
+	client := master_pb.NewHanzoClient(conn)
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -490,8 +490,8 @@ func (c *distributedLockCluster) checkLockMutualExclusion(testKey string) (bool,
 	}
 	defer conn1.Close()
 
-	client0 := filer_pb.NewSeaweedFilerClient(conn0)
-	client1 := filer_pb.NewSeaweedFilerClient(conn1)
+	client0 := filer_pb.NewHanzoFilerClient(conn0)
+	client1 := filer_pb.NewHanzoFilerClient(conn1)
 
 	// Acquire lock via filer0
 	ctx0, cancel0 := context.WithTimeout(context.Background(), 2*time.Second)

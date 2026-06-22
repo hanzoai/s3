@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/other/mq_client_example/example"
-	"github.com/hanzoai/s3/weed/mq/client/agent_client"
-	"github.com/hanzoai/s3/weed/mq/topic"
-	"github.com/hanzoai/s3/weed/pb/schema_pb"
-	"github.com/hanzoai/s3/weed/util"
+	"github.com/hanzoai/s3/s3/mq/client/agent_client"
+	"github.com/hanzoai/s3/s3/mq/topic"
+	"github.com/hanzoai/s3/s3/pb/schema_pb"
+	"github.com/hanzoai/s3/s3/util"
 )
 
 var (

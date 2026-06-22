@@ -34,12 +34,12 @@ func TestSTSLDAPValidation(t *testing.T) {
 	}
 
 	if !isSTSEndpointRunning(t) {
-		t.Fatal("SeaweedFS STS endpoint is not running at", TestSTSEndpoint, "- please run 'make setup-all-tests' first")
+		t.Fatal("Hanzo STS endpoint is not running at", TestSTSEndpoint, "- please run 'make setup-all-tests' first")
 	}
 
 	// Check if AssumeRoleWithLDAPIdentity is implemented
 	if !isLDAPIdentityActionImplemented(t) {
-		t.Fatal("AssumeRoleWithLDAPIdentity action is not implemented in the running server - please rebuild weed binary with new code and restart the server")
+		t.Fatal("AssumeRoleWithLDAPIdentity action is not implemented in the running server - please rebuild s3 binary with new code and restart the server")
 	}
 
 	t.Run("missing_ldap_username", func(t *testing.T) {
@@ -140,7 +140,7 @@ func TestSTSLDAPWithValidCredentials(t *testing.T) {
 	}
 
 	if !isSTSEndpointRunning(t) {
-		t.Skip("SeaweedFS STS endpoint is not running at", TestSTSEndpoint)
+		t.Skip("Hanzo STS endpoint is not running at", TestSTSEndpoint)
 	}
 
 	// Check if LDAP is configured (skip if not)
@@ -185,7 +185,7 @@ func TestSTSLDAPWithInvalidCredentials(t *testing.T) {
 	}
 
 	if !isSTSEndpointRunning(t) {
-		t.Skip("SeaweedFS STS endpoint is not running at", TestSTSEndpoint)
+		t.Skip("Hanzo STS endpoint is not running at", TestSTSEndpoint)
 	}
 
 	t.Run("invalid_ldap_password", func(t *testing.T) {

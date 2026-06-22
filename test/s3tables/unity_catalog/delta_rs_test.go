@@ -18,7 +18,7 @@ import (
 // TestUnityCatalogDeltaRsRoundTrip writes and reads a real Delta table at
 // the registered storage_location using the delta-rs Python library inside
 // a Docker container. The script resolves table metadata from UC and uses the
-// test SeaweedFS credentials as delta-rs storage_options.
+// test Hanzo credentials as delta-rs storage_options.
 func TestUnityCatalogDeltaRsRoundTrip(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in -short mode")
@@ -30,9 +30,9 @@ func TestUnityCatalogDeltaRsRoundTrip(t *testing.T) {
 	env := newTestEnv(t)
 	defer env.cleanup(t)
 
-	t.Log(">>> starting SeaweedFS for delta-rs test...")
-	env.startSeaweedFS(t, "")
-	t.Log(">>> SeaweedFS ready")
+	t.Log(">>> starting Hanzo for delta-rs test...")
+	env.startHanzo(t, "")
+	t.Log(">>> Hanzo ready")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
 	defer cancel()
@@ -49,7 +49,7 @@ func TestUnityCatalogDeltaRsRoundTrip(t *testing.T) {
 	uc := newUCClient(fmt.Sprintf("http://127.0.0.1:%d", env.ucHostPort))
 
 	suffix := time.Now().UnixNano()
-	catalogName := fmt.Sprintf("seaweed_uc_delta_rs_%d", suffix)
+	catalogName := fmt.Sprintf("hanzo_uc_delta_rs_%d", suffix)
 	schemaName := fmt.Sprintf("ns_%d", suffix)
 	tableName := fmt.Sprintf("delta_rs_%d", suffix)
 	tableLocation := fmt.Sprintf("s3://%s/%s/%s/%s", ucWarehouse, ucWarehouseKey, schemaName, tableName)
@@ -89,7 +89,7 @@ func TestUnityCatalogDeltaRsRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("abs: %v", err)
 	}
-	imageTag := fmt.Sprintf("seaweed-uc-delta-rs:%d", time.Now().UnixNano())
+	imageTag := fmt.Sprintf("hanzo-uc-delta-rs:%d", time.Now().UnixNano())
 
 	build := exec.CommandContext(ctx, "docker", "build", "-t", imageTag, "-f", "Dockerfile.delta-rs", ".")
 	build.Dir = testDir

@@ -11,9 +11,9 @@ import (
 
 	"github.com/hanzoai/s3/test/volume_server/framework"
 	"github.com/hanzoai/s3/test/volume_server/matrix"
-	"github.com/hanzoai/s3/weed/pb/volume_server_pb"
-	"github.com/hanzoai/s3/weed/storage/erasure_coding"
-	"github.com/hanzoai/s3/weed/storage/needle"
+	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
+	"github.com/hanzoai/s3/s3/storage/erasure_coding"
+	"github.com/hanzoai/s3/s3/storage/needle"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

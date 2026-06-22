@@ -1,16 +1,16 @@
 FROM alpine AS final
 LABEL author="Chris Lu"
-COPY  ./weed /usr/bin/weed
-RUN chmod +x /usr/bin/weed && ls -la /usr/bin/weed
-RUN mkdir -p /etc/seaweedfs
-COPY ./filer.toml /etc/seaweedfs/filer.toml
+COPY  ./s3 /usr/bin/s3
+RUN chmod +x /usr/bin/s3 && ls -la /usr/bin/s3
+RUN mkdir -p /etc/hanzo
+COPY ./filer.toml /etc/hanzo/filer.toml
 COPY ./entrypoint.sh /entrypoint.sh
 
 # Install dependencies and create non-root user
 RUN apk upgrade --no-cache && \
     apk add --no-cache fuse curl su-exec && \
-    addgroup -g 1000 seaweed && \
-    adduser -D -u 1000 -G seaweed seaweed
+    addgroup -g 1000 hanzo && \
+    adduser -D -u 1000 -G hanzo hanzo
 
 # volume server grpc port
 EXPOSE 18080
@@ -29,10 +29,10 @@ EXPOSE 8333
 # webdav server http port
 EXPOSE 7333
 
-# Create data directory and set proper ownership for seaweed user
+# Create data directory and set proper ownership for hanzo user
 RUN mkdir -p /data/filerldb2 && \
-    chown -R seaweed:seaweed /data && \
-    chown -R seaweed:seaweed /etc/seaweedfs && \
+    chown -R hanzo:hanzo /data && \
+    chown -R hanzo:hanzo /etc/hanzo && \
     chmod 755 /entrypoint.sh
 
 VOLUME /data

@@ -1,10 +1,10 @@
 services:
-  # SeaweedFS All-in-One Server (Custom Build with PostgreSQL support)
-  seaweedfs:
+  # Hanzo All-in-One Server (Custom Build with PostgreSQL support)
+  hanzo:
     build:
       context: ../..  # Build from project root
-      dockerfile: test/postgres/Dockerfile.seaweedfs
-    container_name: seaweedfs-server
+      dockerfile: test/postgres/Dockerfile.s3
+    container_name: hanzo-server
     ports:
       - "9333:9333"   # Master port
       - "8888:8888"   # Filer port
@@ -14,9 +14,9 @@ services:
       - "26777:16777" # MQ Agent port (mapped to avoid conflicts)
       - "27777:17777" # MQ Broker port (mapped to avoid conflicts)
     volumes:
-      - seaweedfs_data:/data
+      - hanzo_data:/data
     command:
-      - ./weed
+      - ./s3
       - server
       - -dir=/data
       - -master.volumeSizeLimitMB=50
@@ -32,11 +32,11 @@ services:
       - -webdav=false
       - -mq.broker=true
       - -mq.agent=true
-      - -ip=seaweedfs
+      - -ip=hanzo
     networks:
-      - seaweedfs-net
+      - hanzo-net
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "http://seaweedfs:9333/cluster/status"]
+      test: ["CMD", "curl", "--fail", "--silent", "http://hanzo:9333/cluster/status"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -46,24 +46,24 @@ services:
   postgres-server:
     build:
       context: ../..  # Build from project root
-      dockerfile: test/postgres/Dockerfile.seaweedfs
+      dockerfile: test/postgres/Dockerfile.s3
     container_name: postgres-server
     ports:
       - "5432:5432"   # PostgreSQL port
     depends_on:
-      seaweedfs:
+      hanzo:
         condition: service_healthy
     command: >
-      ./weed-db
+      ./s3-db
       -host=0.0.0.0
       -port=5432
-      -master=seaweedfs:9333
+      -master=hanzo:9333
       -auth=trust
       -database=default
       -max-connections=50
       -idle-timeout=30m
     networks:
-      - seaweedfs-net
+      - hanzo-net
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "5432"]
       interval: 5s
@@ -78,13 +78,13 @@ services:
       dockerfile: test/postgres/Dockerfile.producer
     container_name: mq-producer
     depends_on:
-      seaweedfs:
+      hanzo:
         condition: service_healthy
     environment:
-      - SEAWEEDFS_MASTER=seaweedfs:9333
-      - SEAWEEDFS_FILER=seaweedfs:8888
+      - SEAWEEDFS_MASTER=hanzo:9333
+      - SEAWEEDFS_FILER=hanzo:8888
     networks:
-      - seaweedfs-net
+      - hanzo-net
     restart: "no"  # Run once to create data
 
   # PostgreSQL Test Client
@@ -99,10 +99,10 @@ services:
     environment:
       - POSTGRES_HOST=postgres-server
       - POSTGRES_PORT=5432
-      - POSTGRES_USER=seaweedfs
+      - POSTGRES_USER=hanzo
       - POSTGRES_DB=logs
     networks:
-      - seaweedfs-net
+      - hanzo-net
     profiles:
       - client  # Only start when explicitly requested
 
@@ -116,10 +116,10 @@ services:
     environment:
       - PGHOST=postgres-server
       - PGPORT=5432
-      - PGUSER=seaweedfs
+      - PGUSER=hanzo
       - PGDATABASE=default
     networks:
-      - seaweedfs-net
+      - hanzo-net
     profiles:
       - cli  # Only start when explicitly requested
     command: >
@@ -129,9 +129,9 @@ services:
       "
 
 volumes:
-  seaweedfs_data:
+  hanzo_data:
     driver: local
 
 networks:
-  seaweedfs-net:
+  hanzo-net:
     driver: bridge

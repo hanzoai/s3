@@ -9,8 +9,8 @@ import (
 	"github.com/hanzoai/s3/test/kafka/internal/testutil"
 )
 
-// TestSMQIntegration tests that the Kafka gateway properly integrates with SeaweedMQ
-// This test REQUIRES SeaweedFS masters to be running and will skip if not available
+// TestSMQIntegration tests that the Kafka gateway properly integrates with HanzoMQ
+// This test REQUIRES Hanzo masters to be running and will skip if not available
 func TestSMQIntegration(t *testing.T) {
 	// This test requires SMQ to be available
 	gateway := testutil.NewGatewayTestServerWithSMQ(t, testutil.SMQRequired)
@@ -18,7 +18,7 @@ func TestSMQIntegration(t *testing.T) {
 
 	addr := gateway.StartAndWait()
 
-	t.Logf("Running SMQ integration test with SeaweedFS backend")
+	t.Logf("Running SMQ integration test with Hanzo backend")
 
 	t.Run("ProduceConsumeWithPersistence", func(t *testing.T) {
 		testProduceConsumeWithPersistence(t, addr)

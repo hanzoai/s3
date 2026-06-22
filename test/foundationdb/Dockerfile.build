@@ -1,4 +1,4 @@
-# Simplified single-stage build for SeaweedFS with FoundationDB support
+# Simplified single-stage build for Hanzo with FoundationDB support
 # Force x86_64 platform to use AMD64 FoundationDB packages
 FROM --platform=linux/amd64 golang:1.25-bookworm
 
@@ -48,30 +48,30 @@ COPY . .
 # Download dependencies (using versions from go.mod for deterministic builds)
 RUN go mod download
 
-# Build SeaweedFS with FoundationDB support
-RUN echo "🔨 Building SeaweedFS with FoundationDB support..." && \
+# Build Hanzo with FoundationDB support
+RUN echo "🔨 Building Hanzo with FoundationDB support..." && \
     echo "🔍 Debugging: Checking headers before build..." && \
     find /usr -name "fdb_c.h" -type f 2>/dev/null || echo "No fdb_c.h found" && \
     ls -la /usr/include/foundationdb/ 2>/dev/null || echo "No foundationdb include dir" && \
     ls -la /usr/lib/libfdb_c* 2>/dev/null || echo "No libfdb_c libraries" && \
     echo "CGO_CFLAGS: $CGO_CFLAGS" && \
     echo "CGO_LDFLAGS: $CGO_LDFLAGS" && \
-    go build -tags foundationdb -ldflags="-w -s" -o ./weed/weed ./weed && \
-    chmod +x ./weed/weed && \
+    go build -tags foundationdb -ldflags="-w -s" -o ./s3/s3 ./s3 && \
+    chmod +x ./s3/s3 && \
     echo "✅ Build successful!" && \
-    ./weed/weed version
+    ./s3/s3 version
 
 # Test compilation (don't run tests as they need cluster)
 RUN echo "🧪 Compiling tests..." && \
-    go test -tags foundationdb -c -o fdb_store_test ./weed/filer/foundationdb/ && \
+    go test -tags foundationdb -c -o fdb_store_test ./s3/filer/foundationdb/ && \
     echo "✅ Tests compiled successfully!"
 
 # Create runtime directories
 RUN mkdir -p /var/fdb/config /usr/local/bin
 
 # Copy binaries to final location
-RUN cp weed/weed /usr/local/bin/weed && \
+RUN cp s3/s3 /usr/local/bin/s3 && \
     cp fdb_store_test /usr/local/bin/fdb_store_test
 
 # Default command
-CMD ["/usr/local/bin/weed", "version"]
+CMD ["/usr/local/bin/s3", "version"]

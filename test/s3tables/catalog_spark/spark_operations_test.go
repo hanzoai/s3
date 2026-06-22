@@ -28,7 +28,7 @@ print("Spark ready")
 	t.Fatalf("Spark did not become ready within %v", timeout)
 }
 
-// setupSparkTestEnv initializes a test environment with SeaweedFS and Spark containers
+// setupSparkTestEnv initializes a test environment with Hanzo and Spark containers
 func setupSparkTestEnv(t *testing.T) (*TestEnvironment, string, string) {
 	t.Helper()
 
@@ -38,8 +38,8 @@ func setupSparkTestEnv(t *testing.T) (*TestEnvironment, string, string) {
 		t.Skip("Docker not available, skipping Spark integration test")
 	}
 
-	t.Logf(">>> Starting SeaweedFS...")
-	env.StartSeaweedFS(t)
+	t.Logf(">>> Starting Hanzo...")
+	env.StartHanzo(t)
 	t.Cleanup(func() { env.Cleanup(t) })
 
 	tableBucket := "iceberg-tables"

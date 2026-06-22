@@ -1,5 +1,5 @@
 // Package unity_catalog provides integration tests that run Unity Catalog
-// OSS in Docker against a SeaweedFS S3 backend. The base test mirrors the
+// OSS in Docker against a Hanzo S3 backend. The base test mirrors the
 // configuration used by the upstream UC playground at
 // https://github.com/data-engineering-helpers/mds-in-a-box/tree/main/unitycatalog-playground:
 // static aws.accessKey/aws.secretKey, no master role, EXTERNAL Delta tables.
@@ -17,11 +17,11 @@ import (
 	"github.com/hanzoai/s3/test/testutil"
 )
 
-// TestUnityCatalogDeltaIntegration brings up SeaweedFS, runs Unity Catalog OSS
+// TestUnityCatalogDeltaIntegration brings up Hanzo, runs Unity Catalog OSS
 // in Docker against it, and exercises catalog/schema/table CRUD plus
 // temporary-table-credentials and storage I/O via vended credentials. The UC
 // server is configured with static keys (aws.masterRoleArn empty), matching
-// the playground's working configuration when targeting SeaweedFS.
+// the playground's working configuration when targeting Hanzo.
 func TestUnityCatalogDeltaIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in -short mode")
@@ -33,9 +33,9 @@ func TestUnityCatalogDeltaIntegration(t *testing.T) {
 	env := newTestEnv(t)
 	defer env.cleanup(t)
 
-	t.Log(">>> starting SeaweedFS for Unity Catalog test...")
-	env.startSeaweedFS(t, "")
-	t.Log(">>> SeaweedFS ready")
+	t.Log(">>> starting Hanzo for Unity Catalog test...")
+	env.startHanzo(t, "")
+	t.Log(">>> Hanzo ready")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
@@ -52,7 +52,7 @@ func TestUnityCatalogDeltaIntegration(t *testing.T) {
 	uc := newUCClient(fmt.Sprintf("http://127.0.0.1:%d", env.ucHostPort))
 
 	suffix := time.Now().UnixNano()
-	catalogName := fmt.Sprintf("seaweed_uc_%d", suffix)
+	catalogName := fmt.Sprintf("hanzo_uc_%d", suffix)
 	schemaName := fmt.Sprintf("ns_%d", suffix)
 	tableName := fmt.Sprintf("events_%d", suffix)
 	tableLocation := fmt.Sprintf("s3://%s/%s/%s/%s", ucWarehouse, ucWarehouseKey, schemaName, tableName)
@@ -66,7 +66,7 @@ func TestUnityCatalogDeltaIntegration(t *testing.T) {
 	t.Run("CreateCatalog", func(t *testing.T) {
 		got, err := uc.createCatalog(ctx, ucCreateCatalog{
 			Name:        catalogName,
-			Comment:     "seaweedfs integration test",
+			Comment:     "hanzo integration test",
 			StorageRoot: fmt.Sprintf("s3://%s/%s", ucWarehouse, ucWarehouseKey),
 		})
 		if err != nil {
@@ -158,7 +158,7 @@ func TestUnityCatalogDeltaIntegration(t *testing.T) {
 		// The assertion is therefore inverted: we expect a non-nil error from
 		// /temporary-table-credentials with this configuration. A future
 		// variant can pin s3.sessionToken.0 (UC's StaticAwsCredentialGenerator
-		// path) once SeaweedFS' SigV4 path tolerates the vended session token.
+		// path) once Hanzo' SigV4 path tolerates the vended session token.
 		if createdTable.TableID == "" {
 			t.Fatalf("created table has empty table_id; cannot request temporary credentials")
 		}

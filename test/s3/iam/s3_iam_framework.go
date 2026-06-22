@@ -33,9 +33,9 @@ const (
 
 	// Keycloak configuration
 	DefaultKeycloakURL   = "http://localhost:8080"
-	KeycloakRealm        = "seaweedfs-test"
-	KeycloakClientID     = "seaweedfs-s3"
-	KeycloakClientSecret = "seaweedfs-s3-secret"
+	KeycloakRealm        = "hanzo-test"
+	KeycloakClientID     = "hanzo-s3"
+	KeycloakClientSecret = "hanzo-s3-secret"
 )
 
 // S3IAMTestFramework provides utilities for S3+IAM integration testing
@@ -307,7 +307,7 @@ func (t *BearerTokenTransport) RoundTrip(req *http.Request) (*http.Response, err
 
 	// Extract and set the principal ARN from JWT token for security compliance
 	if principal := t.extractPrincipalFromJWT(t.Token); principal != "" {
-		newReq.Header.Set("X-SeaweedFS-Principal", principal)
+		newReq.Header.Set("X-Hanzo-Principal", principal)
 	}
 
 	// Token preview for logging (first 50 chars for security)
@@ -326,7 +326,7 @@ func (t *BearerTokenTransport) RoundTrip(req *http.Request) (*http.Response, err
 }
 
 // extractPrincipalFromJWT extracts the principal ARN from a JWT token without validating it
-// This is used to set the X-SeaweedFS-Principal header that's required after our security fix
+// This is used to set the X-Hanzo-Principal header that's required after our security fix
 func (t *BearerTokenTransport) extractPrincipalFromJWT(tokenString string) string {
 	// Parse the JWT token without validation to extract the principal claim
 	token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -377,7 +377,7 @@ func (f *S3IAMTestFramework) generateSTSSessionToken(username, roleName string, 
 	// Use jwt.MapClaims but with exact field names that STSSessionClaims expects
 	sessionClaims := jwt.MapClaims{
 		// RegisteredClaims fields
-		"iss": "seaweedfs-sts",
+		"iss": "hanzo-sts",
 		"sub": sessionId,
 		"iat": now.Unix(),
 		"exp": now.Add(validDuration).Unix(),
@@ -661,7 +661,7 @@ func (f *S3IAMTestFramework) CreateShortLivedSessionToken(username, roleName str
 // ExpireSessionForTesting simulates session expiration for testing
 func (f *S3IAMTestFramework) ExpireSessionForTesting(sessionToken string) error {
 	// For integration tests, this would typically involve calling the STS service
-	// For now, we just simulate success since the actual expiration will be handled by SeaweedFS
+	// For now, we just simulate success since the actual expiration will be handled by Hanzo
 	return nil
 }
 

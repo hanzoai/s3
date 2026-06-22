@@ -1,10 +1,10 @@
-# SeaweedFS S3 IAM Integration with Docker Compose
+# Hanzo S3 IAM Integration with Docker Compose
 
-This directory contains a complete Docker Compose setup for testing SeaweedFS S3 IAM integration with Keycloak OIDC authentication.
+This directory contains a complete Docker Compose setup for testing Hanzo S3 IAM integration with Keycloak OIDC authentication.
 
 ## 🚀 Quick Start
 
-1. **Build local SeaweedFS image:**
+1. **Build local Hanzo image:**
    ```bash
    make -f Makefile.docker docker-build
    ```
@@ -29,10 +29,10 @@ This directory contains a complete Docker Compose setup for testing SeaweedFS S3
 The Docker Compose setup includes:
 
 - **🔐 Keycloak** - Identity provider with OIDC support
-- **🎯 SeaweedFS Master** - Metadata management
-- **💾 SeaweedFS Volume** - Data storage
-- **📁 SeaweedFS Filer** - File system interface
-- **📊 SeaweedFS S3** - S3-compatible API with IAM integration
+- **🎯 Hanzo Master** - Metadata management
+- **💾 Hanzo Volume** - Data storage
+- **📁 Hanzo Filer** - File system interface
+- **📊 Hanzo S3** - S3-compatible API with IAM integration
 - **🔧 Keycloak Setup** - Automated realm and user configuration
 
 ## 🌐 Service URLs
@@ -94,7 +94,7 @@ This runs: build → down → up → test
 ### Using Published Images (Alternative)
 If you want to use published Docker Hub images instead of building locally:
 ```bash
-export SEAWEEDFS_IMAGE=chrislusf/seaweedfs:latest
+export SEAWEEDFS_IMAGE=chrislusf/hanzo:latest
 make -f Makefile.docker docker-up
 ```
 
@@ -145,7 +145,7 @@ make -f Makefile.docker docker-shell-keycloak
 ## 📁 File Structure
 
 ```
-seaweedfs/test/s3/iam/
+hanzo/test/s3/iam/
 ├── docker-compose.yml          # Main Docker Compose configuration
 ├── Makefile.docker             # Docker-specific Makefile
 ├── setup_keycloak_docker.sh    # Keycloak setup for containers
@@ -161,9 +161,9 @@ seaweedfs/test/s3/iam/
 The `setup_keycloak_docker.sh` script automatically generates `iam_config.json` with:
 
 - **OIDC Provider**: Keycloak configuration with proper container networking
-- **Role Mapping**: Maps Keycloak roles to SeaweedFS IAM roles
+- **Role Mapping**: Maps Keycloak roles to Hanzo IAM roles
 - **Policies**: Defines S3 permissions for each role
-- **Trust Relationships**: Allows Keycloak users to assume SeaweedFS roles
+- **Trust Relationships**: Allows Keycloak users to assume Hanzo roles
 
 ### Role Mapping Rules
 ```json
@@ -182,7 +182,7 @@ The `setup_keycloak_docker.sh` script automatically generates `iam_config.json` 
 make -f Makefile.docker docker-status
 
 # View logs for specific service
-docker-compose -p seaweedfs-iam-test logs <service-name>
+docker-compose -p hanzo-iam-test logs <service-name>
 ```
 
 ### Keycloak setup issues
@@ -219,7 +219,7 @@ make -f Makefile.docker docker-clean
 
 ## 🎯 Key Features
 
-- **Local Code Testing**: Uses locally built SeaweedFS images to test current code
+- **Local Code Testing**: Uses locally built Hanzo images to test current code
 - **Isolated Environment**: No conflicts with local services
 - **Consistent Networking**: Services communicate via Docker network
 - **Automated Setup**: Keycloak realm and users created automatically

@@ -9,7 +9,7 @@ message TelemetryData {
   // Unique cluster identifier (generated in-memory)
   string topology_id = 1;
   
-  // SeaweedFS version
+  // Hanzo version
   string version = 2;
   
   // Operating system (e.g., "linux/amd64")
@@ -40,7 +40,7 @@ message TelemetryData {
   int64 timestamp = 11;
 }
 
-// TelemetryRequest is sent from SeaweedFS clusters to the telemetry server
+// TelemetryRequest is sent from Hanzo clusters to the telemetry server
 message TelemetryRequest {
   TelemetryData data = 1;
 }

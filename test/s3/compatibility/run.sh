@@ -2,7 +2,7 @@
 
 CONTAINER_NAME=${CONTAINER_NAME:-s3test-instance}
 CONF_FILE=${CONF_FILE:-s3tests.conf}
-WEED_BIN=${WEED_BIN:-../../../weed/weed}
+WEED_BIN=${WEED_BIN:-../../../s3/s3}
 TEST_RAW_OUTPUT_FILE=${TEST_RAW_OUTPUT_FILE:-compat.raw.txt}
 TEST_PROCESSED_OUTPUT_FILE=${TEST_PROCESSED_OUTPUT_FILE:-compat.summary.txt}
 
@@ -13,7 +13,7 @@ if [ -n "${DEBUG}" ]; then
 fi
 
 # Reset from possible previous test run
-killall -9 weed || echo "already stopped"
+killall -9 s3 || echo "already stopped"
 rm -Rf tmp
 mkdir tmp
 docker stop $CONTAINER_NAME || echo "already stopped"
@@ -21,11 +21,11 @@ docker stop $CONTAINER_NAME || echo "already stopped"
 # Ensure ulimit is set to reasonable value
 ulimit -n 10000
 
-# Start weed w/ filer + s3 in the background
+# Start s3 w/ filer + s3 in the background
 $WEED_BIN mini \
           -master.volumeSizeLimitMB 5 \
           -dir "$(pwd)/tmp" \
-          1>&2>weed.log &
+          1>&2>s3.log &
 
 # Wait for master to start up
 echo -e "\n[info] waiting for master @ 9333...";
@@ -81,5 +81,5 @@ fi
 echo -e "\n[info] stopping [${CONTAINER_NAME}] container...";
 docker stop $CONTAINER_NAME || echo "[info] already stopped";
 
-echo -e "\n[info] stopping seaweedfs processes (all, via kill -9)...";
-killall -9 weed;
+echo -e "\n[info] stopping hanzo processes (all, via kill -9)...";
+killall -9 s3;

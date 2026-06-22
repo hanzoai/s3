@@ -1,4 +1,4 @@
-# SeaweedFS Message Queue Test Makefile
+# Hanzo Message Queue Test Makefile
 
 # Build configuration
 GO_BUILD_CMD=go build -o bin/$(1) $(2)
@@ -200,7 +200,7 @@ clean:
 
 # Help
 help:
-	@echo "SeaweedFS Message Queue Test Makefile"
+	@echo "Hanzo Message Queue Test Makefile"
 	@echo ""
 	@echo "Usage:"
 	@echo "  make build              - Build producer and consumer binaries"

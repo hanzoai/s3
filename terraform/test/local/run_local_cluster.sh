@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# Render a SeaweedFS cluster with the Terraform core module and run it as real
-# `weed` processes locally, then assert it actually works. No cloud, no docker.
+# Render a Hanzo cluster with the Terraform core module and run it as real
+# `s3` processes locally, then assert it actually works. No cloud, no docker.
 #
 #   ./run_local_cluster.sh            # render + run + assert + teardown
 #   KEEP=1 ./run_local_cluster.sh     # leave the cluster running after asserts
-#   WEED=/path/to/weed ./run_local_cluster.sh
+#   WEED=/path/to/s3 ./run_local_cluster.sh
 #
 # Ports come from the rendered config (high range, to avoid colliding with a
-# SeaweedFS cluster already running on this machine). Exits non-zero on any
+# Hanzo cluster already running on this machine). Exits non-zero on any
 # failed assertion or if a required port is already in use.
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 export PATH="/opt/homebrew/bin:$PATH"
 TOFU="${TOFU:-tofu}"
-WEED="${WEED:-$(go env GOPATH 2>/dev/null || echo "$HOME/go")/bin/weed}"
-WORKDIR="${WORKDIR:-/tmp/seaweedfs-tftest}"
+WEED="${WEED:-$(go env GOPATH 2>/dev/null || echo "$HOME/go")/bin/s3}"
+WORKDIR="${WORKDIR:-/tmp/hanzo-tftest}"
 LOGDIR="$WORKDIR/logs"
 RUNDIR="$WORKDIR/run"
 
@@ -38,13 +38,13 @@ info "cleaning $WORKDIR"
 case "$WORKDIR" in "" | "/" | "$HOME") echo "refusing to delete '$WORKDIR'" >&2; exit 2 ;; esac
 rm -rf "$WORKDIR"
 mkdir -p "$LOGDIR" "$RUNDIR"
-[ -x "$WEED" ] || { echo "weed binary not found/executable at $WEED" >&2; exit 2; }
+[ -x "$WEED" ] || { echo "s3 binary not found/executable at $WEED" >&2; exit 2; }
 
 info "rendering cluster config with OpenTofu"
 cd "$HERE"
 "$TOFU" init -backend=false -input=false -no-color >/dev/null 2>&1 || { echo "tofu init failed"; exit 2; }
 if ! "$TOFU" apply -auto-approve -input=false -no-color \
-       -var "weed_binary=$WEED" -var "workdir=$WORKDIR" >"$LOGDIR/tofu.log" 2>&1; then
+       -var "s3_binary=$WEED" -var "workdir=$WORKDIR" >"$LOGDIR/tofu.log" 2>&1; then
   echo "tofu apply failed; see $LOGDIR/tofu.log"; tail -30 "$LOGDIR/tofu.log"; exit 2
 fi
 OUT="$("$TOFU" output -json cluster)"
@@ -62,7 +62,7 @@ busy=""
 for p in $(echo "$OUT" | jq -r '.[].http_port'); do
   lsof -nP -iTCP:"$p" -sTCP:LISTEN >/dev/null 2>&1 && busy="$busy $p"
 done
-[ -n "$busy" ] && { echo "Required port(s) already in use:$busy -- is another SeaweedFS running?" >&2; exit 3; }
+[ -n "$busy" ] && { echo "Required port(s) already in use:$busy -- is another Hanzo running?" >&2; exit 3; }
 
 [ "${KEEP:-0}" = "1" ] || trap cleanup EXIT INT TERM
 
@@ -147,7 +147,7 @@ for n in $(node_names); do
   case "$(node_field "$n" role)" in filer) launch_node "$n";; esac
 done
 wait_http "http://127.0.0.1:$FPORT/" 30 && ok "filer / up" || bad "filer /"
-PAYLOAD="seaweedfs-terraform-smoke-$$"
+PAYLOAD="hanzo-terraform-smoke-$$"
 echo "$PAYLOAD" > "$WORKDIR/hello.txt"
 curl -fsS -F "file=@$WORKDIR/hello.txt" "http://127.0.0.1:$FPORT/smoke/hello.txt" >/dev/null 2>&1
 got="$(curl -fsS --max-time 5 "http://127.0.0.1:$FPORT/smoke/hello.txt" 2>/dev/null)"

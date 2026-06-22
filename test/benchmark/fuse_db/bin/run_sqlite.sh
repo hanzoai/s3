@@ -1,5 +1,5 @@
 #!/bin/bash
-# SQLite ~1GB load test on the SeaweedFS FUSE mount + crash suite.
+# SQLite ~1GB load test on the Hanzo FUSE mount + crash suite.
 BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$BIN/lib.sh"
 

@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Script to run the Kafka Gateway Million Record Integration Test
-# This test requires a running SeaweedFS infrastructure (Master, Filer, MQ Broker)
+# This test requires a running Hanzo infrastructure (Master, Filer, MQ Broker)
 
 set -e
 
-echo "=== SeaweedFS Kafka Gateway Million Record Integration Test ==="
+echo "=== Hanzo Kafka Gateway Million Record Integration Test ==="
 echo "Test Date: $(date)"
 echo "Hostname: $(hostname)"
 echo ""
@@ -22,7 +22,7 @@ echo "  Filer Group: $FILER_GROUP"
 echo "  Test Directory: $TEST_DIR"
 echo ""
 
-# Check if SeaweedFS infrastructure is running
+# Check if Hanzo infrastructure is running
 echo "=== Checking Infrastructure ==="
 
 # Function to check if a service is running
@@ -43,25 +43,25 @@ check_service() {
 IFS=',' read -ra MASTER_ARRAY <<< "$MASTERS"
 MASTERS_OK=true
 for master in "${MASTER_ARRAY[@]}"; do
-    if ! check_service "$master" "SeaweedFS Master"; then
+    if ! check_service "$master" "Hanzo Master"; then
         MASTERS_OK=false
     fi
 done
 
 if [ "$MASTERS_OK" = false ]; then
     echo ""
-    echo "ERROR: One or more SeaweedFS Masters are not running."
-    echo "Please start your SeaweedFS infrastructure before running this test."
+    echo "ERROR: One or more Hanzo Masters are not running."
+    echo "Please start your Hanzo infrastructure before running this test."
     echo ""
-    echo "Example commands to start SeaweedFS:"
+    echo "Example commands to start Hanzo:"
     echo "  # Terminal 1: Start Master"
-    echo "  weed master -defaultReplication=001 -mdir=/tmp/seaweedfs/master -peers=none"
+    echo "  s3 master -defaultReplication=001 -mdir=/tmp/hanzo/master -peers=none"
     echo ""
     echo "  # Terminal 2: Start Filer"
-    echo "  weed filer -master=localhost:9333 -filer.dir=/tmp/seaweedfs/filer"
+    echo "  s3 filer -master=localhost:9333 -filer.dir=/tmp/hanzo/filer"
     echo ""
     echo "  # Terminal 3: Start MQ Broker"
-    echo "  weed mq.broker -filer=localhost:8888 -master=localhost:9333"
+    echo "  s3 mq.broker -filer=localhost:8888 -master=localhost:9333"
     echo ""
     exit 1
 fi
@@ -83,20 +83,20 @@ echo "This may take several minutes..."
 echo ""
 
 # Run the specific test with timeout and verbose output
-timeout 1800 go test -v -run "$TEST_NAME" -timeout=30m 2>&1 | tee /tmp/seaweed_million_record_test.log
+timeout 1800 go test -v -run "$TEST_NAME" -timeout=30m 2>&1 | tee /tmp/hanzo_million_record_test.log
 
 TEST_EXIT_CODE=${PIPESTATUS[0]}
 
 echo ""
 echo "=== Test Completed ==="
 echo "Exit Code: $TEST_EXIT_CODE"
-echo "Full log available at: /tmp/seaweed_million_record_test.log"
+echo "Full log available at: /tmp/hanzo_million_record_test.log"
 echo ""
 
 # Show summary from the log
 echo "=== Performance Summary ==="
-if grep -q "PERFORMANCE SUMMARY" /tmp/seaweed_million_record_test.log; then
-    grep -A 15 "PERFORMANCE SUMMARY" /tmp/seaweed_million_record_test.log
+if grep -q "PERFORMANCE SUMMARY" /tmp/hanzo_million_record_test.log; then
+    grep -A 15 "PERFORMANCE SUMMARY" /tmp/hanzo_million_record_test.log
 else
     echo "Performance summary not found in log"
 fi
@@ -107,7 +107,7 @@ if [ $TEST_EXIT_CODE -eq 0 ]; then
     echo "🎉 TEST PASSED: Million record integration test completed successfully!"
 else
     echo "❌ TEST FAILED: Million record integration test failed with exit code $TEST_EXIT_CODE"
-    echo "Check the log file for details: /tmp/seaweed_million_record_test.log"
+    echo "Check the log file for details: /tmp/hanzo_million_record_test.log"
 fi
 
 echo ""

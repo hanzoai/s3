@@ -14,10 +14,10 @@ services:
       - "3303:3303"
 
   s3:
-    image: chrislusf/seaweedfs:local
-    command: "server -ip=127.0.0.1 -filer -master.volumeSizeLimitMB=16 -volume.max=0 -volume -volume.preStopSeconds=1 -s3 -s3.config=/etc/seaweedfs/s3.json -s3.port=8000 -s3.allowDeleteBucketNotEmpty=false"
+    image: chrislusf/hanzo:local
+    command: "server -ip=127.0.0.1 -filer -master.volumeSizeLimitMB=16 -volume.max=0 -volume -volume.preStopSeconds=1 -s3 -s3.config=/etc/hanzo/s3.json -s3.port=8000 -s3.allowDeleteBucketNotEmpty=false"
     volumes:
-      - ./s3.json:/etc/seaweedfs/s3.json
+      - ./s3.json:/etc/hanzo/s3.json
     environment:
       WEED_LEVELDB2_ENABLED: "false"
       WEED_TARANTOOL_ENABLED: "true"

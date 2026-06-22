@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Locking / concurrency test battery for Samba on a SeaweedFS FUSE mount.
+# Locking / concurrency test battery for Samba on a Hanzo FUSE mount.
 #
 # Covers the challenges a network-filesystem backend has to get right:
 #   1. POSIX fcntl byte-range locking on the FUSE mount (SetLk/GetLk)
@@ -15,11 +15,11 @@
 #   MOUNT_SHARE                     dir on the smbd-backed FUSE mount (mount 1)
 #   MOUNT2_SHARE                    dir on the second FUSE mount (mount 2)
 # Optional env:
-#   SMB_HOST (127.0.0.1), SMB_SHARE (seaweedfs), SMB_PORT (445)
+#   SMB_HOST (127.0.0.1), SMB_SHARE (hanzo), SMB_PORT (445)
 set -uo pipefail
 
 SMB_HOST="${SMB_HOST:-127.0.0.1}"
-SMB_SHARE="${SMB_SHARE:-seaweedfs}"
+SMB_SHARE="${SMB_SHARE:-hanzo}"
 SMB_PORT="${SMB_PORT:-445}"
 SMB_USER="${SMB_USER:?SMB_USER is required}"
 SMB_PASS="${SMB_PASS:?SMB_PASS is required}"

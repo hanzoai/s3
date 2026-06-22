@@ -8,7 +8,7 @@ import (
 
 	"github.com/hanzoai/s3/test/volume_server/framework"
 	"github.com/hanzoai/s3/test/volume_server/matrix"
-	"github.com/hanzoai/s3/weed/util/request_id"
+	"github.com/hanzoai/s3/s3/util/request_id"
 )
 
 func TestAdminStatusAndHealthz(t *testing.T) {
@@ -29,8 +29,8 @@ func TestAdminStatusAndHealthz(t *testing.T) {
 	if statusResp.StatusCode != http.StatusOK {
 		t.Fatalf("expected /status code 200, got %d, body: %s", statusResp.StatusCode, string(statusBody))
 	}
-	if got := statusResp.Header.Get("Server"); !strings.Contains(got, "SeaweedFS Volume") {
-		t.Fatalf("expected /status Server header to contain SeaweedFS Volume, got %q", got)
+	if got := statusResp.Header.Get("Server"); !strings.Contains(got, "Hanzo Volume") {
+		t.Fatalf("expected /status Server header to contain Hanzo Volume, got %q", got)
 	}
 	if got := statusResp.Header.Get(request_id.AmzRequestIDHeader); got == "" {
 		t.Fatal("expected server-generated request id in response header")
@@ -65,8 +65,8 @@ func TestAdminStatusAndHealthz(t *testing.T) {
 	if healthResp.StatusCode != http.StatusOK {
 		t.Fatalf("expected /healthz code 200, got %d", healthResp.StatusCode)
 	}
-	if got := healthResp.Header.Get("Server"); !strings.Contains(got, "SeaweedFS Volume") {
-		t.Fatalf("expected /healthz Server header to contain SeaweedFS Volume, got %q", got)
+	if got := healthResp.Header.Get("Server"); !strings.Contains(got, "Hanzo Volume") {
+		t.Fatalf("expected /healthz Server header to contain Hanzo Volume, got %q", got)
 	}
 	if got := healthResp.Header.Get(request_id.AmzRequestIDHeader); got == "" {
 		t.Fatal("expected /healthz server-generated request id in response header")

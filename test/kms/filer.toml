@@ -1,4 +1,4 @@
-# SeaweedFS Filer Configuration for KMS Integration Testing
+# Hanzo Filer Configuration for KMS Integration Testing
 
 [leveldb2]
 # Use LevelDB for simple testing

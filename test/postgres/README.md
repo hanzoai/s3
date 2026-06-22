@@ -1,12 +1,12 @@
-# SeaweedFS PostgreSQL Protocol Test Suite
+# Hanzo PostgreSQL Protocol Test Suite
 
-This directory contains a comprehensive Docker Compose test setup for the SeaweedFS PostgreSQL wire protocol implementation.
+This directory contains a comprehensive Docker Compose test setup for the Hanzo PostgreSQL wire protocol implementation.
 
 ## Overview
 
 The test suite includes:
-- **SeaweedFS Cluster**: Full SeaweedFS server with MQ broker and agent
-- **PostgreSQL Server**: SeaweedFS PostgreSQL wire protocol server
+- **Hanzo Cluster**: Full Hanzo server with MQ broker and agent
+- **PostgreSQL Server**: Hanzo PostgreSQL wire protocol server
 - **MQ Data Producer**: Creates realistic test data across multiple topics and namespaces
 - **PostgreSQL Test Client**: Comprehensive Go client testing all functionality
 - **Interactive Tools**: psql CLI access for manual testing
@@ -19,7 +19,7 @@ The test suite includes:
 ```
 
 This will automatically:
-1. Start SeaweedFS and PostgreSQL servers
+1. Start Hanzo and PostgreSQL servers
 2. Create test data in multiple MQ topics
 3. Run comprehensive PostgreSQL client tests
 4. Show results
@@ -87,7 +87,7 @@ The producer creates realistic test data across multiple namespaces:
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   PostgreSQL    │    │   PostgreSQL     │    │   SeaweedFS     │
+│   PostgreSQL    │    │   PostgreSQL     │    │   Hanzo     │
 │   Clients       │◄──►│   Wire Protocol  │◄──►│   SQL Engine    │
 │   (psql, Go)    │    │   Server         │    │                 │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
@@ -101,7 +101,7 @@ The producer creates realistic test data across multiple namespaces:
 
 ## Services
 
-### SeaweedFS Server
+### Hanzo Server
 - **Ports**: 9333 (master), 8888 (filer), 8333 (S3), 8085 (volume), 9533 (metrics), 26777→16777 (MQ agent), 27777→17777 (MQ broker)
 - **Features**: Full MQ broker, S3 API, filer, volume server
 - **Data**: Persistent storage in Docker volume
@@ -254,7 +254,7 @@ SELECT COUNT(*) FROM application_logs;
 ./run-tests.sh status
 
 # View logs
-./run-tests.sh logs seaweedfs
+./run-tests.sh logs hanzo
 ./run-tests.sh logs postgres-server
 ```
 
@@ -272,7 +272,7 @@ SELECT COUNT(*) FROM application_logs;
 # Test PostgreSQL server health
 docker-compose exec postgres-server nc -z localhost 5432
 
-# Test SeaweedFS health
+# Test Hanzo health
 curl http://localhost:9333/cluster/status
 ```
 
@@ -317,4 +317,4 @@ This test setup demonstrates:
 - **Production-Ready Features**: Authentication, session management, error handling
 - **Scalable Architecture**: Direct SQL engine integration, no translation overhead
 
-The test validates that SeaweedFS can serve as a drop-in PostgreSQL replacement for read-only analytics workloads on MQ data.
+The test validates that Hanzo can serve as a drop-in PostgreSQL replacement for read-only analytics workloads on MQ data.

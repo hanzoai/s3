@@ -14,7 +14,7 @@ sleep 2
 
 echo "Querying messages..."
 cd /Users/chrislu/go/src/github.com/hanzoai/s3/test/kafka/kafka-client-loadtest
-docker compose exec kafka-gateway /usr/bin/weed-sql \
-  -master=seaweedfs-master:9333 \
+docker compose exec kafka-gateway /usr/bin/s3-sql \
+  -master=hanzo-master:9333 \
   -database=kafka \
   -query="SELECT id, timestamp, producer_id, counter, user_id, event_type FROM \"test-json-topic\" LIMIT 5;"

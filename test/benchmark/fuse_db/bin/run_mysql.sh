@@ -1,5 +1,5 @@
 #!/bin/bash
-# MySQL (InnoDB) ~1GB load test on the SeaweedFS FUSE mount + crash suite.
+# MySQL (InnoDB) ~1GB load test on the Hanzo FUSE mount + crash suite.
 # Datadir lives on the FUSE mount; innodb_flush_log_at_trx_commit=1 +
 # innodb_flush_method=fsync => every commit fsyncs the redo log through FUSE.
 BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

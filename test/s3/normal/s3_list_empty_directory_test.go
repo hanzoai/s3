@@ -15,7 +15,7 @@ import (
 // S3 API ListObjects does not include empty directory markers (zero-byte
 // objects with keys ending in "/") created via PutObject.
 //
-// AWS S3 includes these markers as regular keys in Contents. SeaweedFS
+// AWS S3 includes these markers as regular keys in Contents. Hanzo
 // was filtering them out during recursive directory listing.
 func TestS3ListObjectsEmptyDirectoryMarkers(t *testing.T) {
 	if testing.Short() {
