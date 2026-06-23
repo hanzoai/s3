@@ -54,6 +54,90 @@ func generateFile(gen *protogen.Plugin, f *protogen.File) {
 	for _, m := range f.Messages {
 		genMessage(g, m, codec)
 	}
+	for _, svc := range f.Services {
+		genService(g, svc, codec)
+	}
+}
+
+// ---- services -----------------------------------------------------------
+
+const contextImport = "context"
+
+func isStreaming(m *protogen.Method) bool {
+	return m.Desc.IsStreamingClient() || m.Desc.IsStreamingServer()
+}
+
+// genService emits, per gRPC service, the protobuf-free ZAP equivalent: a
+// server interface, a Register<Svc>Server that binds each unary method to a
+// procedure code on a zaprpc.Server, and a <Svc>Client whose methods marshal
+// the request, Call over ZAP, and unmarshal the response. Streaming methods are
+// declared but deferred to F4 (stream.go).
+func genService(g *protogen.GeneratedFile, svc *protogen.Service, codec string) {
+	ctx := g.QualifiedGoIdent(protogen.GoImportPath(contextImport).Ident("Context"))
+	name := svc.GoName
+
+	g.P("// ", name, "Server is the service interface (implement + Register).")
+	g.P("type ", name, "Server interface {")
+	for _, m := range svc.Methods {
+		if isStreaming(m) {
+			g.P("\t// ", m.GoName, ": streaming RPC — generated in F4 (stream.go).")
+			continue
+		}
+		g.P("\t", m.GoName, "(", ctx, ", *", g.QualifiedGoIdent(m.Input.GoIdent), ") (*", g.QualifiedGoIdent(m.Output.GoIdent), ", error)")
+	}
+	g.P("}")
+	g.P()
+
+	g.P("const (")
+	code := 1
+	for _, m := range svc.Methods {
+		if isStreaming(m) {
+			continue
+		}
+		g.P("\tcode", name, m.GoName, " uint8 = ", code)
+		code++
+	}
+	g.P(")")
+	g.P()
+
+	g.P("func Register", name, "Server(s *", codec, ".Server, impl ", name, "Server) {")
+	for _, m := range svc.Methods {
+		if isStreaming(m) {
+			continue
+		}
+		g.P("\ts.Handle(code", name, m.GoName, ", func(ctx ", ctx, ", req []byte) ([]byte, error) {")
+		g.P("\t\tvar in ", g.QualifiedGoIdent(m.Input.GoIdent))
+		g.P("\t\tif err := in.UnmarshalZap(req); err != nil { return nil, err }")
+		g.P("\t\tout, err := impl.", m.GoName, "(ctx, &in)")
+		g.P("\t\tif err != nil { return nil, err }")
+		g.P("\t\treturn out.MarshalZap(), nil")
+		g.P("\t})")
+	}
+	g.P("}")
+	g.P()
+
+	g.P("type ", name, "Client struct {")
+	g.P("\tC    *", codec, ".Client")
+	g.P("\tAddr string")
+	g.P("}")
+	g.P("func New", name, "Client(c *", codec, ".Client, addr string) *", name, "Client {")
+	g.P("\treturn &", name, "Client{C: c, Addr: addr}")
+	g.P("}")
+	for _, m := range svc.Methods {
+		if isStreaming(m) {
+			continue
+		}
+		in := g.QualifiedGoIdent(m.Input.GoIdent)
+		out := g.QualifiedGoIdent(m.Output.GoIdent)
+		g.P("func (x *", name, "Client) ", m.GoName, "(ctx ", ctx, ", req *", in, ") (*", out, ", error) {")
+		g.P("\tresp, err := x.C.Call(ctx, x.Addr, code", name, m.GoName, ", req.MarshalZap())")
+		g.P("\tif err != nil { return nil, err }")
+		g.P("\tvar res ", out)
+		g.P("\tif err := res.UnmarshalZap(resp); err != nil { return nil, err }")
+		g.P("\treturn &res, nil")
+		g.P("}")
+	}
+	g.P()
 }
 
 // ---- enums --------------------------------------------------------------
