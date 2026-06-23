@@ -138,6 +138,7 @@ require (
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/jhump/protoreflect v1.18.0
 	github.com/linkedin/goavro/v2 v2.15.0
+	github.com/luxfi/zap v0.8.9
 	github.com/minio/crc64nvme v1.1.1
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/parquet-go/parquet-go v0.30.1
@@ -240,7 +241,6 @@ require (
 	github.com/luxfi/accel v1.1.9 // indirect
 	github.com/luxfi/crypto v1.19.17 // indirect
 	github.com/luxfi/mdns v0.1.1 // indirect
-	github.com/luxfi/zap v0.8.9 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
 	github.com/miekg/dns v1.1.72 // indirect
 	github.com/minio/asm2plan9s v0.0.0-20200509001527-cdd76441f9d8 // indirect
@@ -527,3 +527,5 @@ require (
 // lib/go/thrift/framed_transport.go, which overflows int on 32-bit GOARCHes
 // (e.g. openbsd/arm, linux/arm). Pin to v0.22.0 until upstream fixes it.
 replace github.com/apache/thrift => github.com/apache/thrift v0.22.0
+
+replace github.com/luxfi/zap => /Users/z/work/lux/zap
