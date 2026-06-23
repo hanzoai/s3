@@ -3,7 +3,7 @@ package wiregen
 import (
 	"testing"
 
-	zapv2 "github.com/luxfi/zap/v2"
+	zapv1 "github.com/luxfi/zap/v1"
 )
 
 // Proves the GENERATED variable-length schema (rsl_gen.go, emitted by the
@@ -36,7 +36,7 @@ func TestGeneratedRSLZeroCopy(t *testing.T) {
 		if got := RemoteStorageLocationPath(v); got != c.path {
 			t.Fatalf("case %d: Path=%q want %q", i, got, c.path)
 		}
-		if got := zapv2.Read(v, RSLSchemaFields.TTLSeconds); got != c.ttl {
+		if got := zapv1.Read(v, RSLSchemaFields.TTLSeconds); got != c.ttl {
 			t.Fatalf("case %d: TTL=%d want %d", i, got, c.ttl)
 		}
 	}
@@ -52,6 +52,6 @@ func BenchmarkGeneratedRSLRead(b *testing.B) {
 		_ = RemoteStorageLocationName(v)
 		_ = RemoteStorageLocationBucket(v)
 		_ = RemoteStorageLocationPath(v)
-		_ = zapv2.Read(v, RSLSchemaFields.TTLSeconds)
+		_ = zapv1.Read(v, RSLSchemaFields.TTLSeconds)
 	}
 }
