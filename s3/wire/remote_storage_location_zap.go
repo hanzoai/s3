@@ -7,11 +7,11 @@ package wire
 
 import (
 	"github.com/luxfi/zap"
-	zapv2 "github.com/luxfi/zap/v2"
+	zapv1 "github.com/luxfi/zap/v1"
 )
 
 // KindRemoteStorageLocation is the wire discriminator (byte at object offset 0).
-const KindRemoteStorageLocation zapv2.KindByte = 0x01
+const KindRemoteStorageLocation zapv1.KindByte = 0x01
 
 // SizeRemoteStorageLocation is the fixed object payload: kind(1)+pad, ttl(4),
 // and three string tail-pointers (8 each = {relOffset u32, length u32}). The
@@ -29,14 +29,14 @@ const (
 // RemoteStorageLocation is the v2 schema marker (Kind/Size/Name fold to literals).
 type RemoteStorageLocation struct{}
 
-func (RemoteStorageLocation) Kind() zapv2.KindByte { return KindRemoteStorageLocation }
+func (RemoteStorageLocation) Kind() zapv1.KindByte { return KindRemoteStorageLocation }
 func (RemoteStorageLocation) Size() int            { return SizeRemoteStorageLocation }
 func (RemoteStorageLocation) Name() string         { return "RemoteStorageLocation" }
 
 // NewRemoteStorageLocation builds the message directly into a ZAP buffer — one
 // allocation, no intermediate struct. Strings are written to the tail; the
 // fixed payload holds their pointers.
-func NewRemoteStorageLocation(name, bucket, path string, ttlSeconds int32) (zapv2.View[RemoteStorageLocation], []byte) {
+func NewRemoteStorageLocation(name, bucket, path string, ttlSeconds int32) (zapv1.View[RemoteStorageLocation], []byte) {
 	b := zap.NewBuilder(zap.HeaderSize + SizeRemoteStorageLocation + len(name) + len(bucket) + len(path))
 	ob := b.StartObject(SizeRemoteStorageLocation)
 	ob.SetUint8(offRSLKind, uint8(KindRemoteStorageLocation))
@@ -50,20 +50,20 @@ func NewRemoteStorageLocation(name, bucket, path string, ttlSeconds int32) (zapv
 	if end > len(buf) {
 		end = len(buf)
 	}
-	return zapv2.AsView[RemoteStorageLocation](zapv2.RawFromSlices(buf, rootOff, end)), buf
+	return zapv1.AsView[RemoteStorageLocation](zapv1.RawFromSlices(buf, rootOff, end)), buf
 }
 
 // WrapRemoteStorageLocation validates the frame + kind and returns a zero-copy
 // typed view over the bytes. No deserialization — the bytes ARE the message.
-func WrapRemoteStorageLocation(b []byte) (zapv2.View[RemoteStorageLocation], error) {
+func WrapRemoteStorageLocation(b []byte) (zapv1.View[RemoteStorageLocation], error) {
 	msg, err := zap.Parse(b)
 	if err != nil {
-		return zapv2.View[RemoteStorageLocation]{}, err
+		return zapv1.View[RemoteStorageLocation]{}, err
 	}
 	root := msg.Root()
 	if got := root.Uint8(offRSLKind); got != uint8(KindRemoteStorageLocation) {
-		return zapv2.View[RemoteStorageLocation]{}, zapv2.NewSchemaError(
-			KindRemoteStorageLocation, zapv2.KindByte(got), "RemoteStorageLocation")
+		return zapv1.View[RemoteStorageLocation]{}, zapv1.NewSchemaError(
+			KindRemoteStorageLocation, zapv1.KindByte(got), "RemoteStorageLocation")
 	}
 	data := msg.Bytes()
 	rootOff := root.Offset()
@@ -71,25 +71,25 @@ func WrapRemoteStorageLocation(b []byte) (zapv2.View[RemoteStorageLocation], err
 	if end > len(data) {
 		end = len(data)
 	}
-	return zapv2.AsView[RemoteStorageLocation](zapv2.RawFromSlices(data, rootOff, end)), nil
+	return zapv1.AsView[RemoteStorageLocation](zapv1.RawFromSlices(data, rootOff, end)), nil
 }
 
 // obj re-anchors a View on its underlying zap.Object for variable-length reads.
-func rslObj(v zapv2.View[RemoteStorageLocation]) zap.Object {
-	return zap.WrapBuffer(v.Bytes()).RootObjectAt(int(zapv2.RootOff(v)))
+func rslObj(v zapv1.View[RemoteStorageLocation]) zap.Object {
+	return zap.WrapBuffer(v.Bytes()).RootObjectAt(int(zapv1.RootOff(v)))
 }
 
 // Field accessors — zero-copy reads straight off the buffer.
 
-func RemoteStorageLocationTTLSeconds(v zapv2.View[RemoteStorageLocation]) int32 {
+func RemoteStorageLocationTTLSeconds(v zapv1.View[RemoteStorageLocation]) int32 {
 	return rslObj(v).Int32(offRSLTTL)
 }
-func RemoteStorageLocationName(v zapv2.View[RemoteStorageLocation]) string {
+func RemoteStorageLocationName(v zapv1.View[RemoteStorageLocation]) string {
 	return rslObj(v).Text(offRSLName)
 }
-func RemoteStorageLocationBucket(v zapv2.View[RemoteStorageLocation]) string {
+func RemoteStorageLocationBucket(v zapv1.View[RemoteStorageLocation]) string {
 	return rslObj(v).Text(offRSLBucket)
 }
-func RemoteStorageLocationPath(v zapv2.View[RemoteStorageLocation]) string {
+func RemoteStorageLocationPath(v zapv1.View[RemoteStorageLocation]) string {
 	return rslObj(v).Text(offRSLPath)
 }
