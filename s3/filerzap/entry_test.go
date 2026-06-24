@@ -15,18 +15,6 @@ import (
 // extended map, RemoteEntry). This is the parity gate for the filer gRPC→ZAP
 // rip: callsites that read/write Entry over ZAP must see byte-identical data.
 func TestEntryRoundTrip(t *testing.T) {
-	// BLOCKED on a defect in the canonical github.com/zap-proto/go runtime:
-	// helpers_zap.go embedMessage copies only child[rootOffset:] (the root
-	// object block), but the builder lays a message's variable-length data
-	// (lists, strings, bytes, nested objects) BEFORE the root object. So
-	// embedding any nested message that carries variable-length fields drops
-	// that data — here, reading GroupName from the nested FuseAttributes nil-
-	// derefs. The Entry converter below is correct; it cannot round-trip until
-	// zap-proto/go's nested-message embedding copies the full relocatable
-	// closure (var-data + root) with offset relocation. Remove this skip when
-	// the runtime fix lands — this test is the gate.
-	t.Skip("blocked: zap-proto/go embedMessage drops nested var-length data (see comment)")
-
 	orig := &filer_pb.Entry{
 		Name:            "team-go/blob.bin",
 		IsDirectory:     false,
