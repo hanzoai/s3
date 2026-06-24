@@ -20,6 +20,7 @@ package filerzap
 import (
 	"context"
 	"errors"
+	"strings"
 
 	filer_pb "github.com/hanzoai/s3/s3/pb/filer_pb"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
@@ -48,6 +49,14 @@ func (b serverBackend) LookupDirectoryEntry(v filerwire.LookupDirectoryEntryRequ
 		Directory: v.Directory(), Name: v.Name(),
 	})
 	if err != nil {
+		// Not-found is conveyed as an empty (nil Entry) OK response, not a
+		// transport error: the rpc envelope carries only a status code, so a
+		// propagated error would reach the caller as a generic "status 500" and
+		// lose the ErrNotFound semantics. filer_pb.LookupEntry maps a nil Entry
+		// back to ErrNotFound, which is exactly the gRPC contract callers expect.
+		if isFilerNotFound(err) {
+			return filerwire.NewLookupDirectoryEntryResponse(filerwire.LookupDirectoryEntryResponseInput{}), nil
+		}
 		return nil, err
 	}
 	in := filerwire.LookupDirectoryEntryResponseInput{}
@@ -55,6 +64,14 @@ func (b serverBackend) LookupDirectoryEntry(v filerwire.LookupDirectoryEntryRequ
 		in.Entry = EntryToWire(resp.Entry)
 	}
 	return filerwire.NewLookupDirectoryEntryResponse(in), nil
+}
+
+// isFilerNotFound reports whether err is the filer's not-found sentinel, however
+// it arrives (the engine's ErrNotFound, a wrapped copy, or a gRPC status whose
+// message carries it).
+func isFilerNotFound(err error) bool {
+	return errors.Is(err, filer_pb.ErrNotFound) ||
+		strings.Contains(err.Error(), filer_pb.ErrNotFound.Error())
 }
 
 func (b serverBackend) CreateEntry(v filerwire.CreateEntryRequest) ([]byte, error) {

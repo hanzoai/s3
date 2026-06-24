@@ -520,12 +520,23 @@ func isNotFoundPolicyStoreError(err error) bool {
 	if err == nil {
 		return false
 	}
-	return errors.Is(err, filer_pb.ErrNotFound) || status.Code(err) == codes.NotFound
+	// Transport-agnostic: gRPC carries codes.NotFound; the native ZAP filer
+	// transport carries the error string, which includes the filer's ErrNotFound
+	// message verbatim (the server reply ships herr.Error()).
+	return errors.Is(err, filer_pb.ErrNotFound) || status.Code(err) == codes.NotFound ||
+		strings.Contains(err.Error(), filer_pb.ErrNotFound.Error())
 }
 
 func isAlreadyExistsPolicyStoreError(err error) bool {
 	if err == nil {
 		return false
 	}
-	return status.Code(err) == codes.AlreadyExists
+	// Transport-agnostic: the gRPC path carries a codes.AlreadyExists status; the
+	// native ZAP filer transport carries only the error string, which includes the
+	// PascalCase code name ("...code = AlreadyExists desc = ..."). Matching the
+	// code name (not a free-form "already exists") avoids false positives.
+	if status.Code(err) == codes.AlreadyExists {
+		return true
+	}
+	return strings.Contains(err.Error(), codes.AlreadyExists.String())
 }
