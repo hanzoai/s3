@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/glog"
-	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/wdclient"
+	masterwire "github.com/hanzoai/s3/s3/wire/master"
 )
 
 const (
@@ -57,16 +57,16 @@ func (l *ExclusiveLocker) RequestLock(clientName string) {
 
 	// retry to get the lease
 	for {
-		if err := l.masterClient.WithClient(false, func(client master_pb.HanzoClient) error {
-			resp, err := client.LeaseAdminToken(ctx, &master_pb.LeaseAdminTokenRequest{
+		if err := l.masterClient.WithZapClient(func(client *masterwire.Client) error {
+			resp, err := client.LeaseAdminToken(masterwire.LeaseAdminTokenRequestInput{
 				PreviousToken:    atomic.LoadInt64(&l.token),
 				PreviousLockTime: atomic.LoadInt64(&l.lockTsNs),
 				LockName:         l.lockName,
 				ClientName:       clientName,
 			})
 			if err == nil {
-				atomic.StoreInt64(&l.token, resp.Token)
-				atomic.StoreInt64(&l.lockTsNs, resp.LockTsNs)
+				atomic.StoreInt64(&l.token, resp.Token())
+				atomic.StoreInt64(&l.lockTsNs, resp.LockTsNs())
 			}
 			return err
 		}); err != nil {
@@ -90,8 +90,8 @@ func (l *ExclusiveLocker) RequestLock(clientName string) {
 
 			for {
 				if l.isLocked.Load() {
-					if err := l.masterClient.WithClient(false, func(client master_pb.HanzoClient) error {
-						resp, err := client.LeaseAdminToken(ctx2, &master_pb.LeaseAdminTokenRequest{
+					if err := l.masterClient.WithZapClient(func(client *masterwire.Client) error {
+						resp, err := client.LeaseAdminToken(masterwire.LeaseAdminTokenRequestInput{
 							PreviousToken:    atomic.LoadInt64(&l.token),
 							PreviousLockTime: atomic.LoadInt64(&l.lockTsNs),
 							LockName:         l.lockName,
@@ -99,8 +99,8 @@ func (l *ExclusiveLocker) RequestLock(clientName string) {
 							Message:          l.message,
 						})
 						if err == nil {
-							atomic.StoreInt64(&l.token, resp.Token)
-							atomic.StoreInt64(&l.lockTsNs, resp.LockTsNs)
+							atomic.StoreInt64(&l.token, resp.Token())
+							atomic.StoreInt64(&l.lockTsNs, resp.LockTsNs())
 							glog.V(2).Infof("Renewed lock %s: ts %d token %d", l.lockName, l.lockTsNs, l.token)
 						}
 						return err
@@ -127,8 +127,8 @@ func (l *ExclusiveLocker) ReleaseLock() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	l.masterClient.WithClient(false, func(client master_pb.HanzoClient) error {
-		client.ReleaseAdminToken(ctx, &master_pb.ReleaseAdminTokenRequest{
+	l.masterClient.WithZapClient(func(client *masterwire.Client) error {
+		client.ReleaseAdminToken(masterwire.ReleaseAdminTokenRequestInput{
 			PreviousToken:    atomic.LoadInt64(&l.token),
 			PreviousLockTime: atomic.LoadInt64(&l.lockTsNs),
 			LockName:         l.lockName,
