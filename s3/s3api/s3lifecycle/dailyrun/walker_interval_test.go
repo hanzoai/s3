@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/engine"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/reader"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/router"
+	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -64,11 +64,11 @@ func TestWalkerDue(t *testing.T) {
 // (tests, in-repo integration) doesn't regress.
 func TestRunShard_WalkerThrottle(t *testing.T) {
 	cases := []struct {
-		name             string
-		interval         time.Duration
-		secondPassAfter  time.Duration
-		wantTotalCalls   int
-		wantSecondAdvNs  bool // did LastWalkedNs change between pass 1 and pass 2?
+		name            string
+		interval        time.Duration
+		secondPassAfter time.Duration
+		wantTotalCalls  int
+		wantSecondAdvNs bool // did LastWalkedNs change between pass 1 and pass 2?
 	}{
 		{"interval=0 fires every pass", 0, 30 * time.Second, 2, true},
 		{"throttled: second pass within interval", time.Hour, 30 * time.Second, 1, false},
@@ -186,8 +186,8 @@ func validatableConfig() Config {
 type stubFilerClient struct{ filer_pb.HanzoFilerClient }
 type stubLifecycleClient struct{}
 
-func (stubLifecycleClient) LifecycleDelete(_ context.Context, _ *s3_lifecycle_pb.LifecycleDeleteRequest) (*s3_lifecycle_pb.LifecycleDeleteResponse, error) {
-	return nil, nil
+func (stubLifecycleClient) LifecycleDelete(_ context.Context, _ s3_lifecyclewire.LifecycleDeleteRequestInput) (s3_lifecyclewire.LifecycleDeleteResult, error) {
+	return s3_lifecyclewire.LifecycleDeleteResult{}, nil
 }
 
 type stubSiblingLister struct{}

@@ -10,6 +10,7 @@ import (
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/pb/schema_pb"
 	"github.com/hanzoai/s3/s3/util/buffered_queue"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -23,10 +24,19 @@ type PublisherConfiguration struct {
 }
 
 type PublishClient struct {
-	mq_pb.HanzoMessaging_PublishMessageClient
+	stream *transport.Stream
 	Broker string
 	Err    error
 }
+
+// Send transmits one PublishMessageRequest frame over the ZAP stream.
+func (c *PublishClient) Send(req []byte) error { return c.stream.Send(req) }
+
+// Recv reads the next PublishMessageResponse frame from the ZAP stream.
+func (c *PublishClient) Recv() ([]byte, error) { return c.stream.Recv() }
+
+// CloseSend half-closes the send side of the ZAP stream.
+func (c *PublishClient) CloseSend() error { return c.stream.CloseSend() }
 type TopicPublisher struct {
 	partition2Buffer *interval.SearchTree[*buffered_queue.BufferedQueue[*mq_pb.DataMessage], int32]
 	grpcDialOption   grpc.DialOption

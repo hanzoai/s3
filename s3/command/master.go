@@ -35,6 +35,7 @@ import (
 	s3server "github.com/hanzoai/s3/s3/server"
 	"github.com/hanzoai/s3/s3/storage/backend"
 	"github.com/hanzoai/s3/s3/util"
+	masterwire "github.com/hanzoai/s3/s3/wire/master"
 )
 
 var (
@@ -271,6 +272,18 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	}
 	go grpcS.Serve(grpcL)
 	pb.ServeGrpcOnLocalSocket(grpcS, grpcPort)
+
+	// Native ZAP transport for the master's unary RPCs, on the deterministic
+	// grpcPort+10000 offset (same convention as ToIamZapAddress). The legacy
+	// gRPC listener above still serves raft + the streaming RPCs during the
+	// strangler. Non-fatal: a ZAP bind failure must never take down the master.
+	zapAddr := util.JoinHostPort(*masterOption.ipBind, grpcPort+10000)
+	if zapServer, zapErr := masterwire.Serve("tcp", zapAddr, s3server.NewMasterZapBackend(ms)); zapErr != nil {
+		glog.Warningf("master ZAP transport failed to listen on %s: %v", zapAddr, zapErr)
+	} else {
+		glog.V(0).Infof("Start Hanzo S3 Master %s ZAP transport at %s", version.Version(), zapAddr)
+		grace.OnInterrupt(func() { zapServer.Close() })
+	}
 
 	// For multi-master mode with non-Hashicorp raft, wait and check if we should join
 	if !*masterOption.raftHashicorp && !isSingleMaster {

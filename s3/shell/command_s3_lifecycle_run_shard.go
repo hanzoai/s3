@@ -12,12 +12,10 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/dailyrun"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/dispatcher"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/engine"
-	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/lifecyclerpc"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/scheduler"
 	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
 	"github.com/zap-proto/go/transport"
@@ -106,7 +104,7 @@ func (c *commandS3LifecycleRunShard) Do(args []string, env *CommandEnv, writer i
 		return fmt.Errorf("dial s3 %s: %w", *s3Endpoint, err)
 	}
 	defer conn.Close()
-	rpcClient := s3_lifecyclewire.NewHanzoS3LifecycleInternalClient(conn, nil)
+	rpcClient := s3_lifecyclewire.NewClient(conn)
 
 	return env.WithFilerClient(true, func(filerClient filer_pb.HanzoFilerClient) error {
 		ctx := context.Background()
@@ -307,16 +305,16 @@ func formatShardLabel(shards []int) string {
 	return strings.Join(parts, ",")
 }
 
-// lifecycleClientCallable adapts the ZAP wire client to
-// dailyrun.LifecycleClient: it encodes the in-process pb request to a ZAP
-// envelope, ships it over the transport, and decodes the ZAP response back
-// into the pb type the dailyrun pipeline expects.
+// lifecycleClientCallable adapts the native ZAP service Client to
+// dailyrun.LifecycleClient: it ships the wire request input over the
+// transport and returns the wire result. The ZAP transport carries no
+// deadline, so ctx is observed only by the caller's retry loop.
 type lifecycleClientCallable struct {
-	c *s3_lifecyclewire.HanzoS3LifecycleInternalClient
+	c *s3_lifecyclewire.Client
 }
 
-func (l *lifecycleClientCallable) LifecycleDelete(ctx context.Context, req *s3_lifecycle_pb.LifecycleDeleteRequest) (*s3_lifecycle_pb.LifecycleDeleteResponse, error) {
-	return lifecyclerpc.Client(l.c, req)
+func (l *lifecycleClientCallable) LifecycleDelete(_ context.Context, in s3_lifecyclewire.LifecycleDeleteRequestInput) (s3_lifecyclewire.LifecycleDeleteResult, error) {
+	return l.c.LifecycleDelete(in)
 }
 
 // resolveBucketsPath fetches the filer's configured buckets directory.

@@ -175,9 +175,11 @@ func IdentityToPB(id Identity) *iam_pb.Identity {
 			out.Actions[i] = id.ActionsAt(i)
 		}
 	}
-	// Account is a message: an absent account decodes to the zero view whose
-	// fields read empty; only attach when something is set.
-	if acc := id.Account(); acc.ID() != "" || acc.DisplayName() != "" || acc.EmailAddress() != "" {
+	// Account is a message: an absent account decodes to a null view. Reading a
+	// field off a null view dereferences a nil backing message, so gate on
+	// IsNull() first; only materialize an iam_pb.Account when one is present and
+	// carries data.
+	if acc := id.Account(); !acc.IsNull() && (acc.ID() != "" || acc.DisplayName() != "" || acc.EmailAddress() != "") {
 		out.Account = accountToPB(acc)
 	}
 	if n := id.ServiceAccountIDsLen(); n > 0 {

@@ -6,8 +6,8 @@ import (
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/util"
+	masterwire "github.com/hanzoai/s3/s3/wire/master"
 )
 
 const (
@@ -160,8 +160,8 @@ func (f *Filer) doDeleteEntryMetaAndData(ctx context.Context, entry *Entry, shou
 
 func (f *Filer) DoDeleteCollection(collectionName string) (err error) {
 
-	return f.MasterClient.WithClient(false, func(client master_pb.HanzoClient) error {
-		_, err := client.CollectionDelete(context.Background(), &master_pb.CollectionDeleteRequest{
+	return f.MasterClient.WithZapClient(func(client *masterwire.Client) error {
+		_, err := client.CollectionDelete(masterwire.CollectionDeleteRequestInput{
 			Name: collectionName,
 		})
 		if err != nil {

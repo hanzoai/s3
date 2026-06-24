@@ -21,7 +21,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/s3api"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
-	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/lifecyclerpc"
 	"github.com/hanzoai/s3/s3/security"
 	stats_collect "github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/util"
@@ -29,6 +28,7 @@ import (
 	"github.com/hanzoai/s3/s3/util/version"
 	"github.com/hanzoai/s3/s3/wire/iamadapt"
 	s3wire "github.com/hanzoai/s3/s3/wire/s3"
+	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
 	"github.com/hanzoai/s3/s3/zapsvc"
 	"github.com/zap-proto/go/transport"
 )
@@ -415,18 +415,17 @@ func (s3opt *S3Options) startS3Server() bool {
 		}
 	}
 
-	// HanzoS3LifecycleInternal now speaks the ZAP transport on the same port the
-	// gRPC server used to bind (the lifecycle worker / shell dial it directly),
-	// dispatched through the pb<->wire bridge so the in-process re-fetch +
-	// identity-CAS + object-lock business logic stays pb-typed.
+	// HanzoS3LifecycleInternal now speaks the native ZAP transport on the same
+	// port the gRPC server used to bind (the lifecycle worker / shell dial it
+	// directly). The S3ApiServer is the live LifecycleDeleter backend; the
+	// re-fetch + identity-CAS + object-lock business logic reads the zero-copy
+	// wire request view directly — no protobuf, no bridge.
 	grpcPort := *s3opt.portGrpc
 	grpcL, grpcLocalL, err := util.NewIpAndLocalListeners(*s3opt.bindIp, grpcPort, 0)
 	if err != nil {
 		glog.Fatalf("s3 failed to listen on grpc port %d: %v", grpcPort, err)
 	}
-	lifecycleDispatch := func(env []byte) ([]byte, error) {
-		return lifecyclerpc.Dispatch(s3ApiServer.LifecycleDelete, env)
-	}
+	lifecycleDispatch := s3_lifecyclewire.Dispatch(s3ApiServer)
 	lifecycleSrv := transport.Serve(grpcL, lifecycleDispatch)
 	if grpcLocalL != nil {
 		_ = transport.Serve(grpcLocalL, lifecycleDispatch)

@@ -11,13 +11,11 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
 	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/dailyrun"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/dispatcher"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/engine"
-	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/lifecyclerpc"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/scheduler"
 	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
 	"github.com/zap-proto/go/transport"
@@ -255,7 +253,7 @@ func (h *Handler) Execute(ctx context.Context, request *plugin_pb.ExecuteJobRequ
 		return fmt.Errorf("dial s3 %s: %w", s3Endpoints[0], err)
 	}
 	defer s3Conn.Close()
-	rpc := s3_lifecyclewire.NewHanzoS3LifecycleInternalClient(s3Conn, nil)
+	rpc := s3_lifecyclewire.NewClient(s3Conn)
 
 	if err := h.executeDailyReplay(runCtx, request, bucketsPath, filerClient, rpc, cfg, sender); err != nil {
 		return err
@@ -283,7 +281,7 @@ func sendSuccessCompletion(request *plugin_pb.ExecuteJobRequest, sender pluginwo
 // executeDailyReplay runs one bounded daily-replay pass via
 // dailyrun.Run. The walker fires inside runShard on rule-content edits
 // and against the steady-state walk view; all rule kinds are serviced.
-func (h *Handler) executeDailyReplay(ctx context.Context, request *plugin_pb.ExecuteJobRequest, bucketsPath string, filerClient filer_pb.HanzoFilerClient, rpc *s3_lifecyclewire.HanzoS3LifecycleInternalClient, cfg Config, sender pluginworker.ExecutionSender) error {
+func (h *Handler) executeDailyReplay(ctx context.Context, request *plugin_pb.ExecuteJobRequest, bucketsPath string, filerClient filer_pb.HanzoFilerClient, rpc *s3_lifecyclewire.Client, cfg Config, sender pluginworker.ExecutionSender) error {
 	eng := engine.New()
 	inputs, parseErrors, err := scheduler.LoadCompileInputs(ctx, filerClient, bucketsPath)
 	if err != nil {
@@ -420,11 +418,11 @@ func clusterS3Endpoints(cc *plugin_pb.ClusterContext) []string {
 }
 
 type lifecycleRPCAdapter struct {
-	c *s3_lifecyclewire.HanzoS3LifecycleInternalClient
+	c *s3_lifecyclewire.Client
 }
 
-func (a lifecycleRPCAdapter) LifecycleDelete(ctx context.Context, req *s3_lifecycle_pb.LifecycleDeleteRequest) (*s3_lifecycle_pb.LifecycleDeleteResponse, error) {
-	return lifecyclerpc.Client(a.c, req)
+func (a lifecycleRPCAdapter) LifecycleDelete(_ context.Context, in s3_lifecyclewire.LifecycleDeleteRequestInput) (s3_lifecyclewire.LifecycleDeleteResult, error) {
+	return a.c.LifecycleDelete(in)
 }
 
 func lookupBucketsPath(ctx context.Context, client filer_pb.HanzoFilerClient) (string, error) {

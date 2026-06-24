@@ -16,7 +16,6 @@ import (
 	"github.com/hanzoai/s3/s3/worker/types"
 	"github.com/hanzoai/s3/s3/worker/wirebridge"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -27,7 +26,6 @@ var (
 type GrpcAdminClient struct {
 	adminAddress string
 	workerID     string
-	dialOption   grpc.DialOption
 
 	cmds chan grpcCommand
 
@@ -86,8 +84,9 @@ type grpcState struct {
 	regWait         chan *worker_pb.RegistrationResponse
 }
 
-// NewGrpcAdminClient creates a new gRPC admin client
-func NewGrpcAdminClient(adminAddress string, workerID string, dialOption grpc.DialOption) *GrpcAdminClient {
+// NewGrpcAdminClient creates an admin client that drives the WorkerStream over
+// the ZAP transport (transport.Dial handles PQ TLS at the transport layer).
+func NewGrpcAdminClient(adminAddress string, workerID string) *GrpcAdminClient {
 	// Admin uses HTTP port + 10000 as gRPC port
 	grpcAddress := pb.ServerToGrpcAddress(adminAddress)
 
@@ -100,7 +99,6 @@ func NewGrpcAdminClient(adminAddress string, workerID string, dialOption grpc.Di
 		adminAddress:         grpcAddress,
 		workerID:             workerID,
 		sessionID:            sessionID,
-		dialOption:           dialOption,
 		maxReconnectAttempts: 0, // 0 means infinite attempts
 		reconnectBackoff:     1 * time.Second,
 		maxReconnectBackoff:  30 * time.Second,
@@ -1000,9 +998,10 @@ func (c *GrpcAdminClient) GetIncomingChannel() <-chan *worker_pb.AdminMessage {
 	return c.incoming
 }
 
-// CreateAdminClient creates an admin client with the provided dial option
-func CreateAdminClient(adminServer string, workerID string, dialOption grpc.DialOption) (AdminClient, error) {
-	return NewGrpcAdminClient(adminServer, workerID, dialOption), nil
+// CreateAdminClient creates an admin client for the WorkerStream over the ZAP
+// transport (the worker<->admin RPC no longer uses gRPC).
+func CreateAdminClient(adminServer string, workerID string) (AdminClient, error) {
+	return NewGrpcAdminClient(adminServer, workerID), nil
 }
 
 // getServerFromParams extracts server address from unified sources

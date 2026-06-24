@@ -1,21 +1,20 @@
 // Package lifecycletest provides reusable test doubles for the lifecycle
 // worker pipeline. The pieces here let component-level tests stand up the
-// gRPC boundary the worker dials at runtime without pulling in a real
-// S3ApiServer or filer.
+// ZAP service boundary the worker dials at runtime without pulling in a
+// real S3ApiServer or filer.
 package lifecycletest
 
 import (
-	"context"
 	"sync"
 
-	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
-	"google.golang.org/protobuf/proto"
+	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
 )
 
 // Outcome is what the fake returns for a single LifecycleDelete call.
-// Code is required; Reason is echoed verbatim into LifecycleDeleteResponse.
+// Code is required (a LifecycleDeleteOutcome* constant); Reason is echoed
+// verbatim into the LifecycleDeleteResult.
 type Outcome struct {
-	Code   s3_lifecycle_pb.LifecycleDeleteOutcome
+	Code   uint32
 	Reason string
 }
 
@@ -23,42 +22,43 @@ type Outcome struct {
 // constructors for the common outcomes; tests can also build Outcome
 // values directly when they need a specific Reason.
 func Done() Outcome {
-	return Outcome{Code: s3_lifecycle_pb.LifecycleDeleteOutcome_DONE}
+	return Outcome{Code: s3_lifecyclewire.LifecycleDeleteOutcomeDone}
 }
 func NoopResolved(reason string) Outcome {
-	return Outcome{Code: s3_lifecycle_pb.LifecycleDeleteOutcome_NOOP_RESOLVED, Reason: reason}
+	return Outcome{Code: s3_lifecyclewire.LifecycleDeleteOutcomeNoopResolved, Reason: reason}
 }
 func RetryLater(reason string) Outcome {
-	return Outcome{Code: s3_lifecycle_pb.LifecycleDeleteOutcome_RETRY_LATER, Reason: reason}
+	return Outcome{Code: s3_lifecyclewire.LifecycleDeleteOutcomeRetryLater, Reason: reason}
 }
 func Blocked(reason string) Outcome {
-	return Outcome{Code: s3_lifecycle_pb.LifecycleDeleteOutcome_BLOCKED, Reason: reason}
+	return Outcome{Code: s3_lifecyclewire.LifecycleDeleteOutcomeBlocked, Reason: reason}
 }
 func SkippedObjectLock(reason string) Outcome {
-	return Outcome{Code: s3_lifecycle_pb.LifecycleDeleteOutcome_SKIPPED_OBJECT_LOCK, Reason: reason}
+	return Outcome{Code: s3_lifecyclewire.LifecycleDeleteOutcomeSkippedObjectLock, Reason: reason}
 }
 
-// FakeLifecycleServer implements s3_lifecycle_pb.HanzoS3LifecycleInternalServer.
-// It returns per-key queued outcomes (FIFO) and falls back to Default when a
+// FakeLifecycleServer implements s3_lifecyclewire.LifecycleDeleter. It
+// returns per-key queued outcomes (FIFO) and falls back to Default when a
 // key has no queued entry. Every received request is recorded; tests assert
 // against Recorded() in arrival order.
 //
-// A non-nil Err short-circuits everything — LifecycleDelete returns (nil, Err)
-// immediately, before the per-key lookup or the request recording. Use it to
-// simulate transport failures.
+// A non-nil Err short-circuits everything — LifecycleDelete returns (zero,
+// Err) immediately, before the per-key lookup or the request recording. Use
+// it to simulate transport failures.
 //
 // All methods are safe for concurrent use. Outcomes/Default may be set at
 // construction or via Queue/SetDefault between calls; mid-call mutation is
 // supported but ordering across that boundary is undefined.
 type FakeLifecycleServer struct {
-	s3_lifecycle_pb.UnimplementedHanzoS3LifecycleInternalServer
-
 	mu       sync.Mutex
 	queues   map[requestKey][]Outcome
 	def      Outcome
 	err      error
-	received []*s3_lifecycle_pb.LifecycleDeleteRequest
+	received []s3_lifecyclewire.LifecycleDeleteRequestInput
 }
+
+// Compile-time check.
+var _ s3_lifecyclewire.LifecycleDeleter = (*FakeLifecycleServer)(nil)
 
 // requestKey is the map key for queues. A struct rather than a delimited
 // string so bucket/object/versionId values containing "/" or "@" can't
@@ -93,7 +93,7 @@ func (f *FakeLifecycleServer) SetDefault(o Outcome) {
 	f.def = o
 }
 
-// SetError makes LifecycleDelete return (nil, err) on every call until
+// SetError makes LifecycleDelete return (zero, err) on every call until
 // SetError(nil) clears it. The request is not recorded while Err is set —
 // transport-error tests should rely on the worker's own bookkeeping.
 func (f *FakeLifecycleServer) SetError(err error) {
@@ -102,39 +102,33 @@ func (f *FakeLifecycleServer) SetError(err error) {
 	f.err = err
 }
 
-// Recorded returns a deep-copied snapshot of every request the server has
-// received (excluding calls that returned a transport error). Both the
-// slice and each element are independent of the fake's internal state, so
-// callers can mutate freely without affecting later Recorded() snapshots.
-func (f *FakeLifecycleServer) Recorded() []*s3_lifecycle_pb.LifecycleDeleteRequest {
+// Recorded returns a snapshot of every request the server has received
+// (excluding calls that returned a transport error), in arrival order.
+// LifecycleDeleteRequestInput is a value type, so the returned slice is
+// independent of the fake's internal state.
+func (f *FakeLifecycleServer) Recorded() []s3_lifecyclewire.LifecycleDeleteRequestInput {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	out := make([]*s3_lifecycle_pb.LifecycleDeleteRequest, len(f.received))
-	for i, r := range f.received {
-		out[i] = cloneRequest(r)
-	}
+	out := make([]s3_lifecyclewire.LifecycleDeleteRequestInput, len(f.received))
+	copy(out, f.received)
 	return out
 }
 
-// LifecycleDelete is the gRPC handler. It honors Err first, then dequeues
-// the per-key outcome, falling back to Default.
-func (f *FakeLifecycleServer) LifecycleDelete(ctx context.Context, req *s3_lifecycle_pb.LifecycleDeleteRequest) (*s3_lifecycle_pb.LifecycleDeleteResponse, error) {
+// LifecycleDelete is the ZAP service handler. It honors Err first, then
+// dequeues the per-key outcome, falling back to Default. req is the
+// zero-copy wire view; fields read out of it are copied into the recorded
+// LifecycleDeleteRequestInput so the snapshot stays valid after the buffer
+// is reused.
+func (f *FakeLifecycleServer) LifecycleDelete(req s3_lifecyclewire.LifecycleDeleteRequest) (s3_lifecyclewire.LifecycleDeleteResult, error) {
 	f.mu.Lock()
 	if f.err != nil {
 		err := f.err
 		f.mu.Unlock()
-		return nil, err
+		return s3_lifecyclewire.LifecycleDeleteResult{}, err
 	}
-	// Record a deep copy so a caller mutating a Recorded() entry can't
-	// reach back into the fake's bookkeeping (and so subsequent calls'
-	// view of "what arrived" stays stable across assertions).
-	f.received = append(f.received, cloneRequest(req))
-	if req == nil {
-		out := f.def
-		f.mu.Unlock()
-		return &s3_lifecycle_pb.LifecycleDeleteResponse{Outcome: out.Code, Reason: out.Reason}, nil
-	}
-	k := key(req.Bucket, req.ObjectPath, req.VersionId)
+	in := recordedInput(req)
+	f.received = append(f.received, in)
+	k := key(in.Bucket, in.ObjectPath, in.VersionID)
 	q := f.queues[k]
 	var out Outcome
 	if len(q) > 0 {
@@ -144,16 +138,36 @@ func (f *FakeLifecycleServer) LifecycleDelete(ctx context.Context, req *s3_lifec
 		out = f.def
 	}
 	f.mu.Unlock()
-	return &s3_lifecycle_pb.LifecycleDeleteResponse{Outcome: out.Code, Reason: out.Reason}, nil
+	return s3_lifecyclewire.LifecycleDeleteResult{Outcome: out.Code, Reason: out.Reason}, nil
+}
+
+// recordedInput copies the wire request view into an owned
+// LifecycleDeleteRequestInput so it survives buffer reuse.
+func recordedInput(req s3_lifecyclewire.LifecycleDeleteRequest) s3_lifecyclewire.LifecycleDeleteRequestInput {
+	in := s3_lifecyclewire.LifecycleDeleteRequestInput{
+		Bucket:               req.Bucket(),
+		ObjectPath:           req.ObjectPath(),
+		VersionID:            req.VersionID(),
+		RuleHash:             append([]byte(nil), req.RuleHash()...),
+		ActionKind:           req.ActionKind(),
+		StreamShard:          req.StreamShard(),
+		StreamDelaySeconds:   req.StreamDelaySeconds(),
+		StreamPositionTsNs:   req.StreamPositionTsNs(),
+		StreamPositionOffset: req.StreamPositionOffset(),
+		EngineSnapshotID:     req.EngineSnapshotID(),
+	}
+	if req.HasExpectedIdentity() {
+		id := req.ExpectedIdentity()
+		in.ExpectedIdentity = &s3_lifecyclewire.EntryIdentityInput{
+			MtimeNs:      id.MtimeNs(),
+			Size:         id.Size(),
+			HeadFid:      id.HeadFid(),
+			ExtendedHash: append([]byte(nil), id.ExtendedHash()...),
+		}
+	}
+	return in
 }
 
 func key(bucket, objectPath, versionId string) requestKey {
 	return requestKey{bucket: bucket, objectPath: objectPath, versionId: versionId}
-}
-
-func cloneRequest(req *s3_lifecycle_pb.LifecycleDeleteRequest) *s3_lifecycle_pb.LifecycleDeleteRequest {
-	if req == nil {
-		return nil
-	}
-	return proto.Clone(req).(*s3_lifecycle_pb.LifecycleDeleteRequest)
 }

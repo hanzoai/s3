@@ -20,6 +20,7 @@ import (
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/version"
+	masterwire "github.com/hanzoai/s3/s3/wire/master"
 )
 
 // masterVolumeProvider implements VolumeLocationProvider by querying master
@@ -397,6 +398,25 @@ func (mc *MasterClient) WithClientCustomGetMaster(getMasterF func() pb.ServerAdd
 		return pb.WithMasterClient(context.Background(), streamingMode, getMasterF(), mc.grpcDialOption, false, func(client master_pb.HanzoClient) error {
 			return fn(client)
 		})
+	})
+}
+
+// WithZapClient runs fn against the master's native ZAP transport client,
+// dialing the current master's ZAP endpoint (grpcPort+10000) over zap-proto.
+// This is the strangler client path for the unary RPCs already bridged to ZAP
+// (see server.NewMasterZapBackend); the gRPC WithClient path above still serves
+// the not-yet-bridged RPCs (nested-topology, raft, streaming). The connection
+// is dialed per call and closed on return — the master ZAP server is cheap to
+// reconnect and this keeps the shim free of connection-cache state.
+func (mc *MasterClient) WithZapClient(fn func(client *masterwire.Client) error) error {
+	return util.Retry("master zap", func() error {
+		master := mc.GetMaster(context.Background())
+		client, err := masterwire.Dial("tcp", master.ToMasterZapAddress())
+		if err != nil {
+			return err
+		}
+		defer client.Close()
+		return fn(client)
 	})
 }
 

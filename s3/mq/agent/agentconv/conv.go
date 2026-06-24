@@ -45,6 +45,13 @@ func TopicFromWire(b []byte) *schema_pb.Topic {
 
 // --- Partition / PartitionOffset ---
 
+// PartitionToWire encodes a schema_pb.Partition as a mq_schemawire Partition
+// buffer; nil in yields nil. Shared schema_pb<->wire bridge for the broker,
+// publisher and subscriber layers as well as the agent.
+func PartitionToWire(in *schema_pb.Partition) []byte {
+	return partitionToWire(in)
+}
+
 func partitionToWire(in *schema_pb.Partition) []byte {
 	if in == nil {
 		return nil
@@ -55,6 +62,12 @@ func partitionToWire(in *schema_pb.Partition) []byte {
 		RangeStop:  in.RangeStop,
 		UnixTimeNs: in.UnixTimeNs,
 	})
+}
+
+// PartitionFromWire decodes a mq_schemawire Partition view into a
+// schema_pb.Partition.
+func PartitionFromWire(p mq_schemawire.Partition) *schema_pb.Partition {
+	return partitionFromWire(p)
 }
 
 func partitionFromWire(p mq_schemawire.Partition) *schema_pb.Partition {

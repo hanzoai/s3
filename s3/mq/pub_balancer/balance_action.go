@@ -1,18 +1,18 @@
 package pub_balancer
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/mq_pb"
+	mq_brokerwire "github.com/hanzoai/s3/s3/wire/mq_broker"
+	mq_schemawire "github.com/hanzoai/s3/s3/wire/mq_schema"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
 )
 
 // PubBalancer <= PublisherToPubBalancer() <= Broker <=> Publish()
 // ExecuteBalanceActionMove from PubBalancer => AssignTopicPartitions() => Broker => Publish()
 
-func (balancer *PubBalancer) ExecuteBalanceActionMove(move *BalanceActionMove, grpcDialOption grpc.DialOption) error {
+func (balancer *PubBalancer) ExecuteBalanceActionMove(move *BalanceActionMove, _ grpc.DialOption) error {
 	if _, found := balancer.Brokers.Get(move.SourceBroker); !found {
 		return fmt.Errorf("source broker %s not found", move.SourceBroker)
 	}
@@ -20,40 +20,43 @@ func (balancer *PubBalancer) ExecuteBalanceActionMove(move *BalanceActionMove, g
 		return fmt.Errorf("target broker %s not found", move.TargetBroker)
 	}
 
-	err := pb.WithBrokerGrpcClient(false, move.TargetBroker, grpcDialOption, func(client mq_pb.HanzoMessagingClient) error {
-		_, err := client.AssignTopicPartitions(context.Background(), &mq_pb.AssignTopicPartitionsRequest{
-			Topic: move.TopicPartition.Topic.ToPbTopic(),
-			BrokerPartitionAssignments: []*mq_pb.BrokerPartitionAssignment{
-				{
-					Partition: move.TopicPartition.ToPbPartition(),
-				},
+	topicBuf := mq_schemawire.NewTopic(mq_schemawire.TopicInput{
+		Namespace: move.TopicPartition.Namespace,
+		Name:      move.TopicPartition.Name,
+	})
+	partitionBuf := mq_schemawire.NewPartition(mq_schemawire.PartitionInput{
+		RingSize:   move.TopicPartition.RingSize,
+		RangeStart: move.TopicPartition.RangeStart,
+		RangeStop:  move.TopicPartition.RangeStop,
+		UnixTimeNs: move.TopicPartition.UnixTimeNs,
+	})
+
+	assign := func(broker string, draining bool) error {
+		conn, err := transport.Dial("tcp", broker)
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+		client := mq_brokerwire.NewClient(conn)
+		_, err = client.AssignTopicPartitions(mq_brokerwire.AssignTopicPartitionsRequestInput{
+			Topic: topicBuf,
+			BrokerPartitionAssignments: [][]byte{
+				mq_brokerwire.NewBrokerPartitionAssignment(mq_brokerwire.BrokerPartitionAssignmentInput{
+					Partition: partitionBuf,
+				}),
 			},
 			IsLeader:   true,
-			IsDraining: false,
+			IsDraining: draining,
 		})
 		return err
-	})
-	if err != nil {
-		return fmt.Errorf("assign topic partition %v to %s: %v", move.TopicPartition, move.TargetBroker, err)
 	}
 
-	err = pb.WithBrokerGrpcClient(false, move.SourceBroker, grpcDialOption, func(client mq_pb.HanzoMessagingClient) error {
-		_, err := client.AssignTopicPartitions(context.Background(), &mq_pb.AssignTopicPartitionsRequest{
-			Topic: move.TopicPartition.Topic.ToPbTopic(),
-			BrokerPartitionAssignments: []*mq_pb.BrokerPartitionAssignment{
-				{
-					Partition: move.TopicPartition.ToPbPartition(),
-				},
-			},
-			IsLeader:   true,
-			IsDraining: true,
-		})
-		return err
-	})
-	if err != nil {
+	if err := assign(move.TargetBroker, false); err != nil {
+		return fmt.Errorf("assign topic partition %v to %s: %v", move.TopicPartition, move.TargetBroker, err)
+	}
+	if err := assign(move.SourceBroker, true); err != nil {
 		return fmt.Errorf("assign topic partition %v to %s: %v", move.TopicPartition, move.SourceBroker, err)
 	}
 
 	return nil
-
 }
