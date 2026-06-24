@@ -111,6 +111,31 @@ func (cs *ConsensusServer) RemovePeer(name string) {
 // Name is this master's consensus node identity (its server address).
 func (cs *ConsensusServer) Name() string { return string(cs.serverAddr) }
 
+// --- raft.Server drop-in shims (so the master's call sites need no rewrite
+// beyond the field type). Leader-election and log persistence are the
+// consensus engine's job, so the Raft-era tuning knobs are no-ops. ---
+
+// Leader returns the current coordination leader. Lux consensus is
+// leaderless (finality is by quorum, not a single leader), so for the
+// master's "who do I forward writes to" question this node answers itself —
+// any replica may propose and consensus orders them.
+func (cs *ConsensusServer) Leader() string { return cs.Name() }
+
+// Start is a no-op: the engine is already started by NewConsensusServer.
+func (cs *ConsensusServer) Start() error { return nil }
+
+// IsLogEmpty reports whether the replicated log has no committed entries.
+// A fresh consensus engine starts empty; once a command is applied it is not.
+func (cs *ConsensusServer) IsLogEmpty() bool { return cs.log.Pending() == 0 }
+
+// LoadSnapshot is a no-op: consensus finality replaces Raft snapshotting.
+func (cs *ConsensusServer) LoadSnapshot() error { return nil }
+
+// SetElectionTimeout / SetHeartbeatInterval are Raft tuning knobs with no
+// analogue in Lux consensus; kept as no-ops for call-site compatibility.
+func (cs *ConsensusServer) SetElectionTimeout(time.Duration)   {}
+func (cs *ConsensusServer) SetHeartbeatInterval(time.Duration) {}
+
 // Stop tears down the consensus engine.
 func (cs *ConsensusServer) Stop() {
 	if cs.cancel != nil {
