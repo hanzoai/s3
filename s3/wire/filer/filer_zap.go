@@ -85,6 +85,11 @@ func (c *HanzoFilerClient) unaryCall(method, target uint32, payload []byte, name
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels (e.g. filer_pb.ErrNotFound).
+			return p, nil, fmt.Errorf("HanzoFiler.%s: %s", name, resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoFiler.%s: status %d", name, resp.Status)
 	}
 	return p, resp.Body, nil
@@ -444,7 +449,10 @@ func DispatchHanzoFiler(h HanzoFilerHandler, envelope []byte) ([]byte, error) {
 	}
 	reply := func(body []byte, herr error) ([]byte, error) {
 		if herr != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message in the response body so the caller
+			// can reconstruct it (e.g. filer_pb.ErrNotFound detection by string).
+			// The rpc envelope itself carries only a status code.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(herr.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	}
