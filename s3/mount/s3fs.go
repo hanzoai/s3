@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/seaweedfs/go-fuse/v2/fuse"
-	"google.golang.org/grpc"
 	"github.com/zap-proto/go/transport"
+	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/cluster"
 	"github.com/hanzoai/s3/s3/filer"
@@ -22,7 +22,6 @@ import (
 	"github.com/hanzoai/s3/s3/mount/page_writer"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/mount_pb"
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/storage/types"
 	"github.com/hanzoai/s3/s3/util"
@@ -123,48 +122,47 @@ type WFS struct {
 	// https://dl.acm.org/doi/fullHtml/10.1145/3310148
 	// follow https://github.com/hanwen/go-fuse/blob/master/fuse/api.go
 	fuse.RawFileSystem
-	mount_pb.UnimplementedHanzoMountServer
 	fs.Inode
-	option               *Option
-	metaCache            *meta_cache.MetaCache
-	stats                statsCache
-	chunkCache           *chunk_cache.TieredChunkCache
+	option                *Option
+	metaCache             *meta_cache.MetaCache
+	stats                 statsCache
+	chunkCache            *chunk_cache.TieredChunkCache
 	writeBufferAccountant *page_writer.WriteBufferAccountant
-	signature            int32
-	concurrentWriters    *util.LimitedConcurrentExecutor
-	copyBufferPool       sync.Pool
-	concurrentCopiersSem chan struct{}
-	inodeToPath          *InodeToPath
-	fhMap                *FileHandleToInode
-	dhMap                *DirectoryHandleToInode
-	fuseServer           *fuse.Server
-	IsOverQuota          bool
-	fhLockTable          *util.LockTable[FileHandleId]
-	hardLinkLockTable    *util.LockTable[string]
-	posixLocks           *PosixLockTable
-	posixSid             uint64             // this mount's session id, for routed-lock owner identity
-	posixHint            *posixLockHint     // local fcntl-lock hint for routed mode
-	posixOwn             *posixlock.Manager // mirror of locks this mount holds, re-asserted via keepalive
-	rdmaClient           *RDMAMountClient
-	peerRegistrar        *PeerRegistrar
-	peerDirectory        *PeerDirectory
-	peerGrpcServer       *PeerGrpcServer
-	peerAnnouncer        *PeerAnnouncer
-	peerConnPool         *PeerConnPool
-	peerDirectoryStop    chan struct{} // closed on unmount to stop the sweeper goroutine
-	FilerConf            *filer.FilerConf
-	filerClient          *wdclient.FilerClient // Cached volume location client
-	refreshMu            sync.Mutex
-	refreshingDirs       map[util.FullPath]struct{}
-	atimeMu              sync.Mutex
-	atimeMap             map[uint64]time.Time // inode -> atime, in-memory only, bounded
-	dirMtimeMu           sync.Mutex
-	dirMtimeMap          map[uint64]time.Time // inode -> mtime/ctime, in-memory overlay for dirs
-	entryValidSec        uint64 // kernel FUSE entry cache TTL in seconds
-	attrValidSec         uint64 // kernel FUSE attr cache TTL in seconds
-	dirHotWindow         time.Duration
-	dirHotThreshold      int
-	dirIdleEvict         time.Duration
+	signature             int32
+	concurrentWriters     *util.LimitedConcurrentExecutor
+	copyBufferPool        sync.Pool
+	concurrentCopiersSem  chan struct{}
+	inodeToPath           *InodeToPath
+	fhMap                 *FileHandleToInode
+	dhMap                 *DirectoryHandleToInode
+	fuseServer            *fuse.Server
+	IsOverQuota           bool
+	fhLockTable           *util.LockTable[FileHandleId]
+	hardLinkLockTable     *util.LockTable[string]
+	posixLocks            *PosixLockTable
+	posixSid              uint64             // this mount's session id, for routed-lock owner identity
+	posixHint             *posixLockHint     // local fcntl-lock hint for routed mode
+	posixOwn              *posixlock.Manager // mirror of locks this mount holds, re-asserted via keepalive
+	rdmaClient            *RDMAMountClient
+	peerRegistrar         *PeerRegistrar
+	peerDirectory         *PeerDirectory
+	peerGrpcServer        *PeerGrpcServer
+	peerAnnouncer         *PeerAnnouncer
+	peerConnPool          *PeerConnPool
+	peerDirectoryStop     chan struct{} // closed on unmount to stop the sweeper goroutine
+	FilerConf             *filer.FilerConf
+	filerClient           *wdclient.FilerClient // Cached volume location client
+	refreshMu             sync.Mutex
+	refreshingDirs        map[util.FullPath]struct{}
+	atimeMu               sync.Mutex
+	atimeMap              map[uint64]time.Time // inode -> atime, in-memory only, bounded
+	dirMtimeMu            sync.Mutex
+	dirMtimeMap           map[uint64]time.Time // inode -> mtime/ctime, in-memory overlay for dirs
+	entryValidSec         uint64               // kernel FUSE entry cache TTL in seconds
+	attrValidSec          uint64               // kernel FUSE attr cache TTL in seconds
+	dirHotWindow          time.Duration
+	dirHotThreshold       int
+	dirIdleEvict          time.Duration
 
 	// openMtimeCache maps inode -> [mtime_sec, mtime_ns] from the last Open.
 	// Used to decide whether to set FOPEN_KEEP_CACHE on subsequent opens.
@@ -256,8 +254,8 @@ func NewHanzoFileSystem(option *Option) *WFS {
 		atimeMap:          make(map[uint64]time.Time, 8192),
 		openMtimeCache:    make(map[uint64][2]int64, 8192),
 		dirMtimeMap:       make(map[uint64]time.Time, 1024),
-		entryValidSec:    1,
-		attrValidSec:     1,
+		entryValidSec:     1,
+		attrValidSec:      1,
 		dirHotWindow:      dirHotWindow,
 		dirHotThreshold:   dirHotThreshold,
 		dirIdleEvict:      dirIdleEvict,
