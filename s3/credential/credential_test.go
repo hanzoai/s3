@@ -73,7 +73,7 @@ func TestCredentialManagerCreation(t *testing.T) {
 	}
 
 	// Test with the first available store
-	storeName := availableStores[0]
+	storeName := preferFilerFreeStore(availableStores)
 	cm, err := NewCredentialManager(storeName, config, "test.")
 	if err != nil {
 		t.Fatalf("Failed to create credential manager with store %s: %v", storeName, err)
@@ -101,7 +101,19 @@ func TestCredentialInterface(t *testing.T) {
 		t.Skip("No stores available for testing")
 	}
 
-	testCredentialInterfaceWithStore(t, availableStores[0])
+	testCredentialInterfaceWithStore(t, preferFilerFreeStore(availableStores))
+}
+
+// preferFilerFreeStore picks the memory store when registered so interface and
+// integration unit tests don't require a running filer; otherwise it falls back
+// to the first available store.
+func preferFilerFreeStore(stores []CredentialStoreTypeName) CredentialStoreTypeName {
+	for _, s := range stores {
+		if s == StoreTypeMemory {
+			return s
+		}
+	}
+	return stores[0]
 }
 
 func testCredentialInterfaceWithStore(t *testing.T, storeName CredentialStoreTypeName) {
@@ -184,7 +196,7 @@ func TestCredentialManagerIntegration(t *testing.T) {
 		t.Skip("No stores available for testing")
 	}
 
-	storeName := availableStores[0]
+	storeName := preferFilerFreeStore(availableStores)
 	config := util.GetViper()
 	cm, err := NewCredentialManager(storeName, config, "test.")
 	if err != nil {
