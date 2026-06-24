@@ -64,6 +64,11 @@ func (c *HanzoMessagingAgentClient) invokeStartPublishSession(target uint32, pay
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoMessagingAgent.StartPublishSession: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoMessagingAgent.StartPublishSession: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -94,6 +99,11 @@ func (c *HanzoMessagingAgentClient) invokeClosePublishSession(target uint32, pay
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoMessagingAgent.ClosePublishSession: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoMessagingAgent.ClosePublishSession: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -119,6 +129,11 @@ func (c *HanzoMessagingAgentClient) PublishRecord(req []byte) (rpc.Promise, []by
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoMessagingAgent.PublishRecord: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoMessagingAgent.PublishRecord: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -144,6 +159,11 @@ func (c *HanzoMessagingAgentClient) SubscribeRecord(req []byte) (rpc.Promise, []
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoMessagingAgent.SubscribeRecord: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoMessagingAgent.SubscribeRecord: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -178,27 +198,31 @@ func DispatchHanzoMessagingAgent(h HanzoMessagingAgentHandler, envelope []byte) 
 	case HanzoMessagingAgentStartPublishSessionOrdinal:
 		body, err := h.StartPublishSession(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case HanzoMessagingAgentClosePublishSessionOrdinal:
 		body, err := h.ClosePublishSession(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case HanzoMessagingAgentPublishRecordOrdinal:
 		// STREAMING (bidi): per-frame dispatch until the streaming transport ships.
 		body, err := h.PublishRecord(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case HanzoMessagingAgentSubscribeRecordOrdinal:
 		// STREAMING (bidi): per-frame dispatch until the streaming transport ships.
 		body, err := h.SubscribeRecord(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	default:

@@ -77,13 +77,15 @@ func (h unaryHandler) dispatch(envelope []byte) ([]byte, error) {
 	case HanzoMessagingAgentStartPublishSessionOrdinal:
 		body, err := h.store.StartPublishSession(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case HanzoMessagingAgentClosePublishSessionOrdinal:
 		body, err := h.store.ClosePublishSession(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	default:

@@ -80,6 +80,11 @@ func (c *HanzoS3IamCacheClient) invokePutIdentity(target uint32, payload []byte)
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoS3IamCache.PutIdentity: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoS3IamCache.PutIdentity: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -109,6 +114,11 @@ func (c *HanzoS3IamCacheClient) invokeRemoveIdentity(target uint32, payload []by
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoS3IamCache.RemoveIdentity: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoS3IamCache.RemoveIdentity: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -138,6 +148,11 @@ func (c *HanzoS3IamCacheClient) invokePutPolicy(target uint32, payload []byte) (
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoS3IamCache.PutPolicy: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoS3IamCache.PutPolicy: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -167,6 +182,11 @@ func (c *HanzoS3IamCacheClient) invokeGetPolicy(target uint32, payload []byte) (
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoS3IamCache.GetPolicy: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoS3IamCache.GetPolicy: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -196,6 +216,11 @@ func (c *HanzoS3IamCacheClient) invokeListPolicies(target uint32, payload []byte
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoS3IamCache.ListPolicies: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoS3IamCache.ListPolicies: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -225,6 +250,11 @@ func (c *HanzoS3IamCacheClient) invokeDeletePolicy(target uint32, payload []byte
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoS3IamCache.DeletePolicy: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoS3IamCache.DeletePolicy: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -254,6 +284,11 @@ func (c *HanzoS3IamCacheClient) invokePutGroup(target uint32, payload []byte) (r
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoS3IamCache.PutGroup: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoS3IamCache.PutGroup: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -283,6 +318,11 @@ func (c *HanzoS3IamCacheClient) invokeRemoveGroup(target uint32, payload []byte)
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoS3IamCache.RemoveGroup: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoS3IamCache.RemoveGroup: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -315,49 +355,57 @@ func DispatchHanzoS3IamCache(h HanzoS3IamCacheHandler, envelope []byte) ([]byte,
 	case HanzoS3IamCachePutIdentityOrdinal:
 		body, err := h.PutIdentity(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case HanzoS3IamCacheRemoveIdentityOrdinal:
 		body, err := h.RemoveIdentity(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case HanzoS3IamCachePutPolicyOrdinal:
 		body, err := h.PutPolicy(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case HanzoS3IamCacheGetPolicyOrdinal:
 		body, err := h.GetPolicy(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case HanzoS3IamCacheListPoliciesOrdinal:
 		body, err := h.ListPolicies(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case HanzoS3IamCacheDeletePolicyOrdinal:
 		body, err := h.DeletePolicy(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case HanzoS3IamCachePutGroupOrdinal:
 		body, err := h.PutGroup(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case HanzoS3IamCacheRemoveGroupOrdinal:
 		body, err := h.RemoveGroup(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	default:
