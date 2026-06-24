@@ -15,6 +15,7 @@ import (
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
+	masterwire "github.com/hanzoai/s3/s3/wire/master"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -222,13 +223,20 @@ func (ms *MasterServer) Ping(ctx context.Context, req *master_pb.PingRequest) (r
 		})
 	}
 	if req.TargetType == cluster.MasterType {
-		pingErr = pb.WithMasterClient(context.Background(), false, pb.ServerAddress(req.Target), ms.grpcDialOption, false, func(client master_pb.HanzoClient) error {
-			pingResp, err := client.Ping(ctx, &master_pb.PingRequest{})
-			if pingResp != nil {
-				resp.RemoteTimeNs = pingResp.StartTimeNs
+		// Master-to-master liveness probe over the native ZAP transport: Ping is
+		// bridged (see masterZapBridge.Ping), so dial the target master's ZAP
+		// endpoint directly instead of the legacy gRPC master client.
+		zapClient, dialErr := masterwire.Dial("tcp", pb.ServerAddress(req.Target).ToMasterZapAddress())
+		if dialErr != nil {
+			pingErr = dialErr
+		} else {
+			pingResp, pErr := zapClient.Ping(masterwire.PingRequestInput{})
+			if pErr == nil {
+				resp.RemoteTimeNs = pingResp.StartTimeNs()
 			}
-			return err
-		})
+			pingErr = pErr
+			zapClient.Close()
+		}
 	}
 	if pingErr != nil {
 		pingErr = fmt.Errorf("ping %s %s: %v", req.TargetType, req.Target, pingErr)

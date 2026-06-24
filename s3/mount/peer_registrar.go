@@ -49,7 +49,8 @@ type PeerRegistrar struct {
 }
 
 // filerDialFn is how the registrar reaches one configured filer. The
-// production wiring is pb.WithGrpcFilerClient; tests inject a fake.
+// production wiring dials the ZAP transport and hands fn a filerClientAdapter;
+// tests inject a fake.
 type filerDialFn func(ctx context.Context, addr pb.ServerAddress, fn func(client filer_pb.HanzoFilerClient) error) error
 
 // NewPeerRegistrar constructs the registrar; Start launches the background

@@ -1,35 +1,39 @@
 package mount
 
 import (
-	"context"
 	"sync/atomic"
 
-	"google.golang.org/grpc"
-
-	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/util"
+
+	"github.com/zap-proto/go/transport"
 )
 
 var _ = filer_pb.FilerClient(&WFS{})
 
+// WithFilerClient dials the next filer over the native ZAP transport and runs fn
+// with a filer_pb.HanzoFilerClient backed by that connection (see
+// filerClientAdapter). It rotates through option.FilerAddresses on failure, the
+// same retry policy the gRPC path used. The connection is closed when fn
+// returns; the adapter pools nothing, matching the prior per-call dial.
 func (wfs *WFS) WithFilerClient(streamingMode bool, fn func(filer_pb.HanzoFilerClient) error) (err error) {
 
-	return util.Retry("filer grpc", func() error {
+	return util.Retry("filer zap", func() error {
 
 		i := atomic.LoadInt32(&wfs.option.filerIndex)
 		n := len(wfs.option.FilerAddresses)
 		for x := 0; x < n; x++ {
 
 			filerGrpcAddress := wfs.option.FilerAddresses[i].ToGrpcAddress()
-			err = pb.WithGrpcClient(context.Background(), streamingMode, wfs.signature, func(grpcConnection *grpc.ClientConn) error {
-				client := filer_pb.NewHanzoFilerClient(grpcConnection)
-				return fn(client)
-			}, filerGrpcAddress, false, wfs.option.GrpcDialOption)
-
-			if err != nil {
-				// glog.V(0).Infof("WithFilerClient %d %v: %v", x, filerGrpcAddress, err)
+			conn, dialErr := transport.Dial("tcp", filerGrpcAddress)
+			if dialErr != nil {
+				err = dialErr
 			} else {
+				err = fn(newFilerClientAdapter(conn))
+				_ = conn.Close()
+			}
+
+			if err == nil {
 				atomic.StoreInt32(&wfs.option.filerIndex, i)
 				return nil
 			}
