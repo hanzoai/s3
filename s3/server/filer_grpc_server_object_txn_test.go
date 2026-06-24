@@ -9,10 +9,14 @@ import (
 
 	"github.com/hanzoai/s3/s3/cluster/lock_manager"
 	"github.com/hanzoai/s3/s3/filer"
+	"github.com/hanzoai/s3/s3/filerzap"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/util"
+	filerwire "github.com/hanzoai/s3/s3/wire/filer"
+	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -727,25 +731,27 @@ func TestObjectTransactionForwardsToOwner(t *testing.T) {
 		"/buckets/b/obj": {FullPath: "/buckets/b/obj", Attr: filer.Attr{Inode: 1, Mode: 0644}},
 	})
 
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	// Serve the owner filer over the native ZAP transport — this is the wire
+	// the forwarding client now dials (transport.Dial), so the end-to-end
+	// forward hop exercises the real ZAP client+server path, not gRPC.
+	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		filerwire.Dispatch(filerzap.NewServerBackend(owner)),
+		filerstream.Handler(filerzap.NewStreamServer(owner)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
+	t.Cleanup(func() { _ = srv.Close() })
+
 	// Pin the grpc port to the real listener (ToGrpcAddress otherwise adds the
 	// +10000 convention, which dials nothing).
-	port := lis.Addr().(*net.TCPAddr).Port
-	ownerAddr := pb.NewServerAddressWithGrpcPort(lis.Addr().String(), port)
+	port := srv.Addr().(*net.TCPAddr).Port
+	ownerAddr := pb.NewServerAddressWithGrpcPort(srv.Addr().String(), port)
 	sender := pb.ServerAddress("127.0.0.1:1") // bogus: nothing listens here
 
 	// owner's ring points back at the sender; only is_moved keeps it from
 	// re-forwarding to (and failing to dial) that bogus address.
 	withRing(owner, ownerAddr, sender)
 	owner.grpcDialOption = grpc.WithTransportCredentials(insecure.NewCredentials())
-
-	srv := grpc.NewServer()
-	filer_pb.RegisterHanzoFilerServer(srv, owner)
-	go srv.Serve(lis)
-	t.Cleanup(srv.Stop)
 
 	self, selfStore := newTxnTestServer(nil)
 	withRing(self, sender, ownerAddr) // ring owner is the real owner; self forwards
