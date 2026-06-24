@@ -23,7 +23,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
 	"github.com/hanzoai/s3/s3/pb/s3_pb"
 	"github.com/hanzoai/s3/s3/s3api"
-	"github.com/hanzoai/s3/s3/s3api/iceberg"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
 	"github.com/hanzoai/s3/s3/security"
 	stats_collect "github.com/hanzoai/s3/s3/stats"
@@ -381,10 +380,6 @@ func (s3opt *S3Options) startS3Server() bool {
 	}
 	defer s3ApiServer.Shutdown()
 
-	// Start Iceberg REST Catalog server if enabled
-	if *s3opt.portIceberg > 0 {
-		go s3opt.startIcebergServer(s3ApiServer)
-	}
 
 	if runtime.GOOS != "windows" {
 		localSocket := *s3opt.localSocket
@@ -539,44 +534,6 @@ func (s3opt *S3Options) startS3Server() bool {
 
 }
 
-// startIcebergServer starts the Iceberg REST Catalog server on a separate port.
-func (s3opt *S3Options) startIcebergServer(s3ApiServer *s3api.S3ApiServer) {
-	icebergRouter := mux.NewRouter().SkipClean(true)
-
-	// Create Iceberg server using the S3ApiServer as filer client
-	icebergServer := iceberg.NewServer(s3ApiServer, s3ApiServer)
-	icebergServer.SetCredentialValidator(s3ApiServer)
-	icebergServer.SetS3Endpoint(s3opt.deriveS3AdvertisedEndpoint())
-	icebergServer.RegisterRoutes(icebergRouter)
-
-	listenAddress := fmt.Sprintf("%s:%d", *s3opt.bindIp, *s3opt.portIceberg)
-	icebergListener, icebergLocalListener, err := util.NewIpAndLocalListeners(
-		*s3opt.bindIp, *s3opt.portIceberg, time.Duration(*s3opt.idleTimeout)*time.Second)
-	if err != nil {
-		glog.Fatalf("Iceberg REST Catalog listener on %s error: %v", listenAddress, err)
-	}
-
-	glog.V(0).Infof("Start Iceberg REST Catalog Server at http://%s", listenAddress)
-
-	httpS := newHttpServer(icebergRouter, nil)
-	if s3opt.shutdownCtx != nil {
-		go func() {
-			<-s3opt.shutdownCtx.Done()
-			httpS.Shutdown(context.Background())
-		}()
-	}
-	// Serve on localhost as well if we're bound to a different interface
-	if icebergLocalListener != nil {
-		go func() {
-			if err := httpS.Serve(icebergLocalListener); err != nil && err != http.ErrServerClosed {
-				glog.V(0).Infof("Iceberg localhost listener error: %v", err)
-			}
-		}()
-	}
-	if err = httpS.Serve(icebergListener); err != nil && err != http.ErrServerClosed {
-		glog.Fatalf("Iceberg REST Catalog Server Fail to serve: %v", err)
-	}
-}
 
 // deriveS3AdvertisedEndpoint builds the S3 endpoint URL to advertise to
 // Iceberg catalog clients as part of LoadTable FileIO config. To avoid
