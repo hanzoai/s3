@@ -317,6 +317,57 @@ func (b serverBackend) MountList(v filerwire.MountListRequest) ([]byte, error) {
 	return filerwire.NewMountListResponse(filerwire.MountListResponseInput{Mounts: mounts}), nil
 }
 
+// --- request view -> proto converters (shared by server.go and StreamMutateEntry) ---
+
+func createEntryReqFromView(v filerwire.CreateEntryRequest) *filer_pb.CreateEntryRequest {
+	req := &filer_pb.CreateEntryRequest{
+		Directory:                v.Directory(),
+		OExcl:                    v.OExcl(),
+		IsFromOtherCluster:       v.IsFromOtherCluster(),
+		SkipCheckParentDirectory: v.SkipCheckParentDirectory(),
+		Signatures:               signaturesFromView(v.SignaturesLen(), v.Signature),
+		Condition:                writeConditionFromView(v.HasCondition(), v.Condition()),
+	}
+	if v.HasEntry() {
+		req.Entry = entryFromView(v.Entry())
+	}
+	return req
+}
+
+func updateEntryReqFromView(v filerwire.UpdateEntryRequest) *filer_pb.UpdateEntryRequest {
+	req := &filer_pb.UpdateEntryRequest{
+		Directory:          v.Directory(),
+		IsFromOtherCluster: v.IsFromOtherCluster(),
+		Signatures:         signaturesFromView(v.SignaturesLen(), v.Signature),
+		ExpectedExtended:   extendedFromView(v.ExpectedExtendedLen(), v.ExpectedExtended),
+	}
+	if v.HasEntry() {
+		req.Entry = entryFromView(v.Entry())
+	}
+	return req
+}
+
+func deleteEntryReqFromView(v filerwire.DeleteEntryRequest) *filer_pb.DeleteEntryRequest {
+	return &filer_pb.DeleteEntryRequest{
+		Directory:            v.Directory(),
+		Name:                 v.Name(),
+		IsDeleteData:         v.IsDeleteData(),
+		IsRecursive:          v.IsRecursive(),
+		IgnoreRecursiveError: v.IgnoreRecursiveError(),
+		IsFromOtherCluster:   v.IsFromOtherCluster(),
+		IfNotModifiedAfter:   v.IfNotModifiedAfter(),
+		Signatures:           signaturesFromView(v.SignaturesLen(), v.Signature),
+	}
+}
+
+func streamRenameEntryReqFromView(v filerwire.StreamRenameEntryRequest) *filer_pb.StreamRenameEntryRequest {
+	return &filer_pb.StreamRenameEntryRequest{
+		OldDirectory: v.OldDirectory(), OldName: v.OldName(),
+		NewDirectory: v.NewDirectory(), NewName: v.NewName(),
+		Signatures: signaturesFromView(v.SignaturesLen(), v.Signature),
+	}
+}
+
 // --- server-side leaf converters ---
 
 func locationToWire(l *filer_pb.Location) []byte {
