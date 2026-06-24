@@ -468,14 +468,29 @@ func (fo *FilerOptions) startFiler() {
 	// (unary) and transport.OpenStream (streaming) — see pb.WithGrpcFilerClient and
 	// the filerzap backend. This replaces the legacy gRPC HanzoFiler server: the
 	// whole filer (28 unary + 5 streaming RPCs) now answers over ZAP, no gRPC.
-	filerZapSrv, zapErr := transport.ListenStream("tcp", util.JoinHostPort(*fo.bindIp, grpcPort),
-		filerwire.Dispatch(filerzap.NewServerBackend(fs)),
-		filerstream.Handler(filerzap.NewStreamServer(fs)))
+	//
+	// When grpc.filer.cert/.key is configured the listener is PQ-secured mTLS:
+	// transport.PQTLSConfig pins the X25519MLKEM768 hybrid (PQ X-Wing) and the
+	// same cert/CA/allowed-CN gate the legacy gRPC filer enforced applies — no
+	// security downgrade. Otherwise it is plaintext (loopback / dev), exactly as
+	// the gRPC filer was plaintext when no cert was configured.
+	filerAddr := util.JoinHostPort(*fo.bindIp, grpcPort)
+	filerDispatch := filerwire.Dispatch(filerzap.NewServerBackend(fs))
+	filerStream := filerstream.Handler(filerzap.NewStreamServer(fs))
+	var filerZapSrv *transport.Server
+	var zapErr error
+	if tlsCfg := security.ServerTLSConfig(util.GetViper(), "grpc.filer"); tlsCfg != nil {
+		filerZapSrv, zapErr = transport.ListenStreamTLS("tcp", filerAddr,
+			transport.PQTLSConfig(tlsCfg), filerDispatch, filerStream)
+		glog.V(0).Infof("Serving HanzoFiler over PQ-TLS (X25519MLKEM768) ZAP transport on port %d", grpcPort)
+	} else {
+		filerZapSrv, zapErr = transport.ListenStream("tcp", filerAddr, filerDispatch, filerStream)
+		glog.V(0).Infof("Serving HanzoFiler over native ZAP transport (plaintext; set grpc.filer.cert/.key for PQ-TLS) on port %d", grpcPort)
+	}
 	if zapErr != nil {
 		glog.Fatalf("failed to serve filer over ZAP on port %d: %v", grpcPort, zapErr)
 	}
 	zapServers = append(zapServers, filerZapSrv)
-	glog.V(0).Infof("Serving HanzoFiler over native ZAP transport on port %d", grpcPort)
 
 	// stopZapServers closes every ZAP listener (filer + IAM). Server.Close is
 	// idempotent, so the multiple shutdown paths below may all call it safely.
