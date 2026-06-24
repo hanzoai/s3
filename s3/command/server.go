@@ -171,6 +171,7 @@ func init() {
 	s3Options.config = cmdServer.Flag.String("s3.config", "", "path to the config file")
 	s3Options.iamConfig = cmdServer.Flag.String("s3.iam.config", "", "path to the advanced IAM config file for S3. Overrides -iam.config if both are provided.")
 	s3Options.auditLogConfig = cmdServer.Flag.String("s3.auditLogConfig", "", "path to the audit log config file")
+	s3Options.zapPort = cmdServer.Flag.Int("s3.zap.port", 0, "native ZAP service-mesh listen port for in-cloud callers (0 disables; external S3 clients use the HTTPS S3 API)")
 	cmdServer.Flag.Bool("s3.allowEmptyFolder", true, "deprecated, ignored. Empty folder cleanup is now automatic.")
 	s3Options.allowDeleteBucketNotEmpty = cmdServer.Flag.Bool("s3.allowDeleteBucketNotEmpty", true, "allow recursive deleting all entries along with bucket")
 	s3Options.localSocket = cmdServer.Flag.String("s3.localSocket", "", "default to /tmp/hanzo-s3-<port>.sock")

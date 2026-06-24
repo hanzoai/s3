@@ -4,94 +4,121 @@
 // in-cloud callers (team-go, cloud, commerce, …) use this.
 //
 // It is the reference implementation of the platform law (internal = ZAP only):
-// requests/responses are zero-copy ZAP schemas (s3/wire), carried natively over
-// the zaprpc transport, dispatched by schema Kind. Every other Hanzo service
-// exposes itself with this same shape.
+// requests/responses are zero-copy ZAP schemas (s3/wire/object), carried over
+// the canonical github.com/zap-proto/go transport and dispatched by the
+// generated HanzoS3Object service — the SAME wire hanzo and lux share. No
+// struct, no marshal, no protobuf, no per-service one-off transport.
 package zapsvc
 
 import (
-	"context"
-
-	"github.com/hanzoai/s3/s3/wire"
-	"github.com/hanzoai/s3/s3/zaprpc"
+	objectwire "github.com/hanzoai/s3/s3/wire/object"
+	"github.com/zap-proto/go/transport"
 )
 
 // ObjectStore is the backend the ZAP service delegates to. The real S3 engine
-// (filer + volumes) implements this; tests use an in-memory map. Keeping the
-// service layer behind this interface is what lets the ZAP surface land before
-// the internal cluster-transport rip finishes.
+// (filer + volumes) implements this (FilerStore); tests use an in-memory map.
 type ObjectStore interface {
 	Get(bucket, key string) (data []byte, contentType, etag string, err error)
 	Put(bucket, key string, data []byte, contentType string) (etag string, err error)
 }
 
-// Register binds the S3 procedures onto a ZAP server. Handlers Wrap the request
-// buffer into its typed View (zero-copy), call the store, and build the
-// response schema directly — no struct, no marshal.
-func Register(s *zaprpc.Server, store ObjectStore) {
-	s.Handle(uint8(wire.KindGetObjectRequest), func(_ context.Context, reqBuf []byte) ([]byte, error) {
-		req, err := wire.WrapGetObjectRequest(reqBuf)
-		if err != nil {
-			return nil, err
-		}
-		data, ct, etag, err := store.Get(wire.GetObjectRequestBucket(req), wire.GetObjectRequestKey(req))
-		if err != nil {
-			return nil, err
-		}
-		_, buf := wire.NewGetObjectResponse(data, ct, etag)
-		return buf, nil
-	})
-	s.Handle(uint8(wire.KindPutObjectRequest), func(_ context.Context, reqBuf []byte) ([]byte, error) {
-		req, err := wire.WrapPutObjectRequest(reqBuf)
-		if err != nil {
-			return nil, err
-		}
-		etag, err := store.Put(
-			wire.PutObjectRequestBucket(req), wire.PutObjectRequestKey(req),
-			wire.PutObjectRequestData(req), wire.PutObjectRequestContentType(req))
-		if err != nil {
-			return nil, err
-		}
-		_, buf := wire.NewPutObjectResponse(etag)
-		return buf, nil
-	})
+// handler adapts an ObjectStore to the generated HanzoS3ObjectHandler: it Wraps
+// each request buffer into its zero-copy view, calls the store, and builds the
+// response buffer directly.
+type handler struct{ store ObjectStore }
+
+func (h handler) GetObject(req []byte) ([]byte, error) {
+	v, err := objectwire.WrapGetObjectRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	data, ct, etag, err := h.store.Get(v.Bucket(), v.Key())
+	if err != nil {
+		return nil, err
+	}
+	return objectwire.NewGetObjectResponse(objectwire.GetObjectResponseInput{
+		Data: data, ContentType: ct, Etag: etag,
+	}), nil
 }
 
-// Client is the typed S3 ZAP service client internal services hold.
+func (h handler) PutObject(req []byte) ([]byte, error) {
+	v, err := objectwire.WrapPutObjectRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	etag, err := h.store.Put(v.Bucket(), v.Key(), v.Data(), v.ContentType())
+	if err != nil {
+		return nil, err
+	}
+	return objectwire.NewPutObjectResponse(objectwire.PutObjectResponseInput{Etag: etag}), nil
+}
+
+// Dispatch is the HanzoS3Object server dispatch bound to store — pass it to
+// transport.Listen. Exposed so callers can compose it (e.g. behind TLS).
+func Dispatch(store ObjectStore) transport.Dispatch {
+	h := handler{store: store}
+	return func(envelope []byte) ([]byte, error) {
+		return objectwire.DispatchHanzoS3Object(h, envelope)
+	}
+}
+
+// Serve starts the native ZAP S3 service on network/addr (e.g. "tcp",
+// ":18901"), backed by store. Returns the running server; Close stops it.
+func Serve(network, addr string, store ObjectStore) (*transport.Server, error) {
+	return transport.Listen(network, addr, Dispatch(store))
+}
+
+// Client is the typed S3 ZAP service client internal services hold. It owns the
+// transport connection to one S3 endpoint.
 type Client struct {
-	rpc  *zaprpc.Client
-	addr string
+	conn *transport.Conn
+	rpc  *objectwire.HanzoS3ObjectClient
 }
 
-// NewClient targets the S3 service at addr (e.g. "s3.hanzo.svc:<zapport>").
-func NewClient(rpc *zaprpc.Client, addr string) *Client {
-	return &Client{rpc: rpc, addr: addr}
+// Dial connects to the S3 ZAP service at addr (e.g. "s3.hanzo.svc:18901") over
+// plain TCP. For the PQ-secured mesh use DialTLS with transport.PQTLSConfig.
+func Dial(network, addr string) (*Client, error) {
+	conn, err := transport.Dial(network, addr)
+	if err != nil {
+		return nil, err
+	}
+	return &Client{conn: conn, rpc: objectwire.NewHanzoS3ObjectClient(conn, nil)}, nil
 }
+
+// NewClient wraps an already-established transport.Conn (TCP, Unix, or PQ-TLS).
+func NewClient(conn *transport.Conn) *Client {
+	return &Client{conn: conn, rpc: objectwire.NewHanzoS3ObjectClient(conn, nil)}
+}
+
+// Close releases the underlying connection.
+func (c *Client) Close() error { return c.conn.Close() }
 
 // GetObject fetches an object over ZAP.
-func (c *Client) GetObject(ctx context.Context, bucket, key string) (data []byte, contentType, etag string, err error) {
-	_, reqBuf := wire.NewGetObjectRequest(bucket, key)
-	respBuf, err := c.rpc.Call(ctx, c.addr, uint8(wire.KindGetObjectRequest), reqBuf)
+func (c *Client) GetObject(bucket, key string) (data []byte, contentType, etag string, err error) {
+	req := objectwire.NewGetObjectRequest(objectwire.GetObjectRequestInput{Bucket: bucket, Key: key})
+	_, body, err := c.rpc.GetObject(req)
 	if err != nil {
 		return nil, "", "", err
 	}
-	resp, err := wire.WrapGetObjectResponse(respBuf)
+	resp, err := objectwire.WrapGetObjectResponse(body)
 	if err != nil {
 		return nil, "", "", err
 	}
-	return wire.GetObjectResponseData(resp), wire.GetObjectResponseContentType(resp), wire.GetObjectResponseEtag(resp), nil
+	return resp.Data(), resp.ContentType(), resp.Etag(), nil
 }
 
 // PutObject stores an object over ZAP, returning its etag.
-func (c *Client) PutObject(ctx context.Context, bucket, key string, data []byte, contentType string) (etag string, err error) {
-	_, reqBuf := wire.NewPutObjectRequest(bucket, key, data, contentType)
-	respBuf, err := c.rpc.Call(ctx, c.addr, uint8(wire.KindPutObjectRequest), reqBuf)
+func (c *Client) PutObject(bucket, key string, data []byte, contentType string) (etag string, err error) {
+	req := objectwire.NewPutObjectRequest(objectwire.PutObjectRequestInput{
+		Bucket: bucket, Key: key, Data: data, ContentType: contentType,
+	})
+	_, body, err := c.rpc.PutObject(req)
 	if err != nil {
 		return "", err
 	}
-	resp, err := wire.WrapPutObjectResponse(respBuf)
+	resp, err := objectwire.WrapPutObjectResponse(body)
 	if err != nil {
 		return "", err
 	}
-	return wire.PutObjectResponseEtag(resp), nil
+	return resp.Etag(), nil
 }
