@@ -72,6 +72,11 @@ func (c *HanzoMessagingClient) invoke(method, target uint32, payload []byte, nam
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoMessaging.%s: %s", name, resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoMessaging.%s: status %d", name, resp.Status)
 	}
 	return p, resp.Body, nil
@@ -447,7 +452,8 @@ func DispatchHanzoMessaging(h HanzoMessagingHandler, envelope []byte) ([]byte, e
 func dispatchOne(promiseID uint32, fn func([]byte) ([]byte, error), payload []byte) ([]byte, error) {
 	body, err := fn(payload)
 	if err != nil {
-		return rpc.BuildResponse(rpc.StatusInternal, promiseID, nil), nil
+		// Carry the handler error message so the caller can reconstruct sentinels.
+		return rpc.BuildResponse(rpc.StatusInternal, promiseID, []byte(err.Error())), nil
 	}
 	return rpc.BuildResponse(rpc.StatusOK, promiseID, body), nil
 }

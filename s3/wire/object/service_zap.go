@@ -65,6 +65,11 @@ func (c *HanzoS3ObjectClient) invokeGetObject(target uint32, payload []byte) (rp
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoS3Object.GetObject: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoS3Object.GetObject: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -92,6 +97,11 @@ func (c *HanzoS3ObjectClient) invokePutObject(target uint32, payload []byte) (rp
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoS3Object.PutObject: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoS3Object.PutObject: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -117,13 +127,15 @@ func DispatchHanzoS3Object(h HanzoS3ObjectHandler, envelope []byte) ([]byte, err
 	case HanzoS3ObjectGetObjectOrdinal:
 		body, err := h.GetObject(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case HanzoS3ObjectPutObjectOrdinal:
 		body, err := h.PutObject(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	default:

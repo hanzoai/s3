@@ -106,6 +106,11 @@ func (c *VolumeServerClient) invokeBatchDelete(target uint32, payload []byte) (r
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.BatchDelete: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.BatchDelete: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -135,6 +140,11 @@ func (c *VolumeServerClient) invokeVacuumVolumeCheck(target uint32, payload []by
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VacuumVolumeCheck: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VacuumVolumeCheck: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -167,6 +177,11 @@ func (c *VolumeServerClient) invokeVacuumVolumeCompact(target uint32, payload []
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VacuumVolumeCompact: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VacuumVolumeCompact: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -196,6 +211,11 @@ func (c *VolumeServerClient) invokeVacuumVolumeCommit(target uint32, payload []b
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VacuumVolumeCommit: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VacuumVolumeCommit: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -225,6 +245,11 @@ func (c *VolumeServerClient) invokeVacuumVolumeCleanup(target uint32, payload []
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VacuumVolumeCleanup: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VacuumVolumeCleanup: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -254,6 +279,11 @@ func (c *VolumeServerClient) invokeDeleteCollection(target uint32, payload []byt
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.DeleteCollection: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.DeleteCollection: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -283,6 +313,11 @@ func (c *VolumeServerClient) invokeAllocateVolume(target uint32, payload []byte)
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.AllocateVolume: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.AllocateVolume: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -312,6 +347,11 @@ func (c *VolumeServerClient) invokeVolumeSyncStatus(target uint32, payload []byt
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeSyncStatus: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeSyncStatus: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -344,6 +384,11 @@ func (c *VolumeServerClient) invokeVolumeIncrementalCopy(target uint32, payload 
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeIncrementalCopy: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeIncrementalCopy: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -373,6 +418,11 @@ func (c *VolumeServerClient) invokeVolumeMount(target uint32, payload []byte) (r
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeMount: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeMount: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -402,6 +452,11 @@ func (c *VolumeServerClient) invokeVolumeUnmount(target uint32, payload []byte) 
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeUnmount: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeUnmount: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -431,6 +486,11 @@ func (c *VolumeServerClient) invokeVolumeDelete(target uint32, payload []byte) (
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeDelete: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeDelete: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -460,6 +520,11 @@ func (c *VolumeServerClient) invokeVolumeMarkReadonly(target uint32, payload []b
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeMarkReadonly: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeMarkReadonly: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -489,6 +554,11 @@ func (c *VolumeServerClient) invokeVolumeMarkWritable(target uint32, payload []b
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeMarkWritable: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeMarkWritable: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -518,6 +588,11 @@ func (c *VolumeServerClient) invokeVolumeConfigure(target uint32, payload []byte
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeConfigure: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeConfigure: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -547,6 +622,11 @@ func (c *VolumeServerClient) invokeVolumeStatus(target uint32, payload []byte) (
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeStatus: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeStatus: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -576,6 +656,11 @@ func (c *VolumeServerClient) invokeGetState(target uint32, payload []byte) (rpc.
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.GetState: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.GetState: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -605,6 +690,11 @@ func (c *VolumeServerClient) invokeSetState(target uint32, payload []byte) (rpc.
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.SetState: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.SetState: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -637,6 +727,11 @@ func (c *VolumeServerClient) invokeVolumeCopy(target uint32, payload []byte) (rp
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeCopy: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeCopy: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -666,6 +761,11 @@ func (c *VolumeServerClient) invokeReadVolumeFileStatus(target uint32, payload [
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.ReadVolumeFileStatus: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.ReadVolumeFileStatus: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -698,6 +798,11 @@ func (c *VolumeServerClient) invokeCopyFile(target uint32, payload []byte) (rpc.
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.CopyFile: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.CopyFile: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -730,6 +835,11 @@ func (c *VolumeServerClient) invokeReceiveFile(target uint32, payload []byte) (r
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.ReceiveFile: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.ReceiveFile: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -759,6 +869,11 @@ func (c *VolumeServerClient) invokeReadNeedleBlob(target uint32, payload []byte)
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.ReadNeedleBlob: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.ReadNeedleBlob: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -788,6 +903,11 @@ func (c *VolumeServerClient) invokeReadNeedleMeta(target uint32, payload []byte)
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.ReadNeedleMeta: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.ReadNeedleMeta: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -817,6 +937,11 @@ func (c *VolumeServerClient) invokeWriteNeedleBlob(target uint32, payload []byte
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.WriteNeedleBlob: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.WriteNeedleBlob: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -849,6 +974,11 @@ func (c *VolumeServerClient) invokeReadAllNeedles(target uint32, payload []byte)
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.ReadAllNeedles: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.ReadAllNeedles: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -881,6 +1011,11 @@ func (c *VolumeServerClient) invokeVolumeTailSender(target uint32, payload []byt
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeTailSender: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeTailSender: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -910,6 +1045,11 @@ func (c *VolumeServerClient) invokeVolumeTailReceiver(target uint32, payload []b
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeTailReceiver: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeTailReceiver: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -939,6 +1079,11 @@ func (c *VolumeServerClient) invokeVolumeEcShardsGenerate(target uint32, payload
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsGenerate: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsGenerate: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -968,6 +1113,11 @@ func (c *VolumeServerClient) invokeVolumeEcShardsRebuild(target uint32, payload 
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsRebuild: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsRebuild: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -997,6 +1147,11 @@ func (c *VolumeServerClient) invokeVolumeEcShardsCopy(target uint32, payload []b
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsCopy: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsCopy: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1026,6 +1181,11 @@ func (c *VolumeServerClient) invokeVolumeEcShardsDelete(target uint32, payload [
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsDelete: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsDelete: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1055,6 +1215,11 @@ func (c *VolumeServerClient) invokeVolumeEcShardsMount(target uint32, payload []
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsMount: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsMount: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1084,6 +1249,11 @@ func (c *VolumeServerClient) invokeVolumeEcShardsUnmount(target uint32, payload 
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsUnmount: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsUnmount: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1116,6 +1286,11 @@ func (c *VolumeServerClient) invokeVolumeEcShardRead(target uint32, payload []by
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardRead: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardRead: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1145,6 +1320,11 @@ func (c *VolumeServerClient) invokeVolumeEcBlobDelete(target uint32, payload []b
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeEcBlobDelete: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeEcBlobDelete: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1174,6 +1354,11 @@ func (c *VolumeServerClient) invokeVolumeEcShardsToVolume(target uint32, payload
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsToVolume: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsToVolume: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1203,6 +1388,11 @@ func (c *VolumeServerClient) invokeVolumeEcShardsInfo(target uint32, payload []b
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsInfo: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeEcShardsInfo: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1235,6 +1425,11 @@ func (c *VolumeServerClient) invokeVolumeTierMoveDatToRemote(target uint32, payl
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeTierMoveDatToRemote: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeTierMoveDatToRemote: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1267,6 +1462,11 @@ func (c *VolumeServerClient) invokeVolumeTierMoveDatFromRemote(target uint32, pa
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeTierMoveDatFromRemote: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeTierMoveDatFromRemote: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1296,6 +1496,11 @@ func (c *VolumeServerClient) invokeVolumeServerStatus(target uint32, payload []b
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeServerStatus: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeServerStatus: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1325,6 +1530,11 @@ func (c *VolumeServerClient) invokeVolumeServerLeave(target uint32, payload []by
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeServerLeave: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeServerLeave: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1354,6 +1564,11 @@ func (c *VolumeServerClient) invokeFetchAndWriteNeedle(target uint32, payload []
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.FetchAndWriteNeedle: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.FetchAndWriteNeedle: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1383,6 +1598,11 @@ func (c *VolumeServerClient) invokeScrubVolume(target uint32, payload []byte) (r
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.ScrubVolume: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.ScrubVolume: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1412,6 +1632,11 @@ func (c *VolumeServerClient) invokeScrubEcVolume(target uint32, payload []byte) 
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.ScrubEcVolume: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.ScrubEcVolume: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1444,6 +1669,11 @@ func (c *VolumeServerClient) invokeQuery(target uint32, payload []byte) (rpc.Pro
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.Query: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.Query: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1473,6 +1703,11 @@ func (c *VolumeServerClient) invokeVolumeNeedleStatus(target uint32, payload []b
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.VolumeNeedleStatus: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.VolumeNeedleStatus: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1502,6 +1737,11 @@ func (c *VolumeServerClient) invokePing(target uint32, payload []byte) (rpc.Prom
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("VolumeServer.Ping: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("VolumeServer.Ping: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -1574,289 +1814,337 @@ func DispatchVolumeServer(h VolumeServerHandler, envelope []byte) ([]byte, error
 	case VolumeServerBatchDeleteOrdinal:
 		body, err := h.BatchDelete(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVacuumVolumeCheckOrdinal:
 		body, err := h.VacuumVolumeCheck(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVacuumVolumeCompactOrdinal:
 		body, err := h.VacuumVolumeCompact(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVacuumVolumeCommitOrdinal:
 		body, err := h.VacuumVolumeCommit(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVacuumVolumeCleanupOrdinal:
 		body, err := h.VacuumVolumeCleanup(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerDeleteCollectionOrdinal:
 		body, err := h.DeleteCollection(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerAllocateVolumeOrdinal:
 		body, err := h.AllocateVolume(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeSyncStatusOrdinal:
 		body, err := h.VolumeSyncStatus(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeIncrementalCopyOrdinal:
 		body, err := h.VolumeIncrementalCopy(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeMountOrdinal:
 		body, err := h.VolumeMount(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeUnmountOrdinal:
 		body, err := h.VolumeUnmount(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeDeleteOrdinal:
 		body, err := h.VolumeDelete(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeMarkReadonlyOrdinal:
 		body, err := h.VolumeMarkReadonly(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeMarkWritableOrdinal:
 		body, err := h.VolumeMarkWritable(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeConfigureOrdinal:
 		body, err := h.VolumeConfigure(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeStatusOrdinal:
 		body, err := h.VolumeStatus(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerGetStateOrdinal:
 		body, err := h.GetState(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerSetStateOrdinal:
 		body, err := h.SetState(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeCopyOrdinal:
 		body, err := h.VolumeCopy(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerReadVolumeFileStatusOrdinal:
 		body, err := h.ReadVolumeFileStatus(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerCopyFileOrdinal:
 		body, err := h.CopyFile(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerReceiveFileOrdinal:
 		body, err := h.ReceiveFile(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerReadNeedleBlobOrdinal:
 		body, err := h.ReadNeedleBlob(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerReadNeedleMetaOrdinal:
 		body, err := h.ReadNeedleMeta(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerWriteNeedleBlobOrdinal:
 		body, err := h.WriteNeedleBlob(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerReadAllNeedlesOrdinal:
 		body, err := h.ReadAllNeedles(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeTailSenderOrdinal:
 		body, err := h.VolumeTailSender(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeTailReceiverOrdinal:
 		body, err := h.VolumeTailReceiver(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeEcShardsGenerateOrdinal:
 		body, err := h.VolumeEcShardsGenerate(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeEcShardsRebuildOrdinal:
 		body, err := h.VolumeEcShardsRebuild(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeEcShardsCopyOrdinal:
 		body, err := h.VolumeEcShardsCopy(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeEcShardsDeleteOrdinal:
 		body, err := h.VolumeEcShardsDelete(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeEcShardsMountOrdinal:
 		body, err := h.VolumeEcShardsMount(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeEcShardsUnmountOrdinal:
 		body, err := h.VolumeEcShardsUnmount(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeEcShardReadOrdinal:
 		body, err := h.VolumeEcShardRead(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeEcBlobDeleteOrdinal:
 		body, err := h.VolumeEcBlobDelete(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeEcShardsToVolumeOrdinal:
 		body, err := h.VolumeEcShardsToVolume(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeEcShardsInfoOrdinal:
 		body, err := h.VolumeEcShardsInfo(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeTierMoveDatToRemoteOrdinal:
 		body, err := h.VolumeTierMoveDatToRemote(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeTierMoveDatFromRemoteOrdinal:
 		body, err := h.VolumeTierMoveDatFromRemote(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeServerStatusOrdinal:
 		body, err := h.VolumeServerStatus(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeServerLeaveOrdinal:
 		body, err := h.VolumeServerLeave(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerFetchAndWriteNeedleOrdinal:
 		body, err := h.FetchAndWriteNeedle(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerScrubVolumeOrdinal:
 		body, err := h.ScrubVolume(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerScrubEcVolumeOrdinal:
 		body, err := h.ScrubEcVolume(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerQueryOrdinal:
 		body, err := h.Query(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerVolumeNeedleStatusOrdinal:
 		body, err := h.VolumeNeedleStatus(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case VolumeServerPingOrdinal:
 		body, err := h.Ping(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	default:
