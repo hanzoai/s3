@@ -3,6 +3,7 @@ package shell
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -10,13 +11,21 @@ import (
 	"strings"
 
 	"github.com/hanzoai/s3/s3/filer"
-	"github.com/hanzoai/s3/s3/pb/s3_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
+	s3wire "github.com/hanzoai/s3/s3/wire/s3"
 
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 )
 
-var LoadConfig = loadConfig
+// LoadConfig and SaveConfig are the persistence seam for the circuit-breaker
+// config. They deal in the canonical on-disk payload (ZAP-encoded bytes); the
+// command's writer output is a separate human-readable echo. Tests override
+// both to chain successive invocations through the same payload the filer
+// would have stored.
+var (
+	LoadConfig = loadConfig
+	SaveConfig = saveConfig
+)
 
 func init() {
 	Commands = append(Commands, &commandS3CircuitBreaker{})
@@ -85,12 +94,17 @@ func (c *commandS3CircuitBreaker) Do(args []string, commandEnv *CommandEnv, writ
 		return err
 	}
 
-	cbCfg := &s3_pb.S3CircuitBreakerConfig{
-		Buckets: make(map[string]*s3_pb.S3CircuitBreakerOptions),
+	cbCfg := &s3wire.CircuitBreakerConfigFields{
+		Buckets: make(map[string]*s3wire.CircuitBreakerOptionsFields),
 	}
 	if buf.Len() > 0 {
-		if err = filer.ParseS3ConfigurationFromBytes(buf.Bytes(), cbCfg); err != nil {
+		decoded, err := s3wire.DecodeCircuitBreakerConfig(buf.Bytes())
+		if err != nil {
 			return err
+		}
+		cbCfg.Global = decoded.Global
+		if decoded.Buckets != nil {
+			cbCfg.Buckets = decoded.Buckets
 		}
 	}
 
@@ -134,10 +148,10 @@ func (c *commandS3CircuitBreaker) Do(args []string, commandEnv *CommandEnv, writ
 
 		if len(*buckets) > 0 {
 			for _, bucket := range cmdBuckets {
-				var cbOptions *s3_pb.S3CircuitBreakerOptions
+				var cbOptions *s3wire.CircuitBreakerOptionsFields
 				var exists bool
 				if cbOptions, exists = cbCfg.Buckets[bucket]; !exists {
-					cbOptions = &s3_pb.S3CircuitBreakerOptions{}
+					cbOptions = &s3wire.CircuitBreakerOptionsFields{}
 					cbCfg.Buckets[bucket] = cbOptions
 				}
 				cbOptions.Enabled = !*disabled
@@ -158,7 +172,7 @@ func (c *commandS3CircuitBreaker) Do(args []string, commandEnv *CommandEnv, writ
 		if *global {
 			globalOptions := cbCfg.Global
 			if globalOptions == nil {
-				globalOptions = &s3_pb.S3CircuitBreakerOptions{Actions: make(map[string]int64, len(cmdActions))}
+				globalOptions = &s3wire.CircuitBreakerOptionsFields{Actions: make(map[string]int64, len(cmdActions))}
 				cbCfg.Global = globalOptions
 			}
 			globalOptions.Enabled = !*disabled
@@ -176,24 +190,30 @@ func (c *commandS3CircuitBreaker) Do(args []string, commandEnv *CommandEnv, writ
 		}
 	}
 
-	buf.Reset()
-	err = filer.ProtoToText(&buf, cbCfg)
+	if len(cbCfg.Buckets) == 0 {
+		cbCfg.Buckets = nil
+	}
+	encoded := s3wire.EncodeCircuitBreakerConfig(*cbCfg)
+
+	text, err := json.MarshalIndent(cbCfg, "", "  ")
 	if err != nil {
 		return err
 	}
-
-	fmt.Fprint(writer, buf.String())
-	fmt.Fprintln(writer)
+	fmt.Fprintln(writer, string(text))
 
 	if *apply {
-		if err := commandEnv.WithFilerClient(false, func(client filer_pb.HanzoFilerClient) error {
-			return filer.SaveInsideFiler(context.Background(), client, dir, file, buf.Bytes())
-		}); err != nil {
+		if err := SaveConfig(commandEnv, dir, file, encoded); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func saveConfig(commandEnv *CommandEnv, dir string, file string, content []byte) error {
+	return commandEnv.WithFilerClient(false, func(client filer_pb.HanzoFilerClient) error {
+		return filer.SaveInsideFiler(context.Background(), client, dir, file, content)
+	})
 }
 
 func loadConfig(commandEnv *CommandEnv, dir string, file string, buf *bytes.Buffer) error {
@@ -205,7 +225,7 @@ func loadConfig(commandEnv *CommandEnv, dir string, file string, buf *bytes.Buff
 	return nil
 }
 
-func insertOrUpdateValues(cbOptions *s3_pb.S3CircuitBreakerOptions, cmdActions []string, cmdValues []int64, limitType *string) error {
+func insertOrUpdateValues(cbOptions *s3wire.CircuitBreakerOptionsFields, cmdActions []string, cmdValues []int64, limitType *string) error {
 	if len(*limitType) == 0 {
 		return fmt.Errorf("type not valid, only 'count' and 'bytes' are allowed")
 	}
@@ -222,7 +242,7 @@ func insertOrUpdateValues(cbOptions *s3_pb.S3CircuitBreakerOptions, cmdActions [
 	return nil
 }
 
-func deleteBucketsActions(cmdBuckets []string, cbCfg *s3_pb.S3CircuitBreakerConfig, cmdActions []string, limitType *string) {
+func deleteBucketsActions(cmdBuckets []string, cbCfg *s3wire.CircuitBreakerConfigFields, cmdActions []string, limitType *string) {
 	if cbCfg.Buckets == nil {
 		return
 	}
@@ -252,7 +272,7 @@ func deleteBucketsActions(cmdBuckets []string, cbCfg *s3_pb.S3CircuitBreakerConf
 	}
 }
 
-func deleteGlobalActions(cbCfg *s3_pb.S3CircuitBreakerConfig, cmdActions []string, limitType *string) {
+func deleteGlobalActions(cbCfg *s3wire.CircuitBreakerConfigFields, cmdActions []string, limitType *string) {
 	globalOptions := cbCfg.Global
 	if globalOptions == nil {
 		return

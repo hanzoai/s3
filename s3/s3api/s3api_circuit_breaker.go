@@ -13,10 +13,10 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
 	"github.com/hanzoai/s3/s3/stats"
+	s3wire "github.com/hanzoai/s3/s3/wire/s3"
 )
 
 type CircuitBreaker struct {
@@ -61,18 +61,15 @@ func NewCircuitBreaker(option *S3ApiServerOption) *CircuitBreaker {
 }
 
 func (cb *CircuitBreaker) LoadS3ApiConfigurationFromBytes(content []byte) error {
-	cbCfg := &s3_pb.S3CircuitBreakerConfig{}
-	if err := filer.ParseS3ConfigurationFromBytes(content, cbCfg); err != nil {
+	cfg, err := s3wire.DecodeCircuitBreakerConfig(content)
+	if err != nil {
 		glog.Warningf("unmarshal error: %v", err)
 		return fmt.Errorf("unmarshal error: %w", err)
 	}
-	if err := cb.loadCircuitBreakerConfig(cbCfg); err != nil {
-		return err
-	}
-	return nil
+	return cb.loadCircuitBreakerConfig(cfg)
 }
 
-func (cb *CircuitBreaker) loadCircuitBreakerConfig(cfg *s3_pb.S3CircuitBreakerConfig) error {
+func (cb *CircuitBreaker) loadCircuitBreakerConfig(cfg s3wire.CircuitBreakerConfigFields) error {
 
 	//global
 	globalEnabled := false

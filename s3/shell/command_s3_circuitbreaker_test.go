@@ -22,8 +22,8 @@ var (
 				"global": {
 					"enabled": true,
 					"actions": {
-						"Read:Count": "500",
-						"Write:Count": "200"
+						"Read:Count": 500,
+						"Write:Count": 200
 					}
 				}
 			}`,
@@ -35,8 +35,8 @@ var (
 			result: `{
 				"global": {
 					"actions": {
-						"Read:Count": "500",
-						"Write:Count": "200"
+						"Read:Count": 500,
+						"Write:Count": 200
 					}
 				}
 			}`,
@@ -48,30 +48,30 @@ var (
 			result: `{
 				"global": {
 					"actions": {
-						"Read:Count": "500",
-						"Write:Count": "200"
+						"Read:Count": 500,
+						"Write:Count": 200
 					}
 				},
 				"buckets": {
 					"x": {
 						"enabled": true,
 						"actions": {
-							"Read:Count": "200",
-							"Write:Count": "100"
+							"Read:Count": 200,
+							"Write:Count": 100
 						}
 					},
 					"y": {
 						"enabled": true,
 						"actions": {
-							"Read:Count": "200",
-							"Write:Count": "100"
+							"Read:Count": 200,
+							"Write:Count": 100
 						}
 					},
 					"z": {
 						"enabled": true,
 						"actions": {
-							"Read:Count": "200",
-							"Write:Count": "100"
+							"Read:Count": 200,
+							"Write:Count": 100
 						}
 					}
 				}
@@ -84,29 +84,29 @@ var (
 			result: `{
 			  "global": {
 				"actions": {
-				  "Read:Count": "500",
-				  "Write:Count": "200"
+				  "Read:Count": 500,
+				  "Write:Count": 200
 				}
 			  },
 			  "buckets": {
 				"x": {
 				  "actions": {
-					"Read:Count": "200",
-					"Write:Count": "100"
+					"Read:Count": 200,
+					"Write:Count": 100
 				  }
 				},
 				"y": {
 				  "enabled": true,
 				  "actions": {
-					"Read:Count": "200",
-					"Write:Count": "100"
+					"Read:Count": 200,
+					"Write:Count": 100
 				  }
 				},
 				"z": {
 				  "enabled": true,
 				  "actions": {
-					"Read:Count": "200",
-					"Write:Count": "100"
+					"Read:Count": 200,
+					"Write:Count": 100
 				  }
 				}
 			  }
@@ -119,23 +119,23 @@ var (
 			result: `{
 			  "global": {
 				"actions": {
-				  "Read:Count": "500",
-				  "Write:Count": "200"
+				  "Read:Count": 500,
+				  "Write:Count": 200
 				}
 			  },
 			  "buckets": {
 				"y": {
 				  "enabled": true,
 				  "actions": {
-					"Read:Count": "200",
-					"Write:Count": "100"
+					"Read:Count": 200,
+					"Write:Count": 100
 				  }
 				},
 				"z": {
 				  "enabled": true,
 				  "actions": {
-					"Read:Count": "200",
-					"Write:Count": "100"
+					"Read:Count": 200,
+					"Write:Count": 100
 				  }
 				}
 			  }
@@ -148,30 +148,30 @@ var (
 			result: `{
 			  "global": {
 				"actions": {
-				  "Read:Count": "500",
-				  "Write:Count": "200"
+				  "Read:Count": 500,
+				  "Write:Count": 200
 				}
 			  },
 			  "buckets": {
 				"x": {
 				  "enabled": true,
 				  "actions": {
-					"Write:MB": "1073741824"
+					"Write:MB": 1073741824
 				  }
 				},
 				"y": {
 				  "enabled": true,
 				  "actions": {
-					"Read:Count": "200",
-					"Write:Count": "100",
-					"Write:MB": "1073741824"
+					"Read:Count": 200,
+					"Write:Count": 100,
+					"Write:MB": 1073741824
 				  }
 				},
 				"z": {
 				  "enabled": true,
 				  "actions": {
-					"Read:Count": "200",
-					"Write:Count": "100"
+					"Read:Count": 200,
+					"Write:Count": 100
 				  }
 				}
 			  }
@@ -184,8 +184,8 @@ var (
 			result: `{
 			  "global": {
 				"actions": {
-				  "Read:Count": "500",
-				  "Write:Count": "200"
+				  "Read:Count": 500,
+				  "Write:Count": 200
 				}
 			  },
 			  "buckets": {
@@ -195,15 +195,15 @@ var (
 				"y": {
 				  "enabled": true,
 				  "actions": {
-					"Read:Count": "200",
-					"Write:Count": "100"
+					"Read:Count": 200,
+					"Write:Count": 100
 				  }
 				},
 				"z": {
 				  "enabled": true,
 				  "actions": {
-					"Read:Count": "200",
-					"Write:Count": "100"
+					"Read:Count": 200,
+					"Write:Count": 100
 				  }
 				}
 			  }
@@ -217,8 +217,8 @@ var (
 			  "global": {
 				"enabled": true,
 				"actions": {
-				  "Read:Count": "500",
-				  "Write:Count": "200"
+				  "Read:Count": 500,
+				  "Write:Count": 200
 				}
 			  },
 			  "buckets": {
@@ -228,15 +228,15 @@ var (
 				"y": {
 				  "enabled": true,
 				  "actions": {
-					"Read:Count": "200",
-					"Write:Count": "100"
+					"Read:Count": 200,
+					"Write:Count": 100
 				  }
 				},
 				"z": {
 				  "enabled": true,
 				  "actions": {
-					"Read:Count": "200",
-					"Write:Count": "100"
+					"Read:Count": 200,
+					"Write:Count": 100
 				  }
 				}
 			  }
@@ -254,39 +254,39 @@ var (
 )
 
 func TestCircuitBreakerShell(t *testing.T) {
-	var writeBuf bytes.Buffer
+	// stored is the canonical ZAP-encoded payload the filer would hold; the
+	// persistence seam (LoadConfig/SaveConfig) chains it across invocations,
+	// exactly as production reads/writes it via the filer.
+	var stored []byte
 	cmd := &commandS3CircuitBreaker{}
 	LoadConfig = func(commandEnv *CommandEnv, dir string, file string, buf *bytes.Buffer) error {
-		_, err := buf.Write(writeBuf.Bytes())
-		if err != nil {
-			return err
-		}
-		writeBuf.Reset()
+		_, err := buf.Write(stored)
+		return err
+	}
+	SaveConfig = func(commandEnv *CommandEnv, dir string, file string, content []byte) error {
+		stored = append([]byte(nil), content...)
 		return nil
 	}
 
-	for i, tc := range TestCases {
-		err := cmd.Do(tc.args, nil, &writeBuf)
+	for _, tc := range TestCases {
+		var writeBuf bytes.Buffer
+		// -apply so the canonical payload is persisted through SaveConfig.
+		err := cmd.Do(append(tc.args, "-apply"), nil, &writeBuf)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if i != 0 {
-			result := writeBuf.String()
 
-			actual := make(map[string]interface{})
-			err := json.Unmarshal([]byte(result), &actual)
-			if err != nil {
-				t.Error(err)
-			}
+		actual := make(map[string]interface{})
+		if err := json.Unmarshal(writeBuf.Bytes(), &actual); err != nil {
+			t.Fatal(err)
+		}
 
-			expect := make(map[string]interface{})
-			err = json.Unmarshal([]byte(result), &expect)
-			if err != nil {
-				t.Error(err)
-			}
-			if !reflect.DeepEqual(actual, expect) {
-				t.Fatal("result of s3 circuit breaker shell command is unexpected!")
-			}
+		expect := make(map[string]interface{})
+		if err := json.Unmarshal([]byte(tc.result), &expect); err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(actual, expect) {
+			t.Fatalf("unexpected result for args %v:\n got: %v\nwant: %v", tc.args, actual, expect)
 		}
 	}
 }
