@@ -3,7 +3,7 @@ package command
 import "testing"
 
 // s3 mini must resolve admin credentials from security.toml [admin] /
-// WEED_ADMIN_* env vars the same way the standalone `s3 admin` command does.
+// S3_ADMIN_* env vars the same way the standalone `s3 admin` command does.
 // This exercises the production fallback so the flag-name -> viper-key mapping
 // stays correct, in particular the read-only keys where the mini flag
 // (admin.readOnlyUser) and viper key (admin.readonly.user) differ.
@@ -16,10 +16,10 @@ func TestApplyMiniAdminCredentialFallbackFromEnv(t *testing.T) {
 		readOnlyPassword: &readOnlyPassword,
 	}
 
-	t.Setenv("WEED_ADMIN_USER", "env-admin")
-	t.Setenv("WEED_ADMIN_PASSWORD", "env-secret")
-	t.Setenv("WEED_ADMIN_READONLY_USER", "env-ro")
-	t.Setenv("WEED_ADMIN_READONLY_PASSWORD", "env-ro-secret")
+	t.Setenv("S3_ADMIN_USER", "env-admin")
+	t.Setenv("S3_ADMIN_PASSWORD", "env-secret")
+	t.Setenv("S3_ADMIN_READONLY_USER", "env-ro")
+	t.Setenv("S3_ADMIN_READONLY_PASSWORD", "env-ro-secret")
 
 	applyMiniAdminCredentialFallback(options)
 
