@@ -118,15 +118,29 @@ func (cs *ConsensusServer) Name() string { return string(cs.serverAddr) }
 // beyond the field type). Leader-election and log persistence are the
 // consensus engine's job, so the Raft-era tuning knobs are no-ops. ---
 
-// Leader: Lux consensus is LEADERLESS — there is no elected coordinator and
-// no leader-forwarding. Every replica may propose, and consensus
-// totally-orders the proposals; the monotonic FSM (UpAdjustMaxVolumeId)
-// reconciles concurrent proposals by order. So each node answers "itself":
-// the master's "if I am the leader, do X" gates therefore pass on EVERY
-// node, which is exactly the leaderless behavior — every master acts and
-// proposes directly. More resilient (no election stalls, no leader as a
-// single point of failure) and faster (no forward-to-leader hop) than Raft.
-func (cs *ConsensusServer) Leader() string { return cs.Name() }
+// Leader returns the PINNED WRITER — the one master permitted to run the
+// serialization-critical metadata ops the master gates behind IsLeader()
+// (volume growth/assignment, vacuum/GC, sequence allocation). Lux consensus
+// itself is LEADERLESS: any replica may propose and consensus totally-orders
+// the replog, and the monotonic FSM (UpAdjustMaxVolumeId) reconciles
+// *commutative* commands by order. But the gated ops are NOT commutative — N
+// masters growing volumes, assigning IDs, and vacuuming at once would
+// over-allocate, race volume-IDs, and double-GC. So the writer is an
+// app-level role, orthogonal to the leaderless log, pinned deterministically
+// to the lowest member address in the (consensus-agreed) membership: every
+// node computes the same writer with no election and no leader-forwarding,
+// and when the writer leaves the next-lowest takes over.
+func (cs *ConsensusServer) Leader() string {
+	cs.peersMu.RLock()
+	defer cs.peersMu.RUnlock()
+	writer := cs.Name()
+	for _, addr := range cs.peers {
+		if a := string(addr); a < writer {
+			writer = a
+		}
+	}
+	return writer
+}
 
 // Start is a no-op: the engine is already started by NewConsensusServer.
 func (cs *ConsensusServer) Start() error { return nil }
