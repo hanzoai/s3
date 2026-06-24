@@ -11,10 +11,14 @@ import (
 
 	"github.com/seaweedfs/go-fuse/v2/fuse"
 	"github.com/hanzoai/s3/s3/filer"
+	"github.com/hanzoai/s3/s3/filerzap"
 	"github.com/hanzoai/s3/s3/mount/meta_cache"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/util"
+	filerwire "github.com/hanzoai/s3/s3/wire/filer"
+	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -71,19 +75,14 @@ func (s *createEntryTestServer) snapshot() createEntrySnapshot {
 func newCreateTestWFS(t *testing.T) (*WFS, *createEntryTestServer) {
 	t.Helper()
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	testServer := &createEntryTestServer{}
+	listener, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		filerwire.Dispatch(filerzap.NewServerBackend(testServer)),
+		filerstream.Handler(filerzap.NewStreamServer(testServer)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
-	t.Cleanup(func() {
-		_ = listener.Close()
-	})
-
-	server := pb.NewGrpcServer()
-	testServer := &createEntryTestServer{}
-	filer_pb.RegisterHanzoFilerServer(server, testServer)
-	go server.Serve(listener)
-	t.Cleanup(server.Stop)
+	t.Cleanup(func() { _ = listener.Close() })
 
 	uidGidMapper, err := meta_cache.NewUidGidMapper("", "")
 	if err != nil {
