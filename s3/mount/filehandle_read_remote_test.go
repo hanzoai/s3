@@ -8,10 +8,14 @@ import (
 	"time"
 
 	"github.com/seaweedfs/go-fuse/v2/fuse"
+	"github.com/hanzoai/s3/s3/filerzap"
 	"github.com/hanzoai/s3/s3/mount/meta_cache"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/util"
+	filerwire "github.com/hanzoai/s3/s3/wire/filer"
+	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -44,22 +48,19 @@ func (s *cacheRemoteTestServer) CacheRemoteObjectToLocalCluster(ctx context.Cont
 // TestReadUncachedRemoteEntryDoesNotDeadlock guards the read of an uncached
 // remote file against the apply-loop invalidate that needs its file-handle lock.
 func TestReadUncachedRemoteEntryDoesNotDeadlock(t *testing.T) {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("listen: %v", err)
-	}
-	t.Cleanup(func() { _ = listener.Close() })
-
-	server := pb.NewGrpcServer()
 	testServer := &cacheRemoteTestServer{
 		dir:               "/dir",
 		name:              "file",
 		content:           []byte("hello remote world"),
 		invalidateStarted: make(chan struct{}, 1),
 	}
-	filer_pb.RegisterHanzoFilerServer(server, testServer)
-	go server.Serve(listener)
-	t.Cleanup(server.Stop)
+	listener, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		filerwire.Dispatch(filerzap.NewServerBackend(testServer)),
+		filerstream.Handler(filerzap.NewStreamServer(testServer)))
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
 
 	uidGidMapper, err := meta_cache.NewUidGidMapper("", "")
 	if err != nil {
