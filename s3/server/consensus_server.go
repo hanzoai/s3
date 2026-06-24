@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/luxfi/consensus"
@@ -34,6 +35,12 @@ type ConsensusServer struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	// applied is set the first time a finalized command reaches the FSM. It is
+	// the basis of IsLogEmpty: replog.Pending() is only the un-applied queue
+	// depth, which drains back to 0, so it cannot distinguish a fresh log from
+	// one that has already committed and applied entries.
+	applied atomic.Bool
 }
 
 // NewConsensusServer starts the master coordination on Lux consensus. peers is
@@ -71,6 +78,7 @@ func (cs *ConsensusServer) applyMaxVolumeId(payload []byte) error {
 	if cmd.TopologyId != "" {
 		cs.topo.SetTopologyId(cmd.TopologyId)
 	}
+	cs.applied.Store(true)
 	return nil
 }
 
@@ -145,9 +153,12 @@ func (cs *ConsensusServer) Leader() string {
 // Start is a no-op: the engine is already started by NewConsensusServer.
 func (cs *ConsensusServer) Start() error { return nil }
 
-// IsLogEmpty reports whether the replicated log has no committed entries.
-// A fresh consensus engine starts empty; once a command is applied it is not.
-func (cs *ConsensusServer) IsLogEmpty() bool { return cs.log.Pending() == 0 }
+// IsLogEmpty reports whether this replica has applied any finalized command —
+// the drop-in for raft Server.IsLogEmpty (gates fast-resume and bootstrap). It
+// is NOT Pending(): that is only the un-applied queue depth, which drains back
+// to 0, so it would read "empty" even after the log has committed and applied
+// entries (silently disabling fastResume at raft_server.go:185).
+func (cs *ConsensusServer) IsLogEmpty() bool { return !cs.applied.Load() }
 
 // LoadSnapshot is a no-op: consensus finality replaces Raft snapshotting.
 func (cs *ConsensusServer) LoadSnapshot() error { return nil }
