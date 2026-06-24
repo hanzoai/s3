@@ -27,7 +27,6 @@ import (
 	"github.com/hanzoai/s3/s3/s3api/s3err"
 	"github.com/hanzoai/s3/s3/security"
 	stats_collect "github.com/hanzoai/s3/s3/stats"
-	"github.com/hanzoai/s3/s3/zaprpc"
 	"github.com/hanzoai/s3/s3/zapsvc"
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/grace"
@@ -281,11 +280,10 @@ func (s3opt *S3Options) startS3Server() bool {
 	// External S3 clients keep the HTTPS S3 API below — this is the in-cloud
 	// service surface, backed by the same filer.
 	if *s3opt.zapPort > 0 {
-		zapSrv := zaprpc.NewServer("hanzo-s3", *s3opt.zapPort)
-		zapsvc.Register(zapSrv, zapsvc.NewFilerStore(filerAddresses, grpcDialOption))
+		store := zapsvc.NewFilerStore(filerAddresses, grpcDialOption)
 		// Non-fatal: the ZAP mesh surface must never take down the critical S3
 		// HTTP path. On failure we log and keep serving HTTPS S3.
-		if err := zapSrv.Start(); err != nil {
+		if _, err := zapsvc.Serve("tcp", fmt.Sprintf(":%d", *s3opt.zapPort), store); err != nil {
 			glog.Errorf("native ZAP S3 service on port %d failed to start (S3 HTTP unaffected): %v", *s3opt.zapPort, err)
 		} else {
 			glog.V(0).Infof("Native ZAP S3 service listening on port %d (mesh: internal callers use ZAP)", *s3opt.zapPort)
