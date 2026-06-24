@@ -12,7 +12,10 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
+	workerwire "github.com/hanzoai/s3/s3/wire/worker"
 	"github.com/hanzoai/s3/s3/worker/types"
+	"github.com/hanzoai/s3/s3/worker/wirebridge"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
 )
 
@@ -72,9 +75,8 @@ type grpcState struct {
 	connected       bool
 	reconnecting    bool
 	shouldReconnect bool
-	conn            *grpc.ClientConn
-	client          worker_pb.WorkerServiceClient
-	stream          worker_pb.WorkerService_WorkerStreamClient
+	conn            *transport.Conn
+	stream          *transport.Stream
 	streamCtx       context.Context
 	streamCancel    context.CancelFunc
 	lastWorkerInfo  *types.WorkerData
@@ -251,12 +253,9 @@ func (c *GrpcAdminClient) handleConnect(cmd grpcCommand, s *grpcState) {
 	cmd.resp <- nil
 }
 
-// createConnection attempts to connect using the provided dial option
-func (c *GrpcAdminClient) createConnection() (*grpc.ClientConn, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	conn, err := pb.GrpcDial(ctx, c.adminAddress, false, c.dialOption)
+// createConnection dials the admin server over the ZAP transport.
+func (c *GrpcAdminClient) createConnection() (*transport.Conn, error) {
+	conn, err := transport.Dial("tcp", c.adminAddress)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to admin server %s: %w", c.adminAddress, err)
 	}
@@ -274,11 +273,10 @@ func (c *GrpcAdminClient) attemptConnection(s *grpcState) error {
 	}
 
 	s.conn = conn
-	s.client = worker_pb.NewWorkerServiceClient(conn)
 
-	// Create bidirectional stream
+	// Open the bidirectional WorkerStream over the ZAP transport.
 	s.streamCtx, s.streamCancel = context.WithCancel(context.Background())
-	stream, err := s.client.WorkerStream(s.streamCtx)
+	stream, err := conn.OpenStream(workerwire.WorkerServiceWorkerStreamOrdinal, nil)
 	glog.Infof("[session %s] Worker stream created", c.sessionID)
 	if err != nil {
 		s.conn.Close()
@@ -397,7 +395,7 @@ func (c *GrpcAdminClient) reconnectionLoop(reconnectStop chan struct{}, onExit f
 // handleOutgoing processes outgoing messages to admin
 func handleOutgoing(
 	sessionID string,
-	stream worker_pb.WorkerService_WorkerStreamClient,
+	stream *transport.Stream,
 	streamExit <-chan struct{},
 	outgoing <-chan *worker_pb.WorkerMessage,
 	cmds chan<- grpcCommand) {
@@ -410,7 +408,7 @@ func handleOutgoing(
 	// Goroutine that reads from msgCh and performs the blocking stream.Send() calls.
 	go func() {
 		for msg := range msgCh {
-			if err := stream.Send(msg); err != nil {
+			if err := stream.Send(wirebridge.EncodeWorkerMessage(msg)); err != nil {
 				errCh <- err
 				return
 			}
@@ -476,7 +474,7 @@ func handleOutgoing(
 func handleIncoming(
 	sessionID string,
 	workerID string,
-	stream worker_pb.WorkerService_WorkerStreamClient,
+	stream *transport.Stream,
 	streamExit <-chan struct{},
 	incoming chan<- *worker_pb.AdminMessage,
 	cmds chan<- grpcCommand,
@@ -494,10 +492,15 @@ func handleIncoming(
 	// signals
 	go func() {
 		for {
-			msg, err := stream.Recv()
+			env, err := stream.Recv()
 			if err != nil {
 				errCh <- err
 				return // Exit the receiver goroutine on error/EOF
+			}
+			msg, err := wirebridge.DecodeAdminMessage(env)
+			if err != nil {
+				errCh <- err
+				return
 			}
 			msgCh <- msg
 		}

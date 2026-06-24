@@ -6,7 +6,6 @@ import (
 	"github.com/hanzoai/s3/s3/mq/client/pub_client"
 	"github.com/hanzoai/s3/s3/mq/client/sub_client"
 	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/mq_agent_pb"
 	"google.golang.org/grpc"
 )
 
@@ -20,7 +19,6 @@ type MessageQueueAgentOptions struct {
 }
 
 type MessageQueueAgent struct {
-	mq_agent_pb.UnimplementedHanzoMessagingAgentServer
 	option          *MessageQueueAgentOptions
 	brokers         []pb.ServerAddress
 	grpcDialOption  grpc.DialOption

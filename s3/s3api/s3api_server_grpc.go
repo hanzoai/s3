@@ -1,132 +1,172 @@
 package s3api
 
 import (
-	"context"
+	"fmt"
 
 	"github.com/hanzoai/s3/s3/glog"
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
+	"github.com/hanzoai/s3/s3/wire/iamadapt"
 )
 
-// HanzoS3IamCacheServer Implementation
-// This interface is dedicated to UNIDIRECTIONAL updates from Filer to S3 Server.
-// S3 Server acts purely as a cache.
+// HanzoS3IamCacheHandler implementation over the ZAP transport.
+// This service is dedicated to UNIDIRECTIONAL updates from Filer to S3 Server.
+// S3 Server acts purely as a cache. Each method takes/returns an opaque iamwire
+// buffer; Wrap the request, mutate the cache, and build the reply with New*.
 
-func (s3a *S3ApiServer) PutIdentity(ctx context.Context, req *iam_pb.PutIdentityRequest) (*iam_pb.PutIdentityResponse, error) {
-	if req.Identity == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "identity is required")
+func (s3a *S3ApiServer) PutIdentity(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapPutIdentityRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	identity := iamadapt.IdentityFromWire(request.Identity())
+	if identity.Name == "" {
+		return nil, fmt.Errorf("identity is required")
 	}
 	// Direct in-memory cache update
-	glog.V(1).Infof("IAM: received identity update for %s", req.Identity.Name)
-	if err := s3a.iam.UpsertIdentity(req.Identity); err != nil {
-		glog.Errorf("failed to update identity cache for %s: %v", req.Identity.Name, err)
-		return nil, status.Errorf(codes.Internal, "failed to update identity cache: %v", err)
+	glog.V(1).Infof("IAM: received identity update for %s", identity.Name)
+	if err := s3a.iam.UpsertIdentity(identity); err != nil {
+		glog.Errorf("failed to update identity cache for %s: %v", identity.Name, err)
+		return nil, fmt.Errorf("failed to update identity cache: %v", err)
 	}
-	return &iam_pb.PutIdentityResponse{}, nil
+	return iamwire.NewPutIdentityResponse(iamwire.PutIdentityResponseInput{}), nil
 }
 
-func (s3a *S3ApiServer) RemoveIdentity(ctx context.Context, req *iam_pb.RemoveIdentityRequest) (*iam_pb.RemoveIdentityResponse, error) {
-	if req.Username == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "username is required")
+func (s3a *S3ApiServer) RemoveIdentity(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapRemoveIdentityRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	username := request.Username()
+	if username == "" {
+		return nil, fmt.Errorf("username is required")
 	}
 	// Direct in-memory cache update
-	glog.V(1).Infof("IAM: received identity removal for %s", req.Username)
-	s3a.iam.RemoveIdentity(req.Username)
-	return &iam_pb.RemoveIdentityResponse{}, nil
+	glog.V(1).Infof("IAM: received identity removal for %s", username)
+	s3a.iam.RemoveIdentity(username)
+	return iamwire.NewRemoveIdentityResponse(iamwire.RemoveIdentityResponseInput{}), nil
 }
 
-func (s3a *S3ApiServer) PutPolicy(ctx context.Context, req *iam_pb.PutPolicyRequest) (*iam_pb.PutPolicyResponse, error) {
-	if req.Name == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "policy name is required")
+func (s3a *S3ApiServer) PutPolicy(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapPutPolicyRequest(req)
+	if err != nil {
+		return nil, err
 	}
-	if req.Content == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "policy content is required")
+	name, content := request.Name(), request.Content()
+	if name == "" {
+		return nil, fmt.Errorf("policy name is required")
+	}
+	if content == "" {
+		return nil, fmt.Errorf("policy content is required")
 	}
 
 	// Update IAM policy cache
-	glog.V(1).Infof("IAM: received policy update for %s", req.Name)
+	glog.V(1).Infof("IAM: received policy update for %s", name)
 	if s3a.iam == nil {
-		return nil, status.Errorf(codes.Internal, "IAM not initialized")
+		return nil, fmt.Errorf("IAM not initialized")
 	}
 
-	if err := s3a.iam.PutPolicy(req.Name, req.Content); err != nil {
-		glog.Errorf("failed to update policy cache for %s: %v", req.Name, err)
-		return nil, status.Errorf(codes.Internal, "failed to update policy cache: %v", err)
+	if err := s3a.iam.PutPolicy(name, content); err != nil {
+		glog.Errorf("failed to update policy cache for %s: %v", name, err)
+		return nil, fmt.Errorf("failed to update policy cache: %v", err)
 	}
-	return &iam_pb.PutPolicyResponse{}, nil
+	return iamwire.NewPutPolicyResponse(iamwire.PutPolicyResponseInput{}), nil
 }
 
-func (s3a *S3ApiServer) DeletePolicy(ctx context.Context, req *iam_pb.DeletePolicyRequest) (*iam_pb.DeletePolicyResponse, error) {
-	if req.Name == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "policy name is required")
+func (s3a *S3ApiServer) DeletePolicy(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapDeletePolicyRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	name := request.Name()
+	if name == "" {
+		return nil, fmt.Errorf("policy name is required")
 	}
 
 	// Delete from IAM policy cache
-	glog.V(1).Infof("IAM: received policy removal for %s", req.Name)
+	glog.V(1).Infof("IAM: received policy removal for %s", name)
 	if s3a.iam == nil {
-		return nil, status.Errorf(codes.Internal, "IAM not initialized")
+		return nil, fmt.Errorf("IAM not initialized")
 	}
 
-	if err := s3a.iam.DeletePolicy(req.Name); err != nil {
-		glog.Errorf("failed to delete policy cache for %s: %v", req.Name, err)
-		return nil, status.Errorf(codes.Internal, "failed to delete policy cache: %v", err)
+	if err := s3a.iam.DeletePolicy(name); err != nil {
+		glog.Errorf("failed to delete policy cache for %s: %v", name, err)
+		return nil, fmt.Errorf("failed to delete policy cache: %v", err)
 	}
-	return &iam_pb.DeletePolicyResponse{}, nil
+	return iamwire.NewDeletePolicyResponse(iamwire.DeletePolicyResponseInput{}), nil
 }
 
-func (s3a *S3ApiServer) GetPolicy(ctx context.Context, req *iam_pb.GetPolicyRequest) (*iam_pb.GetPolicyResponse, error) {
-	if req.Name == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "policy name is required")
+func (s3a *S3ApiServer) GetPolicy(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapGetPolicyRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	name := request.Name()
+	if name == "" {
+		return nil, fmt.Errorf("policy name is required")
 	}
 	if s3a.iam == nil {
-		return nil, status.Errorf(codes.Internal, "IAM not initialized")
+		return nil, fmt.Errorf("IAM not initialized")
 	}
-	policy, err := s3a.iam.GetPolicy(req.Name)
+	policy, err := s3a.iam.GetPolicy(name)
 	if err != nil {
-		return &iam_pb.GetPolicyResponse{}, nil // Not found is fine for cache
+		return iamwire.NewGetPolicyResponse(iamwire.GetPolicyResponseInput{}), nil // Not found is fine for cache
 	}
-	return &iam_pb.GetPolicyResponse{
+	return iamwire.NewGetPolicyResponse(iamwire.GetPolicyResponseInput{
 		Name:    policy.Name,
 		Content: policy.Content,
-	}, nil
+	}), nil
 }
 
-func (s3a *S3ApiServer) PutGroup(ctx context.Context, req *iam_pb.PutGroupRequest) (*iam_pb.PutGroupResponse, error) {
-	if req.Group == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "group is required")
+func (s3a *S3ApiServer) PutGroup(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapPutGroupRequest(req)
+	if err != nil {
+		return nil, err
 	}
-	glog.V(1).Infof("IAM: received group update for %s", req.Group.Name)
+	group := iamadapt.GroupFromWire(request.Group())
+	if group.Name == "" {
+		return nil, fmt.Errorf("group is required")
+	}
+	glog.V(1).Infof("IAM: received group update for %s", group.Name)
 	if s3a.iam == nil {
-		return nil, status.Errorf(codes.Internal, "IAM not initialized")
+		return nil, fmt.Errorf("IAM not initialized")
 	}
-	if err := s3a.iam.PutGroup(req.Group); err != nil {
-		glog.Errorf("failed to update group cache for %s: %v", req.Group.Name, err)
-		return nil, status.Errorf(codes.Internal, "failed to update group cache: %v", err)
+	if err := s3a.iam.PutGroup(group); err != nil {
+		glog.Errorf("failed to update group cache for %s: %v", group.Name, err)
+		return nil, fmt.Errorf("failed to update group cache: %v", err)
 	}
-	return &iam_pb.PutGroupResponse{}, nil
+	return iamwire.NewPutGroupResponse(iamwire.PutGroupResponseInput{}), nil
 }
 
-func (s3a *S3ApiServer) RemoveGroup(ctx context.Context, req *iam_pb.RemoveGroupRequest) (*iam_pb.RemoveGroupResponse, error) {
-	if req.GroupName == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "group name is required")
+func (s3a *S3ApiServer) RemoveGroup(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapRemoveGroupRequest(req)
+	if err != nil {
+		return nil, err
 	}
-	glog.V(1).Infof("IAM: received group removal for %s", req.GroupName)
+	groupName := request.GroupName()
+	if groupName == "" {
+		return nil, fmt.Errorf("group name is required")
+	}
+	glog.V(1).Infof("IAM: received group removal for %s", groupName)
 	if s3a.iam == nil {
-		return nil, status.Errorf(codes.Internal, "IAM not initialized")
+		return nil, fmt.Errorf("IAM not initialized")
 	}
-	s3a.iam.RemoveGroup(req.GroupName)
-	return &iam_pb.RemoveGroupResponse{}, nil
+	s3a.iam.RemoveGroup(groupName)
+	return iamwire.NewRemoveGroupResponse(iamwire.RemoveGroupResponseInput{}), nil
 }
 
-func (s3a *S3ApiServer) ListPolicies(ctx context.Context, req *iam_pb.ListPoliciesRequest) (*iam_pb.ListPoliciesResponse, error) {
-	resp := &iam_pb.ListPoliciesResponse{}
+func (s3a *S3ApiServer) ListPolicies(req []byte) ([]byte, error) {
+	if _, err := iamwire.WrapListPoliciesRequest(req); err != nil {
+		return nil, err
+	}
 	if s3a.iam == nil {
-		return nil, status.Errorf(codes.Internal, "IAM not initialized")
+		return nil, fmt.Errorf("IAM not initialized")
 	}
-	policies := s3a.iam.ListPolicies()
-	for _, policy := range policies {
-		resp.Policies = append(resp.Policies, policy)
+	var policies []iamwire.PolicyInput
+	for _, policy := range s3a.iam.ListPolicies() {
+		if policy == nil {
+			continue
+		}
+		policies = append(policies, iamwire.PolicyInput{Name: policy.Name, Content: policy.Content})
 	}
-	return resp, nil
+	return iamwire.NewListPoliciesResponse(iamwire.ListPoliciesResponseInput{Policies: policies}), nil
 }

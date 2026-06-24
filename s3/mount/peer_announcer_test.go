@@ -2,20 +2,20 @@ package mount
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/s3/pb/mount_peer_pb"
-	"google.golang.org/grpc"
+	mount_peerwire "github.com/hanzoai/s3/s3/wire/mount_peer"
+	"github.com/zap-proto/go/transport"
 )
 
 // fakeMountPeerClient records each ChunkAnnounce call; returns rejected
-// fids from a configured set.
+// fids from a configured set. It implements the MountPeerClient interface.
 type fakeMountPeerClient struct {
-	mu sync.Mutex
-	mount_peer_pb.MountPeerClient
+	mu               sync.Mutex
 	announcedBy      map[string][]filerAnnouncement
 	rejectedByClient func(fid string) bool
 }
@@ -25,23 +25,39 @@ type filerAnnouncement struct {
 	peerAddr string
 }
 
-func (f *fakeMountPeerClient) ChunkAnnounce(ctx context.Context, req *mount_peer_pb.ChunkAnnounceRequest, opts ...grpc.CallOption) (*mount_peer_pb.ChunkAnnounceResponse, error) {
+func (f *fakeMountPeerClient) ChunkAnnounce(in mount_peerwire.ChunkAnnounceRequestInput) (mount_peerwire.ChunkAnnounceResponse, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	fids := make([]string, len(in.FileIds))
+	for i, b := range in.FileIds {
+		fids[i] = string(b)
+	}
 	// No owner key in the request; capture keyed by peer_addr (the announcer).
-	f.announcedBy[req.PeerAddr] = append(f.announcedBy[req.PeerAddr], filerAnnouncement{
-		fids:     append([]string(nil), req.FileIds...),
-		peerAddr: req.PeerAddr,
+	f.announcedBy[in.PeerAddr] = append(f.announcedBy[in.PeerAddr], filerAnnouncement{
+		fids:     fids,
+		peerAddr: in.PeerAddr,
 	})
-	resp := &mount_peer_pb.ChunkAnnounceResponse{}
+	var rejected [][]byte
 	if f.rejectedByClient != nil {
-		for _, fid := range req.FileIds {
+		for _, fid := range fids {
 			if f.rejectedByClient(fid) {
-				resp.RejectedFileIds = append(resp.RejectedFileIds, fid)
+				rejected = append(rejected, []byte(fid))
 			}
 		}
 	}
-	return resp, nil
+	resp, err := mount_peerwire.WrapChunkAnnounceResponse(
+		mount_peerwire.NewChunkAnnounceResponse(mount_peerwire.ChunkAnnounceResponseInput{
+			RejectedFileIds: rejected,
+		}))
+	return resp, err
+}
+
+func (f *fakeMountPeerClient) ChunkLookup(in mount_peerwire.ChunkLookupRequestInput) (mount_peerwire.ChunkLookupResponse, error) {
+	return mount_peerwire.ChunkLookupResponse{}, fmt.Errorf("not implemented")
+}
+
+func (f *fakeMountPeerClient) FetchChunk(in mount_peerwire.FetchChunkRequestInput) (*transport.Stream, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 // fakeDialer returns the same fakeMountPeerClient for every peer addr,
@@ -68,7 +84,7 @@ func (d *dialRecorder) snapshot() []string {
 }
 
 func fakeDialer(fc *fakeMountPeerClient, rec *dialRecorder) MountPeerDialer {
-	return func(ctx context.Context, peerAddr string) (mount_peer_pb.MountPeerClient, func(), error) {
+	return func(ctx context.Context, peerAddr string) (MountPeerClient, func(), error) {
 		rec.record(peerAddr)
 		return fc, func() {}, nil
 	}
@@ -273,7 +289,7 @@ func TestPeerAnnouncer_DropsEvictedFids(t *testing.T) {
 func TestPeerAnnouncer_StopWaitsForFlush(t *testing.T) {
 	started := make(chan struct{})
 	unblock := make(chan struct{})
-	slowDialer := func(ctx context.Context, peerAddr string) (mount_peer_pb.MountPeerClient, func(), error) {
+	slowDialer := func(ctx context.Context, peerAddr string) (MountPeerClient, func(), error) {
 		close(started)
 		select {
 		case <-unblock:
@@ -352,7 +368,7 @@ func TestPeerAnnouncer_SelfOwnedWritesToLocalDir(t *testing.T) {
 }
 
 func TestPeerAnnouncer_DialerErrorRequeues(t *testing.T) {
-	errDialer := func(ctx context.Context, peerAddr string) (mount_peer_pb.MountPeerClient, func(), error) {
+	errDialer := func(ctx context.Context, peerAddr string) (MountPeerClient, func(), error) {
 		return nil, func() {}, context.DeadlineExceeded
 	}
 	a := NewPeerAnnouncer("self:18080", "", "",func(fid string) string {

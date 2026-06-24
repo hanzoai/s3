@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -10,6 +9,7 @@ import (
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
 	"github.com/hanzoai/s3/s3/util"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -64,10 +64,10 @@ func (c *commandS3IAMImport) Do(args []string, commandEnv *CommandEnv, writer io
 		return fmt.Errorf("parse configuration: %w", err)
 	}
 
-	err = commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		_, err := client.PutConfiguration(ctx, &iam_pb.PutConfigurationRequest{
-			Configuration: config,
-		})
+	err = commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, _, err := client.PutConfiguration(iamwire.NewPutConfigurationRequest(iamwire.PutConfigurationRequestInput{
+			Configuration: iamwire.ConfigurationInputFromPB(config),
+		}))
 		return err
 	})
 	if err != nil {

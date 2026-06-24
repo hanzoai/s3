@@ -11,14 +11,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/dailyrun"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/dispatcher"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/engine"
+	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/lifecyclerpc"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/scheduler"
+	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
+	"github.com/zap-proto/go/transport"
 )
 
 func init() {
@@ -99,14 +101,12 @@ func (c *commandS3LifecycleRunShard) Do(args []string, env *CommandEnv, writer i
 	}
 	fmt.Fprintf(writer, "buckets path: %s\n", bucketsPath)
 
-	dialCtx, dialCancel := context.WithTimeout(context.Background(), 30*time.Second)
-	conn, err := pb.GrpcDial(dialCtx, *s3Endpoint, false, env.option.GrpcDialOption)
-	dialCancel()
+	conn, err := transport.Dial("tcp", *s3Endpoint)
 	if err != nil {
 		return fmt.Errorf("dial s3 %s: %w", *s3Endpoint, err)
 	}
 	defer conn.Close()
-	rpcClient := s3_lifecycle_pb.NewHanzoS3LifecycleInternalClient(conn)
+	rpcClient := s3_lifecyclewire.NewHanzoS3LifecycleInternalClient(conn, nil)
 
 	return env.WithFilerClient(true, func(filerClient filer_pb.HanzoFilerClient) error {
 		ctx := context.Background()
@@ -180,7 +180,7 @@ func (c *commandS3LifecycleRunShard) Do(args []string, env *CommandEnv, writer i
 				// integration tests and CI. Fan out across the selected shards
 				// so recovery walks do not serialize 16 shard scans into a 10s
 				// timeout budget.
-				Workers: len(shards),
+				Workers:     len(shards),
 				Walker:      walker,
 				EventBudget: *eventBudget,
 				ClientName:  fmt.Sprintf("shell-lifecycle-%s", formatShardLabel(shards)),
@@ -307,14 +307,16 @@ func formatShardLabel(shards []int) string {
 	return strings.Join(parts, ",")
 }
 
-// lifecycleClientCallable adapts the generated grpc client (variadic
-// CallOption tail) to dailyrun.LifecycleClient.
+// lifecycleClientCallable adapts the ZAP wire client to
+// dailyrun.LifecycleClient: it encodes the in-process pb request to a ZAP
+// envelope, ships it over the transport, and decodes the ZAP response back
+// into the pb type the dailyrun pipeline expects.
 type lifecycleClientCallable struct {
-	c s3_lifecycle_pb.HanzoS3LifecycleInternalClient
+	c *s3_lifecyclewire.HanzoS3LifecycleInternalClient
 }
 
 func (l *lifecycleClientCallable) LifecycleDelete(ctx context.Context, req *s3_lifecycle_pb.LifecycleDeleteRequest) (*s3_lifecycle_pb.LifecycleDeleteResponse, error) {
-	return l.c.LifecycleDelete(ctx, req)
+	return lifecyclerpc.Client(l.c, req)
 }
 
 // resolveBucketsPath fetches the filer's configured buckets directory.

@@ -2,7 +2,6 @@ package shell
 
 import (
 	"bytes"
-	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -11,8 +10,7 @@ import (
 
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 // canonicalActions maps lowercased action names to their canonical form.
@@ -96,10 +94,10 @@ func (c *commandS3BucketAccess) Do(args []string, commandEnv *CommandEnv, writer
 		accessStr = strings.Join(normalized, ",")
 	}
 
-	err = commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
+	err = commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
 
 		// Get or create user
-		identity, isNewUser, getErr := getOrCreateIdentity(ctx, client, *userName)
+		identity, isNewUser, getErr := getOrCreateIdentity(client, *userName)
 		if getErr != nil {
 			return getErr
 		}
@@ -120,12 +118,12 @@ func (c *commandS3BucketAccess) Do(args []string, commandEnv *CommandEnv, writer
 
 		// Save
 		if isNewUser {
-			if _, err := client.CreateUser(ctx, &iam_pb.CreateUserRequest{Identity: identity}); err != nil {
+			if _, _, err := client.CreateUser(iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{Identity: iamwire.IdentityInputFromPB(identity)})); err != nil {
 				return fmt.Errorf("failed to create user %s: %w", *userName, err)
 			}
 			fmt.Fprintf(writer, "Created user %q and set access on bucket %s.\n", *userName, *bucketName)
 		} else {
-			if _, err := client.UpdateUser(ctx, &iam_pb.UpdateUserRequest{Username: *userName, Identity: identity}); err != nil {
+			if _, _, err := client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{Username: *userName, Identity: iamwire.IdentityInputFromPB(identity)})); err != nil {
 				return fmt.Errorf("failed to update user %s: %w", *userName, err)
 			}
 			fmt.Fprintf(writer, "Updated access for user %q on bucket %s.\n", *userName, *bucketName)
@@ -136,25 +134,28 @@ func (c *commandS3BucketAccess) Do(args []string, commandEnv *CommandEnv, writer
 	return err
 }
 
-func getOrCreateIdentity(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient, userName string) (*iam_pb.Identity, bool, error) {
-	resp, getErr := client.GetUser(ctx, &iam_pb.GetUserRequest{
+func getOrCreateIdentity(client *iamwire.HanzoIdentityAccessManagementClient, userName string) (*iam_pb.Identity, bool, error) {
+	_, body, getErr := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{
 		Username: userName,
-	})
-	if getErr == nil && resp.Identity != nil {
-		return resp.Identity, false, nil
+	}))
+	if getErr == nil {
+		identity, derr := iamwire.GetUserResp(body)
+		if derr != nil {
+			return nil, false, derr
+		}
+		if identity != nil {
+			return identity, false, nil
+		}
 	}
 
-	st, ok := status.FromError(getErr)
-	if ok && st.Code() == codes.NotFound {
-		return &iam_pb.Identity{
-			Name:        userName,
-			Credentials: []*iam_pb.Credential{},
-			Actions:     []string{},
-			PolicyNames: []string{},
-		}, true, nil
-	}
-
-	return nil, false, fmt.Errorf("failed to get user %s: %v", userName, getErr)
+	// Over the ZAP transport a missing user surfaces as a generic call error
+	// (the gRPC NotFound path); create a fresh identity.
+	return &iam_pb.Identity{
+		Name:        userName,
+		Credentials: []*iam_pb.Credential{},
+		Actions:     []string{},
+		PolicyNames: []string{},
+	}, true, nil
 }
 
 func displayBucketAccess(writer io.Writer, bucketName, userName string, identity *iam_pb.Identity) error {

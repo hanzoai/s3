@@ -17,7 +17,10 @@ import (
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/dailyrun"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/dispatcher"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/engine"
+	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/lifecyclerpc"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/scheduler"
+	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
+	"github.com/zap-proto/go/transport"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 )
@@ -247,14 +250,12 @@ func (h *Handler) Execute(ctx context.Context, request *plugin_pb.ExecuteJobRequ
 		return fmt.Errorf("buckets path: %w", err)
 	}
 
-	dialCtx, dialCancel = context.WithTimeout(runCtx, 30*time.Second)
-	s3Conn, err := pb.GrpcDial(dialCtx, s3Endpoints[0], false, h.grpcDialOption)
-	dialCancel()
+	s3Conn, err := transport.Dial("tcp", s3Endpoints[0])
 	if err != nil {
 		return fmt.Errorf("dial s3 %s: %w", s3Endpoints[0], err)
 	}
 	defer s3Conn.Close()
-	rpc := s3_lifecycle_pb.NewHanzoS3LifecycleInternalClient(s3Conn)
+	rpc := s3_lifecyclewire.NewHanzoS3LifecycleInternalClient(s3Conn, nil)
 
 	if err := h.executeDailyReplay(runCtx, request, bucketsPath, filerClient, rpc, cfg, sender); err != nil {
 		return err
@@ -282,7 +283,7 @@ func sendSuccessCompletion(request *plugin_pb.ExecuteJobRequest, sender pluginwo
 // executeDailyReplay runs one bounded daily-replay pass via
 // dailyrun.Run. The walker fires inside runShard on rule-content edits
 // and against the steady-state walk view; all rule kinds are serviced.
-func (h *Handler) executeDailyReplay(ctx context.Context, request *plugin_pb.ExecuteJobRequest, bucketsPath string, filerClient filer_pb.HanzoFilerClient, rpc s3_lifecycle_pb.HanzoS3LifecycleInternalClient, cfg Config, sender pluginworker.ExecutionSender) error {
+func (h *Handler) executeDailyReplay(ctx context.Context, request *plugin_pb.ExecuteJobRequest, bucketsPath string, filerClient filer_pb.HanzoFilerClient, rpc *s3_lifecyclewire.HanzoS3LifecycleInternalClient, cfg Config, sender pluginworker.ExecutionSender) error {
 	eng := engine.New()
 	inputs, parseErrors, err := scheduler.LoadCompileInputs(ctx, filerClient, bucketsPath)
 	if err != nil {
@@ -419,11 +420,11 @@ func clusterS3Endpoints(cc *plugin_pb.ClusterContext) []string {
 }
 
 type lifecycleRPCAdapter struct {
-	c s3_lifecycle_pb.HanzoS3LifecycleInternalClient
+	c *s3_lifecyclewire.HanzoS3LifecycleInternalClient
 }
 
 func (a lifecycleRPCAdapter) LifecycleDelete(ctx context.Context, req *s3_lifecycle_pb.LifecycleDeleteRequest) (*s3_lifecycle_pb.LifecycleDeleteResponse, error) {
-	return a.c.LifecycleDelete(ctx, req)
+	return lifecyclerpc.Client(a.c, req)
 }
 
 func lookupBucketsPath(ctx context.Context, client filer_pb.HanzoFilerClient) (string, error) {

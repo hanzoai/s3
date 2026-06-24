@@ -1,14 +1,13 @@
 package shell
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
 
-	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/mq_pb"
-	"github.com/hanzoai/s3/s3/pb/schema_pb"
+	mq_brokerwire "github.com/hanzoai/s3/s3/wire/mq_broker"
+	mq_schemawire "github.com/hanzoai/s3/s3/wire/mq_schema"
+	"github.com/zap-proto/go/transport"
 )
 
 func init() {
@@ -46,19 +45,39 @@ func (c *commandMqTopicDescribe) Do(args []string, commandEnv *CommandEnv, write
 	}
 	fmt.Fprintf(writer, "current balancer: %s\n", brokerBalancer)
 
-	return pb.WithBrokerGrpcClient(false, brokerBalancer, commandEnv.option.GrpcDialOption, func(client mq_pb.HanzoMessagingClient) error {
-		resp, err := client.LookupTopicBrokers(context.Background(), &mq_pb.LookupTopicBrokersRequest{
-			Topic: &schema_pb.Topic{
-				Namespace: *namespace,
-				Name:      *topicName,
-			},
-		})
+	conn, err := transport.Dial("tcp", brokerBalancer)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	client := mq_brokerwire.NewHanzoMessagingClient(conn, nil)
+	topic := mq_schemawire.NewTopic(mq_schemawire.TopicInput{
+		Namespace: *namespace,
+		Name:      *topicName,
+	})
+	_, body, err := client.LookupTopicBrokers(mq_brokerwire.NewLookupTopicBrokersRequest(mq_brokerwire.LookupTopicBrokersRequestInput{
+		Topic: topic,
+	}))
+	if err != nil {
+		return err
+	}
+	resp, err := mq_brokerwire.WrapLookupTopicBrokersResponse(body)
+	if err != nil {
+		return err
+	}
+	for i := 0; i < resp.BrokerPartitionAssignmentsLen(); i++ {
+		assignment, ok := resp.BrokerPartitionAssignmentAt(i)
+		if !ok {
+			continue
+		}
+		part, err := mq_schemawire.WrapPartition(assignment.Partition())
 		if err != nil {
 			return err
 		}
-		for _, assignment := range resp.BrokerPartitionAssignments {
-			fmt.Fprintf(writer, "  %+v\n", assignment)
-		}
-		return nil
-	})
+		fmt.Fprintf(writer, "  partition(ring:%d range:[%d,%d) ts:%d) leader:%s follower:%s\n",
+			part.RingSize(), part.RangeStart(), part.RangeStop(), part.UnixTimeNs(),
+			assignment.LeaderBroker(), assignment.FollowerBroker())
+	}
+	return nil
 }

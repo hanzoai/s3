@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/glog"
-	"github.com/hanzoai/s3/s3/pb/mount_peer_pb"
+	mount_peerwire "github.com/hanzoai/s3/s3/wire/mount_peer"
 )
 
 // PeerAnnouncer batches and flushes ChunkAnnounce RPCs to the
@@ -54,11 +54,6 @@ type PeerAnnouncer struct {
 
 	clock func() time.Time
 }
-
-// MountPeerDialer opens a MountPeer gRPC client to a given peer. Tests
-// inject a fake; production uses a real gRPC dial backed by a short
-// connection cache.
-type MountPeerDialer func(ctx context.Context, peerAddr string) (mount_peer_pb.MountPeerClient, func(), error)
 
 // announceRecord is what we remember about a successful announce: who
 // we told (the HRW owner at the time) and when. On each flush we
@@ -332,8 +327,8 @@ func (a *PeerAnnouncer) sendTo(ctx context.Context, owner string, fids []string,
 	}
 	defer closeFn()
 
-	resp, err := client.ChunkAnnounce(ctx, &mount_peer_pb.ChunkAnnounceRequest{
-		FileIds:    fids,
+	resp, err := client.ChunkAnnounce(mount_peerwire.ChunkAnnounceRequestInput{
+		FileIds:    bytesList(fids),
 		PeerAddr:   a.selfAddr,
 		DataCenter: a.selfDataCenter,
 		Rack:       a.selfRack,
@@ -347,9 +342,10 @@ func (a *PeerAnnouncer) sendTo(ctx context.Context, owner string, fids []string,
 	}
 
 	rejected := map[string]struct{}{}
-	for _, f := range resp.RejectedFileIds {
-		rejected[f] = struct{}{}
-	}
+	resp.RejectedFileIds().EachBytes(func(_ int, b []byte) bool {
+		rejected[string(b)] = struct{}{}
+		return true
+	})
 
 	a.mu.Lock()
 	for _, fid := range fids {

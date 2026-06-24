@@ -1,16 +1,15 @@
 package shell
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"time"
 
-	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/mq_pb"
-	"github.com/hanzoai/s3/s3/pb/schema_pb"
+	mq_brokerwire "github.com/hanzoai/s3/s3/wire/mq_broker"
+	mq_schemawire "github.com/hanzoai/s3/s3/wire/mq_schema"
+	"github.com/zap-proto/go/transport"
 )
 
 func init() {
@@ -99,36 +98,35 @@ func (c *commandMqTopicConfigure) Do(args []string, commandEnv *CommandEnv, writ
 	}
 	fmt.Fprintf(writer, "current balancer: %s\n", brokerBalancer)
 
-	// Build the retention proto. When the user touches any retention flag we
+	conn, err := transport.Dial("tcp", brokerBalancer)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	client := mq_brokerwire.NewHanzoMessagingClient(conn, nil)
+
+	// Build the retention message. When the user touches any retention flag we
 	// must send a fully-populated TopicRetention so partial flags don't zero
 	// the other field server-side: fetch the current configuration and use
 	// its values for whatever the user didn't specify.
-	var retentionProto *mq_pb.TopicRetention
+	var retentionBuf []byte
 	if retentionTouched {
-		var currentRetention *mq_pb.TopicRetention
-		if err := pb.WithBrokerGrpcClient(false, brokerBalancer, commandEnv.option.GrpcDialOption, func(client mq_pb.HanzoMessagingClient) error {
-			cur, getErr := client.GetTopicConfiguration(context.Background(), &mq_pb.GetTopicConfigurationRequest{
-				Topic: &schema_pb.Topic{Namespace: *namespace, Name: *topicName},
-			})
-			if getErr != nil {
-				// Topic may not exist yet — that's fine, we'll create it with
-				// the user-supplied retention only.
-				return nil
-			}
-			if cur != nil {
-				currentRetention = cur.Retention
-			}
-			return nil
-		}); err != nil {
-			return err
-		}
-
 		var seconds int64
 		var enabled bool
-		if currentRetention != nil {
-			seconds = currentRetention.RetentionSeconds
-			enabled = currentRetention.Enabled
+		topic := mq_schemawire.NewTopic(mq_schemawire.TopicInput{Namespace: *namespace, Name: *topicName})
+		if _, body, getErr := client.GetTopicConfiguration(mq_brokerwire.NewGetTopicConfigurationRequest(mq_brokerwire.GetTopicConfigurationRequestInput{
+			Topic: topic,
+		})); getErr == nil {
+			// Topic may not exist yet — that's fine, we'll create it with
+			// the user-supplied retention only.
+			if cur, wrapErr := mq_brokerwire.WrapGetTopicConfigurationResponse(body); wrapErr == nil {
+				if r, ok := cur.Retention(); ok {
+					seconds = r.RetentionSeconds()
+					enabled = r.Enabled()
+				}
+			}
 		}
+
 		if userSetRetention {
 			seconds = int64((*retention) / time.Second)
 		} else if userSetSeconds {
@@ -137,28 +135,51 @@ func (c *commandMqTopicConfigure) Do(args []string, commandEnv *CommandEnv, writ
 		if userSetEnabled {
 			enabled = *retentionEnabled
 		}
-		retentionProto = &mq_pb.TopicRetention{
+		retentionBuf = mq_brokerwire.NewTopicRetention(mq_brokerwire.TopicRetentionInput{
 			RetentionSeconds: seconds,
 			Enabled:          enabled,
-		}
+		})
 	}
 
 	// create / update topic
-	return pb.WithBrokerGrpcClient(false, brokerBalancer, commandEnv.option.GrpcDialOption, func(client mq_pb.HanzoMessagingClient) error {
-		resp, err := client.ConfigureTopic(context.Background(), &mq_pb.ConfigureTopicRequest{
-			Topic: &schema_pb.Topic{
-				Namespace: *namespace,
-				Name:      *topicName,
-			},
-			PartitionCount: int32(*partitionCount),
-			Retention:      retentionProto,
-		})
-		if err != nil {
-			return err
-		}
-		output, _ := json.MarshalIndent(resp, "", "  ")
-		fmt.Fprintf(writer, "response:\n%+v\n", string(output))
-		return nil
-	})
+	topic := mq_schemawire.NewTopic(mq_schemawire.TopicInput{Namespace: *namespace, Name: *topicName})
+	_, body, err := client.ConfigureTopic(mq_brokerwire.NewConfigureTopicRequest(mq_brokerwire.ConfigureTopicRequestInput{
+		Topic:          topic,
+		PartitionCount: int32(*partitionCount),
+		Retention:      retentionBuf,
+	}))
+	if err != nil {
+		return err
+	}
+	resp, err := mq_brokerwire.WrapConfigureTopicResponse(body)
+	if err != nil {
+		return err
+	}
 
+	type assignmentView struct {
+		LeaderBroker   string
+		FollowerBroker string
+	}
+	type responseView struct {
+		PartitionAssignments []assignmentView
+		RetentionSeconds     int64
+		RetentionEnabled     bool
+		SchemaFormat         string
+	}
+	view := responseView{SchemaFormat: resp.SchemaFormat()}
+	for i := 0; i < resp.BrokerPartitionAssignmentsLen(); i++ {
+		if a, ok := resp.BrokerPartitionAssignmentAt(i); ok {
+			view.PartitionAssignments = append(view.PartitionAssignments, assignmentView{
+				LeaderBroker:   a.LeaderBroker(),
+				FollowerBroker: a.FollowerBroker(),
+			})
+		}
+	}
+	if r, ok := resp.Retention(); ok {
+		view.RetentionSeconds = r.RetentionSeconds()
+		view.RetentionEnabled = r.Enabled()
+	}
+	output, _ := json.MarshalIndent(view, "", "  ")
+	fmt.Fprintf(writer, "response:\n%+v\n", string(output))
+	return nil
 }

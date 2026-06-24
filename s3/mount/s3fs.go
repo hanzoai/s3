@@ -420,24 +420,15 @@ func NewHanzoFileSystem(option *Option) *WFS {
 			}
 
 			wfs.peerDirectory = NewPeerDirectory()
-			// Wire TLS/mTLS from security.toml's grpc.mount section so
-			// cross-host peer RPCs are authenticated + encrypted. When
-			// the section is empty both options come back nil and the
-			// server runs plaintext — intentional for dev/test.
-			peerTLSCreds, peerTLSVerify := security.LoadServerTLS(util.GetViper(), "grpc.mount")
-			var peerServerOpts []grpc.ServerOption
-			if peerTLSCreds != nil {
-				peerServerOpts = append(peerServerOpts, peerTLSCreds)
-			}
-			if peerTLSVerify != nil {
-				peerServerOpts = append(peerServerOpts, peerTLSVerify)
-			}
+			// Peer mount-to-mount RPCs run over the ZAP transport (the
+			// transport's PQ X-Wing TLS handshake is the encryption layer
+			// when configured; the plaintext transport is used on a trusted
+			// single-host test cluster).
 			wfs.peerGrpcServer = NewPeerGrpcServer(
 				wfs.chunkCache,
 				wfs.peerDirectory,
 				wfs.peerRegistrar.OwnerFor,
 				selfAddr,
-				peerServerOpts...,
 			)
 			if err := wfs.peerGrpcServer.Start(option.PeerListen); err != nil {
 				glog.Warningf("peer grpc start: %v", err)
@@ -447,12 +438,10 @@ func NewHanzoFileSystem(option *Option) *WFS {
 				go wfs.runPeerDirectorySweeper(wfs.peerDirectoryStop)
 
 				// Shared connection pool + announcer. Pool reuses one
-				// grpc.ClientConn per owner mount across both the
+				// ZAP transport connection per owner mount across both the
 				// announcer flush and the fetcher's ChunkLookup +
-				// FetchChunk calls. Transport credentials come from
-				// option.GrpcDialOption (security.LoadClientTLS), so
-				// peer dials match the TLS posture the server wants.
-				wfs.peerConnPool = NewPeerConnPool(option.GrpcDialOption)
+				// FetchChunk calls.
+				wfs.peerConnPool = NewPeerConnPool()
 				wfs.peerAnnouncer = NewPeerAnnouncer(
 					selfAddr,
 					option.PeerDataCenter,

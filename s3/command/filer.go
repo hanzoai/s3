@@ -25,13 +25,14 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
 	"github.com/hanzoai/s3/s3/security"
 	s3server "github.com/hanzoai/s3/s3/server"
 	stats_collect "github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/grace"
 	"github.com/hanzoai/s3/s3/util/version"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
+	"github.com/zap-proto/go/transport"
 )
 
 var (
@@ -439,21 +440,27 @@ func (fo *FilerOptions) startFiler() {
 	grpcS := pb.NewGrpcServer(security.LoadServerTLS(util.GetViper(), "grpc.filer"))
 	filer_pb.RegisterHanzoFilerServer(grpcS, fs)
 
-	// Register the IAM gRPC service. Auth is opt-in: when
-	// jwt.filer_signing.key is configured the service requires a Bearer token
-	// signed with that key; otherwise it runs unauthenticated, matching the
-	// rest of the filer's gRPC surface. Operators who expose the filer gRPC
-	// port beyond a trusted network should set jwt.filer_signing.key on both
-	// the filer and the admin server.
+	// Serve the IAM service over the ZAP transport on its own listener at
+	// grpcPort+10000 (ServerAddress.ToIamZapAddress), separate from the shared
+	// gRPC port that still hosts the filer service. Connection-level security is
+	// provided by the ZAP transport; the legacy gRPC Bearer-token metadata check
+	// no longer applies.
 	if credentialManager != nil {
 		adminSigningKey := security.SigningKey(util.GetViper().GetString("jwt.filer_signing.key"))
-		iamGrpcServer := s3server.NewIamGrpcServer(credentialManager, adminSigningKey)
-		iam_pb.RegisterHanzoIdentityAccessManagementServer(grpcS, iamGrpcServer)
-		if len(adminSigningKey) == 0 {
-			glog.V(0).Info("Registered IAM gRPC service on filer (unauthenticated; set jwt.filer_signing.key in security.toml to require admin Bearer token)")
-		} else {
-			glog.V(0).Info("Registered IAM gRPC service on filer (admin Bearer token required)")
+		iamServer := s3server.NewIamGrpcServer(credentialManager, adminSigningKey)
+		iamPort := grpcPort + 10000
+		iamL, iamLocalL, iamErr := util.NewIpAndLocalListeners(*fo.bindIp, iamPort, 0)
+		if iamErr != nil {
+			glog.Fatalf("failed to listen on IAM ZAP port %d: %v", iamPort, iamErr)
 		}
+		iamDispatch := func(env []byte) ([]byte, error) {
+			return iamwire.DispatchHanzoIdentityAccessManagement(iamServer, env)
+		}
+		if iamLocalL != nil {
+			go func() { _ = transport.Serve(iamLocalL, iamDispatch) }()
+		}
+		go func() { _ = transport.Serve(iamL, iamDispatch) }()
+		glog.V(0).Infof("Serving IAM service over ZAP transport on port %d", iamPort)
 	}
 
 	reflection.Register(grpcS)

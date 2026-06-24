@@ -1,16 +1,15 @@
 package shell
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
 	"github.com/hanzoai/s3/s3/s3api/policy_engine"
 	"github.com/hanzoai/s3/s3/util"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -72,7 +71,7 @@ func (c *commandS3Policy) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 		return fmt.Errorf("only one of -put, -get, -list, -delete can be specified")
 	}
 
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
 		if *put {
 			if *name == "" {
 				return fmt.Errorf("-name is required")
@@ -91,10 +90,10 @@ func (c *commandS3Policy) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 				return fmt.Errorf("invalid policy json: %v", err)
 			}
 
-			_, err = client.PutPolicy(ctx, &iam_pb.PutPolicyRequest{
+			_, _, err = client.PutPolicy(iamwire.NewPutPolicyRequest(iamwire.PutPolicyRequestInput{
 				Name:    *name,
 				Content: string(data),
-			})
+			}))
 			return err
 		}
 
@@ -102,25 +101,33 @@ func (c *commandS3Policy) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 			if *name == "" {
 				return fmt.Errorf("-name is required")
 			}
-			resp, err := client.GetPolicy(ctx, &iam_pb.GetPolicyRequest{
+			_, body, err := client.GetPolicy(iamwire.NewGetPolicyRequest(iamwire.GetPolicyRequestInput{
 				Name: *name,
-			})
+			}))
 			if err != nil {
 				return err
 			}
-			if resp.Content == "" {
+			_, content, err := iamwire.GetPolicyResp(body)
+			if err != nil {
+				return err
+			}
+			if content == "" {
 				return fmt.Errorf("policy not found")
 			}
-			fmt.Fprintf(writer, "%s\n", resp.Content)
+			fmt.Fprintf(writer, "%s\n", content)
 			return nil
 		}
 
 		if *list {
-			resp, err := client.ListPolicies(ctx, &iam_pb.ListPoliciesRequest{})
+			_, body, err := client.ListPolicies(iamwire.NewListPoliciesRequest(iamwire.ListPoliciesRequestInput{}))
 			if err != nil {
 				return err
 			}
-			for _, policy := range resp.Policies {
+			policies, err := iamwire.ListPoliciesResp(body)
+			if err != nil {
+				return err
+			}
+			for _, policy := range policies {
 				fmt.Fprintf(writer, "Name: %s\n", policy.Name)
 				fmt.Fprintf(writer, "Content: %s\n", policy.Content)
 				fmt.Fprintf(writer, "---\n")
@@ -132,9 +139,9 @@ func (c *commandS3Policy) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 			if *name == "" {
 				return fmt.Errorf("-name is required")
 			}
-			_, err := client.DeletePolicy(ctx, &iam_pb.DeletePolicyRequest{
+			_, _, err := client.DeletePolicy(iamwire.NewDeletePolicyRequest(iamwire.DeletePolicyRequestInput{
 				Name: *name,
-			})
+			}))
 			return err
 		}
 

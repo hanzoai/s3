@@ -1,15 +1,13 @@
 package shell
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
 	"strings"
 
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 const anonymousUserName = "anonymous"
@@ -58,9 +56,9 @@ func (c *commandS3AnonymousSet) Do(args []string, commandEnv *CommandEnv, writer
 		return fmt.Errorf("-access is required")
 	}
 
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
 		// Get or create anonymous user
-		identity, isNew, err := getOrCreateAnonymousUser(ctx, client)
+		identity, isNew, err := getOrCreateAnonymousUser(client)
 		if err != nil {
 			return err
 		}
@@ -100,12 +98,12 @@ func (c *commandS3AnonymousSet) Do(args []string, commandEnv *CommandEnv, writer
 		identity.Actions = kept
 
 		if isNew {
-			_, err = client.CreateUser(ctx, &iam_pb.CreateUserRequest{Identity: identity})
+			_, _, err = client.CreateUser(iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{Identity: iamwire.IdentityInputFromPB(identity)}))
 		} else {
-			_, err = client.UpdateUser(ctx, &iam_pb.UpdateUserRequest{
+			_, _, err = client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
 				Username: anonymousUserName,
-				Identity: identity,
-			})
+				Identity: iamwire.IdentityInputFromPB(identity),
+			}))
 		}
 		if err != nil {
 			return err
@@ -116,22 +114,24 @@ func (c *commandS3AnonymousSet) Do(args []string, commandEnv *CommandEnv, writer
 	})
 }
 
-func getOrCreateAnonymousUser(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) (*iam_pb.Identity, bool, error) {
-	resp, err := client.GetUser(ctx, &iam_pb.GetUserRequest{Username: anonymousUserName})
+func getOrCreateAnonymousUser(client *iamwire.HanzoIdentityAccessManagementClient) (*iam_pb.Identity, bool, error) {
+	_, body, err := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: anonymousUserName}))
 	if err == nil {
-		if resp.Identity == nil {
-			return nil, false, fmt.Errorf("anonymous user returned nil identity")
+		identity, derr := iamwire.GetUserResp(body)
+		if derr != nil {
+			return nil, false, derr
 		}
-		return resp.Identity, false, nil
+		if identity == nil {
+			// Existing call succeeded but carried no identity: create a fresh one.
+			return &iam_pb.Identity{Name: anonymousUserName, Actions: []string{}}, true, nil
+		}
+		return identity, false, nil
 	}
 
-	st, ok := status.FromError(err)
-	if ok && st != nil && st.Code() == codes.NotFound {
-		return &iam_pb.Identity{
-			Name:    anonymousUserName,
-			Actions: []string{},
-		}, true, nil
-	}
-
-	return nil, false, fmt.Errorf("failed to get anonymous user: %w", err)
+	// Over the ZAP transport a missing anonymous user surfaces as a generic call
+	// error (the gRPC NotFound path); create a fresh identity.
+	return &iam_pb.Identity{
+		Name:    anonymousUserName,
+		Actions: []string{},
+	}, true, nil
 }

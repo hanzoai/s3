@@ -13,10 +13,8 @@ import (
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/mount_peer_pb"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	mount_peerwire "github.com/hanzoai/s3/s3/wire/mount_peer"
 )
 
 // errPeerReadSkipped signals that the read didn't go through the peer
@@ -36,8 +34,8 @@ const peerLookupTimeout = 500 * time.Millisecond
 const peerFetchTimeout = 5 * time.Second
 
 // maxPeerFetchChunkBytes caps how much we will accept from a single
-// FetchChunk stream. gRPC per-message size is already capped by the
-// server option; this is belt-and-suspenders against a runaway peer.
+// FetchChunk stream — a belt-and-suspenders ceiling against a runaway peer
+// streaming unbounded frames.
 const maxPeerFetchChunkBytes = 64 * 1024 * 1024
 
 // tryPeerRead attempts to satisfy a read from a peer mount's chunk cache.
@@ -186,19 +184,58 @@ func peerLookupHolders(ctx context.Context, dial MountPeerDialer, ownerAddr, fid
 	}
 	defer closeFn()
 
-	callCtx, cancel := context.WithTimeout(ctx, peerLookupTimeout)
-	defer cancel()
-	resp, err := client.ChunkLookup(callCtx, &mount_peer_pb.ChunkLookupRequest{FileIds: []string{fid}})
-	if err != nil {
-		return nil, err
+	// Bound the lookup with peerLookupTimeout on the read critical path. The
+	// unary ChunkLookup blocks on the shared pooled conn, so rather than
+	// close the conn out from under other callers we run it on its own
+	// goroutine and select against the timeout — a slow owner costs us at
+	// most peerLookupTimeout before we fall through to the volume path.
+	type lookupResult struct {
+		resp mount_peerwire.ChunkLookupResponse
+		err  error
 	}
-	set, ok := resp.PeersByFid[fid]
-	if !ok || set == nil {
-		return nil, nil
+	done := make(chan lookupResult, 1)
+	go func() {
+		resp, lerr := client.ChunkLookup(mount_peerwire.ChunkLookupRequestInput{
+			FileIds: [][]byte{[]byte(fid)},
+		})
+		done <- lookupResult{resp: resp, err: lerr}
+	}()
+
+	var resp mount_peerwire.ChunkLookupResponse
+	select {
+	case r := <-done:
+		if r.err != nil {
+			return nil, r.err
+		}
+		resp = r.resp
+	case <-time.After(peerLookupTimeout):
+		return nil, fmt.Errorf("peer lookup timeout after %s", peerLookupTimeout)
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	}
-	out := make([]peerHolder, 0, len(set.Peers))
-	for _, p := range set.Peers {
-		out = append(out, peerHolder{addr: p.PeerAddr, dc: p.DataCenter, rack: p.Rack})
+
+	// peers_by_fid is a list of {key, value} entry objects; find the entry
+	// whose key matches the requested fid and read its PeerSet. Each list
+	// element is the self-contained entry buffer (AddObjectBytes), so
+	// BytesAt(i) yields exactly what WrapChunkLookupResponsePeersByFidEntry
+	// parses.
+	var out []peerHolder
+	entries := resp.PeersByFid()
+	for i := 0; i < entries.Length(); i++ {
+		entry, werr := mount_peerwire.WrapChunkLookupResponsePeersByFidEntry(entries.BytesAt(i))
+		if werr != nil || entry.Key() != fid {
+			continue
+		}
+		peers := entry.Value().Peers()
+		out = make([]peerHolder, 0, peers.Length())
+		for j := 0; j < peers.Length(); j++ {
+			p, perr := mount_peerwire.WrapPeerInfo(peers.BytesAt(j))
+			if perr != nil {
+				continue
+			}
+			out = append(out, peerHolder{addr: p.PeerAddr(), dc: p.DataCenter(), rack: p.Rack()})
+		}
+		break
 	}
 	return out, nil
 }
@@ -249,10 +286,7 @@ func fetchChunkFromPeer(ctx context.Context, dial MountPeerDialer, peerAddr, fid
 	}
 	defer closeFn()
 
-	callCtx, cancel := context.WithTimeout(ctx, peerFetchTimeout)
-	defer cancel()
-
-	stream, err := client.FetchChunk(callCtx, &mount_peer_pb.FetchChunkRequest{
+	stream, err := client.FetchChunk(mount_peerwire.FetchChunkRequestInput{
 		FileId:       fid,
 		ExpectedEtag: expectedETag,
 		ExpectedSize: expectedSize,
@@ -260,6 +294,13 @@ func fetchChunkFromPeer(ctx context.Context, dial MountPeerDialer, peerAddr, fid
 	if err != nil {
 		return nil, err
 	}
+	defer func() { _ = stream.CloseSend() }()
+
+	// Bound the stream with peerFetchTimeout: on expiry we close the send
+	// side (the read loop tears down on the next failed frame) and fall
+	// through to the next holder or the volume server.
+	timer := time.AfterFunc(peerFetchTimeout, func() { _ = stream.CloseSend() })
+	defer timer.Stop()
 
 	// capHint pre-sizes the assembly buffer from the filer-reported chunk
 	// size. When the caller didn't know the size (expectedSize == 0), we
@@ -273,20 +314,29 @@ func fetchChunkFromPeer(ctx context.Context, dial MountPeerDialer, peerAddr, fid
 	buf := make([]byte, 0, capHint)
 
 	for {
-		resp, rerr := stream.Recv()
+		frame, rerr := stream.Recv()
 		if rerr == io.EOF {
 			break
 		}
 		if rerr != nil {
-			if status.Code(rerr) == codes.NotFound {
-				return nil, fmt.Errorf("peer not cached")
-			}
 			return nil, rerr
 		}
-		if len(buf)+len(resp.Data) > int(maxPeerFetchChunkBytes) {
+		resp, werr := mount_peerwire.WrapFetchChunkResponse(frame)
+		if werr != nil {
+			return nil, werr
+		}
+		data := resp.Data()
+		if len(buf)+len(data) > int(maxPeerFetchChunkBytes) {
 			return nil, fmt.Errorf("peer response exceeds max chunk size %d", maxPeerFetchChunkBytes)
 		}
-		buf = append(buf, resp.Data...)
+		buf = append(buf, data...)
+	}
+
+	// A miss is a zero-frame stream (the server half-closes without sending
+	// any FetchChunkResponse). Treat an empty result as "not cached" so the
+	// caller falls through to the next holder.
+	if len(buf) == 0 {
+		return nil, fmt.Errorf("peer not cached")
 	}
 
 	if expectedSize > 0 && uint64(len(buf)) != expectedSize {

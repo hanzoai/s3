@@ -6,16 +6,11 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"testing"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
-// newTestFetchServer stands up a minimal MountPeer gRPC server that only
+// newTestFetchServer stands up a minimal MountPeer ZAP server that only
 // serves FetchChunk out of a fakeChunkCache. Goes through the same
-// PeerGrpcServer.Start path production uses (via pb.NewGrpcServer with
-// the standard keepalive + msg-size options) so future default server
-// options are exercised by these tests too.
+// PeerGrpcServer.Start path production uses (transport.ListenStream).
 func newTestFetchServer(t *testing.T, cache *fakeChunkCache) (addr string, stop func()) {
 	t.Helper()
 	dir := NewPeerDirectory()
@@ -46,7 +41,7 @@ func TestFetchChunkFromPeer_Hit(t *testing.T) {
 	addr, stop := newTestFetchServer(t, cache)
 	defer stop()
 
-	dial := DefaultMountPeerDialer(grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dial := DefaultMountPeerDialer()
 	got, err := fetchChunkFromPeer(context.Background(), dial, addr, "3,abc", uint64(len(payload)), etagOf(payload))
 	if err != nil {
 		t.Fatalf("fetch: %v", err)
@@ -66,7 +61,7 @@ func TestFetchChunkFromPeer_Base64Etag(t *testing.T) {
 	addr, stop := newTestFetchServer(t, cache)
 	defer stop()
 
-	dial := DefaultMountPeerDialer(grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dial := DefaultMountPeerDialer()
 	got, err := fetchChunkFromPeer(context.Background(), dial, addr, "3,b64", uint64(len(payload)), etagOfBase64(payload))
 	if err != nil {
 		t.Fatalf("fetch: %v", err)
@@ -83,7 +78,7 @@ func TestFetchChunkFromPeer_EtagMismatch(t *testing.T) {
 	addr, stop := newTestFetchServer(t, cache)
 	defer stop()
 
-	dial := DefaultMountPeerDialer(grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dial := DefaultMountPeerDialer()
 	_, err := fetchChunkFromPeer(context.Background(), dial, addr, "3,abc", 0, "not-the-real-etag")
 	if err == nil {
 		t.Fatalf("expected etag mismatch error, got nil")
@@ -95,7 +90,7 @@ func TestFetchChunkFromPeer_NotFound(t *testing.T) {
 	addr, stop := newTestFetchServer(t, cache)
 	defer stop()
 
-	dial := DefaultMountPeerDialer(grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dial := DefaultMountPeerDialer()
 	_, err := fetchChunkFromPeer(context.Background(), dial, addr, "3,missing", 0, "")
 	if err == nil {
 		t.Errorf("expected error for missing fid, got nil")
@@ -164,7 +159,7 @@ func TestFetchChunkFromPeer_MultiFrameChunkAssembledCorrectly(t *testing.T) {
 	addr, stop := newTestFetchServer(t, cache)
 	defer stop()
 
-	dial := DefaultMountPeerDialer(grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dial := DefaultMountPeerDialer()
 	got, err := fetchChunkFromPeer(context.Background(), dial, addr, "3,large", uint64(len(payload)), etagOf(payload))
 	if err != nil {
 		t.Fatalf("fetch: %v", err)

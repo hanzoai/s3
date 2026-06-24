@@ -1,13 +1,12 @@
 package shell
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -46,12 +45,15 @@ func (c *commandS3GroupAddUser) Do(args []string, commandEnv *CommandEnv, writer
 		return fmt.Errorf("-user is required")
 	}
 
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.GetConfiguration(ctx, &iam_pb.GetConfigurationRequest{})
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.GetConfiguration(iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
 		if err != nil {
 			return err
 		}
-		cfg := resp.GetConfiguration()
+		cfg, err := iamwire.GetConfigurationResp(body)
+		if err != nil {
+			return err
+		}
 		if cfg == nil {
 			return fmt.Errorf("no IAM configuration found")
 		}
@@ -77,7 +79,7 @@ func (c *commandS3GroupAddUser) Do(args []string, commandEnv *CommandEnv, writer
 					}
 				}
 				g.Members = append(g.Members, *user)
-				if _, err := client.PutConfiguration(ctx, &iam_pb.PutConfigurationRequest{Configuration: cfg}); err != nil {
+				if _, _, err := client.PutConfiguration(iamwire.NewPutConfigurationRequest(iamwire.PutConfigurationRequestInput{Configuration: iamwire.ConfigurationInputFromPB(cfg)})); err != nil {
 					return err
 				}
 				return json.NewEncoder(writer).Encode(map[string]string{"group": *group, "user": *user})
