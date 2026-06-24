@@ -8,7 +8,6 @@ import (
 	_ "github.com/hanzoai/s3/s3/worker/tasks/balance"        // register volume_balance handler
 	_ "github.com/hanzoai/s3/s3/worker/tasks/ec_balance"     // register ec_balance handler
 	_ "github.com/hanzoai/s3/s3/worker/tasks/erasure_coding" // register erasure_coding handler
-	_ "github.com/hanzoai/s3/s3/worker/tasks/iceberg"        // register iceberg_maintenance handler
 	_ "github.com/hanzoai/s3/s3/worker/tasks/s3_lifecycle"   // register s3_lifecycle handler
 	_ "github.com/hanzoai/s3/s3/worker/tasks/vacuum"         // register vacuum handler
 )

@@ -119,7 +119,6 @@ require (
 	github.com/ThreeDotsLabs/watermill v1.5.1
 	github.com/a-h/templ v0.3.1020
 	github.com/apache/cassandra-gocql-driver/v2 v2.1.1
-	github.com/apache/iceberg-go v0.5.0
 	github.com/apple/foundationdb/bindings/go v0.0.0-20250911184653-27f7192f47c3
 	github.com/arangodb/go-driver v1.6.9
 	github.com/armon/go-metrics v0.4.1
@@ -180,7 +179,6 @@ require (
 	github.com/anchore/go-lzo v0.1.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/apache/arrow-go/v18 v18.5.2-0.20260220015023-a886a5722b87 // indirect
-	github.com/apache/thrift v0.23.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/signin v1.2.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/bazelbuild/rules_go v0.46.0 // indirect
@@ -546,9 +544,3 @@ require (
 	storj.io/picobuf v0.0.4 // indirect
 	storj.io/uplink v1.14.0 // indirect
 )
-
-// apache/thrift v0.23.0 uses math.MaxUint32 as an untyped int constant in
-// lib/go/thrift/framed_transport.go, which overflows int on 32-bit GOARCHes
-// (e.g. openbsd/arm, linux/arm). Pin to v0.22.0 until upstream fixes it.
-// (public->public version pin, not a local replace.)
-replace github.com/apache/thrift => github.com/apache/thrift v0.22.0
