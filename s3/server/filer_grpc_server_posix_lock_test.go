@@ -7,8 +7,12 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/filer/posixlock"
+	"github.com/hanzoai/s3/s3/filerzap"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	filerwire "github.com/hanzoai/s3/s3/wire/filer"
+	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -111,20 +115,23 @@ func TestPosixLockForwardsToOwner(t *testing.T) {
 	const key = "s3.fuse.lock:/x"
 	owner := newPosixTestServer()
 
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	// Serve the owner filer over the native ZAP transport — this is the wire
+	// the forwarding client now dials (transport.Dial), so the forwarded hop
+	// exercises the real ZAP client+server path, not gRPC.
+	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		filerwire.Dispatch(filerzap.NewServerBackend(owner)),
+		filerstream.Handler(filerzap.NewStreamServer(owner)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
-	port := lis.Addr().(*net.TCPAddr).Port
-	ownerAddr := pb.NewServerAddressWithGrpcPort(lis.Addr().String(), port)
+	t.Cleanup(func() { _ = srv.Close() })
+
+	port := srv.Addr().(*net.TCPAddr).Port
+	ownerAddr := pb.NewServerAddressWithGrpcPort(srv.Addr().String(), port)
 	sender := pb.ServerAddress("127.0.0.1:1")
 
 	withRing(owner, ownerAddr, sender)
 	owner.grpcDialOption = grpc.WithTransportCredentials(insecure.NewCredentials())
-	srv := grpc.NewServer()
-	filer_pb.RegisterHanzoFilerServer(srv, owner)
-	go srv.Serve(lis)
-	t.Cleanup(srv.Stop)
 
 	self := newPosixTestServer()
 	withRing(self, sender, ownerAddr)
