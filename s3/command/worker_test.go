@@ -15,11 +15,12 @@ func TestWorkerDefaultJobTypes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("buildPluginWorkerHandlers(default worker flag) err = %v", err)
 	}
+	// iceberg_maintenance is no longer a registered worker handler (the Iceberg
+	// maintenance backend was ripped); the registry now resolves these 6.
 	want := []string{
 		"admin_script",
 		"ec_balance",
 		"erasure_coding",
-		"iceberg_maintenance",
 		"s3_lifecycle",
 		"vacuum",
 		"volume_balance",
