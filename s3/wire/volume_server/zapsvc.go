@@ -212,7 +212,8 @@ func (h unaryHandler) dispatch(envelope []byte) ([]byte, error) {
 		return rpc.BuildResponse(rpc.StatusNotFound, call.PromiseID, nil), nil
 	}
 	if herr != nil {
-		return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+		// Carry the handler error message so the caller can reconstruct sentinels.
+		return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(herr.Error())), nil
 	}
 	return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 }
