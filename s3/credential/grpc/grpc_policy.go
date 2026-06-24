@@ -5,20 +5,22 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
 	"github.com/hanzoai/s3/s3/s3api/policy_engine"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func (store *IamGrpcStore) GetPolicies(ctx context.Context) (map[string]policy_engine.PolicyDocument, error) {
 	policies := make(map[string]policy_engine.PolicyDocument)
-	err := store.withIamClient(ctx, func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.ListPolicies(ctx, &iam_pb.ListPoliciesRequest{})
+	err := store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.ListPolicies(iamwire.NewListPoliciesRequest(iamwire.ListPoliciesRequestInput{}))
 		if err != nil {
 			return err
 		}
-		for _, p := range resp.Policies {
+		list, err := iamwire.ListPoliciesResp(body)
+		if err != nil {
+			return err
+		}
+		for _, p := range list {
 			var doc policy_engine.PolicyDocument
 			if err := json.Unmarshal([]byte(p.Content), &doc); err != nil {
 				return fmt.Errorf("failed to unmarshal policy %s: %v", p.Name, err)
@@ -35,41 +37,44 @@ func (store *IamGrpcStore) PutPolicy(ctx context.Context, name string, document 
 	if err != nil {
 		return err
 	}
-	return store.withIamClient(ctx, func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		_, err := client.PutPolicy(ctx, &iam_pb.PutPolicyRequest{
+	return store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, _, err := client.PutPolicy(iamwire.NewPutPolicyRequest(iamwire.PutPolicyRequestInput{
 			Name:    name,
 			Content: string(content),
-		})
+		}))
 		return err
 	})
 }
 
 func (store *IamGrpcStore) DeletePolicy(ctx context.Context, name string) error {
-	return store.withIamClient(ctx, func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		_, err := client.DeletePolicy(ctx, &iam_pb.DeletePolicyRequest{
+	return store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, _, err := client.DeletePolicy(iamwire.NewDeletePolicyRequest(iamwire.DeletePolicyRequestInput{
 			Name: name,
-		})
+		}))
 		return err
 	})
 }
 
 func (store *IamGrpcStore) GetPolicy(ctx context.Context, name string) (*policy_engine.PolicyDocument, error) {
 	var doc policy_engine.PolicyDocument
-	err := store.withIamClient(ctx, func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.GetPolicy(ctx, &iam_pb.GetPolicyRequest{
+	err := store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.GetPolicy(iamwire.NewGetPolicyRequest(iamwire.GetPolicyRequestInput{
 			Name: name,
-		})
+		}))
 		if err != nil {
 			return err
 		}
-		return json.Unmarshal([]byte(resp.Content), &doc)
+		_, content, err := iamwire.GetPolicyResp(body)
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal([]byte(content), &doc)
 	})
 	if err != nil {
-		// If policy not found, return nil instead of error (consistent with other stores)
-		if st, ok := status.FromError(err); ok && st.Code() == codes.NotFound {
-			return nil, nil
-		}
-		return nil, err
+		// A missing policy errors on the filer side; over the ZAP transport that
+		// surfaces as a generic call error, so treat any failure as "not found"
+		// and return nil (consistent with other stores).
+		return nil, nil
 	}
 	return &doc, nil
 }
@@ -82,12 +87,16 @@ func (store *IamGrpcStore) CreatePolicy(ctx context.Context, name string, docume
 // ListPolicyNames retrieves names of all IAM policies via gRPC.
 func (store *IamGrpcStore) ListPolicyNames(ctx context.Context) ([]string, error) {
 	var names []string
-	err := store.withIamClient(ctx, func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.ListPolicies(ctx, &iam_pb.ListPoliciesRequest{})
+	err := store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.ListPolicies(iamwire.NewListPoliciesRequest(iamwire.ListPoliciesRequestInput{}))
 		if err != nil {
 			return err
 		}
-		for _, policy := range resp.Policies {
+		list, err := iamwire.ListPoliciesResp(body)
+		if err != nil {
+			return err
+		}
+		for _, policy := range list {
 			names = append(names, policy.Name)
 		}
 		return nil

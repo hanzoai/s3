@@ -1,14 +1,14 @@
 package agent_client
 
 import (
-	"context"
 	"fmt"
 
+	"github.com/hanzoai/s3/s3/mq/agent/agentconv"
 	"github.com/hanzoai/s3/s3/mq/topic"
-	"github.com/hanzoai/s3/s3/pb/mq_agent_pb"
 	"github.com/hanzoai/s3/s3/pb/schema_pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	mq_agentwire "github.com/hanzoai/s3/s3/wire/mq_agent"
+	mq_schemawire "github.com/hanzoai/s3/s3/wire/mq_schema"
+	"github.com/zap-proto/go/transport"
 )
 
 type SubscribeOption struct {
@@ -24,50 +24,54 @@ type SubscribeOption struct {
 
 type SubscribeSession struct {
 	Option *SubscribeOption
-	stream grpc.BidiStreamingClient[mq_agent_pb.SubscribeRecordRequest, mq_agent_pb.SubscribeRecordResponse]
+	conn   *transport.Conn
+	stream *transport.Stream
 }
 
 func NewSubscribeSession(agentAddress string, option *SubscribeOption) (*SubscribeSession, error) {
-	// call local agent grpc server to create a new session
-	clientConn, err := grpc.NewClient(agentAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// call local agent ZAP server to create a new session
+	conn, err := transport.Dial("tcp", agentAddress)
 	if err != nil {
 		return nil, fmt.Errorf("dial agent server %s: %v", agentAddress, err)
 	}
-	agentClient := mq_agent_pb.NewHanzoMessagingAgentClient(clientConn)
 
-	initRequest := &mq_agent_pb.SubscribeRecordRequest_InitSubscribeRecordRequest{
+	initRequest := mq_agentwire.NewInitSubscribeRecordRequest(mq_agentwire.InitSubscribeRecordRequestInput{
 		ConsumerGroup:           option.ConsumerGroup,
 		ConsumerGroupInstanceId: option.ConsumerGroupInstanceId,
-		Topic: &schema_pb.Topic{
+		Topic: mq_schemawire.NewTopic(mq_schemawire.TopicInput{
 			Namespace: option.Topic.Namespace,
 			Name:      option.Topic.Name,
-		},
-		OffsetType:              option.OffsetType,
+		}),
+		OffsetType:              uint32(option.OffsetType),
 		OffsetTsNs:              option.OffsetTsNs,
 		MaxSubscribedPartitions: option.MaxSubscribedPartitions,
 		Filter:                  option.Filter,
 		SlidingWindowSize:       option.SlidingWindowSize,
-	}
+	})
 
-	stream, err := agentClient.SubscribeRecord(context.Background())
+	// open the SubscribeRecord bidirectional stream; the first frame carries
+	// the init request.
+	stream, err := conn.OpenStream(mq_agentwire.HanzoMessagingAgentSubscribeRecordOrdinal,
+		mq_agentwire.NewSubscribeRecordRequest(mq_agentwire.SubscribeRecordRequestInput{
+			Init: initRequest,
+		}))
 	if err != nil {
+		conn.Close()
 		return nil, fmt.Errorf("subscribe record: %w", err)
-	}
-
-	if err = stream.Send(&mq_agent_pb.SubscribeRecordRequest{
-		Init: initRequest,
-	}); err != nil {
-		return nil, fmt.Errorf("send session id: %w", err)
 	}
 
 	return &SubscribeSession{
 		Option: option,
+		conn:   conn,
 		stream: stream,
 	}, nil
 }
 
 func (s *SubscribeSession) CloseSession() error {
 	err := s.stream.CloseSend()
+	if s.conn != nil {
+		s.conn.Close()
+	}
 	return err
 }
 
@@ -75,13 +79,20 @@ func (a *SubscribeSession) SubscribeMessageRecord(
 	onEachMessageFn func(key []byte, record *schema_pb.RecordValue),
 	onCompletionFn func()) error {
 	for {
-		resp, err := a.stream.Recv()
+		frame, err := a.stream.Recv()
 		if err != nil {
 			if onCompletionFn != nil {
 				onCompletionFn()
 			}
 			return err
 		}
-		onEachMessageFn(resp.Key, resp.Value)
+		resp, err := mq_agentwire.WrapSubscribeRecordResponse(frame)
+		if err != nil {
+			if onCompletionFn != nil {
+				onCompletionFn()
+			}
+			return err
+		}
+		onEachMessageFn(resp.Key(), agentconv.RecordValueFromWire(resp.Value()))
 	}
 }

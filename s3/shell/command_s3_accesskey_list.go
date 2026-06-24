@@ -1,13 +1,12 @@
 package shell
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
 	"text/tabwriter"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -43,20 +42,24 @@ func (c *commandS3AccessKeyList) Do(args []string, commandEnv *CommandEnv, write
 		return fmt.Errorf("-user is required")
 	}
 
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.GetUser(ctx, &iam_pb.GetUserRequest{Username: *user})
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: *user}))
+		if err != nil {
+			return err
+		}
+		identity, err := iamwire.GetUserResp(body)
 		if err != nil {
 			return err
 		}
 
-		if len(resp.Identity.Credentials) == 0 {
+		if identity == nil || len(identity.Credentials) == 0 {
 			fmt.Fprintf(writer, "No access keys for user %q.\n", *user)
 			return nil
 		}
 
 		tw := tabwriter.NewWriter(writer, 0, 4, 2, ' ', 0)
 		fmt.Fprintln(tw, "ACCESS KEY\tSTATUS")
-		for _, cred := range resp.Identity.Credentials {
+		for _, cred := range identity.Credentials {
 			st := cred.Status
 			if st == "" {
 				st = "Active"

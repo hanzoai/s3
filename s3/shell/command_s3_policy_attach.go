@@ -1,13 +1,12 @@
 package shell
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -49,34 +48,37 @@ func (c *commandS3PolicyAttach) Do(args []string, commandEnv *CommandEnv, writer
 		return fmt.Errorf("-user is required")
 	}
 
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
 		// Verify the policy exists
-		_, err := client.GetPolicy(ctx, &iam_pb.GetPolicyRequest{Name: *policy})
-		if err != nil {
+		if _, _, err := client.GetPolicy(iamwire.NewGetPolicyRequest(iamwire.GetPolicyRequestInput{Name: *policy})); err != nil {
 			return fmt.Errorf("get policy %q: %w", *policy, err)
 		}
 
 		// Get the user
-		resp, err := client.GetUser(ctx, &iam_pb.GetUserRequest{Username: *user})
+		_, body, err := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: *user}))
 		if err != nil {
 			return fmt.Errorf("get user %q: %w", *user, err)
 		}
-		if resp.Identity == nil {
+		identity, err := iamwire.GetUserResp(body)
+		if err != nil {
+			return err
+		}
+		if identity == nil {
 			return fmt.Errorf("user %q returned empty identity", *user)
 		}
 
 		// Check if already attached
-		for _, p := range resp.Identity.PolicyNames {
+		for _, p := range identity.PolicyNames {
 			if p == *policy {
 				return json.NewEncoder(writer).Encode(map[string]string{"policy": *policy, "user": *user})
 			}
 		}
 
-		resp.Identity.PolicyNames = append(resp.Identity.PolicyNames, *policy)
-		_, err = client.UpdateUser(ctx, &iam_pb.UpdateUserRequest{
+		identity.PolicyNames = append(identity.PolicyNames, *policy)
+		_, _, err = client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
 			Username: *user,
-			Identity: resp.Identity,
-		})
+			Identity: iamwire.IdentityInputFromPB(identity),
+		}))
 		if err != nil {
 			return err
 		}

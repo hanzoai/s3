@@ -2,7 +2,6 @@ package shell
 
 import (
 	"bytes"
-	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -11,8 +10,7 @@ import (
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/iam"
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -68,32 +66,32 @@ func (c *commandS3Configure) Do(args []string, commandEnv *CommandEnv, writer io
 	var identity *iam_pb.Identity
 	var isNewUser bool
 
-	err = commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
+	err = commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
 
 		// Try to get existing user
-		resp, getErr := client.GetUser(ctx, &iam_pb.GetUserRequest{
+		_, body, getErr := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{
 			Username: *user,
-		})
+		}))
 
 		if getErr == nil {
-			identity = resp.Identity
+			identity, getErr = iamwire.GetUserResp(body)
+			if getErr != nil {
+				return getErr
+			}
 			if identity == nil {
-				// Should not happen if err is nil, but handle defensively
+				// Call succeeded but carried no identity: treat as new user.
 				isNewUser = true
 				identity = &iam_pb.Identity{Name: *user}
 			}
 		} else {
-			st, ok := status.FromError(getErr)
-			if ok && st.Code() == codes.NotFound {
-				isNewUser = true
-				identity = &iam_pb.Identity{
-					Name:        *user,
-					Credentials: []*iam_pb.Credential{},
-					Actions:     []string{},
-					PolicyNames: []string{},
-				}
-			} else {
-				return fmt.Errorf("failed to get user %s: %v", *user, getErr)
+			// Over the ZAP transport a missing user surfaces as a generic call
+			// error (the gRPC NotFound path); create a fresh identity.
+			isNewUser = true
+			identity = &iam_pb.Identity{
+				Name:        *user,
+				Credentials: []*iam_pb.Credential{},
+				Actions:     []string{},
+				PolicyNames: []string{},
 			}
 		}
 
@@ -116,15 +114,15 @@ func (c *commandS3Configure) Do(args []string, commandEnv *CommandEnv, writer io
 		// Apply changes
 		if *isDelete && *actions == "" && *accessKey == "" && *buckets == "" && *policies == "" {
 			// Delete User
-			_, err := client.DeleteUser(ctx, &iam_pb.DeleteUserRequest{Username: *user})
+			_, _, err := client.DeleteUser(iamwire.NewDeleteUserRequest(iamwire.DeleteUserRequestInput{Username: *user}))
 			return err
 		} else {
 			// Create or Update User
 			if isNewUser {
-				_, err := client.CreateUser(ctx, &iam_pb.CreateUserRequest{Identity: identity})
+				_, _, err := client.CreateUser(iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{Identity: iamwire.IdentityInputFromPB(identity)}))
 				return err
 			} else {
-				_, err := client.UpdateUser(ctx, &iam_pb.UpdateUserRequest{Username: *user, Identity: identity})
+				_, _, err := client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{Username: *user, Identity: iamwire.IdentityInputFromPB(identity)}))
 				return err
 			}
 		}
@@ -134,13 +132,17 @@ func (c *commandS3Configure) Do(args []string, commandEnv *CommandEnv, writer io
 }
 
 func (c *commandS3Configure) listConfiguration(commandEnv *CommandEnv, writer io.Writer) error {
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.GetConfiguration(ctx, &iam_pb.GetConfigurationRequest{})
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.GetConfiguration(iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
+		if err != nil {
+			return err
+		}
+		cfg, err := iamwire.GetConfigurationResp(body)
 		if err != nil {
 			return err
 		}
 		var buf bytes.Buffer
-		filer.ProtoToText(&buf, resp.Configuration)
+		filer.ProtoToText(&buf, cfg)
 		fmt.Fprint(writer, buf.String())
 		fmt.Fprintln(writer)
 		return nil

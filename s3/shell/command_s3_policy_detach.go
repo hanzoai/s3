@@ -1,13 +1,12 @@
 package shell
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -47,18 +46,22 @@ func (c *commandS3PolicyDetach) Do(args []string, commandEnv *CommandEnv, writer
 		return fmt.Errorf("-user is required")
 	}
 
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.GetUser(ctx, &iam_pb.GetUserRequest{Username: *user})
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: *user}))
 		if err != nil {
 			return fmt.Errorf("get user %q: %w", *user, err)
 		}
-		if resp.Identity == nil {
+		identity, err := iamwire.GetUserResp(body)
+		if err != nil {
+			return err
+		}
+		if identity == nil {
 			return fmt.Errorf("user %q returned empty identity", *user)
 		}
 
 		found := false
 		var kept []string
-		for _, p := range resp.Identity.PolicyNames {
+		for _, p := range identity.PolicyNames {
 			if p == *policy {
 				found = true
 			} else {
@@ -69,11 +72,11 @@ func (c *commandS3PolicyDetach) Do(args []string, commandEnv *CommandEnv, writer
 			return fmt.Errorf("policy %q is not attached to user %q", *policy, *user)
 		}
 
-		resp.Identity.PolicyNames = kept
-		_, err = client.UpdateUser(ctx, &iam_pb.UpdateUserRequest{
+		identity.PolicyNames = kept
+		_, _, err = client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
 			Username: *user,
-			Identity: resp.Identity,
-		})
+			Identity: iamwire.IdentityInputFromPB(identity),
+		}))
 		if err != nil {
 			return err
 		}

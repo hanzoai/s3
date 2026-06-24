@@ -3,37 +3,30 @@ package mount
 import (
 	"context"
 	"io"
-	"net"
 	"testing"
 
-	"github.com/hanzoai/s3/s3/pb/mount_peer_pb"
 	"github.com/hanzoai/s3/s3/util/chunk_cache"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
+	mount_peerwire "github.com/hanzoai/s3/s3/wire/mount_peer"
 )
 
-func newTestPeerGrpc(t *testing.T, cache chunk_cache.ChunkCache, ownerFor func(fid string) string, selfAddr string) (mount_peer_pb.MountPeerClient, func()) {
+// newTestPeerGrpc starts a real PeerGrpcServer on a loopback port and returns a
+// ZAP client connected to it plus a cleanup. The client speaks the wire
+// protocol over the transport, exactly as production does.
+func newTestPeerGrpc(t *testing.T, cache chunk_cache.ChunkCache, ownerFor func(fid string) string, selfAddr string) (MountPeerClient, func()) {
 	t.Helper()
 	dir := NewPeerDirectory()
 	srv := NewPeerGrpcServer(cache, dir, ownerFor, selfAddr)
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("listen: %v", err)
+	if err := srv.Start("127.0.0.1:0"); err != nil {
+		t.Fatalf("start: %v", err)
 	}
-	srv.listener = ln
-	srv.grpcS = grpc.NewServer()
-	mount_peer_pb.RegisterMountPeerServer(srv.grpcS, srv)
-	go srv.grpcS.Serve(ln)
 
-	conn, err := grpc.NewClient(ln.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	dial := DefaultMountPeerDialer()
+	client, closeFn, err := dial(context.Background(), srv.Addr())
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
-	client := mount_peer_pb.NewMountPeerClient(conn)
 	cleanup := func() {
-		conn.Close()
+		closeFn()
 		srv.Stop()
 	}
 	return client, cleanup
@@ -46,8 +39,8 @@ func TestPeerGrpcServer_AnnounceAndLookup(t *testing.T) {
 	}, self)
 	defer cleanup()
 
-	_, err := client.ChunkAnnounce(context.Background(), &mount_peer_pb.ChunkAnnounceRequest{
-		FileIds:    []string{"3,a", "3,b"},
+	_, err := client.ChunkAnnounce(mount_peerwire.ChunkAnnounceRequestInput{
+		FileIds:    [][]byte{[]byte("3,a"), []byte("3,b")},
 		PeerAddr:   "holder:18080",
 		TtlSeconds: 60,
 	})
@@ -55,16 +48,28 @@ func TestPeerGrpcServer_AnnounceAndLookup(t *testing.T) {
 		t.Fatalf("announce: %v", err)
 	}
 
-	resp, err := client.ChunkLookup(context.Background(), &mount_peer_pb.ChunkLookupRequest{
-		FileIds: []string{"3,a", "3,missing"},
+	resp, err := client.ChunkLookup(mount_peerwire.ChunkLookupRequestInput{
+		FileIds: [][]byte{[]byte("3,a"), []byte("3,missing")},
 	})
 	if err != nil {
 		t.Fatalf("lookup: %v", err)
 	}
-	if got := len(resp.PeersByFid["3,a"].Peers); got != 1 {
-		t.Errorf("3,a: expected 1 holder, got %d", got)
+
+	peersFor := func(fid string) (mount_peerwire.PeerSet, bool) {
+		entries := resp.PeersByFid()
+		for i := 0; i < entries.Length(); i++ {
+			entry, werr := mount_peerwire.WrapChunkLookupResponsePeersByFidEntry(entries.BytesAt(i))
+			if werr == nil && entry.Key() == fid {
+				return entry.Value(), true
+			}
+		}
+		return mount_peerwire.PeerSet{}, false
 	}
-	if _, ok := resp.PeersByFid["3,missing"]; !ok {
+
+	if set, ok := peersFor("3,a"); !ok || set.Peers().Length() != 1 {
+		t.Errorf("3,a: expected 1 holder, got ok=%v len=%d", ok, set.Peers().Length())
+	}
+	if _, ok := peersFor("3,missing"); !ok {
 		t.Errorf("3,missing should have a (nil/empty) peer set entry")
 	}
 }
@@ -75,22 +80,23 @@ func TestPeerGrpcServer_OwnerMismatch(t *testing.T) {
 	}, "self:18080")
 	defer cleanup()
 
-	ann, err := client.ChunkAnnounce(context.Background(), &mount_peer_pb.ChunkAnnounceRequest{
-		FileIds:    []string{"3,x"},
+	ann, err := client.ChunkAnnounce(mount_peerwire.ChunkAnnounceRequestInput{
+		FileIds:    [][]byte{[]byte("3,x")},
 		PeerAddr:   "holder:18080",
 		TtlSeconds: 60,
 	})
 	if err != nil {
 		t.Fatalf("announce: %v", err)
 	}
-	if len(ann.RejectedFileIds) != 1 || ann.RejectedFileIds[0] != "3,x" {
-		t.Errorf("expected 3,x rejected, got %v", ann.RejectedFileIds)
+	rejected := ann.RejectedFileIds()
+	if rejected.Length() != 1 || string(rejected.BytesAt(0)) != "3,x" {
+		t.Errorf("expected 3,x rejected, got len=%d", rejected.Length())
 	}
 }
 
-// TestPeerGrpcServer_FetchChunk_StreamsHit exercises the new byte-transfer
-// path: a cached chunk returned as multiple gRPC frames, concatenated by
-// the caller into the original payload.
+// TestPeerGrpcServer_FetchChunk_StreamsHit exercises the byte-transfer path: a
+// cached chunk returned as multiple ZAP stream frames, concatenated by the
+// caller into the original payload.
 func TestPeerGrpcServer_FetchChunk_StreamsHit(t *testing.T) {
 	cache := newFakeChunkCache()
 	// A payload deliberately larger than fetchChunkStreamSize to force
@@ -104,20 +110,24 @@ func TestPeerGrpcServer_FetchChunk_StreamsHit(t *testing.T) {
 	client, cleanup := newTestPeerGrpc(t, cache, nil, "self:18080")
 	defer cleanup()
 
-	stream, err := client.FetchChunk(context.Background(), &mount_peer_pb.FetchChunkRequest{FileId: "3,stream"})
+	stream, err := client.FetchChunk(mount_peerwire.FetchChunkRequestInput{FileId: "3,stream"})
 	if err != nil {
 		t.Fatalf("FetchChunk: %v", err)
 	}
 	var got []byte
 	for {
-		resp, err := stream.Recv()
+		frame, err := stream.Recv()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
 			t.Fatalf("Recv: %v", err)
 		}
-		got = append(got, resp.Data...)
+		resp, werr := mount_peerwire.WrapFetchChunkResponse(frame)
+		if werr != nil {
+			t.Fatalf("wrap frame: %v", werr)
+		}
+		got = append(got, resp.Data()...)
 	}
 	if len(got) != len(payload) {
 		t.Fatalf("got %d bytes, want %d", len(got), len(payload))
@@ -129,22 +139,20 @@ func TestPeerGrpcServer_FetchChunk_StreamsHit(t *testing.T) {
 	}
 }
 
-// TestPeerGrpcServer_FetchChunk_NotFound verifies that a miss returns
-// gRPC NOT_FOUND so the client can distinguish miss from transport error.
+// TestPeerGrpcServer_FetchChunk_NotFound verifies that a miss yields a
+// zero-frame stream (the server half-closes without sending any
+// FetchChunkResponse), which the client reads as io.EOF with no bytes.
 func TestPeerGrpcServer_FetchChunk_NotFound(t *testing.T) {
 	cache := newFakeChunkCache()
 	client, cleanup := newTestPeerGrpc(t, cache, nil, "self:18080")
 	defer cleanup()
 
-	stream, err := client.FetchChunk(context.Background(), &mount_peer_pb.FetchChunkRequest{FileId: "3,missing"})
+	stream, err := client.FetchChunk(mount_peerwire.FetchChunkRequestInput{FileId: "3,missing"})
 	if err != nil {
-		t.Fatalf("FetchChunk dial: %v", err)
+		t.Fatalf("FetchChunk open: %v", err)
 	}
-	_, err = stream.Recv()
-	if err == nil {
-		t.Fatalf("expected error on missing fid, got nil")
-	}
-	if status.Code(err) != codes.NotFound {
-		t.Errorf("expected NotFound code, got %v", status.Code(err))
+	frame, err := stream.Recv()
+	if err != io.EOF {
+		t.Fatalf("expected io.EOF on missing fid, got frame=%d err=%v", len(frame), err)
 	}
 }

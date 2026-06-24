@@ -1,12 +1,11 @@
 package shell
 
 import (
-	"context"
 	"fmt"
 	"io"
 
-	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/mq_pb"
+	mq_brokerwire "github.com/hanzoai/s3/s3/wire/mq_broker"
+	"github.com/zap-proto/go/transport"
 )
 
 func init() {
@@ -40,12 +39,13 @@ func (c *commandMqBalanceTopics) Do(args []string, commandEnv *CommandEnv, write
 	fmt.Fprintf(writer, "current balancer: %s\n", brokerBalancer)
 
 	// balance topics
-	return pb.WithBrokerGrpcClient(false, brokerBalancer, commandEnv.option.GrpcDialOption, func(client mq_pb.HanzoMessagingClient) error {
-		_, err := client.BalanceTopics(context.Background(), &mq_pb.BalanceTopicsRequest{})
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	conn, err := transport.Dial("tcp", brokerBalancer)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
 
+	client := mq_brokerwire.NewHanzoMessagingClient(conn, nil)
+	_, _, err = client.BalanceTopics(mq_brokerwire.NewBalanceTopicsRequest(mq_brokerwire.BalanceTopicsRequestInput{}))
+	return err
 }

@@ -49,8 +49,6 @@ type JobTypeInfo struct {
 }
 
 type Plugin struct {
-	plugin_pb.UnimplementedPluginControlServiceServer
-
 	store    *ConfigStore
 	registry *Registry
 
@@ -252,7 +250,7 @@ func (r *Plugin) Shutdown() {
 	r.wg.Wait()
 }
 
-func (r *Plugin) WorkerStream(stream plugin_pb.PluginControlService_WorkerStreamServer) error {
+func (r *Plugin) WorkerStream(stream WorkerStreamServer) error {
 	first, err := stream.Recv()
 	if err != nil {
 		if errors.Is(err, io.EOF) {
@@ -909,7 +907,7 @@ func (r *Plugin) sendAdminHello(workerID string) error {
 
 func (r *Plugin) sendLoop(
 	ctx context.Context,
-	stream plugin_pb.PluginControlService_WorkerStreamServer,
+	stream WorkerStreamServer,
 	session *streamSession,
 ) error {
 	for {

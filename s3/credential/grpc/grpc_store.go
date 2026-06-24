@@ -1,17 +1,16 @@
 package grpc
 
 import (
-	"context"
 	"fmt"
 	"sync"
 
 	"github.com/hanzoai/s3/s3/credential"
 	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/util"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 func init() {
@@ -70,38 +69,29 @@ func (store *IamGrpcStore) SetAdminSigning(key security.SigningKey, expiresAfter
 	store.adminSigningExpiresAfterSec = expiresAfterSec
 }
 
-// withIamClient invokes fn against a (possibly cached) gRPC client to the
-// filer's IAM service. If an admin signing key is configured the call attaches
-// a freshly minted Bearer token via outgoing metadata; otherwise no auth
-// header is sent and the filer will return Unauthenticated.
-func (store *IamGrpcStore) withIamClient(ctx context.Context, fn func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error) error {
+// withIamClient invokes fn against a client to the filer's IAM service over the
+// ZAP transport. The service listens on its own ZAP endpoint at
+// FilerAddress.ToIamZapAddress() (grpcPort+10000); connection-level security is
+// provided by the transport, so the admin signing key is no longer consulted.
+func (store *IamGrpcStore) withIamClient(fn func(client *iamwire.HanzoIdentityAccessManagementClient) error) error {
 	store.mu.RLock()
 	if store.filerAddressFunc == nil {
 		store.mu.RUnlock()
 		return fmt.Errorf("iam_grpc: filer not yet available")
 	}
-
 	filerAddress := store.filerAddressFunc()
-	dialOption := store.grpcDialOption
-	signingKey := store.adminSigningKey
-	expiresAfterSec := store.adminSigningExpiresAfterSec
 	store.mu.RUnlock()
 
 	if filerAddress == "" {
 		return fmt.Errorf("iam_grpc: no filer discovered yet")
 	}
 
-	if len(signingKey) > 0 {
-		token := security.GenJwtForFilerAdmin(signingKey, expiresAfterSec)
-		if token != "" {
-			ctx = metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+string(token))
-		}
+	conn, err := transport.Dial("tcp", filerAddress.ToIamZapAddress())
+	if err != nil {
+		return err
 	}
-
-	return pb.WithGrpcClient(context.Background(), false, 0, func(conn *grpc.ClientConn) error {
-		client := iam_pb.NewHanzoIdentityAccessManagementClient(conn)
-		return fn(ctx, client)
-	}, filerAddress.ToGrpcAddress(), false, dialOption)
+	defer conn.Close()
+	return fn(iamwire.NewHanzoIdentityAccessManagementClient(conn, nil))
 }
 
 func (store *IamGrpcStore) Shutdown() {

@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/hanzoai/s3/s3/iam"
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -85,8 +85,10 @@ func (c *commandS3UserCreate) Do(args []string, commandEnv *CommandEnv, writer i
 		},
 	}
 
-	err := commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		_, err := client.CreateUser(ctx, &iam_pb.CreateUserRequest{Identity: identity})
+	err := commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, _, err := client.CreateUser(iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{
+			Identity: iamwire.IdentityInputFromPB(identity),
+		}))
 		return err
 	})
 	if err != nil {
