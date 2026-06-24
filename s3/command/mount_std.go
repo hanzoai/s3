@@ -18,18 +18,18 @@ import (
 
 	"github.com/hanzoai/s3/s3/util/version"
 
-	"github.com/seaweedfs/go-fuse/v2/fuse"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/mount"
 	"github.com/hanzoai/s3/s3/mount/meta_cache"
 	"github.com/hanzoai/s3/s3/mount/unmount"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/mount_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/storage/types"
-	"google.golang.org/grpc/reflection"
+	mountwire "github.com/hanzoai/s3/s3/wire/mount"
+	"github.com/seaweedfs/go-fuse/v2/fuse"
+	"github.com/zap-proto/go/transport"
 
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/grace"
@@ -412,10 +412,8 @@ func RunMount(option *MountOptions, umask os.FileMode) bool {
 		}
 	}
 
-	grpcS := pb.NewGrpcServer()
-	mount_pb.RegisterHanzoMountServer(grpcS, hanzoFileSystem)
-	reflection.Register(grpcS)
-	go grpcS.Serve(montSocketListener)
+	// Native ZAP HanzoMount service on the local mount unix socket (no gRPC).
+	transport.Serve(montSocketListener, mountwire.Dispatch(hanzoFileSystem))
 
 	err = hanzoFileSystem.StartBackgroundTasks()
 	if err != nil {

@@ -694,6 +694,7 @@ github.com/apache/cassandra-gocql-driver/v2 v2.1.1 h1:DjmtmSRoUuIFswczA8LPBppRb8
 github.com/apache/cassandra-gocql-driver/v2 v2.1.1/go.mod h1:QH/asJjB3mHvY6Dot6ZKMMpTcOrWJ8i9GhsvG1g0PK4=
 github.com/apache/iceberg-go v0.5.0 h1:wQj4CK5YiXZcB+tj19gWG+Jf1I6MiORQ/StSL/E5gGQ=
 github.com/apache/iceberg-go v0.5.0/go.mod h1:F/rdP1yZmnO4mQ0Qew2HTGdc+ZV57cRfxbbq/uJm1eM=
+github.com/apache/thrift v0.16.0/go.mod h1:PHK3hniurgQaNMZYaCLEqXKsYK8upmhPbmdP2FXSqgU=
 github.com/apache/thrift v0.22.0 h1:r7mTJdj51TMDe6RtcmNdQxgn9XcyfGDOzegMDRg47uc=
 github.com/apache/thrift v0.22.0/go.mod h1:1e7J/O1Ae6ZQMTYdy9xa3w9k+XHWPfRvdPyJeynQ+/g=
 github.com/apparentlymart/go-textseg/v15 v15.0.0 h1:uYvfpb3DyLSCGWnctWKGj857c6ew1u1fNQOlOtuGxQY=
@@ -858,11 +859,13 @@ github.com/cockroachdb/apd/v3 v3.2.1 h1:U+8j7t0axsIgvQUqthuNm82HIrYXodOV2iWLWtEa
 github.com/cockroachdb/apd/v3 v3.2.1/go.mod h1:klXJcjp+FffLTHlhIG69tezTDvdP065naDsHzKhYSqc=
 github.com/cockroachdb/errors v1.11.3 h1:5bA+k2Y6r+oz/6Z/RFlNeVCesGARKuC6YymtcDrbC/I=
 github.com/cockroachdb/errors v1.11.3/go.mod h1:m4UIW4CDjx+R5cybPsNrRbreomiFqt8o1h1wUVazSd8=
+github.com/cockroachdb/errors v1.12.0 h1:d7oCs6vuIMUQRVbi6jWWWEJZahLCfJpnJSVobd1/sUo=
 github.com/cockroachdb/errors v1.12.0/go.mod h1:SvzfYNNBshAVbZ8wzNc/UPK3w1vf0dKDUP41ucAIf7g=
 github.com/cockroachdb/logtags v0.0.0-20241215232642-bb51bb14a506 h1:ASDL+UJcILMqgNeV5jiqR4j+sTuvQNHdf2chuKj1M5k=
 github.com/cockroachdb/logtags v0.0.0-20241215232642-bb51bb14a506/go.mod h1:Mw7HqKr2kdtu6aYGn3tPmAftiP3QPX63LdK/zcariIo=
 github.com/cockroachdb/redact v1.1.5 h1:u1PMllDkdFfPWaNGMyLD1+so+aq3uUItthCFqzwPJ30=
 github.com/cockroachdb/redact v1.1.5/go.mod h1:BVNblN9mBWFyMyqK1k3AAiSxhvhfK2oOZZ2lK+dpvRg=
+github.com/cockroachdb/redact v1.1.8 h1:8eVLLj6juKxiKrAEw2b8cJvNqWq++U8WOfQFuL7KTaA=
 github.com/cockroachdb/redact v1.1.8/go.mod h1:GceHHpJ0rMDpYARL5In88Alq/xMBUtVlz7Qxix6ZVkw=
 github.com/cockroachdb/version v0.0.0-20250314144055-3860cd14adf2 h1:8Vfw2iNEpYIV6aLtMwT5UOGuPmp9MKlEKWKFTuB+MPU=
 github.com/cockroachdb/version v0.0.0-20250314144055-3860cd14adf2/go.mod h1:P9WiZOdQ1R/ZZDL0WzF5wlyRvrjtfhNOwMZymFpBwjE=
