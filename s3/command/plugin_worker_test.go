@@ -19,7 +19,7 @@ func TestBuildPluginWorkerHandlerExplicitTypes(t *testing.T) {
 	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
 	testMaxConcurrency := int(vacuum.DefaultMaxExecutionConcurrency)
 
-	for _, jobType := range []string{"vacuum", "volume_balance", "erasure_coding", "admin_script", "iceberg_maintenance"} {
+	for _, jobType := range []string{"vacuum", "volume_balance", "erasure_coding", "admin_script"} {
 		handlers, err := buildPluginWorkerHandlers(jobType, dialOption, testMaxConcurrency, "")
 		if err != nil {
 			t.Fatalf("buildPluginWorkerHandlers(%s) err = %v", jobType, err)
@@ -34,7 +34,7 @@ func TestBuildPluginWorkerHandlerAliases(t *testing.T) {
 	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
 	testMaxConcurrency := int(vacuum.DefaultMaxExecutionConcurrency)
 
-	for _, alias := range []string{"balance", "ec", "iceberg", "admin", "script"} {
+	for _, alias := range []string{"balance", "ec", "admin", "script"} {
 		handlers, err := buildPluginWorkerHandlers(alias, dialOption, testMaxConcurrency, "")
 		if err != nil {
 			t.Fatalf("buildPluginWorkerHandlers(%s) err = %v", alias, err)
@@ -89,7 +89,7 @@ func TestBuildPluginWorkerHandlersCategories(t *testing.T) {
 	}
 	// "all" must include at least vacuum and erasure_coding (one default, one heavy)
 	allNames := handlerJobTypes(allHandlers)
-	for _, required := range []string{"vacuum", "erasure_coding", "iceberg_maintenance"} {
+	for _, required := range []string{"vacuum", "erasure_coding"} {
 		if !allNames[required] {
 			t.Fatalf("'all' missing expected job type %q, got %v", required, allNames)
 		}
@@ -135,13 +135,13 @@ func TestBuildPluginWorkerHandlersCategories(t *testing.T) {
 		t.Fatalf("union(default=%d, heavy=%d) != all(%d)", len(defaultNames), len(heavyNames), len(allNames))
 	}
 
-	// mix category + explicit: "default,iceberg" adds one heavy to default set
-	mixedHandlers, err := buildPluginWorkerHandlers("default,iceberg", dialOption, testMaxConcurrency, "")
+	// mix category + explicit: "default,erasure_coding" adds one heavy to default set
+	mixedHandlers, err := buildPluginWorkerHandlers("default,erasure_coding", dialOption, testMaxConcurrency, "")
 	if err != nil {
-		t.Fatalf("buildPluginWorkerHandlers(default,iceberg) err = %v", err)
+		t.Fatalf("buildPluginWorkerHandlers(default,erasure_coding) err = %v", err)
 	}
 	if len(mixedHandlers) != len(defaultHandlers)+1 {
-		t.Fatalf("expected default+1 handlers for 'default,iceberg', got %d (default=%d)", len(mixedHandlers), len(defaultHandlers))
+		t.Fatalf("expected default+1 handlers for 'default,erasure_coding', got %d (default=%d)", len(mixedHandlers), len(defaultHandlers))
 	}
 }
 
