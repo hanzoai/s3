@@ -27,6 +27,8 @@ import (
 	"github.com/hanzoai/s3/s3/s3api/s3err"
 	"github.com/hanzoai/s3/s3/security"
 	stats_collect "github.com/hanzoai/s3/s3/stats"
+	"github.com/hanzoai/s3/s3/zaprpc"
+	"github.com/hanzoai/s3/s3/zapsvc"
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/grace"
 	"github.com/hanzoai/s3/s3/util/version"
@@ -46,6 +48,7 @@ type S3Options struct {
 	portHttps                 *int
 	portGrpc                  *int
 	portIceberg               *int
+	zapPort                   *int
 	config                    *string
 	iamConfig                 *string
 	domainName                *string
@@ -87,6 +90,7 @@ func init() {
 	s3StandaloneOptions.portHttps = cmdS3.Flag.Int("port.https", 0, "s3 server https listen port")
 	s3StandaloneOptions.portGrpc = cmdS3.Flag.Int("port.grpc", 0, "s3 server grpc listen port")
 	s3StandaloneOptions.portIceberg = cmdS3.Flag.Int("port.iceberg", 8181, "Iceberg REST Catalog server listen port (0 to disable)")
+	s3StandaloneOptions.zapPort = cmdS3.Flag.Int("zap.port", 0, "native ZAP service-mesh listen port for in-cloud callers (0 disables; external S3 clients use the HTTPS S3 API)")
 	s3StandaloneOptions.domainName = cmdS3.Flag.String("domainName", "", "suffix of the host name in comma separated list, {bucket}.{domainName}")
 	s3StandaloneOptions.allowedOrigins = cmdS3.Flag.String("allowedOrigins", "*", "comma separated list of allowed origins")
 	s3StandaloneOptions.dataCenter = cmdS3.Flag.String("dataCenter", "", "prefer to read and write to volumes in this data center")
@@ -271,6 +275,19 @@ func (s3opt *S3Options) startS3Server() bool {
 	var masterAddresses []pb.ServerAddress
 
 	grpcDialOption := security.LoadClientTLS(util.GetViper(), "grpc.client")
+
+	// Native ZAP S3 service for the Hanzo mesh (platform law: internal
+	// service↔service = ZAP only). Off by default; -zap.port>0 enables it.
+	// External S3 clients keep the HTTPS S3 API below — this is the in-cloud
+	// service surface, backed by the same filer.
+	if *s3opt.zapPort > 0 {
+		zapSrv := zaprpc.NewServer("hanzo-s3", *s3opt.zapPort)
+		zapsvc.Register(zapSrv, zapsvc.NewFilerStore(filerAddresses, grpcDialOption))
+		if err := zapSrv.Start(); err != nil {
+			glog.Fatalf("native ZAP S3 service on port %d: %v", *s3opt.zapPort, err)
+		}
+		glog.V(0).Infof("Native ZAP S3 service listening on port %d (mesh: internal callers use ZAP)", *s3opt.zapPort)
+	}
 
 	// metrics read from the filer
 	var metricsAddress string
