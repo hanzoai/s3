@@ -186,8 +186,23 @@ func (b serverBackend) KvGet(filerwire.KvGetRequest) ([]byte, error) {
 func (b serverBackend) KvPut(filerwire.KvPutRequest) ([]byte, error) {
 	return nil, errFilerRPCNotMigrated
 }
-func (b serverBackend) CacheRemoteObjectToLocalCluster(filerwire.CacheRemoteObjectToLocalClusterRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
+func (b serverBackend) CacheRemoteObjectToLocalCluster(v filerwire.CacheRemoteObjectToLocalClusterRequest) ([]byte, error) {
+	resp, err := b.fs.CacheRemoteObjectToLocalCluster(b.ctx, &filer_pb.CacheRemoteObjectToLocalClusterRequest{
+		Directory:           v.Directory(),
+		Name:                v.Name(),
+		ChunkConcurrency:    v.ChunkConcurrency(),
+		DownloadConcurrency: v.DownloadConcurrency(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	in := filerwire.CacheRemoteObjectToLocalClusterResponseInput{
+		MetadataEvent: SubscribeMetadataResponseToWire(resp.MetadataEvent),
+	}
+	if resp.Entry != nil {
+		in.Entry = EntryToWire(resp.Entry)
+	}
+	return filerwire.NewCacheRemoteObjectToLocalClusterResponse(in), nil
 }
 func (b serverBackend) DistributedLock(filerwire.LockRequest) ([]byte, error) {
 	return nil, errFilerRPCNotMigrated
