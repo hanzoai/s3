@@ -33,6 +33,7 @@ import (
 	"github.com/hanzoai/s3/s3/shell"
 	"github.com/hanzoai/s3/s3/topology"
 	"github.com/hanzoai/s3/s3/util"
+	masterwire "github.com/hanzoai/s3/s3/wire/master"
 	util_http "github.com/hanzoai/s3/s3/util/http"
 	"github.com/hanzoai/s3/s3/util/version"
 	"github.com/hanzoai/s3/s3/wdclient"
@@ -526,26 +527,32 @@ func (ms *MasterServer) OnPeerUpdate(update *master_pb.ClusterNodeUpdate, startF
 				hashicorpRaft.ServerAddress(peerAddress.ToGrpcAddress()), 0, 0)
 		}
 	} else {
-		pb.WithMasterClient(context.Background(), false, peerAddress, ms.grpcDialOption, true, func(client master_pb.HanzoClient) error {
-			ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
-			defer cancel()
-			if _, err := client.Ping(ctx, &master_pb.PingRequest{Target: string(peerAddress), TargetType: cluster.MasterType}); err != nil {
-				glog.V(0).Infof("master %s didn't respond to pings. remove raft server", peerName)
-				if err := ms.MasterClient.WithClient(false, func(client master_pb.HanzoClient) error {
-					_, err := client.RaftRemoveServer(context.Background(), &master_pb.RaftRemoveServerRequest{
-						Id:    peerName,
-						Force: false,
-					})
-					return err
-				}); err != nil {
-					glog.Warningf("failed removing old raft server: %v", err)
-					return err
-				}
-			} else {
-				glog.V(0).Infof("master %s successfully responded to ping", peerName)
+		// Liveness probe of the departing peer over the native ZAP transport
+		// (Ping is bridged — see masterZapBridge.Ping). The raft membership
+		// removal below stays on the gRPC master client: RaftRemoveServer is part
+		// of the consensus path and is migrated separately.
+		pingFailed := false
+		if zapClient, dialErr := masterwire.Dial("tcp", peerAddress.ToMasterZapAddress()); dialErr != nil {
+			pingFailed = true
+		} else {
+			_, pErr := zapClient.Ping(masterwire.PingRequestInput{Target: string(peerAddress), TargetType: cluster.MasterType})
+			zapClient.Close()
+			pingFailed = pErr != nil
+		}
+		if pingFailed {
+			glog.V(0).Infof("master %s didn't respond to pings. remove raft server", peerName)
+			if err := ms.MasterClient.WithClient(false, func(client master_pb.HanzoClient) error {
+				_, err := client.RaftRemoveServer(context.Background(), &master_pb.RaftRemoveServerRequest{
+					Id:    peerName,
+					Force: false,
+				})
+				return err
+			}); err != nil {
+				glog.Warningf("failed removing old raft server: %v", err)
 			}
-			return nil
-		})
+		} else {
+			glog.V(0).Infof("master %s successfully responded to ping", peerName)
+		}
 	}
 }
 

@@ -10,12 +10,9 @@ import (
 	"syscall"
 
 	"github.com/hanzoai/s3/s3/glog"
-	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	grpcMetadata "google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
+
+	"github.com/zap-proto/go/transport"
 )
 
 // streamMutateError is returned when the server reports a structured errno.
@@ -41,10 +38,10 @@ var ErrStreamTransport = errors.New("stream transport error")
 type streamMutateMux struct {
 	wfs *WFS
 
-	mu         sync.Mutex // protects stream, cancel, grpcConn, closed, stopSend, generation
+	mu         sync.Mutex // protects stream, cancel, conn, closed, stopSend, generation
 	stream     filer_pb.HanzoFiler_StreamMutateEntryClient
 	cancel     context.CancelFunc
-	grpcConn   *grpc.ClientConn // dedicated connection, closed on stream teardown
+	conn       *transport.Conn // dedicated ZAP connection, closed on stream teardown
 	closed     bool
 	disabled   bool          // permanently disabled if filer doesn't support the RPC
 	stopSend   chan struct{} // closed to signal the current sendLoop to exit
@@ -286,10 +283,6 @@ func (m *streamMutateMux) ensureStream() (uint64, error) {
 	var stream filer_pb.HanzoFiler_StreamMutateEntryClient
 	err := m.openStream(&stream)
 	if err != nil {
-		if s, ok := status.FromError(err); ok && s.Code() == codes.Unimplemented {
-			m.disabled = true
-			glog.V(0).Infof("filer does not support StreamMutateEntry, falling back to unary RPCs")
-		}
 		return 0, err
 	}
 
@@ -313,33 +306,25 @@ func (m *streamMutateMux) openStream(out *filer_pb.HanzoFiler_StreamMutateEntryC
 		idx := (i + x) % n
 		filerGrpcAddress := m.wfs.option.FilerAddresses[idx].ToGrpcAddress()
 
-		ctx := context.Background()
-		if m.wfs.signature != 0 {
-			ctx = grpcMetadata.AppendToOutgoingContext(ctx, "sw-client-id", fmt.Sprintf("%d", m.wfs.signature))
-		}
-		grpcConn, err := pb.GrpcDial(ctx, filerGrpcAddress, false, m.wfs.option.GrpcDialOption)
+		conn, err := transport.Dial("tcp", filerGrpcAddress)
 		if err != nil {
 			lastErr = fmt.Errorf("stream dial %s: %v", filerGrpcAddress, err)
 			continue
 		}
 
-		client := filer_pb.NewHanzoFilerClient(grpcConn)
-		streamCtx, cancel := context.WithCancel(ctx)
+		client := newFilerClientAdapter(conn)
+		streamCtx, cancel := context.WithCancel(context.Background())
 		stream, err := client.StreamMutateEntry(streamCtx)
 		if err != nil {
 			cancel()
-			grpcConn.Close()
+			conn.Close()
 			lastErr = err
-			// Unimplemented means all filers lack it — stop rotating.
-			if s, ok := status.FromError(err); ok && s.Code() == codes.Unimplemented {
-				return err
-			}
 			continue
 		}
 
 		atomic.StoreInt32(&m.wfs.option.filerIndex, idx)
 		m.cancel = cancel
-		m.grpcConn = grpcConn
+		m.conn = conn
 		*out = stream
 		return nil
 	}
@@ -411,8 +396,8 @@ func (m *streamMutateMux) teardownStream(gen uint64) {
 		m.cancel()
 		m.cancel = nil
 	}
-	conn := m.grpcConn
-	m.grpcConn = nil
+	conn := m.conn
+	m.conn = nil
 	m.mu.Unlock()
 
 	// Do NOT call failAllPending here — recvLoop is the sole owner of
@@ -474,8 +459,8 @@ func (m *streamMutateMux) Close() {
 	m.stream = nil // prevent teardownStream from acting after Close
 	cancel := m.cancel
 	m.cancel = nil
-	grpcConn := m.grpcConn
-	m.grpcConn = nil
+	conn := m.conn
+	m.conn = nil
 	recvDone := m.recvDone
 	if m.stopSend != nil {
 		close(m.stopSend)
@@ -495,8 +480,8 @@ func (m *streamMutateMux) Close() {
 	if recvDone != nil {
 		<-recvDone
 	}
-	if grpcConn != nil {
-		grpcConn.Close()
+	if conn != nil {
+		conn.Close()
 	}
 	// Drain any remaining requests buffered in sendCh. sendLoop's defer
 	// drain handles most items, but stragglers enqueued during shutdown
