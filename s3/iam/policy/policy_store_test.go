@@ -10,9 +10,13 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hanzoai/s3/s3/filerzap"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	filerwire "github.com/hanzoai/s3/s3/wire/filer"
+	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
 	"github.com/stretchr/testify/assert"
+	"github.com/zap-proto/go/transport"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -139,22 +143,17 @@ func (s *policyStoreTestFilerServer) hasEntry(dir string, name string) bool {
 func newTestFilerPolicyStore(t *testing.T) (*FilerPolicyStore, *policyStoreTestFilerServer) {
 	t.Helper()
 
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-
 	server := newPolicyStoreTestFilerServer()
-	grpcServer := pb.NewGrpcServer()
-	filer_pb.RegisterHanzoFilerServer(grpcServer, server)
-	go func() {
-		_ = grpcServer.Serve(lis)
-	}()
+	// Serve the fake filer over native ZAP (unary via filerwire.Dispatch +
+	// ListEntries streaming via filerstream.Handler) — the wire the policy store's
+	// WithGrpcFilerClient now dials.
+	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		filerwire.Dispatch(filerzap.NewServerBackend(server)),
+		filerstream.Handler(filerzap.NewStreamServer(server)))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = srv.Close() })
 
-	t.Cleanup(func() {
-		grpcServer.Stop()
-		_ = lis.Close()
-	})
-
-	host, portString, err := net.SplitHostPort(lis.Addr().String())
+	host, portString, err := net.SplitHostPort(srv.Addr().String())
 	require.NoError(t, err)
 	grpcPort, err := strconv.Atoi(portString)
 	require.NoError(t, err)
