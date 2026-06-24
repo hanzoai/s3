@@ -7,9 +7,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/hanzoai/s3/s3/pb/s3_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
+	s3wire "github.com/hanzoai/s3/s3/wire/s3"
 )
 
 type TestLimitCase struct {
@@ -50,15 +50,14 @@ var (
 
 func TestLimit(t *testing.T) {
 	for _, tc := range TestLimitCases {
-		circuitBreakerConfig := &s3_pb.S3CircuitBreakerConfig{
-			Global: &s3_pb.S3CircuitBreakerOptions{
+		circuitBreakerConfig := s3wire.CircuitBreakerConfigFields{
+			Global: &s3wire.CircuitBreakerOptionsFields{
 				Enabled: true,
 				Actions: map[string]int64{
 					s3_constants.Concat(tc.actionName, tc.limitType): tc.globalLimitValue,
-					s3_constants.Concat(tc.actionName, tc.limitType): tc.globalLimitValue,
 				},
 			},
-			Buckets: map[string]*s3_pb.S3CircuitBreakerOptions{
+			Buckets: map[string]*s3wire.CircuitBreakerOptionsFields{
 				bucket: {
 					Enabled: true,
 					Actions: map[string]int64{
