@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/admin/plugin"
-	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
+	pluginwire "github.com/hanzoai/s3/s3/wire/plugin"
 	"github.com/stretchr/testify/require"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -29,8 +29,7 @@ type Harness struct {
 
 	pluginSvc *plugin.Plugin
 
-	adminServer   *grpc.Server
-	adminListener net.Listener
+	adminServer   *transport.Server
 	adminGrpcAddr string
 
 	worker       *pluginworker.Worker
@@ -39,7 +38,8 @@ type Harness struct {
 	workerDone   chan struct{}
 }
 
-// NewHarness starts a plugin admin gRPC server and a worker connected to it.
+// NewHarness starts a plugin admin server — serving PluginControlService.
+// WorkerStream over the native ZAP transport — and a worker connected to it.
 func NewHarness(t *testing.T, cfg HarnessConfig) *Harness {
 	t.Helper()
 
@@ -51,23 +51,29 @@ func NewHarness(t *testing.T, cfg HarnessConfig) *Harness {
 	pluginSvc, err := plugin.New(pluginOpts)
 	require.NoError(t, err)
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	// The worker resolves AdminServer "host:0.P" to gRPC port P, then dials the
+	// PluginControlService stream on the sibling ZAP port P+1 (see worker.go
+	// pluginZapAddress). So bind the ZAP listener on an OS-assigned port Z and
+	// advertise P = Z-1 — no gRPC, the WorkerStream bidi runs on pure ZAP.
+	streamHandler := func(method uint32, init []byte, st *transport.Stream) {
+		if method != pluginwire.PluginControlServiceWorkerStreamOrdinal {
+			return
+		}
+		pluginSvc.ServeWorkerStream(init, st)
+	}
+	adminServer, err := transport.ListenStream("tcp", "127.0.0.1:0", nil, streamHandler)
 	require.NoError(t, err)
 
-	adminServer := pb.NewGrpcServer()
-	plugin_pb.RegisterPluginControlServiceServer(adminServer, pluginSvc)
-	go func() {
-		_ = adminServer.Serve(listener)
-	}()
-
-	adminGrpcAddr := listener.Addr().String()
-	adminPort := listener.Addr().(*net.TCPAddr).Port
-	adminAddr := fmt.Sprintf("127.0.0.1:0.%d", adminPort)
+	zapPort := adminServer.Addr().(*net.TCPAddr).Port
+	adminGrpcAddr := fmt.Sprintf("127.0.0.1:%d", zapPort-1)
+	adminAddr := fmt.Sprintf("127.0.0.1:0.%d", zapPort-1)
 
 	workerOpts := cfg.WorkerOptions
 	if workerOpts.AdminServer == "" {
 		workerOpts.AdminServer = adminAddr
 	}
+	// GrpcDialOption only satisfies NewWorker's config gate; the WorkerStream
+	// itself runs on the ZAP transport (transport.Dial), carrying no gRPC.
 	if workerOpts.GrpcDialOption == nil {
 		workerOpts.GrpcDialOption = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
@@ -98,7 +104,6 @@ func NewHarness(t *testing.T, cfg HarnessConfig) *Harness {
 		t:             t,
 		pluginSvc:     pluginSvc,
 		adminServer:   adminServer,
-		adminListener: listener,
 		adminGrpcAddr: adminGrpcAddr,
 		worker:        worker,
 		workerCtx:     workerCtx,
@@ -158,11 +163,7 @@ func (h *Harness) Shutdown() {
 	}
 
 	if h.adminServer != nil {
-		h.adminServer.GracefulStop()
-	}
-
-	if h.adminListener != nil {
-		_ = h.adminListener.Close()
+		_ = h.adminServer.Close()
 	}
 
 	if h.pluginSvc != nil {
