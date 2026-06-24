@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"strings"
 	"testing"
 
 	"github.com/hanzoai/s3/s3/credential"
@@ -13,96 +12,77 @@ import (
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
 	"github.com/hanzoai/s3/s3/security"
 	s3server "github.com/hanzoai/s3/s3/server"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
+	"github.com/zap-proto/go/transport"
 )
 
-// TestIamGrpcStore_AdminBearerToken pins the contract that broke in 4.24:
-// after PR #9442 the filer's IAM gRPC service requires an admin-signed
-// Bearer token on every RPC, and IamGrpcStore is the only production
-// client that talks to it (from the admin server). If the store doesn't
-// mint and attach a token the admin UI Users/Groups pages fail with
-// Unauthenticated; that's what issues #9495/#9496 reported.
-func TestIamGrpcStore_AdminBearerToken(t *testing.T) {
-	const goodKey = "iam-admin-itest-key"
-	const wrongKey = "iam-admin-itest-key-different"
-
-	// Real IamGrpcServer backed by an in-memory credential manager so we
-	// exercise the full handler (auth check + business logic), not a stub.
+// TestIamGrpcStore_RoundTrip pins the production client path: IamGrpcStore dials
+// the filer's IAM service over the canonical ZAP transport (no gRPC, no
+// Bearer-token metadata) at FilerAddress.ToIamZapAddress() and exercises the
+// real handler backed by an in-memory credential manager. The legacy
+// admin-signed-token contract is gone — connection-level security is the ZAP
+// transport itself — so this drives the full handler (business logic over the
+// wire), not an auth gate.
+func TestIamGrpcStore_RoundTrip(t *testing.T) {
+	// Real IamGrpcServer backed by an in-memory credential manager so we run
+	// the full handler, not a stub.
 	cm, err := credential.NewCredentialManager(credential.StoreTypeMemory, nil, "")
 	if err != nil {
 		t.Fatalf("NewCredentialManager: %v", err)
 	}
 	defer cm.Shutdown()
 
-	iamSrv := s3server.NewIamGrpcServer(cm, security.SigningKey(goodKey))
+	iamSrv := s3server.NewIamGrpcServer(cm, security.SigningKey("unused-under-zap"))
 
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	// The store dials FilerAddress.ToIamZapAddress() == grpcPort+10000. Bind the
+	// IAM ZAP listener on an ephemeral port Z, then advertise a filer address
+	// whose grpc port is Z-10000 so the store's +10000 offset lands back on Z.
+	// macOS ephemeral ports live in the high range (49152+), so Z-10000 is
+	// always a valid positive port — no fragile re-bind loop needed.
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		t.Fatalf("listen: %v", err)
+		t.Fatalf("listen on IAM ZAP addr: %v", err)
 	}
-	grpcSrv := grpc.NewServer()
-	iam_pb.RegisterHanzoIdentityAccessManagementServer(grpcSrv, iamSrv)
-	go func() { _ = grpcSrv.Serve(lis) }()
-	t.Cleanup(grpcSrv.Stop)
+	zapPort := ln.Addr().(*net.TCPAddr).Port
+	srv := transport.Serve(ln, func(env []byte) ([]byte, error) {
+		return iamwire.DispatchHanzoIdentityAccessManagement(iamSrv, env)
+	})
+	t.Cleanup(func() { _ = srv.Close() })
 
-	// pb.ServerAddress encodes the grpc port in the trailing ".N" segment.
-	// host:0 is the unused HTTP port; the listener's actual port is the
-	// gRPC one that ToGrpcAddress() unpacks for dialing.
-	_, portStr, err := net.SplitHostPort(lis.Addr().String())
-	if err != nil {
-		t.Fatalf("split listener addr: %v", err)
+	grpcPort := zapPort - 10000
+	if grpcPort < 1 {
+		t.Fatalf("ephemeral ZAP port %d too low to derive grpc port", zapPort)
 	}
-	serverAddr := pb.ServerAddress(fmt.Sprintf("127.0.0.1:0.%s", portStr))
+	// pb.ServerAddress encodes the grpc port in the trailing ".N" segment; the
+	// host:0 segment is the unused HTTP port.
+	serverAddr := pb.ServerAddress(fmt.Sprintf("127.0.0.1:0.%d", grpcPort))
 
-	newStore := func(key string) *IamGrpcStore {
-		s := &IamGrpcStore{}
-		s.SetFilerAddressFunc(func() pb.ServerAddress { return serverAddr }, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if key != "" {
-			s.SetAdminSigning(security.SigningKey(key), 0)
-		}
-		return s
-	}
+	store := &IamGrpcStore{}
+	store.SetFilerAddressFunc(func() pb.ServerAddress { return serverAddr }, nil)
 
 	ctx := context.Background()
 
-	t.Run("matching_key_succeeds", func(t *testing.T) {
-		store := newStore(goodKey)
-		if _, err := store.ListUsers(ctx); err != nil {
-			t.Fatalf("ListUsers with matching key: %v", err)
-		}
-		if err := store.CreateUser(ctx, &iam_pb.Identity{Name: "alice"}); err != nil {
-			t.Fatalf("CreateUser with matching key: %v", err)
-		}
-		got, err := store.GetUser(ctx, "alice")
-		if err != nil {
-			t.Fatalf("GetUser with matching key: %v", err)
-		}
-		if got == nil || got.Name != "alice" {
-			t.Fatalf("GetUser returned %+v, want name=alice", got)
-		}
-	})
+	if _, err := store.ListUsers(ctx); err != nil {
+		t.Fatalf("ListUsers on fresh store: %v", err)
+	}
 
-	t.Run("wrong_key_unauthenticated", func(t *testing.T) {
-		store := newStore(wrongKey)
-		_, err := store.ListUsers(ctx)
-		if got := status.Code(err); got != codes.Unauthenticated {
-			t.Fatalf("ListUsers with wrong key: got code %v err=%v, want Unauthenticated", got, err)
-		}
-	})
+	if err := store.CreateUser(ctx, &iam_pb.Identity{Name: "alice"}); err != nil {
+		t.Fatalf("CreateUser: %v", err)
+	}
 
-	t.Run("no_key_unauthenticated", func(t *testing.T) {
-		store := newStore("")
-		_, err := store.ListUsers(ctx)
-		// Server reports "missing authorization metadata" when no token is
-		// attached. Either way the gRPC status code is Unauthenticated.
-		if got := status.Code(err); got != codes.Unauthenticated {
-			t.Fatalf("ListUsers with no key: got code %v err=%v, want Unauthenticated", got, err)
-		}
-		if err != nil && !strings.Contains(err.Error(), "authorization") {
-			t.Fatalf("ListUsers with no key: error message %q does not mention authorization", err)
-		}
-	})
+	got, err := store.GetUser(ctx, "alice")
+	if err != nil {
+		t.Fatalf("GetUser: %v", err)
+	}
+	if got == nil || got.Name != "alice" {
+		t.Fatalf("GetUser returned %+v, want name=alice", got)
+	}
+
+	users, err := store.ListUsers(ctx)
+	if err != nil {
+		t.Fatalf("ListUsers after create: %v", err)
+	}
+	if len(users) != 1 || users[0] != "alice" {
+		t.Fatalf("ListUsers returned %v, want [alice]", users)
+	}
 }
