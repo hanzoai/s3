@@ -90,9 +90,15 @@ func TestServerBackendRoundTrip(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("DeleteEntry: %v", err)
 	}
-	if _, err := client.LookupDirectoryEntry(context.Background(), &filer_pb.LookupDirectoryEntryRequest{
+	// Not-found is conveyed as a nil Entry on an OK response (the rpc envelope
+	// carries no error type); filer_pb.LookupEntry maps that to ErrNotFound.
+	afterDelete, err := client.LookupDirectoryEntry(context.Background(), &filer_pb.LookupDirectoryEntryRequest{
 		Directory: "/etc/iam/policies", Name: "policy.json",
-	}); err == nil {
-		t.Fatal("expected not-found after delete")
+	})
+	if err != nil {
+		t.Fatalf("LookupDirectoryEntry after delete: %v", err)
+	}
+	if afterDelete.Entry != nil {
+		t.Fatal("expected nil Entry (not-found) after delete")
 	}
 }
