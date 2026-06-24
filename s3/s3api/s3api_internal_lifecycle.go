@@ -6,63 +6,71 @@ import (
 	"encoding/hex"
 	"errors"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle"
 	stats_collect "github.com/hanzoai/s3/s3/stats"
+	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
 )
 
 // LifecycleDelete executes one (rule, action) verdict: re-fetch, identity
 // CAS, object-lock check, dispatch by kind. Errors surface as outcomes;
-// reader cursors and pending state are the worker's concern.
-func (s3a *S3ApiServer) LifecycleDelete(ctx context.Context, req *s3_lifecycle_pb.LifecycleDeleteRequest) (*s3_lifecycle_pb.LifecycleDeleteResponse, error) {
-	if req == nil || req.Bucket == "" || req.ObjectPath == "" {
+// reader cursors and pending state are the worker's concern. It is the
+// HanzoS3LifecycleInternal ZAP handler: req is a ZAP-encoded
+// LifecycleDeleteRequest and the return is a ZAP-encoded LifecycleDeleteResponse.
+func (s3a *S3ApiServer) LifecycleDelete(reqBytes []byte) ([]byte, error) {
+	req, err := s3_lifecyclewire.WrapLifecycleDeleteRequest(reqBytes)
+	if err != nil {
+		return nil, err
+	}
+	ctx := context.Background()
+	if req.Bucket() == "" || req.ObjectPath() == "" {
 		return blocked("FATAL_EVENT_ERROR: empty bucket or object_path"), nil
 	}
 
 	// MPU init lives at .uploads/<id>/; not handled by getObjectEntry.
-	if req.ActionKind == s3_lifecycle_pb.ActionKind_ABORT_MPU {
+	if req.ActionKind() == s3_lifecyclewire.ActionKindAbortMpu {
 		return s3a.lifecycleAbortMPU(ctx, req)
 	}
 
-	entry, err := s3a.getObjectEntry(req.Bucket, req.ObjectPath, req.VersionId)
+	entry, err := s3a.getObjectEntry(req.Bucket(), req.ObjectPath(), req.VersionID())
 	if err != nil {
 		if errors.Is(err, filer_pb.ErrNotFound) || errors.Is(err, ErrObjectNotFound) || errors.Is(err, ErrVersionNotFound) || errors.Is(err, ErrLatestVersionNotFound) {
 			return noopResolved("NOT_FOUND"), nil
 		}
-		glog.V(1).Infof("lifecycle: live fetch %s/%s@%s: %v", req.Bucket, req.ObjectPath, req.VersionId, err)
+		glog.V(1).Infof("lifecycle: live fetch %s/%s@%s: %v", req.Bucket(), req.ObjectPath(), req.VersionID(), err)
 		return retryLater("TRANSPORT_ERROR: " + err.Error()), nil
 	}
 
-	if !identityMatches(computeEntryIdentity(entry), req.ExpectedIdentity) {
+	if !identityMatches(computeEntryIdentity(entry), req.ExpectedIdentity()) {
 		return noopResolved("STALE_IDENTITY"), nil
 	}
 
 	// Lifecycle never bypasses governance/compliance; the http.Request is
 	// only read when bypass is allowed, so nil is safe here.
-	if err := s3a.enforceObjectLockProtections(nil, req.Bucket, req.ObjectPath, req.VersionId, false); err != nil {
-		glog.V(2).Infof("lifecycle: SKIPPED_OBJECT_LOCK %s/%s@%s: %v", req.Bucket, req.ObjectPath, req.VersionId, err)
-		return &s3_lifecycle_pb.LifecycleDeleteResponse{
-			Outcome: s3_lifecycle_pb.LifecycleDeleteOutcome_SKIPPED_OBJECT_LOCK,
+	if err := s3a.enforceObjectLockProtections(nil, req.Bucket(), req.ObjectPath(), req.VersionID(), false); err != nil {
+		glog.V(2).Infof("lifecycle: SKIPPED_OBJECT_LOCK %s/%s@%s: %v", req.Bucket(), req.ObjectPath(), req.VersionID(), err)
+		return s3_lifecyclewire.NewLifecycleDeleteResponse(s3_lifecyclewire.LifecycleDeleteResponseInput{
+			Outcome: s3_lifecyclewire.LifecycleDeleteOutcomeSkippedObjectLock,
 			Reason:  err.Error(),
-		}, nil
+		}), nil
 	}
 
 	return s3a.lifecycleDispatch(ctx, req, entry)
 }
 
-func (s3a *S3ApiServer) lifecycleDispatch(ctx context.Context, req *s3_lifecycle_pb.LifecycleDeleteRequest, entry *filer_pb.Entry) (*s3_lifecycle_pb.LifecycleDeleteResponse, error) {
+func (s3a *S3ApiServer) lifecycleDispatch(ctx context.Context, req s3_lifecyclewire.LifecycleDeleteRequest, entry *filer_pb.Entry) ([]byte, error) {
 	metadataOnly := entryUsesMetadataOnlyDelete(entry)
-	switch req.ActionKind {
-	case s3_lifecycle_pb.ActionKind_EXPIRATION_DAYS, s3_lifecycle_pb.ActionKind_EXPIRATION_DATE:
+	switch req.ActionKind() {
+	case s3_lifecyclewire.ActionKindExpirationDays, s3_lifecyclewire.ActionKindExpirationDate:
 		// Current-version expiration: Enabled -> delete marker; Suspended
 		// -> delete null + new marker; Off -> remove. Filer errors classify
 		// as RETRY_LATER; the worker's budget promotes to BLOCKED.
-		state, vErr := s3a.getVersioningState(req.Bucket)
+		state, vErr := s3a.getVersioningState(req.Bucket())
 		if vErr != nil {
 			if errors.Is(vErr, filer_pb.ErrNotFound) {
 				return noopResolved("BUCKET_NOT_FOUND"), nil
@@ -71,24 +79,24 @@ func (s3a *S3ApiServer) lifecycleDispatch(ctx context.Context, req *s3_lifecycle
 		}
 		switch state {
 		case s3_constants.VersioningEnabled:
-			if _, err := s3a.createDeleteMarker(req.Bucket, req.ObjectPath); err != nil {
+			if _, err := s3a.createDeleteMarker(req.Bucket(), req.ObjectPath()); err != nil {
 				return retryLater("TRANSPORT_ERROR: createDeleteMarker: " + err.Error()), nil
 			}
 			return done(), nil
 		case s3_constants.VersioningSuspended:
 			// Best-effort null delete; NotFound is benign.
-			if err := s3a.deleteSpecificObjectVersion(ctx, req.Bucket, req.ObjectPath, "null", metadataOnly); err != nil {
+			if err := s3a.deleteSpecificObjectVersion(ctx, req.Bucket(), req.ObjectPath(), "null", metadataOnly); err != nil {
 				if !errors.Is(err, filer_pb.ErrNotFound) && !errors.Is(err, ErrVersionNotFound) {
 					return retryLater("TRANSPORT_ERROR: deleteNullVersion: " + err.Error()), nil
 				}
 			}
-			if _, err := s3a.createDeleteMarker(req.Bucket, req.ObjectPath); err != nil {
+			if _, err := s3a.createDeleteMarker(req.Bucket(), req.ObjectPath()); err != nil {
 				return retryLater("TRANSPORT_ERROR: createDeleteMarker: " + err.Error()), nil
 			}
 			return done(), nil
 		default:
 			err := s3a.WithFilerClient(false, func(c filer_pb.HanzoFilerClient) error {
-				return s3a.deleteUnversionedObjectWithClient(c, req.Bucket, req.ObjectPath, metadataOnly)
+				return s3a.deleteUnversionedObjectWithClient(c, req.Bucket(), req.ObjectPath(), metadataOnly)
 			})
 			if err != nil {
 				if errors.Is(err, filer_pb.ErrNotFound) || errors.Is(err, ErrObjectNotFound) {
@@ -100,20 +108,20 @@ func (s3a *S3ApiServer) lifecycleDispatch(ctx context.Context, req *s3_lifecycle
 			return done(), nil
 		}
 
-	case s3_lifecycle_pb.ActionKind_NONCURRENT_DAYS,
-		s3_lifecycle_pb.ActionKind_NEWER_NONCURRENT,
-		s3_lifecycle_pb.ActionKind_EXPIRED_DELETE_MARKER:
+	case s3_lifecyclewire.ActionKindNoncurrentDays,
+		s3_lifecyclewire.ActionKindNewerNoncurrent,
+		s3_lifecyclewire.ActionKindExpiredDeleteMarker:
 		// EXPIRED_DELETE_MARKER targets the marker version itself.
-		if req.VersionId == "" {
+		if req.VersionID() == "" {
 			return blocked("FATAL_EVENT_ERROR: version_id required for noncurrent / delete-marker delete"), nil
 		}
 		// Latest-pointer guard for noncurrent kinds: refuse to delete
 		// the version that the .versions/ directory currently points
 		// to. The router can't always tell current from noncurrent
 		// without sibling state, so the server checks here.
-		if req.ActionKind == s3_lifecycle_pb.ActionKind_NONCURRENT_DAYS ||
-			req.ActionKind == s3_lifecycle_pb.ActionKind_NEWER_NONCURRENT {
-			isLatest, lookupErr := s3a.isCurrentLatestVersion(req.Bucket, req.ObjectPath, req.VersionId)
+		if req.ActionKind() == s3_lifecyclewire.ActionKindNoncurrentDays ||
+			req.ActionKind() == s3_lifecyclewire.ActionKindNewerNoncurrent {
+			isLatest, lookupErr := s3a.isCurrentLatestVersion(req.Bucket(), req.ObjectPath(), req.VersionID())
 			if lookupErr != nil {
 				if errors.Is(lookupErr, filer_pb.ErrNotFound) || errors.Is(lookupErr, ErrObjectNotFound) {
 					return noopResolved("NOT_FOUND"), nil
@@ -127,13 +135,13 @@ func (s3a *S3ApiServer) lifecycleDispatch(ctx context.Context, req *s3_lifecycle
 		// Re-check sole-survivor: a fresh PUT can land between schedule
 		// and dispatch. Identity-CAS upstream covers the marker bytes;
 		// this covers the directory shape.
-		if req.ActionKind == s3_lifecycle_pb.ActionKind_EXPIRED_DELETE_MARKER {
-			outcome, err := s3a.checkSoleSurvivorMarker(ctx, req.Bucket, req.ObjectPath, req.VersionId)
+		if req.ActionKind() == s3_lifecyclewire.ActionKindExpiredDeleteMarker {
+			outcome, err := s3a.checkSoleSurvivorMarker(ctx, req.Bucket(), req.ObjectPath(), req.VersionID())
 			if outcome != nil || err != nil {
 				return outcome, err
 			}
 		}
-		if err := s3a.deleteSpecificObjectVersion(ctx, req.Bucket, req.ObjectPath, req.VersionId, metadataOnly); err != nil {
+		if err := s3a.deleteSpecificObjectVersion(ctx, req.Bucket(), req.ObjectPath(), req.VersionID(), metadataOnly); err != nil {
 			if errors.Is(err, filer_pb.ErrNotFound) || errors.Is(err, ErrVersionNotFound) || errors.Is(err, ErrObjectNotFound) {
 				return noopResolved("NOT_FOUND_AT_DELETE"), nil
 			}
@@ -142,30 +150,31 @@ func (s3a *S3ApiServer) lifecycleDispatch(ctx context.Context, req *s3_lifecycle
 		recordMetadataOnlyIf(metadataOnly, req)
 		return done(), nil
 
-	case s3_lifecycle_pb.ActionKind_ABORT_MPU:
+	case s3_lifecyclewire.ActionKindAbortMpu:
 		return blocked("FATAL_EVENT_ERROR: ABORT_MPU dispatched after fetch"), nil
 
 	default:
-		return blocked("FATAL_EVENT_ERROR: unknown action_kind " + req.ActionKind.String()), nil
+		return blocked("FATAL_EVENT_ERROR: unknown action_kind " + strconv.FormatUint(uint64(req.ActionKind()), 10)), nil
 	}
 }
 
-func (s3a *S3ApiServer) lifecycleAbortMPU(ctx context.Context, req *s3_lifecycle_pb.LifecycleDeleteRequest) (*s3_lifecycle_pb.LifecycleDeleteResponse, error) {
+func (s3a *S3ApiServer) lifecycleAbortMPU(ctx context.Context, req s3_lifecyclewire.LifecycleDeleteRequest) ([]byte, error) {
 	// req.ObjectPath is `.uploads/<upload_id>` (set by the router from the
 	// init directory's bucket-relative path); reject anything that isn't
 	// exactly that shape so a malformed event can't escalate to a wider rm.
 	const uploadsPrefix = s3_constants.MultipartUploadsFolder + "/"
-	if !strings.HasPrefix(req.ObjectPath, uploadsPrefix) {
+	objectPath := req.ObjectPath()
+	if !strings.HasPrefix(objectPath, uploadsPrefix) {
 		return blocked("FATAL_EVENT_ERROR: ABORT_MPU object_path missing .uploads/ prefix"), nil
 	}
-	uploadID := req.ObjectPath[len(uploadsPrefix):]
+	uploadID := objectPath[len(uploadsPrefix):]
 	// Reject "." and ".." explicitly: util.JoinPath in the filer cleans
 	// path components, so .uploads/.. would resolve to the bucket root.
 	if uploadID == "" || uploadID == "." || uploadID == ".." || strings.ContainsRune(uploadID, '/') {
-		return blocked("FATAL_EVENT_ERROR: ABORT_MPU object_path malformed: " + req.ObjectPath), nil
+		return blocked("FATAL_EVENT_ERROR: ABORT_MPU object_path malformed: " + objectPath), nil
 	}
 
-	uploadsFolder := s3a.genUploadsFolder(req.Bucket)
+	uploadsFolder := s3a.genUploadsFolder(req.Bucket())
 	// Pre-check existence: filer.DeleteEntry suppresses ErrNotFound and
 	// returns success, so without this check an already-aborted upload
 	// would report DONE instead of the correct NOOP_RESOLVED.
@@ -183,7 +192,7 @@ func (s3a *S3ApiServer) lifecycleAbortMPU(ctx context.Context, req *s3_lifecycle
 		if errors.Is(err, filer_pb.ErrNotFound) {
 			return noopResolved("NOT_FOUND_AT_DELETE"), nil
 		}
-		glog.V(1).Infof("lifecycle abort_mpu %s/%s: %v", req.Bucket, req.ObjectPath, err)
+		glog.V(1).Infof("lifecycle abort_mpu %s/%s: %v", req.Bucket(), objectPath, err)
 		return retryLater("TRANSPORT_ERROR: rm: " + err.Error()), nil
 	}
 	return done(), nil
@@ -195,7 +204,7 @@ func (s3a *S3ApiServer) lifecycleAbortMPU(ctx context.Context, req *s3_lifecycle
 // pointer doesn't name versionId, or a bare null-version exists outside
 // .versions/. Pointer missing while a marker is present is treated as
 // retry-later — the create races with the directory metadata update.
-func (s3a *S3ApiServer) checkSoleSurvivorMarker(ctx context.Context, bucket, object, versionId string) (*s3_lifecycle_pb.LifecycleDeleteResponse, error) {
+func (s3a *S3ApiServer) checkSoleSurvivorMarker(ctx context.Context, bucket, object, versionId string) ([]byte, error) {
 	bucketDir := s3a.bucketDir(bucket)
 	versionsDir := bucketDir + "/" + object + s3_constants.VersionsFolder
 	count := 0

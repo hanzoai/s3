@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/glog"
-	"github.com/hanzoai/s3/s3/pb/mount_peer_pb"
+	mount_peerwire "github.com/hanzoai/s3/s3/wire/mount_peer"
+	"github.com/zap-proto/go/rpc"
+	"github.com/zap-proto/go/transport"
 )
 
 // PeerAnnouncer batches and flushes ChunkAnnounce RPCs to the
@@ -55,10 +57,12 @@ type PeerAnnouncer struct {
 	clock func() time.Time
 }
 
-// MountPeerDialer opens a MountPeer gRPC client to a given peer. Tests
-// inject a fake; production uses a real gRPC dial backed by a short
-// connection cache.
-type MountPeerDialer func(ctx context.Context, peerAddr string) (mount_peer_pb.MountPeerClient, func(), error)
+// MountPeerDialer opens a ZAP transport connection to a given peer. The
+// returned conn is the channel a mount_peerwire.MountPeerClient issues
+// unary calls over (ChunkAnnounce / ChunkLookup) and the conn the fetcher
+// opens a FetchChunk server-stream on. Tests inject a fake; production
+// uses a real transport dial backed by a short connection cache.
+type MountPeerDialer func(ctx context.Context, peerAddr string) (*transport.Conn, func(), error)
 
 // announceRecord is what we remember about a successful announce: who
 // we told (the HRW owner at the time) and when. On each flush we
@@ -322,7 +326,7 @@ func (a *PeerAnnouncer) flushOnce(ctx context.Context) {
 }
 
 func (a *PeerAnnouncer) sendTo(ctx context.Context, owner string, fids []string, now time.Time) {
-	client, closeFn, err := a.dialPeer(ctx, owner)
+	conn, closeFn, err := a.dialPeer(ctx, owner)
 	if err != nil {
 		a.flushErrs.Add(1)
 		// Requeue these fids: a future flush will retry.
@@ -332,23 +336,46 @@ func (a *PeerAnnouncer) sendTo(ctx context.Context, owner string, fids []string,
 	}
 	defer closeFn()
 
-	resp, err := client.ChunkAnnounce(ctx, &mount_peer_pb.ChunkAnnounceRequest{
-		FileIds:    fids,
+	fileIds := make([][]byte, len(fids))
+	for i, f := range fids {
+		fileIds[i] = []byte(f)
+	}
+	req := mount_peerwire.NewChunkAnnounceRequest(mount_peerwire.ChunkAnnounceRequestInput{
+		FileIds:    fileIds,
 		PeerAddr:   a.selfAddr,
 		DataCenter: a.selfDataCenter,
 		Rack:       a.selfRack,
 		TtlSeconds: int32(a.announceTTL / time.Second),
 	})
+	respEnv, err := conn.CallContext(ctx, rpc.BuildRequest(rpc.Call{
+		Method:    mount_peerwire.MountPeerChunkAnnounceOrdinal,
+		PromiseID: conn.NextPromiseID(),
+		Payload:   req,
+	}))
 	if err != nil {
 		a.flushErrs.Add(1)
 		a.requeue(fids)
 		glog.V(2).Infof("peer-announce %s: %v", owner, err)
 		return
 	}
+	if respEnv.Status != rpc.StatusOK {
+		a.flushErrs.Add(1)
+		a.requeue(fids)
+		glog.V(2).Infof("peer-announce %s: status %d", owner, respEnv.Status)
+		return
+	}
+	resp, err := mount_peerwire.WrapChunkAnnounceResponse(respEnv.Body)
+	if err != nil {
+		a.flushErrs.Add(1)
+		a.requeue(fids)
+		glog.V(2).Infof("peer-announce %s: decode response: %v", owner, err)
+		return
+	}
 
 	rejected := map[string]struct{}{}
-	for _, f := range resp.RejectedFileIds {
-		rejected[f] = struct{}{}
+	rejectedList := resp.RejectedFileIds()
+	for i := 0; i < rejectedList.Length(); i++ {
+		rejected[string(rejectedList.BytesAt(i))] = struct{}{}
 	}
 
 	a.mu.Lock()

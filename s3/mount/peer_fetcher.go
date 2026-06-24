@@ -13,10 +13,9 @@ import (
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/mount_peer_pb"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	mount_peerwire "github.com/hanzoai/s3/s3/wire/mount_peer"
+	"github.com/zap-proto/go/rpc"
 )
 
 // errPeerReadSkipped signals that the read didn't go through the peer
@@ -180,7 +179,7 @@ type peerHolder struct {
 // the holders in the server-reported (LRU) order along with their locality
 // labels. The pooled dialer is passed in from the caller.
 func peerLookupHolders(ctx context.Context, dial MountPeerDialer, ownerAddr, fid string) ([]peerHolder, error) {
-	client, closeFn, err := dial(ctx, ownerAddr)
+	conn, closeFn, err := dial(ctx, ownerAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -188,19 +187,46 @@ func peerLookupHolders(ctx context.Context, dial MountPeerDialer, ownerAddr, fid
 
 	callCtx, cancel := context.WithTimeout(ctx, peerLookupTimeout)
 	defer cancel()
-	resp, err := client.ChunkLookup(callCtx, &mount_peer_pb.ChunkLookupRequest{FileIds: []string{fid}})
+	req := mount_peerwire.NewChunkLookupRequest(mount_peerwire.ChunkLookupRequestInput{
+		FileIds: [][]byte{[]byte(fid)},
+	})
+	respEnv, err := conn.CallContext(callCtx, rpc.BuildRequest(rpc.Call{
+		Method:    mount_peerwire.MountPeerChunkLookupOrdinal,
+		PromiseID: conn.NextPromiseID(),
+		Payload:   req,
+	}))
 	if err != nil {
 		return nil, err
 	}
-	set, ok := resp.PeersByFid[fid]
-	if !ok || set == nil {
-		return nil, nil
+	if respEnv.Status != rpc.StatusOK {
+		return nil, fmt.Errorf("peer lookup: status %d", respEnv.Status)
 	}
-	out := make([]peerHolder, 0, len(set.Peers))
-	for _, p := range set.Peers {
-		out = append(out, peerHolder{addr: p.PeerAddr, dc: p.DataCenter, rack: p.Rack})
+	resp, err := mount_peerwire.WrapChunkLookupResponse(respEnv.Body)
+	if err != nil {
+		return nil, err
 	}
-	return out, nil
+
+	// Locate the map entry for fid, then flatten its PeerSet into holders.
+	// The map is encoded as a list of {key, value} entries; the value is a
+	// nested PeerSet whose Peers list carries the PeerInfo records.
+	entries := resp.PeersByFid()
+	for i := 0; i < entries.Length(); i++ {
+		entry, eerr := mount_peerwire.WrapChunkLookupResponsePeersByFidEntry(entries.BytesAt(i))
+		if eerr != nil || entry.Key() != fid {
+			continue
+		}
+		peers := entry.Value().Peers()
+		out := make([]peerHolder, 0, peers.Length())
+		for j := 0; j < peers.Length(); j++ {
+			p, perr := mount_peerwire.WrapPeerInfo(peers.BytesAt(j))
+			if perr != nil {
+				continue
+			}
+			out = append(out, peerHolder{addr: p.PeerAddr(), dc: p.DataCenter(), rack: p.Rack()})
+		}
+		return out, nil
+	}
+	return nil, nil
 }
 
 // localityBucket scores how "close" a peer is to self. Lower is better:
@@ -243,7 +269,7 @@ func sortHoldersByLocality(holders []peerHolder, selfDC, selfRack string) {
 // reject streams that overshoot it. A zero expectedSize falls back to
 // maxPeerFetchChunkBytes as a safety ceiling.
 func fetchChunkFromPeer(ctx context.Context, dial MountPeerDialer, peerAddr, fid string, expectedSize uint64, expectedETag string) ([]byte, error) {
-	client, closeFn, err := dial(ctx, peerAddr)
+	conn, closeFn, err := dial(ctx, peerAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -252,14 +278,21 @@ func fetchChunkFromPeer(ctx context.Context, dial MountPeerDialer, peerAddr, fid
 	callCtx, cancel := context.WithTimeout(ctx, peerFetchTimeout)
 	defer cancel()
 
-	stream, err := client.FetchChunk(callCtx, &mount_peer_pb.FetchChunkRequest{
-		FileId:       fid,
-		ExpectedEtag: expectedETag,
-		ExpectedSize: expectedSize,
-	})
+	// FetchChunk is a server-streaming RPC: open the stream with the request
+	// as its init payload, then Recv FetchChunkResponse frames until the peer
+	// half-closes (io.EOF). A miss returns zero frames — chunks are never
+	// legitimately empty, so an empty assembled buffer is treated as "peer
+	// not cached" (the same signal the old gRPC NOT_FOUND status carried).
+	stream, err := conn.OpenStream(mount_peerwire.MountPeerFetchChunkOrdinal,
+		mount_peerwire.NewFetchChunkRequest(mount_peerwire.FetchChunkRequestInput{
+			FileId:       fid,
+			ExpectedEtag: expectedETag,
+			ExpectedSize: expectedSize,
+		}))
 	if err != nil {
 		return nil, err
 	}
+	defer stream.CloseSend()
 
 	// capHint pre-sizes the assembly buffer from the filer-reported chunk
 	// size. When the caller didn't know the size (expectedSize == 0), we
@@ -272,23 +305,54 @@ func fetchChunkFromPeer(ctx context.Context, dial MountPeerDialer, peerAddr, fid
 	}
 	buf := make([]byte, 0, capHint)
 
-	for {
-		resp, rerr := stream.Recv()
-		if rerr == io.EOF {
-			break
-		}
-		if rerr != nil {
-			if status.Code(rerr) == codes.NotFound {
-				return nil, fmt.Errorf("peer not cached")
-			}
-			return nil, rerr
-		}
-		if len(buf)+len(resp.Data) > int(maxPeerFetchChunkBytes) {
-			return nil, fmt.Errorf("peer response exceeds max chunk size %d", maxPeerFetchChunkBytes)
-		}
-		buf = append(buf, resp.Data...)
+	// Stream.Recv blocks on frame arrival or conn teardown; it is not
+	// ctx-aware, and the conn is pooled (shared) so we must not close it to
+	// interrupt a hung peer. Drain frames on a helper goroutine and select
+	// against callCtx so peerFetchTimeout bounds the whole transfer. A
+	// recvFrame with err set terminates the loop (io.EOF on clean
+	// half-close).
+	type recvFrame struct {
+		body []byte
+		err  error
 	}
+	frames := make(chan recvFrame, 1)
+	go func() {
+		for {
+			body, rerr := stream.Recv()
+			frames <- recvFrame{body: body, err: rerr}
+			if rerr != nil {
+				return
+			}
+		}
+	}()
 
+	for {
+		select {
+		case <-callCtx.Done():
+			return nil, callCtx.Err()
+		case f := <-frames:
+			if f.err == io.EOF {
+				goto assembled
+			}
+			if f.err != nil {
+				return nil, f.err
+			}
+			resp, derr := mount_peerwire.WrapFetchChunkResponse(f.body)
+			if derr != nil {
+				return nil, derr
+			}
+			data := resp.Data()
+			if len(buf)+len(data) > int(maxPeerFetchChunkBytes) {
+				return nil, fmt.Errorf("peer response exceeds max chunk size %d", maxPeerFetchChunkBytes)
+			}
+			buf = append(buf, data...)
+		}
+	}
+assembled:
+
+	if len(buf) == 0 {
+		return nil, fmt.Errorf("peer not cached")
+	}
 	if expectedSize > 0 && uint64(len(buf)) != expectedSize {
 		return nil, fmt.Errorf("peer returned %d bytes, expected %d", len(buf), expectedSize)
 	}

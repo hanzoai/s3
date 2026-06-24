@@ -13,7 +13,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/remote_pb"
 	"github.com/hanzoai/s3/s3/remote_storage"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/protobuf/proto"
 )
 
 func init() {
@@ -153,7 +152,7 @@ func (c *commandRemoteConfigure) listExistingRemoteStorages(commandEnv *CommandE
 		}
 		conf := &remote_pb.RemoteConf{}
 
-		if err := proto.Unmarshal(entry.Content, conf); err != nil {
+		if err := filer.UnmarshalRemoteConf(entry.Content, conf); err != nil {
 			return fmt.Errorf("unmarshal %s/%s: %v", filer.DirectoryEtcRemote, entry.Name, err)
 		}
 
@@ -199,12 +198,9 @@ func (c *commandRemoteConfigure) deleteRemoteStorage(commandEnv *CommandEnv, wri
 
 func (c *commandRemoteConfigure) saveRemoteStorage(commandEnv *CommandEnv, writer io.Writer, conf *remote_pb.RemoteConf) error {
 
-	data, err := proto.Marshal(conf)
-	if err != nil {
-		return err
-	}
+	data := filer.MarshalRemoteConf(conf)
 
-	if err = commandEnv.WithFilerClient(false, func(client filer_pb.HanzoFilerClient) error {
+	if err := commandEnv.WithFilerClient(false, func(client filer_pb.HanzoFilerClient) error {
 		return filer.SaveInsideFiler(context.Background(), client, filer.DirectoryEtcRemote, conf.Name+filer.REMOTE_STORAGE_CONF_SUFFIX, data)
 	}); err != nil && err != filer_pb.ErrNotFound {
 		return err

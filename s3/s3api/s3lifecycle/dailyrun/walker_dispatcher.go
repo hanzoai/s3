@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
+	"github.com/hanzoai/s3/s3/s3api/s3lifecycle"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/bootstrap"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/engine"
 	"github.com/hanzoai/s3/s3/stats"
+	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
 	"golang.org/x/time/rate"
 )
 
@@ -56,15 +57,15 @@ func (d *WalkerDispatcher) Delete(ctx context.Context, action *engine.CompiledAc
 		}
 	}
 	rh := action.Key.RuleHash
-	req := &s3_lifecycle_pb.LifecycleDeleteRequest{
+	req := s3_lifecyclewire.NewLifecycleDeleteRequest(s3_lifecyclewire.LifecycleDeleteRequestInput{
 		Bucket:     action.Bucket,
 		ObjectPath: objectPath,
-		VersionId:  entry.VersionID,
+		VersionID:  entry.VersionID,
 		RuleHash:   rh[:],
-		ActionKind: toProtoActionKind(action.Key.ActionKind),
+		ActionKind: toWireActionKind(action.Key.ActionKind),
 		// ExpectedIdentity intentionally nil; server bootstraps from
 		// the live entry on this code path.
-	}
+	})
 	kindLabel := action.Key.ActionKind.String()
 	if d.Limiter != nil {
 		waitStart := time.Now()
@@ -80,24 +81,18 @@ func (d *WalkerDispatcher) Delete(ctx context.Context, action *engine.CompiledAc
 		stats.S3LifecycleDispatchCounter.WithLabelValues(action.Bucket, kindLabel, "RPC_ERROR").Inc()
 		return fmt.Errorf("walker dispatch %s/%s %s: %w", action.Bucket, objectPath, action.Key.ActionKind, err)
 	}
-	if resp == nil {
-		// A misbehaving server stub returning (nil, nil) would panic on
-		// the switch below. Bucket under RPC_ERROR rather than a new
-		// label — operationally it's the same class of failure.
-		stats.S3LifecycleDispatchCounter.WithLabelValues(action.Bucket, kindLabel, "RPC_ERROR").Inc()
-		return fmt.Errorf("walker dispatch %s/%s %s: nil response", action.Bucket, objectPath, action.Key.ActionKind)
-	}
-	stats.S3LifecycleDispatchCounter.WithLabelValues(action.Bucket, kindLabel, resp.Outcome.String()).Inc()
-	switch resp.Outcome {
-	case s3_lifecycle_pb.LifecycleDeleteOutcome_DONE,
-		s3_lifecycle_pb.LifecycleDeleteOutcome_NOOP_RESOLVED,
-		s3_lifecycle_pb.LifecycleDeleteOutcome_SKIPPED_OBJECT_LOCK:
+	outcome := resp.Outcome()
+	stats.S3LifecycleDispatchCounter.WithLabelValues(action.Bucket, kindLabel, s3lifecycle.OutcomeString(outcome)).Inc()
+	switch outcome {
+	case s3_lifecyclewire.LifecycleDeleteOutcomeDone,
+		s3_lifecyclewire.LifecycleDeleteOutcomeNoopResolved,
+		s3_lifecyclewire.LifecycleDeleteOutcomeSkippedObjectLock:
 		return nil
 	default:
 		// RETRY_LATER / BLOCKED / UNSPECIFIED: surface as error so the
 		// walk halts at this entry and resumes from
 		// Checkpoint.LastScannedPath on the next run.
 		return fmt.Errorf("walker dispatch %s/%s %s: outcome=%s reason=%s",
-			action.Bucket, objectPath, action.Key.ActionKind, resp.Outcome, resp.Reason)
+			action.Bucket, objectPath, action.Key.ActionKind, s3lifecycle.OutcomeString(outcome), resp.Reason())
 	}
 }

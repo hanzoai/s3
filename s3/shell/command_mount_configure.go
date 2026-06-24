@@ -1,16 +1,13 @@
 package shell
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
 
-	"github.com/hanzoai/s3/s3/pb/mount_pb"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	_ "google.golang.org/grpc/resolver/passthrough"
+	mountwire "github.com/hanzoai/s3/s3/wire/mount"
+	"github.com/zap-proto/go/transport"
 )
 
 func init() {
@@ -54,16 +51,16 @@ func (c *commandMountConfigure) Do(args []string, commandEnv *CommandEnv, writer
 	}
 	localSocket := fmt.Sprintf("/tmp/hanzo-mount-%d.sock", mountDirHash)
 
-	clientConn, err := grpc.NewClient("passthrough:///unix://"+localSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := transport.Dial("unix", localSocket)
 	if err != nil {
 		return
 	}
-	defer clientConn.Close()
+	defer conn.Close()
 
-	client := mount_pb.NewHanzoMountClient(clientConn)
-	_, err = client.Configure(context.Background(), &mount_pb.ConfigureRequest{
+	client := mountwire.NewHanzoMountClient(conn, nil)
+	_, _, err = client.Configure(mountwire.NewConfigureRequest(mountwire.ConfigureRequestInput{
 		CollectionCapacity: int64(*mountQuota) * 1024 * 1024,
-	})
+	}))
 
 	return
 }

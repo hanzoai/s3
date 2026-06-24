@@ -8,7 +8,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/remote_pb"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
 )
 
 func ReadMountMappings(grpcDialOption grpc.DialOption, filerAddress pb.ServerAddress) (mappings *remote_pb.RemoteStorageMapping, readErr error) {
@@ -101,9 +100,7 @@ func addRemoteStorageMapping(oldContent []byte, dir string, storageLocation *rem
 	// set the new mapping
 	mappings.Mappings[dir] = storageLocation
 
-	if newContent, err = proto.Marshal(mappings); err != nil {
-		return oldContent, fmt.Errorf("marshal mappings: %w", err)
-	}
+	newContent = MarshalRemoteStorageMapping(mappings)
 
 	return
 }
@@ -117,9 +114,7 @@ func removeRemoteStorageMapping(oldContent []byte, dir string) (newContent []byt
 	// set the new mapping
 	delete(mappings.Mappings, dir)
 
-	if newContent, err = proto.Marshal(mappings); err != nil {
-		return oldContent, fmt.Errorf("marshal mappings: %w", err)
-	}
+	newContent = MarshalRemoteStorageMapping(mappings)
 
 	return
 }

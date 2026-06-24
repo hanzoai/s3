@@ -5,27 +5,23 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hanzoai/s3/s3/pb/mount_peer_pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/zap-proto/go/transport"
 )
 
-// PeerConnPool caches one long-lived gRPC client connection per peer
+// PeerConnPool caches one long-lived ZAP transport connection per peer
 // address. Both the announcer flush loop and the read-path fetcher hit
 // the same handful of directory owners repeatedly; without a cache each
-// call would pay TCP handshake + HTTP/2 preface cost (and on TLS, an
-// additional handshake). The cache makes steady-state owner RPCs
-// effectively free after the first call.
+// call would pay TCP handshake cost (and on TLS, an additional
+// handshake). The cache makes steady-state owner RPCs effectively free
+// after the first call.
 //
-// Connections in terminal failure states (Shutdown) are transparently
-// replaced on next access. Sizing: entries are ~1 KB + the conn itself;
-// bounded at maxPeerConnPoolEntries to contain runaway growth.
+// Connections whose read loop has torn down (peer EOF / local close) are
+// transparently replaced on next access. Sizing: entries are ~1 KB + the
+// conn itself; bounded at maxPeerConnPoolEntries to contain runaway
+// growth.
 type PeerConnPool struct {
-	dialOpts []grpc.DialOption
-
 	mu    sync.Mutex
-	conns map[string]*grpc.ClientConn
+	conns map[string]*transport.Conn
 }
 
 // maxPeerConnPoolEntries caps live peer conns per mount. A 10k-mount
@@ -34,20 +30,11 @@ type PeerConnPool struct {
 // footprint while still bounding pathological growth.
 const maxPeerConnPoolEntries = 4096
 
-// NewPeerConnPool returns an empty pool. dialOpts should carry transport
-// credentials matching the server side (production wires
-// option.GrpcDialOption, which security.LoadClientTLS populates from
-// security.toml). When no options are supplied we fall back to insecure
-// cleartext — only safe for in-process tests.
-func NewPeerConnPool(dialOpts ...grpc.DialOption) *PeerConnPool {
-	if len(dialOpts) == 0 {
-		dialOpts = []grpc.DialOption{
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-		}
-	}
+// NewPeerConnPool returns an empty pool. Peer RPCs travel over the native
+// ZAP transport (plaintext TCP); the pool only manages connection reuse.
+func NewPeerConnPool() *PeerConnPool {
 	return &PeerConnPool{
-		dialOpts: dialOpts,
-		conns:    map[string]*grpc.ClientConn{},
+		conns: map[string]*transport.Conn{},
 	}
 }
 
@@ -55,26 +42,27 @@ func NewPeerConnPool(dialOpts ...grpc.DialOption) *PeerConnPool {
 // closeFn is a no-op — the pool owns the connection lifecycle. Tests
 // that want per-call dials can keep using the non-pooled variant.
 func (p *PeerConnPool) Dialer() MountPeerDialer {
-	return func(ctx context.Context, peerAddr string) (mount_peer_pb.MountPeerClient, func(), error) {
+	return func(ctx context.Context, peerAddr string) (*transport.Conn, func(), error) {
 		conn, err := p.get(peerAddr)
 		if err != nil {
 			return nil, func() {}, err
 		}
-		return mount_peer_pb.NewMountPeerClient(conn), func() {}, nil
+		return conn, func() {}, nil
 	}
 }
 
-func (p *PeerConnPool) get(peerAddr string) (*grpc.ClientConn, error) {
+func (p *PeerConnPool) get(peerAddr string) (*transport.Conn, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	if conn, ok := p.conns[peerAddr]; ok {
-		if conn.GetState() != connectivity.Shutdown {
+		if conn.IsClosed() {
+			// Pooled conn's read loop has torn down — drop it and redial.
+			_ = conn.Close()
+			delete(p.conns, peerAddr)
+		} else {
 			return conn, nil
 		}
-		// Pooled conn is unusable — drop it and redial below.
-		_ = conn.Close()
-		delete(p.conns, peerAddr)
 	}
 	if len(p.conns) >= maxPeerConnPoolEntries {
 		// Evict one arbitrary entry. Simple over LRU: the pool is small
@@ -85,7 +73,7 @@ func (p *PeerConnPool) get(peerAddr string) (*grpc.ClientConn, error) {
 			break
 		}
 	}
-	conn, err := grpc.NewClient(peerAddr, p.dialOpts...)
+	conn, err := transport.Dial("tcp", peerAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -114,24 +102,20 @@ func (p *PeerConnPool) Size() int {
 // DefaultMountPeerDialer returns a per-call dialer (no pooling). Kept for
 // tests and for any caller that genuinely wants a fresh connection per
 // invocation. Production code should prefer PeerConnPool.Dialer().
-//
-// Unused options silence dial-time lints when dialOpts is nil.
-func DefaultMountPeerDialer(dialOpts ...grpc.DialOption) MountPeerDialer {
-	opts := append([]grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	}, dialOpts...)
-	return func(ctx context.Context, peerAddr string) (mount_peer_pb.MountPeerClient, func(), error) {
-		conn, err := grpc.NewClient(peerAddr, opts...)
+func DefaultMountPeerDialer() MountPeerDialer {
+	return func(ctx context.Context, peerAddr string) (*transport.Conn, func(), error) {
+		conn, err := transport.Dial("tcp", peerAddr)
 		if err != nil {
 			return nil, func() {}, err
 		}
-		return mount_peer_pb.NewMountPeerClient(conn), func() { _ = conn.Close() }, nil
+		return conn, func() { _ = conn.Close() }, nil
 	}
 }
 
 // peerConnMaxAge lets external callers (or future metrics) decide when a
 // pool entry is "stale" for monitoring purposes. The pool itself does not
-// expire on age — grpc handles reconnect internally.
+// expire on age — the transport tears a conn down on peer EOF and the
+// pool redials on next access.
 var peerConnMaxAge = 10 * time.Minute
 
 var _ = peerConnMaxAge // suppress unused-lint until a metric consumes it

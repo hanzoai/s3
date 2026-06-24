@@ -18,7 +18,6 @@ import (
 	"github.com/hanzoai/s3/s3/replication/source"
 	"github.com/hanzoai/s3/s3/util"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
 )
 
 func followUpdatesAndUploadToRemote(option *RemoteSyncOptions, filerSource *source.FilerSource, mountedDir string) error {
@@ -109,7 +108,7 @@ func (option *RemoteSyncOptions) makeEventProcessor(remoteStorage *remote_pb.Rem
 			}
 			if message.NewEntry.Name == remoteStorage.Name+filer.REMOTE_STORAGE_CONF_SUFFIX {
 				conf := &remote_pb.RemoteConf{}
-				if err := proto.Unmarshal(message.NewEntry.Content, conf); err != nil {
+				if err := filer.UnmarshalRemoteConf(message.NewEntry.Content, conf); err != nil {
 					return fmt.Errorf("unmarshal %s/%s: %v", filer.DirectoryEtcRemote, message.NewEntry.Name, err)
 				}
 				remoteStorage = conf
