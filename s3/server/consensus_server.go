@@ -84,7 +84,8 @@ func (cs *ConsensusServer) Do(cmd *topology.MaxVolumeIdCommand) error {
 	return cs.log.Commit(cs.ctx, payload)
 }
 
-// Peers returns the configured peer (validator) names.
+// Peers returns the known peer masters, for observability only. Lux
+// consensus is PERMISSIONLESS — participation is not gated by this list.
 func (cs *ConsensusServer) Peers() (members []string) {
 	cs.peersMu.RLock()
 	defer cs.peersMu.RUnlock()
@@ -94,14 +95,16 @@ func (cs *ConsensusServer) Peers() (members []string) {
 	return
 }
 
-// AddPeer adds a master peer to the consensus validator set.
+// AddPeer / RemovePeer are ADVISORY. Lux consensus is permissionless:
+// participation is open and not admitted/evicted through a fixed validator
+// roster, so there is no membership-reconfiguration round (a Raft cost these
+// methods used to incur). They only update the peer list Peers reports.
 func (cs *ConsensusServer) AddPeer(name string, addr pb.ServerAddress) {
 	cs.peersMu.Lock()
 	cs.peers[name] = addr
 	cs.peersMu.Unlock()
 }
 
-// RemovePeer removes a master peer from the consensus validator set.
 func (cs *ConsensusServer) RemovePeer(name string) {
 	cs.peersMu.Lock()
 	delete(cs.peers, name)
@@ -115,10 +118,14 @@ func (cs *ConsensusServer) Name() string { return string(cs.serverAddr) }
 // beyond the field type). Leader-election and log persistence are the
 // consensus engine's job, so the Raft-era tuning knobs are no-ops. ---
 
-// Leader returns the current coordination leader. Lux consensus is
-// leaderless (finality is by quorum, not a single leader), so for the
-// master's "who do I forward writes to" question this node answers itself —
-// any replica may propose and consensus orders them.
+// Leader: Lux consensus is LEADERLESS — there is no elected coordinator and
+// no leader-forwarding. Every replica may propose, and consensus
+// totally-orders the proposals; the monotonic FSM (UpAdjustMaxVolumeId)
+// reconciles concurrent proposals by order. So each node answers "itself":
+// the master's "if I am the leader, do X" gates therefore pass on EVERY
+// node, which is exactly the leaderless behavior — every master acts and
+// proposes directly. More resilient (no election stalls, no leader as a
+// single point of failure) and faster (no forward-to-leader hop) than Raft.
 func (cs *ConsensusServer) Leader() string { return cs.Name() }
 
 // Start is a no-op: the engine is already started by NewConsensusServer.
