@@ -11,9 +11,10 @@
 // ZAP client in client.go reaches the real filer engine over ZAP — no protobuf
 // framing on the wire, all engine logic reused unchanged.
 //
-// Core entry CRUD (Lookup/Create/Update/Delete) is migrated. The remaining unary
-// RPCs return errFilerRPCNotMigrated until their converters land; the streaming
-// RPCs live in the filerstream package. The bytes returned ARE the message.
+// Entry CRUD lives here; the remaining unary RPCs are in server_rpc.go and the
+// streaming RPCs in stream_server.go. Every HanzoFiler method is implemented, so
+// NewServerBackend serves the whole filer over ZAP. The bytes returned ARE the
+// message.
 
 package filerzap
 
@@ -25,10 +26,6 @@ import (
 	filer_pb "github.com/hanzoai/s3/s3/pb/filer_pb"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 )
-
-// errFilerRPCNotMigrated marks a unary filer RPC whose ZAP server-side converter
-// is not yet written. It surfaces as a StatusInternal to the ZAP caller.
-var errFilerRPCNotMigrated = errors.New("filerzap: filer RPC not yet migrated to the ZAP server backend")
 
 // serverBackend adapts a filer_pb.HanzoFilerServer to filerwire.Backend.
 type serverBackend struct {
@@ -75,18 +72,7 @@ func isFilerNotFound(err error) bool {
 }
 
 func (b serverBackend) CreateEntry(v filerwire.CreateEntryRequest) ([]byte, error) {
-	req := &filer_pb.CreateEntryRequest{
-		Directory:                v.Directory(),
-		OExcl:                    v.OExcl(),
-		IsFromOtherCluster:       v.IsFromOtherCluster(),
-		SkipCheckParentDirectory: v.SkipCheckParentDirectory(),
-		Signatures:               signaturesFromView(v.SignaturesLen(), v.Signature),
-		Condition:                writeConditionFromView(v.HasCondition(), v.Condition()),
-	}
-	if v.HasEntry() {
-		req.Entry = entryFromView(v.Entry())
-	}
-	resp, err := b.fs.CreateEntry(b.ctx, req)
+	resp, err := b.fs.CreateEntry(b.ctx, createEntryReqFromView(v))
 	if err != nil {
 		return nil, err
 	}
@@ -98,16 +84,7 @@ func (b serverBackend) CreateEntry(v filerwire.CreateEntryRequest) ([]byte, erro
 }
 
 func (b serverBackend) UpdateEntry(v filerwire.UpdateEntryRequest) ([]byte, error) {
-	req := &filer_pb.UpdateEntryRequest{
-		Directory:          v.Directory(),
-		IsFromOtherCluster: v.IsFromOtherCluster(),
-		Signatures:         signaturesFromView(v.SignaturesLen(), v.Signature),
-		ExpectedExtended:   extendedFromView(v.ExpectedExtendedLen(), v.ExpectedExtended),
-	}
-	if v.HasEntry() {
-		req.Entry = entryFromView(v.Entry())
-	}
-	resp, err := b.fs.UpdateEntry(b.ctx, req)
+	resp, err := b.fs.UpdateEntry(b.ctx, updateEntryReqFromView(v))
 	if err != nil {
 		return nil, err
 	}
@@ -117,16 +94,7 @@ func (b serverBackend) UpdateEntry(v filerwire.UpdateEntryRequest) ([]byte, erro
 }
 
 func (b serverBackend) DeleteEntry(v filerwire.DeleteEntryRequest) ([]byte, error) {
-	resp, err := b.fs.DeleteEntry(b.ctx, &filer_pb.DeleteEntryRequest{
-		Directory:            v.Directory(),
-		Name:                 v.Name(),
-		IsDeleteData:         v.IsDeleteData(),
-		IsRecursive:          v.IsRecursive(),
-		IgnoreRecursiveError: v.IgnoreRecursiveError(),
-		IsFromOtherCluster:   v.IsFromOtherCluster(),
-		IfNotModifiedAfter:   v.IfNotModifiedAfter(),
-		Signatures:           signaturesFromView(v.SignaturesLen(), v.Signature),
-	})
+	resp, err := b.fs.DeleteEntry(b.ctx, deleteEntryReqFromView(v))
 	if err != nil {
 		return nil, err
 	}
