@@ -30,6 +30,8 @@ import (
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
+
+	"github.com/zap-proto/go/transport"
 )
 
 const (
@@ -579,22 +581,33 @@ func WithFilerClient(streamingMode bool, signature int32, filer ServerAddress, g
 
 }
 
+// WithGrpcFilerClient dials the filer over the native ZAP transport and runs fn
+// with a filer_pb.HanzoFilerClient backed by that connection (NewZapFilerClient).
+// The streamingMode/signature/grpcDialOption parameters are retained for caller
+// compatibility; the ZAP path needs neither a streaming flag (every stream is a
+// transport stream) nor a dial option. The connection is closed when fn returns.
 func WithGrpcFilerClient(streamingMode bool, signature int32, filerAddress ServerAddress, grpcDialOption grpc.DialOption, fn func(client filer_pb.HanzoFilerClient) error) error {
-
-	return WithGrpcClient(context.Background(), streamingMode, signature, func(grpcConnection *grpc.ClientConn) error {
-		client := filer_pb.NewHanzoFilerClient(grpcConnection)
-		return fn(client)
-	}, filerAddress.ToGrpcAddress(), false, grpcDialOption)
-
+	_, _, _ = streamingMode, signature, grpcDialOption
+	conn, err := transport.Dial("tcp", filerAddress.ToGrpcAddress())
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	return fn(NewZapFilerClient(conn))
 }
 
+// WithOneOfGrpcFilerClients tries each filer address in turn over the ZAP
+// transport, returning on the first that runs fn without error.
 func WithOneOfGrpcFilerClients(streamingMode bool, filerAddresses []ServerAddress, grpcDialOption grpc.DialOption, fn func(client filer_pb.HanzoFilerClient) error) (err error) {
-
+	_, _ = streamingMode, grpcDialOption
 	for _, filerAddress := range filerAddresses {
-		err = WithGrpcClient(context.Background(), streamingMode, 0, func(grpcConnection *grpc.ClientConn) error {
-			client := filer_pb.NewHanzoFilerClient(grpcConnection)
-			return fn(client)
-		}, filerAddress.ToGrpcAddress(), false, grpcDialOption)
+		conn, dialErr := transport.Dial("tcp", filerAddress.ToGrpcAddress())
+		if dialErr != nil {
+			err = dialErr
+			continue
+		}
+		err = fn(NewZapFilerClient(conn))
+		_ = conn.Close()
 		if err == nil {
 			return nil
 		}
