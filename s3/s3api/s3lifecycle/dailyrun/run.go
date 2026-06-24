@@ -10,20 +10,22 @@ import (
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/engine"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/reader"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/router"
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/util"
+	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
 	"golang.org/x/time/rate"
 )
 
 // LifecycleClient mirrors dispatcher's contract; duplicated to avoid an
-// import cycle.
+// import cycle. It speaks the native ZAP wire types end to end: callers
+// build a LifecycleDeleteRequestInput and read back a LifecycleDeleteResult
+// (Outcome is a LifecycleDeleteOutcome* constant).
 type LifecycleClient interface {
-	LifecycleDelete(ctx context.Context, req *s3_lifecycle_pb.LifecycleDeleteRequest) (*s3_lifecycle_pb.LifecycleDeleteResponse, error)
+	LifecycleDelete(ctx context.Context, in s3_lifecyclewire.LifecycleDeleteRequestInput) (s3_lifecyclewire.LifecycleDeleteResult, error)
 }
 
 // WalkerFunc handles the per-shard bucket walk for a given engine view.
@@ -207,10 +209,10 @@ func Run(ctx context.Context, cfg Config) error {
 // the state.
 func summarizeShardCursorLag(ctx context.Context, cfg Config, runNow time.Time) string {
 	var (
-		maxLag     time.Duration
-		maxAge     time.Duration
-		anyCursor  bool
-		anyWalked  bool
+		maxLag    time.Duration
+		maxAge    time.Duration
+		anyCursor bool
+		anyWalked bool
 	)
 	for _, sh := range cfg.Shards {
 		c, found, err := cfg.Persister.Load(ctx, sh)
@@ -701,15 +703,15 @@ func processMatches(ctx context.Context, cfg Config, runNow time.Time, ev *reade
 			stats.S3LifecycleDispatchCounter.WithLabelValues(m.Bucket, m.Key.ActionKind.String(), "RPC_ERROR").Inc()
 			return skippedAny, true, nil
 		}
-		stats.S3LifecycleDispatchCounter.WithLabelValues(m.Bucket, m.Key.ActionKind.String(), outcome.String()).Inc()
+		stats.S3LifecycleDispatchCounter.WithLabelValues(m.Bucket, m.Key.ActionKind.String(), outcomeLabel(outcome)).Inc()
 		switch outcome {
-		case s3_lifecycle_pb.LifecycleDeleteOutcome_DONE,
-			s3_lifecycle_pb.LifecycleDeleteOutcome_NOOP_RESOLVED,
-			s3_lifecycle_pb.LifecycleDeleteOutcome_SKIPPED_OBJECT_LOCK:
-		case s3_lifecycle_pb.LifecycleDeleteOutcome_RETRY_LATER,
-			s3_lifecycle_pb.LifecycleDeleteOutcome_BLOCKED:
+		case s3_lifecyclewire.LifecycleDeleteOutcomeDone,
+			s3_lifecyclewire.LifecycleDeleteOutcomeNoopResolved,
+			s3_lifecyclewire.LifecycleDeleteOutcomeSkippedObjectLock:
+		case s3_lifecyclewire.LifecycleDeleteOutcomeRetryLater,
+			s3_lifecyclewire.LifecycleDeleteOutcomeBlocked:
 			glog.V(1).Infof("daily_run: %s on %s/%s %s",
-				outcome, m.Bucket, m.ObjectKey, m.Key.ActionKind)
+				outcomeLabel(outcome), m.Bucket, m.ObjectKey, m.Key.ActionKind)
 			return skippedAny, true, nil
 		default:
 			glog.V(1).Infof("daily_run: unknown outcome %v on %s/%s", outcome, m.Bucket, m.ObjectKey)

@@ -101,6 +101,21 @@ func (sa ServerAddress) ToIamZapAddress() string {
 	return util.JoinHostPort(host, int(port)+10000)
 }
 
+// ToMasterZapAddress returns the address of the master's native ZAP transport
+// endpoint. The master serves its unary RPCs over zap-proto on its own ZAP
+// listener at grpcPort+10000, the same deterministic offset convention used for
+// the IAM ZAP endpoint. Client and server both derive it from the master
+// address, so they agree without extra configuration. The legacy gRPC listener
+// still serves raft and the streaming RPCs during the strangler.
+func (sa ServerAddress) ToMasterZapAddress() string {
+	grpcAddr := sa.ToGrpcAddress()
+	host, port, err := hostAndPort(grpcAddr)
+	if err != nil {
+		return grpcAddr
+	}
+	return util.JoinHostPort(host, int(port)+10000)
+}
+
 // ToHost returns the host part only, without any port information.
 func (sa ServerAddress) ToHost() string {
 	httpAddr := sa.ToHttpAddress()

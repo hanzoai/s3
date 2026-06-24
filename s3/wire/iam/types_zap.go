@@ -143,6 +143,11 @@ func WrapAccount(b []byte) (Account, error) {
 	return Account{o: m.Root()}, nil
 }
 
+// IsNull reports whether this view backs an absent account sub-message. Field
+// reads on a null view dereference a nil backing message and panic, so callers
+// that may observe an absent account must gate on IsNull first.
+func (t Account) IsNull() bool { return t.o.IsNull() }
+
 // ID reads the id field (proto field 1, string).
 func (t Account) ID() string { return t.o.Text(accountIDOff) }
 

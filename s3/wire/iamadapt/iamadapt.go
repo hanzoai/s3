@@ -98,7 +98,7 @@ func IdentityFromWire(v iamwire.Identity) *iam_pb.Identity {
 			id.Actions = append(id.Actions, v.ActionsAt(i))
 		}
 	}
-	if acc := v.Account(); acc.ID() != "" || acc.DisplayName() != "" || acc.EmailAddress() != "" {
+	if acc := v.Account(); !acc.IsNull() && (acc.ID() != "" || acc.DisplayName() != "" || acc.EmailAddress() != "") {
 		id.Account = &iam_pb.Account{
 			Id:           acc.ID(),
 			DisplayName:  acc.DisplayName(),

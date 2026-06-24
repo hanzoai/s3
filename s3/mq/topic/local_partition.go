@@ -1,21 +1,22 @@
 package topic
 
 import (
-	"context"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/hanzoai/s3/s3/glog"
-	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/mq/agent/agentconv"
+	"github.com/hanzoai/s3/s3/mq/broker/brokerpb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/util/log_buffer"
+	mq_brokerwire "github.com/hanzoai/s3/s3/wire/mq_broker"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type LocalPartition struct {
@@ -31,8 +32,8 @@ type LocalPartition struct {
 	Publishers  *LocalPartitionPublishers
 	Subscribers *LocalPartitionSubscribers
 
-	publishFolloweMeStream mq_pb.HanzoMessaging_PublishFollowMeClient
-	followerGrpcConnection *grpc.ClientConn
+	publishFolloweMeStream *transport.Stream
+	followerConn           *transport.Conn
 	Follower               string
 
 	// Track last activity for idle cleanup
@@ -76,11 +77,10 @@ func (p *LocalPartition) Publish(message *mq_pb.DataMessage) error {
 	// maybe send to the follower
 	if p.publishFolloweMeStream != nil {
 		// println("recv", string(message.Key), message.TsNs)
-		if followErr := p.publishFolloweMeStream.Send(&mq_pb.PublishFollowMeRequest{
-			Message: &mq_pb.PublishFollowMeRequest_Data{
-				Data: message,
-			},
-		}); followErr != nil {
+		if followErr := p.publishFolloweMeStream.Send(mq_brokerwire.NewPublishFollowMeRequest(mq_brokerwire.PublishFollowMeRequestInput{
+			MessageWhich: mq_brokerwire.PublishFollowMeRequestMessageData,
+			MessageValue: brokerpb.DataMessageToWire(message),
+		})); followErr != nil {
 			return fmt.Errorf("send to follower %s: %v", p.Follower, followErr)
 		}
 	} else {
@@ -250,7 +250,7 @@ func (p *LocalPartition) WaitUntilNoPublishers() {
 	}
 }
 
-func (p *LocalPartition) MaybeConnectToFollowers(initMessage *mq_pb.PublishMessageRequest_InitMessage, grpcDialOption grpc.DialOption) (err error) {
+func (p *LocalPartition) MaybeConnectToFollowers(initMessage *mq_pb.PublishMessageRequest_InitMessage, _ grpc.DialOption) (err error) {
 	if p.publishFolloweMeStream != nil {
 		return nil
 	}
@@ -259,46 +259,42 @@ func (p *LocalPartition) MaybeConnectToFollowers(initMessage *mq_pb.PublishMessa
 	}
 
 	p.Follower = initMessage.FollowerBroker
-	ctx := context.Background()
-	p.followerGrpcConnection, err = pb.GrpcDial(ctx, p.Follower, true, grpcDialOption)
+	p.followerConn, err = transport.Dial("tcp", p.Follower)
 	if err != nil {
 		return fmt.Errorf("fail to dial %s: %v", p.Follower, err)
 	}
-	followerClient := mq_pb.NewHanzoMessagingClient(p.followerGrpcConnection)
-	p.publishFolloweMeStream, err = followerClient.PublishFollowMe(ctx)
+	initBuf := mq_brokerwire.NewPublishFollowMeRequest(mq_brokerwire.PublishFollowMeRequestInput{
+		MessageWhich: mq_brokerwire.PublishFollowMeRequestMessageInit,
+		MessageValue: mq_brokerwire.NewPublishFollowMeRequestInitMessage(mq_brokerwire.PublishFollowMeRequestInitMessageInput{
+			Topic:     agentconv.TopicToWire(initMessage.Topic),
+			Partition: agentconv.PartitionToWire(initMessage.Partition),
+		}),
+	})
+	p.publishFolloweMeStream, err = p.followerConn.OpenStream(mq_brokerwire.HanzoMessagingPublishFollowMeOrdinal, initBuf)
 	if err != nil {
+		p.followerConn.Close()
+		p.followerConn = nil
 		return fmt.Errorf("fail to create publish client: %w", err)
-	}
-	if err = p.publishFolloweMeStream.Send(&mq_pb.PublishFollowMeRequest{
-		Message: &mq_pb.PublishFollowMeRequest_Init{
-			Init: &mq_pb.PublishFollowMeRequest_InitMessage{
-				Topic:     initMessage.Topic,
-				Partition: initMessage.Partition,
-			},
-		},
-	}); err != nil {
-		return err
 	}
 
 	// start receiving ack from follower
 	go func() {
-		defer func() {
-			// println("stop receiving ack from follower")
-		}()
-
 		for {
-			ack, err := p.publishFolloweMeStream.Recv()
+			ackBody, err := p.publishFolloweMeStream.Recv()
 			if err != nil {
-				e, _ := status.FromError(err)
-				if e.Code() == codes.Canceled {
+				if err == io.EOF {
 					glog.V(0).Infof("local partition %v follower %v stopped", p.Partition, p.Follower)
 					return
 				}
 				glog.Errorf("Receiving local partition %v  follower %s ack: %v", p.Partition, p.Follower, err)
 				return
 			}
-			atomic.StoreInt64(&p.AckTsNs, ack.AckTsNs)
-			// println("recv ack", ack.AckTsNs)
+			ack, err := mq_brokerwire.WrapPublishFollowMeResponse(ackBody)
+			if err != nil {
+				glog.Errorf("decode local partition %v follower %s ack: %v", p.Partition, p.Follower, err)
+				return
+			}
+			atomic.StoreInt64(&p.AckTsNs, ack.AckTsNs())
 		}
 	}()
 	return nil
@@ -313,16 +309,16 @@ func (p *LocalPartition) MaybeShutdownLocalPartition() (hasShutdown bool) {
 		}
 		if p.publishFolloweMeStream != nil {
 			// send close to the follower
-			if followErr := p.publishFolloweMeStream.Send(&mq_pb.PublishFollowMeRequest{
-				Message: &mq_pb.PublishFollowMeRequest_Close{
-					Close: &mq_pb.PublishFollowMeRequest_CloseMessage{},
-				},
-			}); followErr != nil {
+			if followErr := p.publishFolloweMeStream.Send(mq_brokerwire.NewPublishFollowMeRequest(mq_brokerwire.PublishFollowMeRequestInput{
+				MessageWhich: mq_brokerwire.PublishFollowMeRequestMessageClose,
+				MessageValue: mq_brokerwire.NewPublishFollowMeRequestCloseMessage(mq_brokerwire.PublishFollowMeRequestCloseMessageInput{}),
+			})); followErr != nil {
 				glog.Errorf("Error closing follower stream: %v", followErr)
 			}
-			glog.V(4).Infof("closing grpcConnection to follower")
-			p.followerGrpcConnection.Close()
+			glog.V(4).Infof("closing connection to follower")
+			p.followerConn.Close()
 			p.publishFolloweMeStream = nil
+			p.followerConn = nil
 			p.Follower = ""
 		}
 
@@ -373,13 +369,12 @@ func (p *LocalPartition) Shutdown() {
 
 func (p *LocalPartition) NotifyLogFlushed(flushTsNs int64) {
 	if p.publishFolloweMeStream != nil {
-		if followErr := p.publishFolloweMeStream.Send(&mq_pb.PublishFollowMeRequest{
-			Message: &mq_pb.PublishFollowMeRequest_Flush{
-				Flush: &mq_pb.PublishFollowMeRequest_FlushMessage{
-					TsNs: flushTsNs,
-				},
-			},
-		}); followErr != nil {
+		if followErr := p.publishFolloweMeStream.Send(mq_brokerwire.NewPublishFollowMeRequest(mq_brokerwire.PublishFollowMeRequestInput{
+			MessageWhich: mq_brokerwire.PublishFollowMeRequestMessageFlush,
+			MessageValue: mq_brokerwire.NewPublishFollowMeRequestFlushMessage(mq_brokerwire.PublishFollowMeRequestFlushMessageInput{
+				TsNs: flushTsNs,
+			}),
+		})); followErr != nil {
 			glog.Errorf("send follower %s flush message: %v", p.Follower, followErr)
 		}
 		// println("notifying", p.Follower, "flushed at", flushTsNs)

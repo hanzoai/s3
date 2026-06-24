@@ -4,12 +4,23 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle"
 	stats_collect "github.com/hanzoai/s3/s3/stats"
+	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 )
+
+// wireReq builds a zero-copy LifecycleDeleteRequest view from the given
+// input — the test analogue of what the ZAP transport hands the server.
+func wireReq(t *testing.T, in s3_lifecyclewire.LifecycleDeleteRequestInput) s3_lifecyclewire.LifecycleDeleteRequest {
+	t.Helper()
+	v, err := s3_lifecyclewire.WrapLifecycleDeleteRequest(s3_lifecyclewire.NewLifecycleDeleteRequest(in))
+	if err != nil {
+		t.Fatalf("wrap request: %v", err)
+	}
+	return v
+}
 
 func TestComputeEntryIdentity_BasicFields(t *testing.T) {
 	entry := &filer_pb.Entry{
@@ -74,35 +85,39 @@ func TestHashExtended_NilEqualsEmpty(t *testing.T) {
 
 func TestIdentityMatches_NilWantTreatedAsMatch(t *testing.T) {
 	// Bootstrap callers that don't yet have an identity to CAS against
-	// pass nil expected_identity; the server treats this as "no CAS".
-	live := &s3_lifecycle_pb.EntryIdentity{MtimeNs: 1, Size: 2}
-	if !identityMatches(live, nil) {
-		t.Fatalf("nil want should match")
+	// leave expected_identity unset; the server treats this as "no CAS".
+	live := &entryIdentity{MtimeNs: 1, Size: 2}
+	if !identityMatches(live, wireReq(t, s3_lifecyclewire.LifecycleDeleteRequestInput{})) {
+		t.Fatalf("absent want should match")
 	}
 }
 
 func TestIdentityMatches_NilLiveDoesNotMatch(t *testing.T) {
-	if identityMatches(nil, &s3_lifecycle_pb.EntryIdentity{MtimeNs: 1}) {
+	req := wireReq(t, s3_lifecyclewire.LifecycleDeleteRequestInput{
+		ExpectedIdentity: &s3_lifecyclewire.EntryIdentityInput{MtimeNs: 1},
+	})
+	if identityMatches(nil, req) {
 		t.Fatalf("nil live should not match a populated want")
 	}
 }
 
 func TestIdentityMatches_AllFieldsCompared(t *testing.T) {
-	base := &s3_lifecycle_pb.EntryIdentity{MtimeNs: 100, Size: 2048, HeadFid: "1,abc", ExtendedHash: []byte{0x01, 0x02}}
+	base := s3_lifecyclewire.EntryIdentityInput{MtimeNs: 100, Size: 2048, HeadFid: "1,abc", ExtendedHash: []byte{0x01, 0x02}}
+	req := wireReq(t, s3_lifecyclewire.LifecycleDeleteRequestInput{ExpectedIdentity: &base})
 	cases := []struct {
 		name string
-		live *s3_lifecycle_pb.EntryIdentity
+		live *entryIdentity
 		want bool
 	}{
-		{"identical", &s3_lifecycle_pb.EntryIdentity{MtimeNs: 100, Size: 2048, HeadFid: "1,abc", ExtendedHash: []byte{0x01, 0x02}}, true},
-		{"mtime-drift", &s3_lifecycle_pb.EntryIdentity{MtimeNs: 101, Size: 2048, HeadFid: "1,abc", ExtendedHash: []byte{0x01, 0x02}}, false},
-		{"size-drift", &s3_lifecycle_pb.EntryIdentity{MtimeNs: 100, Size: 2049, HeadFid: "1,abc", ExtendedHash: []byte{0x01, 0x02}}, false},
-		{"fid-drift", &s3_lifecycle_pb.EntryIdentity{MtimeNs: 100, Size: 2048, HeadFid: "1,xyz", ExtendedHash: []byte{0x01, 0x02}}, false},
-		{"extended-drift", &s3_lifecycle_pb.EntryIdentity{MtimeNs: 100, Size: 2048, HeadFid: "1,abc", ExtendedHash: []byte{0x03, 0x04}}, false},
+		{"identical", &entryIdentity{MtimeNs: 100, Size: 2048, HeadFid: "1,abc", ExtendedHash: []byte{0x01, 0x02}}, true},
+		{"mtime-drift", &entryIdentity{MtimeNs: 101, Size: 2048, HeadFid: "1,abc", ExtendedHash: []byte{0x01, 0x02}}, false},
+		{"size-drift", &entryIdentity{MtimeNs: 100, Size: 2049, HeadFid: "1,abc", ExtendedHash: []byte{0x01, 0x02}}, false},
+		{"fid-drift", &entryIdentity{MtimeNs: 100, Size: 2048, HeadFid: "1,xyz", ExtendedHash: []byte{0x01, 0x02}}, false},
+		{"extended-drift", &entryIdentity{MtimeNs: 100, Size: 2048, HeadFid: "1,abc", ExtendedHash: []byte{0x03, 0x04}}, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := identityMatches(c.live, base); got != c.want {
+			if got := identityMatches(c.live, req); got != c.want {
 				t.Fatalf("want %v, got %v", c.want, got)
 			}
 		})
@@ -111,12 +126,12 @@ func TestIdentityMatches_AllFieldsCompared(t *testing.T) {
 
 func TestLifecycleDelete_RejectsEmptyRequest(t *testing.T) {
 	s := &S3ApiServer{}
-	resp, err := s.LifecycleDelete(nil, &s3_lifecycle_pb.LifecycleDeleteRequest{})
+	res, err := s.LifecycleDelete(wireReq(t, s3_lifecyclewire.LifecycleDeleteRequestInput{}))
 	if err != nil {
-		t.Fatalf("unexpected gRPC error: %v", err)
+		t.Fatalf("unexpected transport error: %v", err)
 	}
-	if resp.Outcome != s3_lifecycle_pb.LifecycleDeleteOutcome_BLOCKED {
-		t.Fatalf("empty request should be BLOCKED, got %v", resp.Outcome)
+	if res.Outcome != s3_lifecyclewire.LifecycleDeleteOutcomeBlocked {
+		t.Fatalf("empty request should be BLOCKED, got %v", res.Outcome)
 	}
 }
 
@@ -132,19 +147,19 @@ func TestLifecycleAbortMPU_RejectsTraversalUploadIDs(t *testing.T) {
 		".uploads/..",
 		".uploads/u1/extra",
 	}
-	for _, path := range cases {
-		t.Run(path, func(t *testing.T) {
-			resp, err := s.LifecycleDelete(nil, &s3_lifecycle_pb.LifecycleDeleteRequest{
+	for _, p := range cases {
+		t.Run(p, func(t *testing.T) {
+			res, err := s.LifecycleDelete(wireReq(t, s3_lifecyclewire.LifecycleDeleteRequestInput{
 				Bucket:     "bk",
-				ObjectPath: path,
-				ActionKind: s3_lifecycle_pb.ActionKind_ABORT_MPU,
-			})
+				ObjectPath: p,
+				ActionKind: s3_lifecyclewire.ActionKindAbortMpu,
+			}))
 			if err != nil {
-				t.Fatalf("unexpected gRPC error: %v", err)
+				t.Fatalf("unexpected transport error: %v", err)
 			}
-			if resp.Outcome != s3_lifecycle_pb.LifecycleDeleteOutcome_BLOCKED {
+			if res.Outcome != s3_lifecyclewire.LifecycleDeleteOutcomeBlocked {
 				t.Fatalf("path %q: outcome=%v reason=%q, want BLOCKED",
-					path, resp.Outcome, resp.Reason)
+					p, res.Outcome, res.Reason)
 			}
 		})
 	}
@@ -157,40 +172,40 @@ func TestLifecycleDispatch_AbortMPUAfterFetchIsBlocked(t *testing.T) {
 	// regression there can't accidentally rm a real object via the
 	// expiration paths.
 	s := &S3ApiServer{}
-	resp, err := s.lifecycleDispatch(nil, &s3_lifecycle_pb.LifecycleDeleteRequest{
+	res, err := s.lifecycleDispatch(nil, wireReq(t, s3_lifecyclewire.LifecycleDeleteRequestInput{
 		Bucket:     "bk",
 		ObjectPath: "k",
-		ActionKind: s3_lifecycle_pb.ActionKind_ABORT_MPU,
-	}, &filer_pb.Entry{Attributes: &filer_pb.FuseAttributes{}})
+		ActionKind: s3_lifecyclewire.ActionKindAbortMpu,
+	}), &filer_pb.Entry{Attributes: &filer_pb.FuseAttributes{}})
 	if err != nil {
-		t.Fatalf("unexpected gRPC error: %v", err)
+		t.Fatalf("unexpected transport error: %v", err)
 	}
-	if resp.Outcome != s3_lifecycle_pb.LifecycleDeleteOutcome_BLOCKED {
-		t.Fatalf("ABORT_MPU at dispatch should be BLOCKED, got %v reason=%q", resp.Outcome, resp.Reason)
+	if res.Outcome != s3_lifecyclewire.LifecycleDeleteOutcomeBlocked {
+		t.Fatalf("ABORT_MPU at dispatch should be BLOCKED, got %v reason=%q", res.Outcome, res.Reason)
 	}
-	if !contains(resp.Reason, "ABORT_MPU dispatched after fetch") {
-		t.Fatalf("reason should name the route bypass, got %q", resp.Reason)
+	if !contains(res.Reason, "ABORT_MPU dispatched after fetch") {
+		t.Fatalf("reason should name the route bypass, got %q", res.Reason)
 	}
 }
 
 func TestLifecycleDispatch_UnknownActionKindIsBlocked(t *testing.T) {
-	// An ActionKind value the proto doesn't define yet must produce a
+	// An ActionKind value the schema doesn't define yet must produce a
 	// FATAL outcome rather than fall through to a default delete path.
 	s := &S3ApiServer{}
-	const bogus = s3_lifecycle_pb.ActionKind(999)
-	resp, err := s.lifecycleDispatch(nil, &s3_lifecycle_pb.LifecycleDeleteRequest{
+	const bogus uint32 = 999
+	res, err := s.lifecycleDispatch(nil, wireReq(t, s3_lifecyclewire.LifecycleDeleteRequestInput{
 		Bucket:     "bk",
 		ObjectPath: "k",
 		ActionKind: bogus,
-	}, &filer_pb.Entry{Attributes: &filer_pb.FuseAttributes{}})
+	}), &filer_pb.Entry{Attributes: &filer_pb.FuseAttributes{}})
 	if err != nil {
-		t.Fatalf("unexpected gRPC error: %v", err)
+		t.Fatalf("unexpected transport error: %v", err)
 	}
-	if resp.Outcome != s3_lifecycle_pb.LifecycleDeleteOutcome_BLOCKED {
-		t.Fatalf("unknown action kind should be BLOCKED, got %v reason=%q", resp.Outcome, resp.Reason)
+	if res.Outcome != s3_lifecyclewire.LifecycleDeleteOutcomeBlocked {
+		t.Fatalf("unknown action kind should be BLOCKED, got %v reason=%q", res.Outcome, res.Reason)
 	}
-	if !contains(resp.Reason, "unknown action_kind") {
-		t.Fatalf("reason should name the unknown kind, got %q", resp.Reason)
+	if !contains(res.Reason, "unknown action_kind") {
+		t.Fatalf("reason should name the unknown kind, got %q", res.Reason)
 	}
 }
 
@@ -201,27 +216,27 @@ func TestLifecycleDispatch_NoncurrentRequiresVersionID(t *testing.T) {
 	// a refactor doesn't accidentally let the empty-version_id path
 	// reach deleteSpecificObjectVersion.
 	s := &S3ApiServer{}
-	for _, kind := range []s3_lifecycle_pb.ActionKind{
-		s3_lifecycle_pb.ActionKind_NONCURRENT_DAYS,
-		s3_lifecycle_pb.ActionKind_NEWER_NONCURRENT,
-		s3_lifecycle_pb.ActionKind_EXPIRED_DELETE_MARKER,
+	for _, kind := range []uint32{
+		s3_lifecyclewire.ActionKindNoncurrentDays,
+		s3_lifecyclewire.ActionKindNewerNoncurrent,
+		s3_lifecyclewire.ActionKindExpiredDeleteMarker,
 	} {
-		t.Run(kind.String(), func(t *testing.T) {
-			resp, err := s.lifecycleDispatch(nil, &s3_lifecycle_pb.LifecycleDeleteRequest{
+		t.Run(actionKindLabel(kind), func(t *testing.T) {
+			res, err := s.lifecycleDispatch(nil, wireReq(t, s3_lifecyclewire.LifecycleDeleteRequestInput{
 				Bucket:     "bk",
 				ObjectPath: "k",
 				ActionKind: kind,
-				// VersionId intentionally empty
-			}, &filer_pb.Entry{Attributes: &filer_pb.FuseAttributes{}})
+				// VersionID intentionally empty
+			}), &filer_pb.Entry{Attributes: &filer_pb.FuseAttributes{}})
 			if err != nil {
-				t.Fatalf("unexpected gRPC error: %v", err)
+				t.Fatalf("unexpected transport error: %v", err)
 			}
-			if resp.Outcome != s3_lifecycle_pb.LifecycleDeleteOutcome_BLOCKED {
+			if res.Outcome != s3_lifecyclewire.LifecycleDeleteOutcomeBlocked {
 				t.Fatalf("kind %v with empty version_id should be BLOCKED, got %v reason=%q",
-					kind, resp.Outcome, resp.Reason)
+					kind, res.Outcome, res.Reason)
 			}
-			if !contains(resp.Reason, "version_id required") {
-				t.Fatalf("reason should name the missing version_id, got %q", resp.Reason)
+			if !contains(res.Reason, "version_id required") {
+				t.Fatalf("reason should name the missing version_id, got %q", res.Reason)
 			}
 		})
 	}
@@ -293,28 +308,22 @@ func TestRecordMetadataOnlyIf_OnlyFiresWhenOn(t *testing.T) {
 	hexHash := "deadbeef01020304"
 
 	before := testutil.ToFloat64(c.WithLabelValues(bucket, hexHash))
-	recordMetadataOnlyIf(true, &s3_lifecycle_pb.LifecycleDeleteRequest{
+	recordMetadataOnlyIf(true, wireReq(t, s3_lifecyclewire.LifecycleDeleteRequestInput{
 		Bucket:   bucket,
 		RuleHash: hash,
-	})
+	}))
 	if got := testutil.ToFloat64(c.WithLabelValues(bucket, hexHash)); got != before+1 {
 		t.Fatalf("on=true should bump by 1; before=%v after=%v", before, got)
 	}
 
 	beforeOff := testutil.ToFloat64(c.WithLabelValues("bk-counter-off", hexHash))
-	recordMetadataOnlyIf(false, &s3_lifecycle_pb.LifecycleDeleteRequest{
+	recordMetadataOnlyIf(false, wireReq(t, s3_lifecyclewire.LifecycleDeleteRequestInput{
 		Bucket:   "bk-counter-off",
 		RuleHash: hash,
-	})
+	}))
 	if got := testutil.ToFloat64(c.WithLabelValues("bk-counter-off", hexHash)); got != beforeOff {
 		t.Fatalf("on=false should not bump; before=%v after=%v", beforeOff, got)
 	}
-}
-
-func TestRecordMetadataOnlyIf_NilRequestSafe(t *testing.T) {
-	// A nil req is a defensive no-op; never panic on the prometheus
-	// label call which would otherwise dereference req.Bucket.
-	recordMetadataOnlyIf(true, nil)
 }
 
 func TestRecordMetadataOnlyIf_EmptyRuleHashCollapsesToEmptyLabel(t *testing.T) {
@@ -324,7 +333,7 @@ func TestRecordMetadataOnlyIf_EmptyRuleHashCollapsesToEmptyLabel(t *testing.T) {
 	c := stats_collect.S3LifecycleMetadataOnlyCounter
 	bucket := "bk-counter-emptyhash"
 	before := testutil.ToFloat64(c.WithLabelValues(bucket, ""))
-	recordMetadataOnlyIf(true, &s3_lifecycle_pb.LifecycleDeleteRequest{Bucket: bucket})
+	recordMetadataOnlyIf(true, wireReq(t, s3_lifecyclewire.LifecycleDeleteRequestInput{Bucket: bucket}))
 	if got := testutil.ToFloat64(c.WithLabelValues(bucket, "")); got != before+1 {
 		t.Fatalf("nil rule_hash should produce empty-label series; before=%v after=%v", before, got)
 	}

@@ -29,20 +29,31 @@ func setNestedObject(b *zap.Builder, ob *zap.ObjectBuilder, fieldOff int, child 
 	ob.SetObject(fieldOff, off)
 }
 
-// embedMessage copies the relocatable root-object block of a standalone child
-// message into b and returns its offset (0 for an empty/short child). The block
-// is child[rootOffset:], where rootOffset is the header's root pointer (bytes
-// 8:12). WriteBytes 8-aligns the destination, matching the alignment the child's
-// builder used, so the copied block's internal relative offsets stay valid.
+// embedMessage copies a standalone child message's whole data segment into b and
+// returns the offset of its root object (0 for an empty/short child).
+//
+// A child built by a New<Child> function is [16-byte header][data segment]. The
+// data segment is NOT just the root object: a builder lays some variable data
+// BEFORE the root object (lists built before StartObject, reached by a NEGATIVE
+// relative pointer) and some AFTER (deferred text/bytes, nested objects, reached
+// by a positive one). Copying only child[rootOffset:] would drop the pre-object
+// data and dangle those back-pointers (e.g. Entry.chunks). So the entire data
+// segment child[HeaderSize:] is relocated as ONE rigid block — every internal
+// relative pointer, forward or backward, stays valid because the whole block
+// moves together — and the returned offset is the root object's position inside
+// the relocated block. WriteBytes 8-aligns the destination; rootOffset is itself
+// 8-aligned (StartObject aligns; HeaderSize is a multiple of 8), so the root
+// stays 8-aligned after the move.
 func embedMessage(b *zap.Builder, child []byte) int {
 	if len(child) < zap.HeaderSize {
 		return 0
 	}
-	rootOff := binary.LittleEndian.Uint32(child[8:12])
-	if int(rootOff) < zap.HeaderSize || int(rootOff) >= len(child) {
+	rootOff := int(binary.LittleEndian.Uint32(child[8:12]))
+	if rootOff < zap.HeaderSize || rootOff >= len(child) {
 		return 0
 	}
-	return b.WriteBytes(child[rootOff:])
+	base := b.WriteBytes(child[zap.HeaderSize:])
+	return base + (rootOff - zap.HeaderSize)
 }
 
 // addObjectList appends each pre-built sub-buffer in elems as an out-of-line
