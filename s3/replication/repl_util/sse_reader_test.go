@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"testing"
 
 	"github.com/hanzoai/s3/s3/kms"
@@ -278,22 +277,20 @@ func setupTestSSES3(t *testing.T) (kek []byte, cleanup func()) {
 		t.Fatal(err)
 	}
 
-	// Force Viper to pick up the new env var
-	os.Setenv("WEED_S3_SSE_KEK", hex.EncodeToString(kek))
+	// Configure the SSE-S3 KEK directly via the viper key the manager reads
+	// (s3.sse.kek). Setting the key is prefix-agnostic — unlike an env var, it
+	// doesn't depend on the viper env prefix (now "s3", was "weed").
+	util.GetViper().Set("s3.sse.kek", hex.EncodeToString(kek))
 
-	// Reset Viper cache so it reads the new env var
-	v := util.GetViper()
-	v.AutomaticEnv()
-
-	// Re-initialize the global key manager with the KEK from env
+	// Re-initialize the global key manager with the configured KEK.
 	km := s3api.GetSSES3KeyManager()
 	if err := km.InitializeWithFiler(&testFilerClient{}); err != nil {
-		os.Unsetenv("WEED_S3_SSE_KEK")
+		util.GetViper().Set("s3.sse.kek", "")
 		t.Fatalf("InitializeWithFiler: %v", err)
 	}
 
 	return kek, func() {
-		os.Unsetenv("WEED_S3_SSE_KEK")
+		util.GetViper().Set("s3.sse.kek", "")
 		// Re-initialize with no KEK to clear the super key
 		km.InitializeWithFiler(&testFilerClient{})
 	}
