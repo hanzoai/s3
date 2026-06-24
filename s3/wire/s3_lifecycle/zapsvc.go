@@ -10,14 +10,13 @@
 // marshaling, no protobuf, no HTTP — the bytes ARE the message.
 //
 // The backend is expressed as a Go interface (LifecycleDeleter) in pure wire
-// terms so this file imports neither the s3_lifecycle_pb domain model nor the
+// terms so this file imports neither a protobuf domain model nor the
 // real filer/volume/master engine. The S3 server wires its live
 // (re-fetch + identity-CAS + object-lock + dispatch) implementation to this
-// interface at integration time; tests use an in-memory fake (see
-// zapsvc_roundtrip_test.go). The existing pb<->wire bridge
-// (s3/s3api/s3lifecycle/lifecyclerpc) is the alternative, pb-typed binding for
-// callers that prefer to keep the in-process pb control-plane types end to end;
-// this adapter is the pb-free path that matches the object reference exactly.
+// interface at integration time (s3/s3api/s3api_internal_lifecycle.go); tests
+// use an in-memory fake (see zapsvc_roundtrip_test.go). This is the single,
+// pb-free binding — request/response cross the wire as zero-copy
+// s3_lifecyclewire buffers end to end.
 
 package s3_lifecyclewire
 
@@ -32,6 +31,19 @@ import (
 type LifecycleDeleteResult struct {
 	Outcome uint32 // one of the LifecycleDeleteOutcome* constants
 	Reason  string
+}
+
+// IsNull reports whether this EntryIdentity view is the null nested object
+// (the request carried no CAS witness). Reading any field accessor on a null
+// view dereferences a nil backing message and panics, so callers MUST gate on
+// IsNull before touching MtimeNs()/HeadFid()/etc. Hand-written companion to
+// the generated zero-copy view (the .proto codegen omits null checks).
+func (t EntryIdentity) IsNull() bool { return t.o.IsNull() }
+
+// HasExpectedIdentity reports whether the request carried a CAS witness
+// (a non-null expected_identity). Convenience over ExpectedIdentity().IsNull().
+func (t LifecycleDeleteRequest) HasExpectedIdentity() bool {
+	return !t.ExpectedIdentity().IsNull()
 }
 
 // LifecycleDeleter is the backend the ZAP service delegates to. The real S3

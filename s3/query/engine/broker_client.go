@@ -10,6 +10,7 @@ import (
 	"github.com/hanzoai/s3/s3/cluster"
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/mq/agent/agentconv"
 	"github.com/hanzoai/s3/s3/mq/pub_balancer"
 	"github.com/hanzoai/s3/s3/mq/topic"
 	"github.com/hanzoai/s3/s3/pb"
@@ -17,6 +18,10 @@ import (
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/pb/schema_pb"
+	filerwire "github.com/hanzoai/s3/s3/wire/filer"
+	mq_brokerwire "github.com/hanzoai/s3/s3/wire/mq_broker"
+	mq_schemawire "github.com/hanzoai/s3/s3/wire/mq_schema"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	jsonpb "google.golang.org/protobuf/encoding/protojson"
@@ -314,22 +319,22 @@ func (c *BrokerClient) ConfigureTopic(ctx context.Context, namespace, topicName 
 		return err
 	}
 
-	conn, err := pb.GrpcDial(ctx, c.brokerAddress, false, c.grpcDialOption)
+	conn, err := transport.Dial("tcp", c.brokerAddress)
 	if err != nil {
 		return fmt.Errorf("failed to connect to broker at %s: %v", c.brokerAddress, err)
 	}
 	defer conn.Close()
 
-	client := mq_pb.NewHanzoMessagingClient(conn)
+	client := mq_brokerwire.NewClient(conn)
 
 	// Create topic configuration using flat schema format
-	_, err = client.ConfigureTopic(ctx, &mq_pb.ConfigureTopicRequest{
-		Topic: &schema_pb.Topic{
+	_, err = client.ConfigureTopic(mq_brokerwire.ConfigureTopicRequestInput{
+		Topic: mq_schemawire.NewTopic(mq_schemawire.TopicInput{
 			Namespace: namespace,
 			Name:      topicName,
-		},
+		}),
 		PartitionCount:    partitionCount,
-		MessageRecordType: flatSchema,
+		MessageRecordType: agentconv.RecordTypeToWire(flatSchema),
 		KeyColumns:        keyColumns,
 	})
 	if err != nil {
@@ -426,15 +431,13 @@ func (c *BrokerClient) GetUnflushedMessages(ctx context.Context, namespace, topi
 	glog.V(2).Infof("Found broker at address: %s", c.brokerAddress)
 
 	// Step 2: Connect to broker
-	conn, err := pb.GrpcDial(ctx, c.brokerAddress, false, c.grpcDialOption)
+	conn, err := transport.Dial("tcp", c.brokerAddress)
 	if err != nil {
 		glog.V(2).Infof("Failed to connect to broker %s: %v", c.brokerAddress, err)
 		// Return empty slice if connection fails - prevents double-counting
 		return []*filer_pb.LogEntry{}, nil
 	}
 	defer conn.Close()
-
-	client := mq_pb.NewHanzoMessagingClient(conn)
 
 	// Step 3: For unflushed messages, always start from 0 to get all in-memory data
 	// The buffer_start metadata in log files uses timestamp-based indices for uniqueness,
@@ -450,58 +453,63 @@ func (c *BrokerClient) GetUnflushedMessages(ctx context.Context, namespace, topi
 	glog.V(2).Infof("Using StartBufferOffset=0 for unflushed messages (buffer offsets are sequential internally)")
 
 	// Step 4: Prepare request using buffer offset filtering only
-	request := &mq_pb.GetUnflushedMessagesRequest{
-		Topic: &schema_pb.Topic{
+	initBuf := mq_brokerwire.NewGetUnflushedMessagesRequest(mq_brokerwire.GetUnflushedMessagesRequestInput{
+		Topic: mq_schemawire.NewTopic(mq_schemawire.TopicInput{
 			Namespace: namespace,
 			Name:      topicName,
-		},
-		Partition: &schema_pb.Partition{
+		}),
+		Partition: mq_schemawire.NewPartition(mq_schemawire.PartitionInput{
 			RingSize:   partition.RingSize,
 			RangeStart: partition.RangeStart,
 			RangeStop:  partition.RangeStop,
 			UnixTimeNs: partition.UnixTimeNs,
-		},
+		}),
 		StartBufferOffset: earliestBufferOffset,
-	}
+	})
 
-	// Step 5: Call the broker streaming API
-	glog.V(2).Infof("Calling GetUnflushedMessages gRPC with StartBufferOffset=%d", earliestBufferOffset)
-	stream, err := client.GetUnflushedMessages(ctx, request)
+	// Step 5: Call the broker streaming API (server-stream)
+	glog.V(2).Infof("Calling GetUnflushedMessages ZAP with StartBufferOffset=%d", earliestBufferOffset)
+	stream, err := conn.OpenStream(mq_brokerwire.HanzoMessagingGetUnflushedMessagesOrdinal, initBuf)
 	if err != nil {
-		glog.V(2).Infof("GetUnflushedMessages gRPC call failed: %v", err)
-		// Return empty slice if gRPC call fails - prevents double-counting
+		glog.V(2).Infof("GetUnflushedMessages ZAP call failed: %v", err)
+		// Return empty slice if call fails - prevents double-counting
 		return []*filer_pb.LogEntry{}, nil
 	}
 
 	// Step 5: Receive streaming responses
 	var logEntries []*filer_pb.LogEntry
 	for {
-		response, err := stream.Recv()
+		body, err := stream.Recv()
 		if err != nil {
 			// End of stream or error - return what we have to prevent double-counting
 			break
 		}
+		response, err := mq_brokerwire.WrapGetUnflushedMessagesResponse(body)
+		if err != nil {
+			break
+		}
 
 		// Handle error messages
-		if response.Error != "" {
+		if response.Error() != "" {
 			// Log the error but return empty slice - prevents double-counting
-			// (In debug mode, this would be visible)
 			return []*filer_pb.LogEntry{}, nil
 		}
 
 		// Check for end of stream
-		if response.EndOfStream {
+		if response.EndOfStream() {
 			break
 		}
 
 		// Convert and collect the message
-		if response.Message != nil {
-			logEntries = append(logEntries, &filer_pb.LogEntry{
-				TsNs:             response.Message.TsNs,
-				Key:              response.Message.Key,
-				Data:             response.Message.Data,
-				PartitionKeyHash: int32(response.Message.PartitionKeyHash), // Convert uint32 to int32
-			})
+		if mbuf := response.Message(); len(mbuf) > 0 {
+			if msg, werr := filerwire.WrapLogEntry(mbuf); werr == nil {
+				logEntries = append(logEntries, &filer_pb.LogEntry{
+					TsNs:             msg.TsNs(),
+					Key:              msg.Key(),
+					Data:             msg.Data(),
+					PartitionKeyHash: msg.PartitionKeyHash(),
+				})
+			}
 		}
 	}
 

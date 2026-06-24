@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/router"
+	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,11 +23,11 @@ type fakeLifecycleClient struct {
 }
 
 type scriptedResp struct {
-	outcome s3_lifecycle_pb.LifecycleDeleteOutcome
+	outcome uint32
 	err     error
 }
 
-func (c *fakeLifecycleClient) LifecycleDelete(_ context.Context, _ *s3_lifecycle_pb.LifecycleDeleteRequest) (*s3_lifecycle_pb.LifecycleDeleteResponse, error) {
+func (c *fakeLifecycleClient) LifecycleDelete(_ context.Context, _ s3_lifecyclewire.LifecycleDeleteRequestInput) (s3_lifecyclewire.LifecycleDeleteResult, error) {
 	idx := int(atomic.AddInt32(&c.calls, 1)) - 1
 	if idx >= len(c.scripted) {
 		// Default to the last scripted response if the test under-specifies.
@@ -35,9 +35,9 @@ func (c *fakeLifecycleClient) LifecycleDelete(_ context.Context, _ *s3_lifecycle
 	}
 	r := c.scripted[idx]
 	if r.err != nil {
-		return nil, r.err
+		return s3_lifecyclewire.LifecycleDeleteResult{}, r.err
 	}
-	return &s3_lifecycle_pb.LifecycleDeleteResponse{Outcome: r.outcome}, nil
+	return s3_lifecyclewire.LifecycleDeleteResult{Outcome: r.outcome}, nil
 }
 
 func sampleMatch() router.Match {
@@ -51,7 +51,7 @@ func sampleMatch() router.Match {
 // Speed up dispatch retries inside tests so the suite stays fast.
 // The defaults (200ms initial, 5s max) make exponential backoff cases
 // take seconds; tests shrink to microseconds via a separate helper.
-func dispatchWithRetryFast(t *testing.T, ctx context.Context, c LifecycleClient, m router.Match) (s3_lifecycle_pb.LifecycleDeleteOutcome, error) {
+func dispatchWithRetryFast(t *testing.T, ctx context.Context, c LifecycleClient, m router.Match) (uint32, error) {
 	t.Helper()
 	// We can't override the package-private constants, but every test
 	// path here uses small attempt counts so even the production
@@ -61,11 +61,11 @@ func dispatchWithRetryFast(t *testing.T, ctx context.Context, c LifecycleClient,
 
 func TestDispatch_FirstAttemptSucceeds(t *testing.T) {
 	c := &fakeLifecycleClient{scripted: []scriptedResp{
-		{outcome: s3_lifecycle_pb.LifecycleDeleteOutcome_DONE},
+		{outcome: s3_lifecyclewire.LifecycleDeleteOutcomeDone},
 	}}
 	out, err := dispatchWithRetryFast(t, context.Background(), c, sampleMatch())
 	require.NoError(t, err)
-	assert.Equal(t, s3_lifecycle_pb.LifecycleDeleteOutcome_DONE, out)
+	assert.Equal(t, s3_lifecyclewire.LifecycleDeleteOutcomeDone, out)
 	assert.Equal(t, int32(1), c.calls)
 }
 
@@ -75,11 +75,11 @@ func TestDispatch_TransportRetryThenSucceed(t *testing.T) {
 	c := &fakeLifecycleClient{scripted: []scriptedResp{
 		{err: errors.New("transport boom")},
 		{err: errors.New("transport boom")},
-		{outcome: s3_lifecycle_pb.LifecycleDeleteOutcome_NOOP_RESOLVED},
+		{outcome: s3_lifecyclewire.LifecycleDeleteOutcomeNoopResolved},
 	}}
 	out, err := dispatchWithRetryFast(t, context.Background(), c, sampleMatch())
 	require.NoError(t, err)
-	assert.Equal(t, s3_lifecycle_pb.LifecycleDeleteOutcome_NOOP_RESOLVED, out)
+	assert.Equal(t, s3_lifecyclewire.LifecycleDeleteOutcomeNoopResolved, out)
 	assert.Equal(t, int32(3), c.calls)
 }
 
@@ -100,21 +100,21 @@ func TestDispatch_ServerOutcomeRetryLaterIsNotRetried(t *testing.T) {
 	// caller handles it. dispatchWithRetry must surface it on the first
 	// successful RPC and NOT retry in-run.
 	c := &fakeLifecycleClient{scripted: []scriptedResp{
-		{outcome: s3_lifecycle_pb.LifecycleDeleteOutcome_RETRY_LATER},
+		{outcome: s3_lifecyclewire.LifecycleDeleteOutcomeRetryLater},
 	}}
 	out, err := dispatchWithRetryFast(t, context.Background(), c, sampleMatch())
 	require.NoError(t, err)
-	assert.Equal(t, s3_lifecycle_pb.LifecycleDeleteOutcome_RETRY_LATER, out)
+	assert.Equal(t, s3_lifecyclewire.LifecycleDeleteOutcomeRetryLater, out)
 	assert.Equal(t, int32(1), c.calls, "server outcome must not trigger transport retry")
 }
 
 func TestDispatch_ServerOutcomeBlockedNotRetried(t *testing.T) {
 	c := &fakeLifecycleClient{scripted: []scriptedResp{
-		{outcome: s3_lifecycle_pb.LifecycleDeleteOutcome_BLOCKED},
+		{outcome: s3_lifecyclewire.LifecycleDeleteOutcomeBlocked},
 	}}
 	out, err := dispatchWithRetryFast(t, context.Background(), c, sampleMatch())
 	require.NoError(t, err)
-	assert.Equal(t, s3_lifecycle_pb.LifecycleDeleteOutcome_BLOCKED, out)
+	assert.Equal(t, s3_lifecyclewire.LifecycleDeleteOutcomeBlocked, out)
 	assert.Equal(t, int32(1), c.calls)
 }
 
@@ -154,9 +154,9 @@ func TestBuildDeleteRequest_RuleHashAndIdentity(t *testing.T) {
 	req := buildDeleteRequest(m)
 	assert.Equal(t, "bucket", req.Bucket)
 	assert.Equal(t, "obj.txt", req.ObjectPath)
-	assert.Equal(t, "v_1", req.VersionId)
+	assert.Equal(t, "v_1", req.VersionID)
 	assert.Equal(t, []byte{1, 2, 3, 4, 5, 6, 7, 8}, req.RuleHash)
-	assert.Equal(t, s3_lifecycle_pb.ActionKind_NONCURRENT_DAYS, req.ActionKind)
+	assert.Equal(t, s3_lifecyclewire.ActionKindNoncurrentDays, req.ActionKind)
 	require.NotNil(t, req.ExpectedIdentity)
 	assert.Equal(t, int64(42), req.ExpectedIdentity.Size)
 	assert.Equal(t, "1,abc", req.ExpectedIdentity.HeadFid)

@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/reader"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/router"
 	"github.com/hanzoai/s3/s3/stats"
+	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,21 +22,21 @@ import (
 // other outcomes set responses by index.
 type recordingClient struct {
 	mu        sync.Mutex
-	requests  []*s3_lifecycle_pb.LifecycleDeleteRequest
-	responses []s3_lifecycle_pb.LifecycleDeleteOutcome
+	requests  []s3_lifecyclewire.LifecycleDeleteRequestInput
+	responses []uint32
 	calls     atomic.Int32
 }
 
-func (c *recordingClient) LifecycleDelete(_ context.Context, req *s3_lifecycle_pb.LifecycleDeleteRequest) (*s3_lifecycle_pb.LifecycleDeleteResponse, error) {
+func (c *recordingClient) LifecycleDelete(_ context.Context, in s3_lifecyclewire.LifecycleDeleteRequestInput) (s3_lifecyclewire.LifecycleDeleteResult, error) {
 	c.mu.Lock()
-	c.requests = append(c.requests, req)
+	c.requests = append(c.requests, in)
 	idx := int(c.calls.Add(1)) - 1
 	c.mu.Unlock()
-	out := s3_lifecycle_pb.LifecycleDeleteOutcome_DONE
+	out := s3_lifecyclewire.LifecycleDeleteOutcomeDone
 	if idx < len(c.responses) {
 		out = c.responses[idx]
 	}
-	return &s3_lifecycle_pb.LifecycleDeleteResponse{Outcome: out}, nil
+	return s3_lifecyclewire.LifecycleDeleteResult{Outcome: out}, nil
 }
 
 func (c *recordingClient) seenObjects() []string {
@@ -111,10 +111,10 @@ func TestProcessMatches_HaltOnServerOutcomeStopsRemaining(t *testing.T) {
 		{Key: rule, Bucket: "b", ObjectKey: "blocked", DueTime: runNow.Add(-time.Hour)},
 		{Key: rule, Bucket: "b", ObjectKey: "would-be-next", DueTime: runNow.Add(-time.Hour)},
 	}
-	client := &recordingClient{responses: []s3_lifecycle_pb.LifecycleDeleteOutcome{
-		s3_lifecycle_pb.LifecycleDeleteOutcome_DONE,
-		s3_lifecycle_pb.LifecycleDeleteOutcome_BLOCKED,
-		s3_lifecycle_pb.LifecycleDeleteOutcome_DONE, // would be a bug if reached
+	client := &recordingClient{responses: []uint32{
+		s3_lifecyclewire.LifecycleDeleteOutcomeDone,
+		s3_lifecyclewire.LifecycleDeleteOutcomeBlocked,
+		s3_lifecyclewire.LifecycleDeleteOutcomeDone, // would be a bug if reached
 	}}
 	cfg := Config{Client: client}
 	_, halted, err := processMatches(context.Background(), cfg, runNow, &reader.Event{}, matches)

@@ -5,9 +5,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/hanzoai/s3/s3/mq/broker/brokerpb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/util"
+	mq_brokerwire "github.com/hanzoai/s3/s3/wire/mq_broker"
 )
 
 // OffsetAssignmentFunc is a function type for assigning offsets to messages
@@ -33,11 +35,10 @@ func (p *LocalPartition) PublishWithOffset(message *mq_pb.DataMessage, assignOff
 
 	// Send to follower if needed (same logic as original Publish)
 	if p.publishFolloweMeStream != nil {
-		if followErr := p.publishFolloweMeStream.Send(&mq_pb.PublishFollowMeRequest{
-			Message: &mq_pb.PublishFollowMeRequest_Data{
-				Data: message,
-			},
-		}); followErr != nil {
+		if followErr := p.publishFolloweMeStream.Send(mq_brokerwire.NewPublishFollowMeRequest(mq_brokerwire.PublishFollowMeRequestInput{
+			MessageWhich: mq_brokerwire.PublishFollowMeRequestMessageData,
+			MessageValue: brokerpb.DataMessageToWire(message),
+		})); followErr != nil {
 			return 0, fmt.Errorf("send to follower %s: %v", p.Follower, followErr)
 		}
 	} else {

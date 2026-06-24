@@ -6,34 +6,31 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/bootstrap"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/engine"
+	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/time/rate"
 )
 
-// walkerStubClient captures the last LifecycleDeleteRequest so tests
+// walkerStubClient captures the last LifecycleDeleteRequestInput so tests
 // can assert on the request shape produced by WalkerDispatcher.
 type walkerStubClient struct {
-	lastReq *s3_lifecycle_pb.LifecycleDeleteRequest
-	outcome s3_lifecycle_pb.LifecycleDeleteOutcome
+	lastReq *s3_lifecyclewire.LifecycleDeleteRequestInput
+	outcome uint32
 	err     error
 	reason  string
-	nilResp bool // return (nil, nil) — pin the dispatcher's defensive guard
 }
 
-func (c *walkerStubClient) LifecycleDelete(_ context.Context, req *s3_lifecycle_pb.LifecycleDeleteRequest) (*s3_lifecycle_pb.LifecycleDeleteResponse, error) {
-	c.lastReq = req
+func (c *walkerStubClient) LifecycleDelete(_ context.Context, in s3_lifecyclewire.LifecycleDeleteRequestInput) (s3_lifecyclewire.LifecycleDeleteResult, error) {
+	captured := in
+	c.lastReq = &captured
 	if c.err != nil {
-		return nil, c.err
+		return s3_lifecyclewire.LifecycleDeleteResult{}, c.err
 	}
-	if c.nilResp {
-		return nil, nil
-	}
-	return &s3_lifecycle_pb.LifecycleDeleteResponse{Outcome: c.outcome, Reason: c.reason}, nil
+	return s3_lifecyclewire.LifecycleDeleteResult{Outcome: c.outcome, Reason: c.reason}, nil
 }
 
 func sampleAction(t *testing.T, kind s3lifecycle.ActionKind) *engine.CompiledAction {
@@ -50,7 +47,7 @@ func sampleAction(t *testing.T, kind s3lifecycle.ActionKind) *engine.CompiledAct
 }
 
 func TestWalkerDispatcher_NonVersionedSendsExpectedRequest(t *testing.T) {
-	c := &walkerStubClient{outcome: s3_lifecycle_pb.LifecycleDeleteOutcome_DONE}
+	c := &walkerStubClient{outcome: s3_lifecyclewire.LifecycleDeleteOutcomeDone}
 	d := &WalkerDispatcher{Client: c}
 	a := sampleAction(t, s3lifecycle.ActionKindExpirationDays)
 	err := d.Delete(context.Background(), a, &bootstrap.Entry{Path: "obj"})
@@ -58,20 +55,20 @@ func TestWalkerDispatcher_NonVersionedSendsExpectedRequest(t *testing.T) {
 	require.NotNil(t, c.lastReq)
 	assert.Equal(t, "bkt", c.lastReq.Bucket)
 	assert.Equal(t, "obj", c.lastReq.ObjectPath)
-	assert.Equal(t, "", c.lastReq.VersionId)
+	assert.Equal(t, "", c.lastReq.VersionID)
 	assert.Equal(t, a.Key.RuleHash[:], c.lastReq.RuleHash)
-	assert.Equal(t, s3_lifecycle_pb.ActionKind_EXPIRATION_DAYS, c.lastReq.ActionKind)
+	assert.Equal(t, s3_lifecyclewire.ActionKindExpirationDays, c.lastReq.ActionKind)
 	// Bootstrap-style call: server skips CAS witness when nil.
 	assert.Nil(t, c.lastReq.ExpectedIdentity)
 }
 
 func TestWalkerDispatcher_VersionedPassesVersionID(t *testing.T) {
-	c := &walkerStubClient{outcome: s3_lifecycle_pb.LifecycleDeleteOutcome_DONE}
+	c := &walkerStubClient{outcome: s3_lifecyclewire.LifecycleDeleteOutcomeDone}
 	d := &WalkerDispatcher{Client: c}
 	a := sampleAction(t, s3lifecycle.ActionKindNoncurrentDays)
 	err := d.Delete(context.Background(), a, &bootstrap.Entry{Path: "obj", VersionID: "v-abc"})
 	require.NoError(t, err)
-	assert.Equal(t, "v-abc", c.lastReq.VersionId)
+	assert.Equal(t, "v-abc", c.lastReq.VersionID)
 }
 
 func TestWalkerDispatcher_MPUInitUsesUploadsPath(t *testing.T) {
@@ -79,7 +76,7 @@ func TestWalkerDispatcher_MPUInitUsesUploadsPath(t *testing.T) {
 	// matches; dispatch uses Path (.uploads/<id>) because the server's
 	// ABORT_MPU handler strips the .uploads/ prefix to get the upload
 	// id. Sending DestKey here would BLOCK with FATAL_EVENT_ERROR.
-	c := &walkerStubClient{outcome: s3_lifecycle_pb.LifecycleDeleteOutcome_DONE}
+	c := &walkerStubClient{outcome: s3_lifecyclewire.LifecycleDeleteOutcomeDone}
 	d := &WalkerDispatcher{Client: c}
 	a := sampleAction(t, s3lifecycle.ActionKindAbortMPU)
 	err := d.Delete(context.Background(), a, &bootstrap.Entry{
@@ -95,7 +92,7 @@ func TestWalkerDispatcher_MPUInitEmptyDestKeyErrors(t *testing.T) {
 	// An MPU init record with no DestKey is mid-write before metadata
 	// landed; skipping silently in the walker is fine, but the
 	// dispatcher must not invent a path.
-	c := &walkerStubClient{outcome: s3_lifecycle_pb.LifecycleDeleteOutcome_DONE}
+	c := &walkerStubClient{outcome: s3_lifecyclewire.LifecycleDeleteOutcomeDone}
 	d := &WalkerDispatcher{Client: c}
 	a := sampleAction(t, s3lifecycle.ActionKindAbortMPU)
 	err := d.Delete(context.Background(), a, &bootstrap.Entry{
@@ -107,31 +104,31 @@ func TestWalkerDispatcher_MPUInitEmptyDestKeyErrors(t *testing.T) {
 }
 
 func TestWalkerDispatcher_AcceptsAllResolvedOutcomes(t *testing.T) {
-	for _, oc := range []s3_lifecycle_pb.LifecycleDeleteOutcome{
-		s3_lifecycle_pb.LifecycleDeleteOutcome_DONE,
-		s3_lifecycle_pb.LifecycleDeleteOutcome_NOOP_RESOLVED,
-		s3_lifecycle_pb.LifecycleDeleteOutcome_SKIPPED_OBJECT_LOCK,
+	for _, oc := range []uint32{
+		s3_lifecyclewire.LifecycleDeleteOutcomeDone,
+		s3_lifecyclewire.LifecycleDeleteOutcomeNoopResolved,
+		s3_lifecyclewire.LifecycleDeleteOutcomeSkippedObjectLock,
 	} {
 		c := &walkerStubClient{outcome: oc}
 		d := &WalkerDispatcher{Client: c}
 		err := d.Delete(context.Background(), sampleAction(t, s3lifecycle.ActionKindExpirationDays), &bootstrap.Entry{Path: "obj"})
-		assert.NoError(t, err, "outcome %s must be treated as resolved", oc)
+		assert.NoError(t, err, "outcome %s must be treated as resolved", outcomeLabel(oc))
 	}
 }
 
 func TestWalkerDispatcher_UnresolvedOutcomeReturnsError(t *testing.T) {
 	// RETRY_LATER, BLOCKED, and UNSPECIFIED all halt the walk so it
 	// resumes from Checkpoint.LastScannedPath on the next run.
-	for _, oc := range []s3_lifecycle_pb.LifecycleDeleteOutcome{
-		s3_lifecycle_pb.LifecycleDeleteOutcome_RETRY_LATER,
-		s3_lifecycle_pb.LifecycleDeleteOutcome_BLOCKED,
-		s3_lifecycle_pb.LifecycleDeleteOutcome_LIFECYCLE_DELETE_OUTCOME_UNSPECIFIED,
+	for _, oc := range []uint32{
+		s3_lifecyclewire.LifecycleDeleteOutcomeRetryLater,
+		s3_lifecyclewire.LifecycleDeleteOutcomeBlocked,
+		s3_lifecyclewire.LifecycleDeleteOutcomeUnspecified,
 	} {
 		c := &walkerStubClient{outcome: oc, reason: "server said so"}
 		d := &WalkerDispatcher{Client: c}
 		err := d.Delete(context.Background(), sampleAction(t, s3lifecycle.ActionKindExpirationDays), &bootstrap.Entry{Path: "obj"})
-		require.Error(t, err, "outcome %s must halt the walk", oc)
-		assert.Contains(t, err.Error(), oc.String())
+		require.Error(t, err, "outcome %s must halt the walk", outcomeLabel(oc))
+		assert.Contains(t, err.Error(), outcomeLabel(oc))
 	}
 }
 
@@ -143,21 +140,11 @@ func TestWalkerDispatcher_TransportErrorReturnsWrappedError(t *testing.T) {
 	assert.Contains(t, err.Error(), "transport boom")
 }
 
-func TestWalkerDispatcher_NilResponseReturnsError(t *testing.T) {
-	// A server returning (nil, nil) would otherwise panic on the
-	// outcome switch.
-	c := &walkerStubClient{nilResp: true}
-	d := &WalkerDispatcher{Client: c}
-	err := d.Delete(context.Background(), sampleAction(t, s3lifecycle.ActionKindExpirationDays), &bootstrap.Entry{Path: "obj"})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "nil response")
-}
-
 func TestWalkerDispatcher_LimiterWaitsBeforeDispatch(t *testing.T) {
 	// Build a tiny limiter (1 token, slow refill) and pre-drain it so
 	// the next Wait blocks until the deadline. Dispatcher must respect
 	// the limiter — without the wait the test passes trivially.
-	c := &walkerStubClient{outcome: s3_lifecycle_pb.LifecycleDeleteOutcome_DONE}
+	c := &walkerStubClient{outcome: s3_lifecyclewire.LifecycleDeleteOutcomeDone}
 	lim := rate.NewLimiter(rate.Every(50*time.Millisecond), 1)
 	_ = lim.AllowN(time.Now(), 1) // burn the burst token
 	d := &WalkerDispatcher{Client: c, Limiter: lim}
@@ -173,7 +160,7 @@ func TestWalkerDispatcher_LimiterWaitsBeforeDispatch(t *testing.T) {
 func TestWalkerDispatcher_LimiterContextCancelHaltsWalker(t *testing.T) {
 	// Pre-drained limiter + canceled ctx. Limiter.Wait returns the
 	// cancel error; walker must surface it (not silently dispatch).
-	c := &walkerStubClient{outcome: s3_lifecycle_pb.LifecycleDeleteOutcome_DONE}
+	c := &walkerStubClient{outcome: s3_lifecyclewire.LifecycleDeleteOutcomeDone}
 	lim := rate.NewLimiter(rate.Every(time.Hour), 1)
 	_ = lim.AllowN(time.Now(), 1)
 	d := &WalkerDispatcher{Client: c, Limiter: lim}

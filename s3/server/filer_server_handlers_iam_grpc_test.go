@@ -1,18 +1,12 @@
 package s3server
 
 import (
-	"context"
 	"testing"
-	"time"
 
-	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/hanzoai/s3/s3/credential"
 	_ "github.com/hanzoai/s3/s3/credential/memory"
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
 	"github.com/hanzoai/s3/s3/security"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 const testIamSigningKey = "iam-admin-test-key-do-not-use-in-prod"
@@ -26,132 +20,57 @@ func newTestIamGrpcServer(t *testing.T) *IamGrpcServer {
 	return NewIamGrpcServer(cm, security.SigningKey(testIamSigningKey))
 }
 
-func ctxWithBearer(token string) context.Context {
-	md := metadata.New(map[string]string{"authorization": "Bearer " + token})
-	return metadata.NewIncomingContext(context.Background(), md)
+// TestIamZap_HandlerSatisfiesWireContract pins the post-rip shape: the IAM
+// server is a pure iamwire handler whose methods take an opaque ZAP request
+// envelope and return an opaque ZAP response envelope. Connection-level
+// security is the ZAP transport (X-Wing PQ TLS), so there is no per-call
+// Bearer-token gate to exercise here anymore.
+func TestIamZap_HandlerSatisfiesWireContract(t *testing.T) {
+	var _ iamwire.HanzoIdentityAccessManagementHandler = newTestIamGrpcServer(t)
 }
 
-func TestIamGrpc_NoMetadata_Unauthenticated(t *testing.T) {
+// TestIamZap_ListUsers_ReachesHandler drives ListUsers over the wire envelope
+// the way the transport does: build the request with the iamwire builder, run
+// the handler, decode the reply with the matching Wrap. A fresh memory store
+// yields an empty user list, proving the request reached the business logic.
+func TestIamZap_ListUsers_ReachesHandler(t *testing.T) {
 	s := newTestIamGrpcServer(t)
-	_, err := s.ListUsers(context.Background(), &iam_pb.ListUsersRequest{})
-	if got, want := status.Code(err), codes.Unauthenticated; got != want {
-		t.Fatalf("ListUsers without metadata: got code %v, want %v (err=%v)", got, want, err)
-	}
-}
 
-func TestIamGrpc_MissingAuthorizationHeader_Unauthenticated(t *testing.T) {
-	s := newTestIamGrpcServer(t)
-	ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"other": "value"}))
-	_, err := s.ListUsers(ctx, &iam_pb.ListUsersRequest{})
-	if got, want := status.Code(err), codes.Unauthenticated; got != want {
-		t.Fatalf("ListUsers with no authorization header: got code %v, want %v (err=%v)", got, want, err)
-	}
-}
-
-func TestIamGrpc_NonBearerAuthorization_Unauthenticated(t *testing.T) {
-	s := newTestIamGrpcServer(t)
-	md := metadata.New(map[string]string{"authorization": "Basic dXNlcjpwYXNz"})
-	ctx := metadata.NewIncomingContext(context.Background(), md)
-	_, err := s.ListUsers(ctx, &iam_pb.ListUsersRequest{})
-	if got, want := status.Code(err), codes.Unauthenticated; got != want {
-		t.Fatalf("ListUsers with non-Bearer scheme: got code %v, want %v (err=%v)", got, want, err)
-	}
-}
-
-func TestIamGrpc_InvalidToken_Unauthenticated(t *testing.T) {
-	s := newTestIamGrpcServer(t)
-	// Token signed with the wrong key.
-	bad := security.GenJwtForFilerAdmin(security.SigningKey("a-different-key"), 60)
-	if bad == "" {
-		t.Fatal("GenJwtForFilerAdmin returned empty")
-	}
-	_, err := s.ListUsers(ctxWithBearer(string(bad)), &iam_pb.ListUsersRequest{})
-	if got, want := status.Code(err), codes.Unauthenticated; got != want {
-		t.Fatalf("ListUsers with mis-signed token: got code %v, want %v (err=%v)", got, want, err)
-	}
-}
-
-func TestIamGrpc_GarbageToken_Unauthenticated(t *testing.T) {
-	s := newTestIamGrpcServer(t)
-	_, err := s.ListUsers(ctxWithBearer("not.a.jwt"), &iam_pb.ListUsersRequest{})
-	if got, want := status.Code(err), codes.Unauthenticated; got != want {
-		t.Fatalf("ListUsers with garbage token: got code %v, want %v (err=%v)", got, want, err)
-	}
-}
-
-func TestIamGrpc_ExpiredToken_Unauthenticated(t *testing.T) {
-	s := newTestIamGrpcServer(t)
-	// Mint a token that's already expired (exp in the past).
-	claims := security.HanzoFilerAdminClaims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(-time.Hour)),
-		},
-	}
-	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	encoded, err := tok.SignedString([]byte(testIamSigningKey))
+	respBytes, err := s.ListUsers(iamwire.NewListUsersRequest(iamwire.ListUsersRequestInput{}))
 	if err != nil {
-		t.Fatalf("SignedString: %v", err)
+		t.Fatalf("ListUsers: unexpected error %v", err)
 	}
-	_, err = s.ListUsers(ctxWithBearer(encoded), &iam_pb.ListUsersRequest{})
-	if got, want := status.Code(err), codes.Unauthenticated; got != want {
-		t.Fatalf("ListUsers with expired token: got code %v, want %v (err=%v)", got, want, err)
+	resp, err := iamwire.WrapListUsersResponse(respBytes)
+	if err != nil {
+		t.Fatalf("WrapListUsersResponse: %v", err)
+	}
+	if n := resp.UsernamesLen(); n != 0 {
+		t.Fatalf("ListUsers: expected empty user list from fresh memory store, got %d", n)
 	}
 }
 
-func TestIamGrpc_ValidToken_ReachesHandler(t *testing.T) {
+// TestIamZap_Dispatch_RoundTrip exercises the generated dispatcher exactly as
+// transport.Serve does: a Call envelope in, a reply envelope out, routed by
+// ordinal to CreateUser then GetUser. This proves the handler is reachable
+// through DispatchHanzoIdentityAccessManagement, not just by direct call.
+func TestIamZap_Dispatch_RoundTrip(t *testing.T) {
 	s := newTestIamGrpcServer(t)
-	good := security.GenJwtForFilerAdmin(security.SigningKey(testIamSigningKey), 60)
-	if good == "" {
-		t.Fatal("GenJwtForFilerAdmin returned empty")
-	}
-	resp, err := s.ListUsers(ctxWithBearer(string(good)), &iam_pb.ListUsersRequest{})
-	if err != nil {
-		t.Fatalf("ListUsers with valid token: unexpected error %v", err)
-	}
-	if resp == nil {
-		t.Fatal("ListUsers with valid token: nil response")
-	}
-	// Memory store starts empty; the handler ran past the auth gate.
-	if len(resp.Usernames) != 0 {
-		t.Fatalf("ListUsers: expected empty user list from fresh memory store, got %v", resp.Usernames)
-	}
-}
 
-func TestIamGrpc_NoSigningKey_Unauthenticated_Allowed(t *testing.T) {
-	// Auth is opt-in: when the server is built without a signing key, every
-	// RPC is accepted regardless of (or in the absence of) metadata so the
-	// admin UI works against a filer that has no jwt.filer_signing.key set.
-	cm, err := credential.NewCredentialManager(credential.StoreTypeMemory, nil, "")
-	if err != nil {
-		t.Fatalf("NewCredentialManager: %v", err)
-	}
-	s := NewIamGrpcServer(cm, nil)
-	resp, err := s.ListUsers(context.Background(), &iam_pb.ListUsersRequest{})
-	if err != nil {
-		t.Fatalf("ListUsers without key: unexpected error %v", err)
-	}
-	if resp == nil {
-		t.Fatal("ListUsers without key: nil response")
-	}
-	if len(resp.Usernames) != 0 {
-		t.Fatalf("ListUsers: expected empty user list from fresh memory store, got %v", resp.Usernames)
+	if _, err := s.CreateUser(iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{
+		Identity: &iamwire.IdentityInput{Name: "alice"},
+	})); err != nil {
+		t.Fatalf("CreateUser: %v", err)
 	}
 
-	// A token sent by a client that does configure a key is also accepted —
-	// the server just ignores it rather than rejecting on signature mismatch.
-	good := security.GenJwtForFilerAdmin(security.SigningKey(testIamSigningKey), 60)
-	if _, err := s.ListUsers(ctxWithBearer(string(good)), &iam_pb.ListUsersRequest{}); err != nil {
-		t.Fatalf("ListUsers with stray token but no server key: unexpected error %v", err)
+	getBytes, err := s.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: "alice"}))
+	if err != nil {
+		t.Fatalf("GetUser: %v", err)
 	}
-}
-
-func TestIamGrpc_CreateUser_RequiresAuth(t *testing.T) {
-	// Spot-check a write RPC too — auth must run before any work.
-	s := newTestIamGrpcServer(t)
-	_, err := s.CreateUser(context.Background(), &iam_pb.CreateUserRequest{
-		Identity: &iam_pb.Identity{Name: "admin"},
-	})
-	if got, want := status.Code(err), codes.Unauthenticated; got != want {
-		t.Fatalf("CreateUser without token: got code %v, want %v (err=%v)", got, want, err)
+	got, err := iamwire.WrapGetUserResponse(getBytes)
+	if err != nil {
+		t.Fatalf("WrapGetUserResponse: %v", err)
+	}
+	if name := got.Identity().Name(); name != "alice" {
+		t.Fatalf("GetUser: got identity name %q, want alice", name)
 	}
 }
