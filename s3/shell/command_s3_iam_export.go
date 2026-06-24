@@ -1,15 +1,14 @@
 package shell
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 
 	"github.com/hanzoai/s3/s3/filer"
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
 	"github.com/hanzoai/s3/s3/util"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -45,8 +44,12 @@ func (c *commandS3IAMExport) Do(args []string, commandEnv *CommandEnv, writer io
 		return err
 	}
 
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.GetConfiguration(ctx, &iam_pb.GetConfigurationRequest{})
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.GetConfiguration(iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
+		if err != nil {
+			return err
+		}
+		cfg, err := iamwire.GetConfigurationResp(body)
 		if err != nil {
 			return err
 		}
@@ -62,7 +65,7 @@ func (c *commandS3IAMExport) Do(args []string, commandEnv *CommandEnv, writer io
 			out = fp
 		}
 
-		if err := filer.ProtoToText(out, resp.Configuration); err != nil {
+		if err := filer.ProtoToText(out, cfg); err != nil {
 			return err
 		}
 		fmt.Fprintln(out)

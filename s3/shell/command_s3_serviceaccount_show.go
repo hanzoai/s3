@@ -1,14 +1,13 @@
 package shell
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
 	"strings"
 	"time"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -44,12 +43,18 @@ func (c *commandS3ServiceAccountShow) Do(args []string, commandEnv *CommandEnv, 
 		return fmt.Errorf("-id is required")
 	}
 
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.GetServiceAccount(ctx, &iam_pb.GetServiceAccountRequest{Id: *id})
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.GetServiceAccount(iamwire.NewGetServiceAccountRequest(iamwire.GetServiceAccountRequestInput{ID: *id}))
 		if err != nil {
 			return err
 		}
-		sa := resp.ServiceAccount
+		sa, err := iamwire.GetServiceAccountResp(body)
+		if err != nil {
+			return err
+		}
+		if sa == nil {
+			return fmt.Errorf("service account %s not found", *id)
+		}
 
 		status := "enabled"
 		if sa.Disabled {

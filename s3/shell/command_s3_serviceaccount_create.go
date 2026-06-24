@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"flag"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/hanzoai/s3/s3/iam"
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -113,10 +113,10 @@ func (c *commandS3ServiceAccountCreate) Do(args []string, commandEnv *CommandEnv
 		sa.Expiration = time.Now().Add(*expiry).Unix()
 	}
 
-	err = commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		_, err := client.CreateServiceAccount(ctx, &iam_pb.CreateServiceAccountRequest{
-			ServiceAccount: sa,
-		})
+	err = commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, _, err := client.CreateServiceAccount(iamwire.NewCreateServiceAccountRequest(iamwire.CreateServiceAccountRequestInput{
+			ServiceAccount: iamwire.ServiceAccountInputFromPB(sa),
+		}))
 		return err
 	})
 	if err != nil {

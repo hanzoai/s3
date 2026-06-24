@@ -1,12 +1,11 @@
 package shell
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -46,11 +45,11 @@ func (c *commandS3AccessKeyDelete) Do(args []string, commandEnv *CommandEnv, wri
 		return fmt.Errorf("-access_key is required")
 	}
 
-	err := commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		_, err := client.DeleteAccessKey(ctx, &iam_pb.DeleteAccessKeyRequest{
+	err := commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, _, err := client.DeleteAccessKey(iamwire.NewDeleteAccessKeyRequest(iamwire.DeleteAccessKeyRequestInput{
 			Username:  *user,
 			AccessKey: *accessKey,
-		})
+		}))
 		return err
 	})
 	if err != nil {

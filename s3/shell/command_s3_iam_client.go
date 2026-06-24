@@ -1,45 +1,20 @@
 package shell
 
 import (
-	"context"
-	"time"
-
-	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
-	"github.com/hanzoai/s3/s3/security"
-	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
+	"github.com/zap-proto/go/transport"
 )
 
-// iamRequestTimeout caps every shell-originated IAM gRPC call so the shell
-// can't hang on an unresponsive filer.
-const iamRequestTimeout = 30 * time.Second
-
-// withIamClient invokes fn against the filer's IAM gRPC service. When
-// jwt.filer_signing.key is configured in security.toml, a freshly minted admin
-// Bearer token is attached to the outgoing context so the filer's
-// IamGrpcServer.checkAdminAuth passes; with no key configured the filer
-// accepts unauthenticated calls. The context already has the iamRequestTimeout
-// applied — callers can derive child contexts but should not need their own
-// timeout boilerplate.
-func (ce *CommandEnv) withIamClient(fn func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error) error {
-	return pb.WithGrpcClient(context.Background(), false, 0, func(conn *grpc.ClientConn) error {
-		ctx, cancel := context.WithTimeout(iamAdminAuthContext(context.Background()), iamRequestTimeout)
-		defer cancel()
-		return fn(ctx, iam_pb.NewHanzoIdentityAccessManagementClient(conn))
-	}, ce.option.FilerAddress.ToGrpcAddress(), false, ce.option.GrpcDialOption)
-}
-
-func iamAdminAuthContext(ctx context.Context) context.Context {
-	signingKey := util.GetViper().GetString("jwt.filer_signing.key")
-	if signingKey == "" {
-		return ctx
+// withIamClient invokes fn against the filer's IAM service over the ZAP
+// transport. The IAM service listens on its own ZAP endpoint at
+// FilerAddress.ToIamZapAddress() (grpcPort+10000), separate from the shared
+// gRPC port. Connection-level security is provided by the ZAP transport, so the
+// shell no longer mints an admin Bearer token per call.
+func (ce *CommandEnv) withIamClient(fn func(client *iamwire.HanzoIdentityAccessManagementClient) error) error {
+	conn, err := transport.Dial("tcp", ce.option.FilerAddress.ToIamZapAddress())
+	if err != nil {
+		return err
 	}
-	expiresAfterSec := util.GetViper().GetInt("jwt.filer_signing.expires_after_seconds")
-	token := security.GenJwtForFilerAdmin(security.SigningKey(signingKey), expiresAfterSec)
-	if token == "" {
-		return ctx
-	}
-	return metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+string(token))
+	defer conn.Close()
+	return fn(iamwire.NewHanzoIdentityAccessManagementClient(conn, nil))
 }

@@ -1,13 +1,13 @@
 package shell
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
 	"text/tabwriter"
 
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -42,14 +42,18 @@ func (c *commandS3ServiceAccountList) Do(args []string, commandEnv *CommandEnv, 
 		return err
 	}
 
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.ListServiceAccounts(ctx, &iam_pb.ListServiceAccountsRequest{})
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.ListServiceAccounts(iamwire.NewListServiceAccountsRequest(iamwire.ListServiceAccountsRequestInput{}))
+		if err != nil {
+			return err
+		}
+		accounts, err := iamwire.ListServiceAccountsResp(body)
 		if err != nil {
 			return err
 		}
 
 		var filtered []*iam_pb.ServiceAccount
-		for _, sa := range resp.ServiceAccounts {
+		for _, sa := range accounts {
 			if *user == "" || sa.ParentUser == *user {
 				filtered = append(filtered, sa)
 			}

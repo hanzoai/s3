@@ -1,13 +1,12 @@
 package shell
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -67,12 +66,15 @@ func (c *commandS3UserShow) Do(args []string, commandEnv *CommandEnv, writer io.
 		return fmt.Errorf("-name is required")
 	}
 
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.GetUser(ctx, &iam_pb.GetUserRequest{Username: *name})
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: *name}))
 		if err != nil {
 			return err
 		}
-		id := resp.Identity
+		id, err := iamwire.GetUserResp(body)
+		if err != nil {
+			return err
+		}
 		if id == nil {
 			return fmt.Errorf("user %q returned empty identity", *name)
 		}

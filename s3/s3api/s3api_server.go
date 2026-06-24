@@ -26,8 +26,6 @@ import (
 	"github.com/hanzoai/s3/s3/iam/sts"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_pb"
 	"github.com/hanzoai/s3/s3/s3api/policy_engine"
 	. "github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
@@ -75,8 +73,6 @@ type S3ApiServerOption struct {
 const s3ChunkCacheChunkSizeMB = 4
 
 type S3ApiServer struct {
-	s3_pb.UnimplementedHanzoS3IamCacheServer
-	s3_lifecycle_pb.UnimplementedHanzoS3LifecycleInternalServer
 	option                *S3ApiServerOption
 	iam                   *IdentityAccessManagement
 	iamIntegration        *S3IAMIntegration // Advanced IAM integration for JWT authentication
