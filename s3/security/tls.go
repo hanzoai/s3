@@ -329,3 +329,112 @@ func TlsCipherSuiteByNames(cipherSuiteNames string) ([]uint16, error) {
 	}
 	return cipherIds, nil
 }
+
+// --- raw *tls.Config for the native ZAP transport (PQ-TLS) ---
+// LoadServerTLS/LoadClientTLS return gRPC credentials; the ZAP transport needs a
+// raw *tls.Config. ServerTLSConfig/ClientTLSConfig build one from the SAME
+// <component>.cert/.key + grpc.ca + <component>.allowed_commonNames config, so
+// the ZAP filer enforces the same mTLS the legacy gRPC filer did. Wrap the
+// result with transport.PQTLSConfig to pin the X25519MLKEM768 PQ X-Wing curve.
+// Both return nil when no cert/key is configured (caller serves/dials plaintext).
+
+func certPoolFromFile(caFile string) (*x509.CertPool, error) {
+	data, err := os.ReadFile(caFile)
+	if err != nil {
+		return nil, err
+	}
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM(data) {
+		return nil, fmt.Errorf("no certificates parsed from %s", caFile)
+	}
+	return pool, nil
+}
+
+// applyCommonNameVerification mirrors Authenticator: gate the peer leaf cert's
+// CommonName against <component>.allowed_commonNames / grpc.allowed_wildcard_domain.
+func applyCommonNameVerification(cfg *tls.Config, config *util.ViperProxy, component string) {
+	allowedCN := config.GetString(component + ".allowed_commonNames")
+	allowedWildcard := config.GetString("grpc.allowed_wildcard_domain")
+	if allowedCN == "" && allowedWildcard == "" {
+		return
+	}
+	allowed := make(map[string]bool)
+	for _, s := range strings.Split(allowedCN, ",") {
+		if s != "" {
+			allowed[s] = true
+		}
+	}
+	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
+		if len(rawCerts) == 0 {
+			return fmt.Errorf("no peer certificate presented")
+		}
+		leaf, err := x509.ParseCertificate(rawCerts[0])
+		if err != nil {
+			return err
+		}
+		cn := leaf.Subject.CommonName
+		if allowedWildcard != "" && strings.HasSuffix(cn, allowedWildcard) {
+			return nil
+		}
+		if allowed[cn] {
+			return nil
+		}
+		return fmt.Errorf("invalid peer common name: %s", cn)
+	}
+}
+
+// ServerTLSConfig returns a server *tls.Config (mTLS: RequireAndVerifyClientCert
+// + CN gate) for the ZAP transport, or nil if <component>.cert/.key is unset.
+func ServerTLSConfig(config *util.ViperProxy, component string) *tls.Config {
+	if config == nil {
+		return nil
+	}
+	certFile, keyFile := config.GetString(component+".cert"), config.GetString(component+".key")
+	if certFile == "" || keyFile == "" {
+		return nil
+	}
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		glog.Warningf("ServerTLSConfig(%s): load keypair: %v", component, err)
+		return nil
+	}
+	cfg := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS13}
+	if caFile := config.GetString("grpc.ca"); caFile != "" {
+		pool, err := certPoolFromFile(caFile)
+		if err != nil {
+			glog.Warningf("ServerTLSConfig(%s): ca: %v", component, err)
+			return nil
+		}
+		cfg.ClientCAs = pool
+		cfg.ClientAuth = tls.RequireAndVerifyClientCert
+	}
+	applyCommonNameVerification(cfg, config, component)
+	return cfg
+}
+
+// ClientTLSConfig returns a client *tls.Config (presents <component> cert, trusts
+// grpc.ca) for the ZAP transport, or nil if <component>.cert/.key is unset.
+func ClientTLSConfig(config *util.ViperProxy, component string) *tls.Config {
+	if config == nil {
+		return nil
+	}
+	certFile, keyFile := config.GetString(component+".cert"), config.GetString(component+".key")
+	if certFile == "" || keyFile == "" {
+		return nil
+	}
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		glog.Warningf("ClientTLSConfig(%s): load keypair: %v", component, err)
+		return nil
+	}
+	cfg := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS13}
+	if caFile := config.GetString("grpc.ca"); caFile != "" {
+		pool, err := certPoolFromFile(caFile)
+		if err != nil {
+			glog.Warningf("ClientTLSConfig(%s): ca: %v", component, err)
+			return nil
+		}
+		cfg.RootCAs = pool
+	}
+	return cfg
+}
