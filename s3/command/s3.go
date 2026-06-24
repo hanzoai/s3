@@ -283,10 +283,13 @@ func (s3opt *S3Options) startS3Server() bool {
 	if *s3opt.zapPort > 0 {
 		zapSrv := zaprpc.NewServer("hanzo-s3", *s3opt.zapPort)
 		zapsvc.Register(zapSrv, zapsvc.NewFilerStore(filerAddresses, grpcDialOption))
+		// Non-fatal: the ZAP mesh surface must never take down the critical S3
+		// HTTP path. On failure we log and keep serving HTTPS S3.
 		if err := zapSrv.Start(); err != nil {
-			glog.Fatalf("native ZAP S3 service on port %d: %v", *s3opt.zapPort, err)
+			glog.Errorf("native ZAP S3 service on port %d failed to start (S3 HTTP unaffected): %v", *s3opt.zapPort, err)
+		} else {
+			glog.V(0).Infof("Native ZAP S3 service listening on port %d (mesh: internal callers use ZAP)", *s3opt.zapPort)
 		}
-		glog.V(0).Infof("Native ZAP S3 service listening on port %d (mesh: internal callers use ZAP)", *s3opt.zapPort)
 	}
 
 	// metrics read from the filer
