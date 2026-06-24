@@ -61,6 +61,11 @@ func (c *MountPeerClient) invokeChunkAnnounce(target uint32, payload []byte) (rp
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("MountPeer.ChunkAnnounce: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("MountPeer.ChunkAnnounce: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -90,6 +95,11 @@ func (c *MountPeerClient) invokeChunkLookup(target uint32, payload []byte) (rpc.
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("MountPeer.ChunkLookup: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("MountPeer.ChunkLookup: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -124,6 +134,11 @@ func (c *MountPeerClient) invokeFetchChunk(target uint32, payload []byte) (rpc.P
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("MountPeer.FetchChunk: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("MountPeer.FetchChunk: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -153,13 +168,15 @@ func DispatchMountPeer(h MountPeerHandler, envelope []byte) ([]byte, error) {
 	case MountPeerChunkAnnounceOrdinal:
 		body, err := h.ChunkAnnounce(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case MountPeerChunkLookupOrdinal:
 		body, err := h.ChunkLookup(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	case MountPeerFetchChunkOrdinal:
@@ -167,7 +184,8 @@ func DispatchMountPeer(h MountPeerHandler, envelope []byte) ([]byte, error) {
 		// transport streaming primitive ships.
 		body, err := h.FetchChunk(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	default:

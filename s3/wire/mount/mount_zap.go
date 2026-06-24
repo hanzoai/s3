@@ -59,6 +59,11 @@ func (c *HanzoMountClient) invokeConfigure(target uint32, payload []byte) (rpc.P
 		return p, nil, err
 	}
 	if resp.Status != rpc.StatusOK {
+		if len(resp.Body) > 0 {
+			// The server carries the handler error message in the body; surface it
+			// so callers can detect sentinels.
+			return p, nil, fmt.Errorf("HanzoMount.Configure: %s", resp.Body)
+		}
 		return p, nil, fmt.Errorf("HanzoMount.Configure: status %d", resp.Status)
 	}
 	return p, resp.Body, nil
@@ -82,7 +87,8 @@ func DispatchHanzoMount(h HanzoMountHandler, envelope []byte) ([]byte, error) {
 	case HanzoMountConfigureOrdinal:
 		body, err := h.Configure(call.Payload)
 		if err != nil {
-			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, nil), nil
+			// Carry the handler error message so the caller can reconstruct sentinels.
+			return rpc.BuildResponse(rpc.StatusInternal, call.PromiseID, []byte(err.Error())), nil
 		}
 		return rpc.BuildResponse(rpc.StatusOK, call.PromiseID, body), nil
 	default:
