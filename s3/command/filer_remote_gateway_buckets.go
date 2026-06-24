@@ -17,7 +17,6 @@ import (
 	"github.com/hanzoai/s3/s3/remote_storage"
 	"github.com/hanzoai/s3/s3/replication/source"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/protobuf/proto"
 )
 
 func (option *RemoteGatewayOptions) followBucketUpdatesAndUploadToRemote(filerSource *source.FilerSource) error {
@@ -175,7 +174,7 @@ func (option *RemoteGatewayOptions) makeBucketedEventProcessor(filerSource *sour
 			}
 			if strings.HasSuffix(message.NewEntry.Name, filer.REMOTE_STORAGE_CONF_SUFFIX) {
 				conf := &remote_pb.RemoteConf{}
-				if err := proto.Unmarshal(message.NewEntry.Content, conf); err != nil {
+				if err := filer.UnmarshalRemoteConf(message.NewEntry.Content, conf); err != nil {
 					return fmt.Errorf("unmarshal %s/%s: %v", filer.DirectoryEtcRemote, message.NewEntry.Name, err)
 				}
 				option.remoteConfs[conf.Name] = conf
@@ -187,7 +186,7 @@ func (option *RemoteGatewayOptions) makeBucketedEventProcessor(filerSource *sour
 			}
 			if strings.HasSuffix(message.OldEntry.Name, filer.REMOTE_STORAGE_CONF_SUFFIX) {
 				conf := &remote_pb.RemoteConf{}
-				if err := proto.Unmarshal(message.OldEntry.Content, conf); err != nil {
+				if err := filer.UnmarshalRemoteConf(message.OldEntry.Content, conf); err != nil {
 					return fmt.Errorf("unmarshal %s/%s: %v", filer.DirectoryEtcRemote, message.OldEntry.Name, err)
 				}
 				delete(option.remoteConfs, conf.Name)
@@ -464,7 +463,7 @@ func (option *RemoteGatewayOptions) collectRemoteStorageConf() (err error) {
 			return nil
 		}
 		conf := &remote_pb.RemoteConf{}
-		if err := proto.Unmarshal(entry.Content, conf); err != nil {
+		if err := filer.UnmarshalRemoteConf(entry.Content, conf); err != nil {
 			return fmt.Errorf("unmarshal %s/%s: %v", filer.DirectoryEtcRemote, entry.Name, err)
 		}
 		option.remoteConfs[conf.Name] = conf

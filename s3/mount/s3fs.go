@@ -21,7 +21,6 @@ import (
 	"github.com/hanzoai/s3/s3/mount/page_writer"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/mount_pb"
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/storage/types"
 	"github.com/hanzoai/s3/s3/util"
@@ -122,7 +121,6 @@ type WFS struct {
 	// https://dl.acm.org/doi/fullHtml/10.1145/3310148
 	// follow https://github.com/hanwen/go-fuse/blob/master/fuse/api.go
 	fuse.RawFileSystem
-	mount_pb.UnimplementedHanzoMountServer
 	fs.Inode
 	option               *Option
 	metaCache            *meta_cache.MetaCache

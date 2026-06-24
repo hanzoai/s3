@@ -1,26 +1,21 @@
 package mount
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"time"
 
 	"github.com/hanzoai/s3/s3/glog"
-	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/mount_peer_pb"
 	"github.com/hanzoai/s3/s3/util/chunk_cache"
 	"github.com/hanzoai/s3/s3/util/mem"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	mount_peerwire "github.com/hanzoai/s3/s3/wire/mount_peer"
+	"github.com/zap-proto/go/transport"
 )
 
 // fetchChunkStreamSize is the frame size used when server-streaming a chunk's
-// bytes back to a peer. 1 MiB is well above gRPC's 32 KiB preferred frame but
-// comfortably under the default 4 MiB message cap, so each Recv on the client
-// returns quickly and the chunk is assembled with ~16 Recv calls for typical
-// 16 MiB chunks.
+// bytes back to a peer. 1 MiB keeps each Stream.Send well under the transport's
+// 64 MiB per-frame cap, so each Recv on the client returns quickly and the
+// chunk is assembled with ~16 frames for typical 16 MiB chunks.
 const fetchChunkStreamSize = 1 * 1024 * 1024
 
 // maxFetchChunkBytes caps the size of a single FetchChunk read buffer.
@@ -30,73 +25,64 @@ const fetchChunkStreamSize = 1 * 1024 * 1024
 // anything larger is treated as invalid input.
 const maxFetchChunkBytes = 64 * 1024 * 1024
 
-// PeerGrpcServer is the single mount-to-mount gRPC endpoint. It serves:
+// PeerGrpcServer is the single mount-to-mount RPC endpoint over the native
+// ZAP transport. It serves:
 //   - ChunkAnnounce / ChunkLookup — the tier-2 directory RPCs, populated
 //     by inbound announces and queried by inbound lookups. Each handler
 //     is HRW-gated on the caller-side seed view.
 //   - FetchChunk (server stream) — serves bytes from the local
 //     chunk_cache to peers. Replaces the earlier HTTP-only peer-serve
-//     endpoint: one port, one authentication path, one connection pool.
-//
-// Transport credentials (TLS/mTLS) are injected via serverOpts. When the
-// caller passes nothing the server runs plaintext — only appropriate on
-// a trusted single-host test cluster. Production wiring passes
-// security.LoadServerTLS from security.toml so cross-host traffic is
-// authenticated + encrypted.
+//     endpoint: one port, one connection pool. The two directory RPCs are
+//     unary (routed through DispatchMountPeer); FetchChunk is a server
+//     stream (routed through the transport StreamHandler).
 type PeerGrpcServer struct {
-	mount_peer_pb.UnimplementedMountPeerServer
-
-	dir        *PeerDirectory
-	cache      chunk_cache.ChunkCache
-	ownerFor   func(fid string) string // HRW owner predicate on current seeds
-	selfAddr   string
-	serverOpts []grpc.ServerOption
-	grpcS      *grpc.Server
-	listener   net.Listener
-	stopped    bool
+	dir      *PeerDirectory
+	cache    chunk_cache.ChunkCache
+	ownerFor func(fid string) string // HRW owner predicate on current seeds
+	selfAddr string
+	srv      *transport.Server
+	listener net.Listener
+	stopped  bool
 }
 
 // NewPeerGrpcServer constructs the server. cache is the local chunk_cache
 // (used to serve FetchChunk); dir is the local directory shard (used to
 // answer ChunkAnnounce / ChunkLookup); ownerFor returns the HRW owner of a
-// fid on the current seed view; serverOpts are forwarded to the underlying
-// gRPC server (use grpc.Creds(...) for TLS/mTLS).
-func NewPeerGrpcServer(cache chunk_cache.ChunkCache, dir *PeerDirectory, ownerFor func(fid string) string, selfAddr string, serverOpts ...grpc.ServerOption) *PeerGrpcServer {
+// fid on the current seed view.
+func NewPeerGrpcServer(cache chunk_cache.ChunkCache, dir *PeerDirectory, ownerFor func(fid string) string, selfAddr string) *PeerGrpcServer {
 	return &PeerGrpcServer{
-		cache:      cache,
-		dir:        dir,
-		ownerFor:   ownerFor,
-		selfAddr:   selfAddr,
-		serverOpts: serverOpts,
+		cache:    cache,
+		dir:      dir,
+		ownerFor: ownerFor,
+		selfAddr: selfAddr,
 	}
 }
 
-// Start binds a TCP listener at addr and registers the MountPeer service.
+// Start binds a TCP listener at addr and serves the MountPeer service over
+// the ZAP transport: the unary directory RPCs via DispatchMountPeer and the
+// FetchChunk server stream via streamFetchChunk.
 func (s *PeerGrpcServer) Start(addr string) error {
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		return fmt.Errorf("peer grpc listen %s: %w", addr, err)
+		return fmt.Errorf("peer listen %s: %w", addr, err)
 	}
 	s.listener = ln
-	s.grpcS = pb.NewGrpcServer(s.serverOpts...)
-	mount_peer_pb.RegisterMountPeerServer(s.grpcS, s)
-	go func() {
-		if err := s.grpcS.Serve(ln); err != nil && err != grpc.ErrServerStopped {
-			glog.Warningf("peer-grpc terminated: %v", err)
-		}
-	}()
-	glog.V(0).Infof("peer-grpc listening on %s", ln.Addr())
+	s.srv = transport.ServeStream(ln,
+		func(env []byte) ([]byte, error) { return mount_peerwire.DispatchMountPeer(s, env) },
+		s.streamFetchChunk,
+	)
+	glog.V(0).Infof("peer-rpc listening on %s", ln.Addr())
 	return nil
 }
 
-// Stop halts the gRPC server without waiting for in-flight streams.
+// Stop halts the transport server without waiting for in-flight streams.
 func (s *PeerGrpcServer) Stop() {
 	if s.stopped {
 		return
 	}
 	s.stopped = true
-	if s.grpcS != nil {
-		s.grpcS.Stop()
+	if s.srv != nil {
+		_ = s.srv.Close()
 	}
 }
 

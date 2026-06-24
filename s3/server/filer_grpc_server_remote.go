@@ -117,7 +117,7 @@ func (fs *FilerServer) doCacheRemoteObjectToLocalCluster(ctx context.Context, re
 		return nil, err
 	}
 	storageConf := &remote_pb.RemoteConf{}
-	if unMarshalErr := proto.Unmarshal(storageConfEntry.Content, storageConf); unMarshalErr != nil {
+	if unMarshalErr := filer.UnmarshalRemoteConf(storageConfEntry.Content, storageConf); unMarshalErr != nil {
 		return nil, fmt.Errorf("unmarshal remote storage conf %s/%s: %v", filer.DirectoryEtcRemote, remoteStorageMountedLocation.Name+filer.REMOTE_STORAGE_CONF_SUFFIX, unMarshalErr)
 	}
 
