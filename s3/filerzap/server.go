@@ -136,56 +136,9 @@ func (b serverBackend) DeleteEntry(v filerwire.DeleteEntryRequest) ([]byte, erro
 	}), nil
 }
 
-// --- not yet migrated (converters pending) ---
-
-func (b serverBackend) TouchAccessTime(filerwire.TouchAccessTimeRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) AppendToEntry(filerwire.AppendToEntryRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) ObjectTransaction(filerwire.ObjectTransactionRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) ObjectTransactionBatch(filerwire.ObjectTransactionBatchRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) PosixLock(filerwire.PosixLockRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) AtomicRenameEntry(filerwire.AtomicRenameEntryRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) AssignVolume(filerwire.AssignVolumeRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) LookupVolume(filerwire.LookupVolumeRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) CollectionList(filerwire.CollectionListRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) DeleteCollection(filerwire.DeleteCollectionRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) Statistics(filerwire.StatisticsRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) Ping(filerwire.PingRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) GetFilerConfiguration(filerwire.GetFilerConfigurationRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) ListMetadataSubscribers(filerwire.ListMetadataSubscribersRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) KvGet(filerwire.KvGetRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) KvPut(filerwire.KvPutRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
+// CacheRemoteObjectToLocalCluster pulls a remote object into the local cluster.
+// The other unary RPCs live in server_rpc.go; every unary HanzoFiler method is
+// implemented, so NewServerBackend serves the full filer over ZAP.
 func (b serverBackend) CacheRemoteObjectToLocalCluster(v filerwire.CacheRemoteObjectToLocalClusterRequest) ([]byte, error) {
 	resp, err := b.fs.CacheRemoteObjectToLocalCluster(b.ctx, &filer_pb.CacheRemoteObjectToLocalClusterRequest{
 		Directory:           v.Directory(),
@@ -203,27 +156,6 @@ func (b serverBackend) CacheRemoteObjectToLocalCluster(v filerwire.CacheRemoteOb
 		in.Entry = EntryToWire(resp.Entry)
 	}
 	return filerwire.NewCacheRemoteObjectToLocalClusterResponse(in), nil
-}
-func (b serverBackend) DistributedLock(filerwire.LockRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) DistributedUnlock(filerwire.UnlockRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) FindLockOwner(filerwire.FindLockOwnerRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) TransferLocks(filerwire.TransferLocksRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) ReplicateLock(filerwire.ReplicateLockRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) MountRegister(filerwire.MountRegisterRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
-}
-func (b serverBackend) MountList(filerwire.MountListRequest) ([]byte, error) {
-	return nil, errFilerRPCNotMigrated
 }
 
 // --- shared server-side leaf converters ---
