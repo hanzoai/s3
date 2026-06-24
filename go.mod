@@ -138,9 +138,7 @@ require (
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/jhump/protoreflect v1.18.0
 	github.com/linkedin/goavro/v2 v2.15.0
-	github.com/luxfi/zap v1.0.0
 	github.com/minio/crc64nvme v1.1.1
-	github.com/zap-proto/go v1.5.0
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/parquet-go/parquet-go v0.30.1
 	github.com/pkg/sftp v1.13.10
@@ -157,6 +155,7 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0
 	github.com/ydb-platform/ydb-go-sdk-auth-environ v0.5.1
 	github.com/ydb-platform/ydb-go-sdk/v3 v3.139.5
+	github.com/zap-proto/go v1.5.0
 	go.etcd.io/etcd/client/pkg/v3 v3.6.12
 	go.uber.org/atomic v1.11.0
 	golang.org/x/sync v0.21.0
