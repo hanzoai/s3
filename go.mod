@@ -140,7 +140,7 @@ require (
 	github.com/linkedin/goavro/v2 v2.15.0
 	github.com/luxfi/zap v1.0.0
 	github.com/minio/crc64nvme v1.1.1
-	github.com/zap-proto/go v0.0.0-00010101000000-000000000000
+	github.com/zap-proto/go v1.5.0
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/parquet-go/parquet-go v0.30.1
 	github.com/pkg/sftp v1.13.10
@@ -522,13 +522,8 @@ require (
 	storj.io/uplink v1.14.0 // indirect
 )
 
-// replace github.com/seaweedfs/raft => /Users/chrislu/go/src/github.com/seaweedfs/raft
-
 // apache/thrift v0.23.0 uses math.MaxUint32 as an untyped int constant in
 // lib/go/thrift/framed_transport.go, which overflows int on 32-bit GOARCHes
 // (e.g. openbsd/arm, linux/arm). Pin to v0.22.0 until upstream fixes it.
+// (public->public version pin, not a local replace.)
 replace github.com/apache/thrift => github.com/apache/thrift v0.22.0
-
-// ZAP native wire runtime (zero-copy, protobuf-free). Local module under
-// development; resolved from the sibling checkout.
-replace github.com/zap-proto/go => /Users/z/work/zap/go
