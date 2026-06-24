@@ -5,12 +5,14 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
-	"path/filepath"
 	"testing"
 
+	"github.com/hanzoai/s3/s3/filerzap"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	filerwire "github.com/hanzoai/s3/s3/wire/filer"
+	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -71,35 +73,28 @@ func TestFsMvMovesIntoExistingDestinationDirectory(t *testing.T) {
 func newFsMvTestCommandEnv(t *testing.T, filerServer filer_pb.HanzoFilerServer) (*CommandEnv, func()) {
 	t.Helper()
 
-	socketDir, err := os.MkdirTemp("", "swmv-")
+	// Serve the fake filer over the native ZAP transport — fs.mv dials the filer
+	// via pb.WithGrpcFilerClient, which now opens a transport.Dial("tcp", ...) ZAP
+	// connection, so the command exercises the real ZAP client+server path.
+	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		filerwire.Dispatch(filerzap.NewServerBackend(filerServer)),
+		filerstream.Handler(filerzap.NewStreamServer(filerServer)))
 	if err != nil {
-		t.Fatalf("create socket dir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.RemoveAll(socketDir) })
-
-	socketPath := filepath.Join(socketDir, "filer.sock")
-	listener, err := net.Listen("unix", socketPath)
-	if err != nil {
-		t.Fatalf("listen unix socket: %v", err)
+		t.Fatalf("listen: %v", err)
 	}
 
-	grpcServer := grpc.NewServer()
-	filer_pb.RegisterHanzoFilerServer(grpcServer, filerServer)
-	go func() {
-		_ = grpcServer.Serve(listener)
-	}()
-
-	grpcPort := 47000 + os.Getpid()%1000
-	pb.RegisterLocalGrpcSocket("127.0.0.1", grpcPort, socketPath)
+	// FilerAddress carries the real listener port as the ".grpcPort" suffix so
+	// ToGrpcAddress() (which WithGrpcFilerClient dials) resolves to it exactly;
+	// the leading ":0" public port is unused on this path.
+	grpcPort := srv.Addr().(*net.TCPAddr).Port
 
 	cleanup := func() {
-		grpcServer.Stop()
-		_ = listener.Close()
+		_ = srv.Close()
 	}
 
 	return &CommandEnv{
 		option: &ShellOptions{
-			FilerAddress:   pb.ServerAddress(fmt.Sprintf("127.0.0.1:8888.%d", grpcPort)),
+			FilerAddress:   pb.ServerAddress(fmt.Sprintf("127.0.0.1:0.%d", grpcPort)),
 			GrpcDialOption: grpc.WithTransportCredentials(insecure.NewCredentials()),
 			Directory:      "/",
 		},

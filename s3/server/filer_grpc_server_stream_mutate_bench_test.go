@@ -3,16 +3,19 @@ package s3server
 import (
 	"context"
 	"io"
-	"net"
 	"sync"
 	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
 
+	"github.com/hanzoai/s3/s3/filerzap"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	filerwire "github.com/hanzoai/s3/s3/wire/filer"
+	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // fakeFilerServer simulates a filer whose CreateEntry takes a fixed amount of
@@ -124,20 +127,20 @@ func (s *fakeConcurrentFilerServer) StreamMutateEntry(stream grpc.BidiStreamingS
 	}
 }
 
-// startFakeConcurrentFilerServer spins up the concurrent-handler variant.
+// startFakeConcurrentFilerServer spins up the concurrent-handler variant over
+// the native ZAP transport — bidi StreamMutateEntry drives through
+// filerzap.NewStreamServer's streamMutateAdapter, the same path production uses.
 func startFakeConcurrentFilerServer(t testing.TB, serviceDelay time.Duration, concurrency int) (string, *fakeConcurrentFilerServer, func()) {
 	t.Helper()
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	fake := &fakeConcurrentFilerServer{serviceDelay: serviceDelay, concurrency: concurrency}
+	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		filerwire.Dispatch(filerzap.NewServerBackend(fake)),
+		filerstream.Handler(filerzap.NewStreamServer(fake)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
-	srv := grpc.NewServer()
-	fake := &fakeConcurrentFilerServer{serviceDelay: serviceDelay, concurrency: concurrency}
-	filer_pb.RegisterHanzoFilerServer(srv, fake)
-	go srv.Serve(lis)
-	return lis.Addr().String(), fake, func() {
-		srv.GracefulStop()
-		_ = lis.Close()
+	return srv.Addr().String(), fake, func() {
+		_ = srv.Close()
 	}
 }
 
@@ -209,46 +212,44 @@ func (s *fakeSchedulerFilerServer) StreamMutateEntry(stream grpc.BidiStreamingSe
 
 func startFakeSchedulerFilerServer(t testing.TB, serviceDelay time.Duration, concurrency int) (string, *fakeSchedulerFilerServer, func()) {
 	t.Helper()
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	fake := &fakeSchedulerFilerServer{serviceDelay: serviceDelay, concurrency: concurrency}
+	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		filerwire.Dispatch(filerzap.NewServerBackend(fake)),
+		filerstream.Handler(filerzap.NewStreamServer(fake)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
-	srv := grpc.NewServer()
-	fake := &fakeSchedulerFilerServer{serviceDelay: serviceDelay, concurrency: concurrency}
-	filer_pb.RegisterHanzoFilerServer(srv, fake)
-	go srv.Serve(lis)
-	return lis.Addr().String(), fake, func() {
-		srv.GracefulStop()
-		_ = lis.Close()
+	return srv.Addr().String(), fake, func() {
+		_ = srv.Close()
 	}
 }
 
-// startFakeFilerServer spins up an in-process gRPC filer with the given per-
-// request service delay, returns the dial target and a shutdown func.
+// startFakeFilerServer spins up an in-process filer over the native ZAP
+// transport with the given per-request service delay, returns the dial target
+// and a shutdown func.
 func startFakeFilerServer(t testing.TB, serviceDelay time.Duration) (string, *fakeFilerServer, func()) {
 	t.Helper()
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	fake := &fakeFilerServer{serviceDelay: serviceDelay}
+	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		filerwire.Dispatch(filerzap.NewServerBackend(fake)),
+		filerstream.Handler(filerzap.NewStreamServer(fake)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
-	srv := grpc.NewServer()
-	fake := &fakeFilerServer{serviceDelay: serviceDelay}
-	filer_pb.RegisterHanzoFilerServer(srv, fake)
-	go srv.Serve(lis)
-	return lis.Addr().String(), fake, func() {
-		srv.GracefulStop()
-		_ = lis.Close()
+	return srv.Addr().String(), fake, func() {
+		_ = srv.Close()
 	}
 }
 
-// dialFakeFiler returns a client connection to the in-process filer.
-func dialFakeFiler(t testing.TB, addr string) *grpc.ClientConn {
+// dialFakeFiler dials the in-process filer over ZAP and returns a
+// filer_pb.HanzoFilerClient backed by that connection, plus a closer.
+func dialFakeFiler(t testing.TB, addr string) (filer_pb.HanzoFilerClient, func()) {
 	t.Helper()
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := transport.Dial("tcp", addr)
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
-	return conn
+	return pb.NewZapFilerClient(conn), func() { _ = conn.Close() }
 }
 
 // opsForWorker splits `ops` across `concurrency` workers, handing the
@@ -264,9 +265,8 @@ func opsForWorker(g, concurrency, ops int) int {
 
 // runUnaryCreateWorkload fires `ops` CreateEntry unary RPCs across `concurrency`
 // goroutines, all sharing a single client connection. Returns total duration.
-func runUnaryCreateWorkload(t testing.TB, conn *grpc.ClientConn, concurrency, ops int) time.Duration {
+func runUnaryCreateWorkload(t testing.TB, client filer_pb.HanzoFilerClient, concurrency, ops int) time.Duration {
 	t.Helper()
-	client := filer_pb.NewHanzoFilerClient(conn)
 	var wg sync.WaitGroup
 	start := time.Now()
 	for g := 0; g < concurrency; g++ {
@@ -322,13 +322,12 @@ func itoa(n int) string {
 // stream, with `concurrency` goroutines all submitting to the same stream via
 // a small multiplexer that mirrors s3/mount/s3fs_stream_mutate.go's
 // sendLoop+recvLoop structure. Returns total duration.
-func runStreamCreateWorkload(t testing.TB, conn *grpc.ClientConn, concurrency, ops int) time.Duration {
-	return runStreamCreateWorkloadAt(t, conn, concurrency, ops, samePath)
+func runStreamCreateWorkload(t testing.TB, client filer_pb.HanzoFilerClient, concurrency, ops int) time.Duration {
+	return runStreamCreateWorkloadAt(t, client, concurrency, ops, samePath)
 }
 
-func runStreamCreateWorkloadAt(t testing.TB, conn *grpc.ClientConn, concurrency, ops int, path pathFn) time.Duration {
+func runStreamCreateWorkloadAt(t testing.TB, client filer_pb.HanzoFilerClient, concurrency, ops int, path pathFn) time.Duration {
 	t.Helper()
-	client := filer_pb.NewHanzoFilerClient(conn)
 	stream, err := client.StreamMutateEntry(context.Background())
 	if err != nil {
 		t.Fatalf("open stream: %v", err)
@@ -416,9 +415,8 @@ func runStreamCreateWorkloadAt(t testing.TB, conn *grpc.ClientConn, concurrency,
 //
 // This isolates the question: does relaxing client-side per-request waiting
 // help throughput when the server is a serial loop?
-func runStreamAsyncCreateWorkload(t testing.TB, conn *grpc.ClientConn, concurrency, ops int) time.Duration {
+func runStreamAsyncCreateWorkload(t testing.TB, client filer_pb.HanzoFilerClient, concurrency, ops int) time.Duration {
 	t.Helper()
-	client := filer_pb.NewHanzoFilerClient(conn)
 	stream, err := client.StreamMutateEntry(context.Background())
 	if err != nil {
 		t.Fatalf("open stream: %v", err)
@@ -524,12 +522,11 @@ func TestReproStreamSerializationCeiling(t *testing.T) {
 	addr, fake, stop := startFakeFilerServer(t, serviceDelay)
 	defer stop()
 
-	conn := dialFakeFiler(t, addr)
-	defer conn.Close()
+	client, closeConn := dialFakeFiler(t, addr)
+	defer closeConn()
 
-	// warm up one call so the gRPC HTTP/2 connection is fully established
-	warmupClient := filer_pb.NewHanzoFilerClient(conn)
-	if _, err := warmupClient.CreateEntry(context.Background(), &filer_pb.CreateEntryRequest{
+	// warm up one call so the ZAP connection is fully established
+	if _, err := client.CreateEntry(context.Background(), &filer_pb.CreateEntryRequest{
 		Directory: "/",
 		Entry:     &filer_pb.Entry{Name: "warmup"},
 	}); err != nil {
@@ -537,11 +534,11 @@ func TestReproStreamSerializationCeiling(t *testing.T) {
 	}
 	fake.createCalls.Store(0)
 
-	unaryDur := runUnaryCreateWorkload(t, conn, concurrency, opsPerRun)
+	unaryDur := runUnaryCreateWorkload(t, client, concurrency, opsPerRun)
 	unaryCalls := fake.createCalls.Load()
 	fake.createCalls.Store(0)
 
-	streamDur := runStreamCreateWorkload(t, conn, concurrency, opsPerRun)
+	streamDur := runStreamCreateWorkload(t, client, concurrency, opsPerRun)
 	streamCalls := fake.createCalls.Load()
 
 	unaryQPS := float64(unaryCalls) / unaryDur.Seconds()
@@ -590,18 +587,17 @@ func TestServerSerialVsConcurrentHandler(t *testing.T) {
 	// Serial server (the OLD handler).
 	serialAddr, serialFake, stopSerial := startFakeFilerServer(t, serviceDelay)
 	defer stopSerial()
-	serialConn := dialFakeFiler(t, serialAddr)
-	defer serialConn.Close()
+	serialClient, closeSerial := dialFakeFiler(t, serialAddr)
+	defer closeSerial()
 
 	// Concurrent server (the NEW handler).
 	concAddr, concFake, stopConc := startFakeConcurrentFilerServer(t, serviceDelay, serverConcurrency)
 	defer stopConc()
-	concConn := dialFakeFiler(t, concAddr)
-	defer concConn.Close()
+	concClient, closeConc := dialFakeFiler(t, concAddr)
+	defer closeConc()
 
 	// Warm up both connections.
-	for _, c := range []*grpc.ClientConn{serialConn, concConn} {
-		client := filer_pb.NewHanzoFilerClient(c)
+	for _, client := range []filer_pb.HanzoFilerClient{serialClient, concClient} {
 		if _, err := client.CreateEntry(context.Background(), &filer_pb.CreateEntryRequest{
 			Directory: "/",
 			Entry:     &filer_pb.Entry{Name: "warmup"},
@@ -625,12 +621,12 @@ func TestServerSerialVsConcurrentHandler(t *testing.T) {
 
 	for _, c := range clientConcurrencies {
 		serialFake.createCalls.Store(0)
-		serialDur := runStreamCreateWorkload(t, serialConn, c, opsPerRun)
+		serialDur := runStreamCreateWorkload(t, serialClient, c, opsPerRun)
 		serialCalls := serialFake.createCalls.Load()
 		serialQPS := float64(serialCalls) / serialDur.Seconds()
 
 		concFake.createCalls.Store(0)
-		concDur := runStreamCreateWorkload(t, concConn, c, opsPerRun)
+		concDur := runStreamCreateWorkload(t, concClient, c, opsPerRun)
 		concCalls := concFake.createCalls.Load()
 		concQPS := float64(concCalls) / concDur.Seconds()
 
@@ -671,22 +667,21 @@ func TestSchedulerOrderedParallelism(t *testing.T) {
 	// Serial, sem-only concurrent, scheduler-based concurrent.
 	serialAddr, serialFake, stopSerial := startFakeFilerServer(t, serviceDelay)
 	defer stopSerial()
-	serialConn := dialFakeFiler(t, serialAddr)
-	defer serialConn.Close()
+	serialClient, closeSerial := dialFakeFiler(t, serialAddr)
+	defer closeSerial()
 
 	semAddr, semFake, stopSem := startFakeConcurrentFilerServer(t, serviceDelay, serverConcurrency)
 	defer stopSem()
-	semConn := dialFakeFiler(t, semAddr)
-	defer semConn.Close()
+	semClient, closeSem := dialFakeFiler(t, semAddr)
+	defer closeSem()
 
 	schedAddr, schedFake, stopSched := startFakeSchedulerFilerServer(t, serviceDelay, serverConcurrency)
 	defer stopSched()
-	schedConn := dialFakeFiler(t, schedAddr)
-	defer schedConn.Close()
+	schedClient, closeSched := dialFakeFiler(t, schedAddr)
+	defer closeSched()
 
 	// Warm up all three connections.
-	for _, c := range []*grpc.ClientConn{serialConn, semConn, schedConn} {
-		client := filer_pb.NewHanzoFilerClient(c)
+	for _, client := range []filer_pb.HanzoFilerClient{serialClient, semClient, schedClient} {
 		if _, err := client.CreateEntry(context.Background(), &filer_pb.CreateEntryRequest{
 			Directory: "/",
 			Entry:     &filer_pb.Entry{Name: "warmup"},
@@ -716,16 +711,16 @@ func TestSchedulerOrderedParallelism(t *testing.T) {
 
 	for _, w := range workloads {
 		serialFake.createCalls.Store(0)
-		serialDur := runStreamCreateWorkloadAt(t, serialConn, clientWorkers, opsPerRun, w.fn)
+		serialDur := runStreamCreateWorkloadAt(t, serialClient, clientWorkers, opsPerRun, w.fn)
 		serialQPS := float64(serialFake.createCalls.Load()) / serialDur.Seconds()
 
 		semFake.createCalls.Store(0)
-		semDur := runStreamCreateWorkloadAt(t, semConn, clientWorkers, opsPerRun, w.fn)
+		semDur := runStreamCreateWorkloadAt(t, semClient, clientWorkers, opsPerRun, w.fn)
 		semQPS := float64(semFake.createCalls.Load()) / semDur.Seconds()
 
 		schedFake.createCalls.Store(0)
 		schedFake.maxInFlight.Store(0)
-		schedDur := runStreamCreateWorkloadAt(t, schedConn, clientWorkers, opsPerRun, w.fn)
+		schedDur := runStreamCreateWorkloadAt(t, schedClient, clientWorkers, opsPerRun, w.fn)
 		schedQPS := float64(schedFake.createCalls.Load()) / schedDur.Seconds()
 		schedPeak := schedFake.maxInFlight.Load()
 
@@ -755,11 +750,10 @@ func TestStreamSyncVsAsyncClient(t *testing.T) {
 	addr, fake, stop := startFakeFilerServer(t, serviceDelay)
 	defer stop()
 
-	conn := dialFakeFiler(t, addr)
-	defer conn.Close()
+	client, closeConn := dialFakeFiler(t, addr)
+	defer closeConn()
 
-	warmupClient := filer_pb.NewHanzoFilerClient(conn)
-	if _, err := warmupClient.CreateEntry(context.Background(), &filer_pb.CreateEntryRequest{
+	if _, err := client.CreateEntry(context.Background(), &filer_pb.CreateEntryRequest{
 		Directory: "/",
 		Entry:     &filer_pb.Entry{Name: "warmup"},
 	}); err != nil {
@@ -777,12 +771,12 @@ func TestStreamSyncVsAsyncClient(t *testing.T) {
 
 	for _, c := range concurrencies {
 		fake.createCalls.Store(0)
-		syncDur := runStreamCreateWorkload(t, conn, c, opsPerRun)
+		syncDur := runStreamCreateWorkload(t, client, c, opsPerRun)
 		syncCalls := fake.createCalls.Load()
 		syncQPS := float64(syncCalls) / syncDur.Seconds()
 
 		fake.createCalls.Store(0)
-		asyncDur := runStreamAsyncCreateWorkload(t, conn, c, opsPerRun)
+		asyncDur := runStreamAsyncCreateWorkload(t, client, c, opsPerRun)
 		asyncCalls := fake.createCalls.Load()
 		asyncQPS := float64(asyncCalls) / asyncDur.Seconds()
 
