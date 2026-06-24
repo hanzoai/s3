@@ -18,12 +18,12 @@ import (
 	"github.com/hanzoai/s3/s3/kms"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_pb"
 	"github.com/hanzoai/s3/s3/s3api/cors"
 	"github.com/hanzoai/s3/s3/s3api/lifecycle_xml"
 	"github.com/hanzoai/s3/s3/s3api/policy_engine"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
+	s3wire "github.com/hanzoai/s3/s3/wire/s3"
 )
 
 // BucketConfig represents cached bucket configuration
@@ -196,19 +196,9 @@ type BucketConfigCache struct {
 
 // BucketMetadata represents the complete metadata for a bucket
 type BucketMetadata struct {
-	Tags       map[string]string              `json:"tags,omitempty"`
-	CORS       *cors.CORSConfiguration        `json:"cors,omitempty"`
-	Encryption *s3_pb.EncryptionConfiguration `json:"encryption,omitempty"`
-	// Future extensions can be added here:
-	// Versioning    *s3_pb.VersioningConfiguration   `json:"versioning,omitempty"`
-	// Lifecycle     *s3_pb.LifecycleConfiguration    `json:"lifecycle,omitempty"`
-	// Notification  *s3_pb.NotificationConfiguration `json:"notification,omitempty"`
-	// Replication   *s3_pb.ReplicationConfiguration  `json:"replication,omitempty"`
-	// Analytics     *s3_pb.AnalyticsConfiguration    `json:"analytics,omitempty"`
-	// Logging       *s3_pb.LoggingConfiguration      `json:"logging,omitempty"`
-	// Website       *s3_pb.WebsiteConfiguration      `json:"website,omitempty"`
-	// RequestPayer  *s3_pb.RequestPayerConfiguration `json:"requestPayer,omitempty"`
-	// PublicAccess  *s3_pb.PublicAccessConfiguration `json:"publicAccess,omitempty"`
+	Tags       map[string]string       `json:"tags,omitempty"`
+	CORS       *cors.CORSConfiguration `json:"cors,omitempty"`
+	Encryption *EncryptionConfig       `json:"encryption,omitempty"`
 }
 
 // NewBucketMetadata creates a new BucketMetadata with default values
@@ -838,12 +828,15 @@ func parseCORSFromEntryContent(content []byte) *cors.CORSConfiguration {
 	if len(content) == 0 {
 		return nil
 	}
-	var protoMetadata s3_pb.BucketMetadata
-	if err := proto.Unmarshal(content, &protoMetadata); err != nil {
-		glog.Errorf("parseCORSFromEntryContent: failed to unmarshal protobuf metadata: %v", err)
+	meta, err := s3wire.DecodeBucketMetadata(content)
+	if err != nil {
+		glog.Errorf("parseCORSFromEntryContent: failed to unmarshal metadata: %v", err)
 		return nil
 	}
-	return corsConfigFromProto(protoMetadata.Cors)
+	if !meta.HasCors {
+		return nil
+	}
+	return corsConfigFromFields(meta.Cors)
 }
 
 // getCORSConfiguration retrieves CORS configuration with caching
@@ -884,11 +877,11 @@ func (s3a *S3ApiServer) removeCORSConfiguration(bucket string) s3err.ErrorCode {
 	return s3err.ErrNone
 }
 
-// Conversion functions between CORS types and protobuf types
+// Conversion functions between CORS types and the s3wire field shapes
 
-// corsRuleToProto converts a CORS rule to protobuf format
-func corsRuleToProto(rule cors.CORSRule) *s3_pb.CORSRule {
-	return &s3_pb.CORSRule{
+// corsRuleToFields converts a CORS rule to its s3wire field shape
+func corsRuleToFields(rule cors.CORSRule) s3wire.CORSRuleFields {
+	return s3wire.CORSRuleFields{
 		AllowedHeaders: rule.AllowedHeaders,
 		AllowedMethods: rule.AllowedMethods,
 		AllowedOrigins: rule.AllowedOrigins,
@@ -898,56 +891,49 @@ func corsRuleToProto(rule cors.CORSRule) *s3_pb.CORSRule {
 	}
 }
 
-// corsRuleFromProto converts a protobuf CORS rule to standard format
-func corsRuleFromProto(protoRule *s3_pb.CORSRule) cors.CORSRule {
+// corsRuleFromFields converts an s3wire CORS rule to standard format
+func corsRuleFromFields(r s3wire.CORSRuleFields) cors.CORSRule {
 	var maxAge *int
 	// Always create the pointer if MaxAgeSeconds is >= 0
 	// This prevents nil pointer dereferences in tests and matches AWS behavior
-	if protoRule.MaxAgeSeconds >= 0 {
-		age := int(protoRule.MaxAgeSeconds)
+	if r.MaxAgeSeconds >= 0 {
+		age := int(r.MaxAgeSeconds)
 		maxAge = &age
 	}
 	// Only leave maxAge as nil if MaxAgeSeconds was explicitly set to a negative value
 
 	return cors.CORSRule{
-		AllowedHeaders: protoRule.AllowedHeaders,
-		AllowedMethods: protoRule.AllowedMethods,
-		AllowedOrigins: protoRule.AllowedOrigins,
-		ExposeHeaders:  protoRule.ExposeHeaders,
+		AllowedHeaders: r.AllowedHeaders,
+		AllowedMethods: r.AllowedMethods,
+		AllowedOrigins: r.AllowedOrigins,
+		ExposeHeaders:  r.ExposeHeaders,
 		MaxAgeSeconds:  maxAge,
-		ID:             protoRule.Id,
+		ID:             r.Id,
 	}
 }
 
-// corsConfigToProto converts CORS configuration to protobuf format
-func corsConfigToProto(config *cors.CORSConfiguration) *s3_pb.CORSConfiguration {
+// corsConfigToFields converts CORS configuration to s3wire field shapes
+func corsConfigToFields(config *cors.CORSConfiguration) []s3wire.CORSRuleFields {
 	if config == nil {
 		return nil
 	}
 
-	protoRules := make([]*s3_pb.CORSRule, len(config.CORSRules))
+	rules := make([]s3wire.CORSRuleFields, len(config.CORSRules))
 	for i, rule := range config.CORSRules {
-		protoRules[i] = corsRuleToProto(rule)
+		rules[i] = corsRuleToFields(rule)
 	}
-
-	return &s3_pb.CORSConfiguration{
-		CorsRules: protoRules,
-	}
+	return rules
 }
 
-// corsConfigFromProto converts protobuf CORS configuration to standard format
-func corsConfigFromProto(protoConfig *s3_pb.CORSConfiguration) *cors.CORSConfiguration {
-	if protoConfig == nil {
-		return nil
-	}
-
-	rules := make([]cors.CORSRule, len(protoConfig.CorsRules))
-	for i, protoRule := range protoConfig.CorsRules {
-		rules[i] = corsRuleFromProto(protoRule)
+// corsConfigFromFields converts s3wire CORS rules to standard format
+func corsConfigFromFields(rules []s3wire.CORSRuleFields) *cors.CORSConfiguration {
+	out := make([]cors.CORSRule, len(rules))
+	for i, r := range rules {
+		out[i] = corsRuleFromFields(r)
 	}
 
 	return &cors.CORSConfiguration{
-		CORSRules: rules,
+		CORSRules: out,
 	}
 }
 
@@ -1010,18 +996,12 @@ func (s3a *S3ApiServer) extractMetadataFromConfig(config *BucketConfig) (*Bucket
 
 	// Parse metadata from entry content if available
 	if len(config.Entry.Content) > 0 {
-		var protoMetadata s3_pb.BucketMetadata
-		if err := proto.Unmarshal(config.Entry.Content, &protoMetadata); err != nil {
-			glog.Errorf("extractMetadataFromConfig: failed to unmarshal protobuf metadata for bucket %s: %v", config.Name, err)
+		meta, err := s3wire.DecodeBucketMetadata(config.Entry.Content)
+		if err != nil {
+			glog.Errorf("extractMetadataFromConfig: failed to unmarshal metadata for bucket %s: %v", config.Name, err)
 			return nil, err
 		}
-		// Convert protobuf to structured metadata
-		metadata := &BucketMetadata{
-			Tags:       protoMetadata.Tags,
-			CORS:       corsConfigFromProto(protoMetadata.Cors),
-			Encryption: protoMetadata.Encryption,
-		}
-		return metadata, nil
+		return bucketMetadataFromFields(meta), nil
 	}
 
 	// Fallback: create metadata from cached CORS config
@@ -1072,24 +1052,31 @@ func (s3a *S3ApiServer) loadBucketMetadataFromFiler(bucket string) (*BucketMetad
 		return NewBucketMetadata(), nil
 	}
 
-	// Unmarshal metadata from protobuf
-	var protoMetadata s3_pb.BucketMetadata
-	if err := proto.Unmarshal(entry.Content, &protoMetadata); err != nil {
-		glog.Errorf("getBucketMetadata: failed to unmarshal protobuf metadata for bucket %s: %v", bucket, err)
+	// Unmarshal metadata from ZAP
+	meta, err := s3wire.DecodeBucketMetadata(entry.Content)
+	if err != nil {
+		glog.Errorf("getBucketMetadata: failed to unmarshal metadata for bucket %s: %v", bucket, err)
 		return nil, fmt.Errorf("failed to unmarshal bucket metadata for %s: %w", bucket, err)
 	}
 
-	// Convert protobuf CORS to standard CORS
-	corsConfig := corsConfigFromProto(protoMetadata.Cors)
+	return bucketMetadataFromFields(meta), nil
+}
 
-	// Create and return structured metadata
-	metadata := &BucketMetadata{
-		Tags:       protoMetadata.Tags,
-		CORS:       corsConfig,
-		Encryption: protoMetadata.Encryption,
+// bucketMetadataFromFields converts decoded s3wire fields to the structured
+// in-memory BucketMetadata.
+func bucketMetadataFromFields(meta s3wire.BucketMetadataFields) *BucketMetadata {
+	m := &BucketMetadata{Tags: meta.Tags}
+	if meta.HasCors {
+		m.CORS = corsConfigFromFields(meta.Cors)
 	}
-
-	return metadata, nil
+	if meta.Encryption != nil {
+		m.Encryption = &EncryptionConfig{
+			SseAlgorithm:     meta.Encryption.SseAlgorithm,
+			KmsKeyId:         meta.Encryption.KmsKeyId,
+			BucketKeyEnabled: meta.Encryption.BucketKeyEnabled,
+		}
+	}
+	return m
 }
 
 // setBucketMetadata stores bucket metadata from a structured object
@@ -1111,22 +1098,24 @@ func (s3a *S3ApiServer) setBucketMetadata(bucket string, metadata *BucketMetadat
 		metadata = NewBucketMetadata()
 	}
 
-	// Create protobuf metadata
-	protoMetadata := &s3_pb.BucketMetadata{
-		Tags:       metadata.Tags,
-		Cors:       corsConfigToProto(metadata.CORS),
-		Encryption: metadata.Encryption,
+	// Encode metadata to ZAP
+	fields := s3wire.BucketMetadataFields{Tags: metadata.Tags}
+	if metadata.CORS != nil {
+		fields.HasCors = true
+		fields.Cors = corsConfigToFields(metadata.CORS)
 	}
-
-	// Marshal metadata to protobuf
-	metadataBytes, err := proto.Marshal(protoMetadata)
-	if err != nil {
-		return fmt.Errorf("failed to marshal bucket metadata to protobuf: %w", err)
+	if metadata.Encryption != nil {
+		fields.Encryption = &s3wire.EncryptionFields{
+			SseAlgorithm:     metadata.Encryption.SseAlgorithm,
+			KmsKeyId:         metadata.Encryption.KmsKeyId,
+			BucketKeyEnabled: metadata.Encryption.BucketKeyEnabled,
+		}
 	}
+	metadataBytes := s3wire.EncodeBucketMetadata(fields)
 
 	// Patch only Entry.content so a concurrent extended-attribute write
 	// (e.g. versioning) is preserved.
-	err = s3a.patchBucketEntry(bucket, &filer_pb.ObjectMutation{
+	err := s3a.patchBucketEntry(bucket, &filer_pb.ObjectMutation{
 		SetContent: true,
 		Content:    metadataBytes,
 	})
@@ -1204,7 +1193,7 @@ func (s3a *S3ApiServer) UpdateBucketCORS(bucket string, corsConfig *cors.CORSCon
 }
 
 // UpdateBucketEncryption sets bucket encryption configuration using the structured API
-func (s3a *S3ApiServer) UpdateBucketEncryption(bucket string, encryptionConfig *s3_pb.EncryptionConfiguration) error {
+func (s3a *S3ApiServer) UpdateBucketEncryption(bucket string, encryptionConfig *EncryptionConfig) error {
 	return s3a.UpdateBucketMetadata(bucket, func(metadata *BucketMetadata) error {
 		metadata.Encryption = encryptionConfig
 		return nil

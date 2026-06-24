@@ -10,13 +10,22 @@ import (
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
 )
 
 // ErrNoEncryptionConfig is returned when a bucket has no encryption configuration
 var ErrNoEncryptionConfig = errors.New("no encryption configuration found")
+
+// EncryptionConfig is the native in-memory value for a bucket's default
+// server-side-encryption settings. It mirrors the s3wire EncryptionConfiguration
+// fields and is the value that flows through the bucket-metadata API; it is
+// encoded to/from ZAP only at the filer persistence boundary.
+type EncryptionConfig struct {
+	SseAlgorithm     string
+	KmsKeyId         string
+	BucketKeyEnabled bool
+}
 
 // ServerSideEncryptionConfiguration represents the bucket encryption configuration
 type ServerSideEncryptionConfiguration struct {
@@ -36,22 +45,22 @@ type ApplyServerSideEncryptionByDefault struct {
 	KMSMasterKeyID string `xml:"KMSMasterKeyID,omitempty"`
 }
 
-// encryptionConfigFromXML converts XML ServerSideEncryptionConfiguration to protobuf
-func encryptionConfigFromXML(xmlConfig *ServerSideEncryptionConfiguration) *s3_pb.EncryptionConfiguration {
+// encryptionConfigFromXML converts XML ServerSideEncryptionConfiguration to the native config
+func encryptionConfigFromXML(xmlConfig *ServerSideEncryptionConfiguration) *EncryptionConfig {
 	if xmlConfig == nil || len(xmlConfig.Rules) == 0 {
 		return nil
 	}
 
 	rule := xmlConfig.Rules[0] // AWS S3 supports only one rule
-	return &s3_pb.EncryptionConfiguration{
+	return &EncryptionConfig{
 		SseAlgorithm:     rule.ApplyServerSideEncryptionByDefault.SSEAlgorithm,
 		KmsKeyId:         rule.ApplyServerSideEncryptionByDefault.KMSMasterKeyID,
 		BucketKeyEnabled: rule.BucketKeyEnabled != nil && *rule.BucketKeyEnabled,
 	}
 }
 
-// encryptionConfigToXML converts protobuf EncryptionConfiguration to XML
-func encryptionConfigToXML(config *s3_pb.EncryptionConfiguration) *ServerSideEncryptionConfiguration {
+// encryptionConfigToXML converts the native EncryptionConfig to XML
+func encryptionConfigToXML(config *EncryptionConfig) *ServerSideEncryptionConfiguration {
 	if config == nil {
 		return nil
 	}
@@ -176,7 +185,7 @@ func (s3a *S3ApiServer) DeleteBucketEncryptionHandler(w http.ResponseWriter, r *
 }
 
 // GetBucketEncryptionConfig retrieves the bucket encryption configuration for internal use
-func (s3a *S3ApiServer) GetBucketEncryptionConfig(bucket string) (*s3_pb.EncryptionConfiguration, error) {
+func (s3a *S3ApiServer) GetBucketEncryptionConfig(bucket string) (*EncryptionConfig, error) {
 	config, errCode := s3a.getEncryptionConfiguration(bucket)
 	if errCode != s3err.ErrNone {
 		if errCode == s3err.ErrNoSuchBucketEncryptionConfiguration {
@@ -190,7 +199,7 @@ func (s3a *S3ApiServer) GetBucketEncryptionConfig(bucket string) (*s3_pb.Encrypt
 // Internal methods following the bucket configuration pattern
 
 // getEncryptionConfiguration retrieves encryption configuration with caching
-func (s3a *S3ApiServer) getEncryptionConfiguration(bucket string) (*s3_pb.EncryptionConfiguration, s3err.ErrorCode) {
+func (s3a *S3ApiServer) getEncryptionConfiguration(bucket string) (*EncryptionConfig, s3err.ErrorCode) {
 	// Get metadata using structured API
 	metadata, err := s3a.GetBucketMetadata(bucket)
 	if err != nil {
@@ -213,7 +222,7 @@ func (s3a *S3ApiServer) getEncryptionConfiguration(bucket string) (*s3_pb.Encryp
 }
 
 // updateEncryptionConfiguration updates the encryption configuration for a bucket
-func (s3a *S3ApiServer) updateEncryptionConfiguration(bucket string, encryptionConfig *s3_pb.EncryptionConfiguration) s3err.ErrorCode {
+func (s3a *S3ApiServer) updateEncryptionConfiguration(bucket string, encryptionConfig *EncryptionConfig) s3err.ErrorCode {
 	// Update using structured API
 	// Note: UpdateBucketEncryption -> UpdateBucketMetadata -> setBucketMetadata
 	// already invalidates the cache synchronously after successful update

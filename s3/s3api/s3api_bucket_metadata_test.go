@@ -3,7 +3,6 @@ package s3api
 import (
 	"testing"
 
-	"github.com/hanzoai/s3/s3/pb/s3_pb"
 	"github.com/hanzoai/s3/s3/s3api/cors"
 )
 
@@ -25,7 +24,7 @@ func TestBucketMetadataStruct(t *testing.T) {
 	}
 
 	// Test setting encryption
-	encryption := &s3_pb.EncryptionConfiguration{
+	encryption := &EncryptionConfig{
 		SseAlgorithm: "aws:kms",
 		KmsKeyId:     "test-key-id",
 	}
@@ -70,7 +69,7 @@ func TestBucketMetadataUpdatePattern(t *testing.T) {
 		metadata.Tags["Version"] = "v3.0"
 
 		// Set encryption
-		metadata.Encryption = &s3_pb.EncryptionConfiguration{
+		metadata.Encryption = &EncryptionConfig{
 			SseAlgorithm: "AES256",
 		}
 
@@ -118,7 +117,7 @@ func TestBucketMetadataHelperFunctions(t *testing.T) {
 	}
 
 	// Test adding encryption
-	metadata.Encryption = &s3_pb.EncryptionConfiguration{}
+	metadata.Encryption = &EncryptionConfig{}
 	if !metadata.HasEncryption() {
 		t.Error("Should have encryption after adding")
 	}

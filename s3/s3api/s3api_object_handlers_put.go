@@ -22,7 +22,6 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
 	"github.com/hanzoai/s3/s3/security"
@@ -1707,7 +1706,7 @@ func (s3a *S3ApiServer) applySSES3DefaultEncryption(dataReader io.Reader) (*Buck
 }
 
 // applySSEKMSDefaultEncryption applies SSE-KMS encryption as bucket default
-func (s3a *S3ApiServer) applySSEKMSDefaultEncryption(bucket string, r *http.Request, dataReader io.Reader, encryptionConfig *s3_pb.EncryptionConfiguration) (*BucketDefaultEncryptionResult, error) {
+func (s3a *S3ApiServer) applySSEKMSDefaultEncryption(bucket string, r *http.Request, dataReader io.Reader, encryptionConfig *EncryptionConfig) (*BucketDefaultEncryptionResult, error) {
 	// Use the KMS key ID from bucket configuration, or default if not specified
 	keyID := encryptionConfig.KmsKeyId
 	if keyID == "" {
