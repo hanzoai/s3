@@ -12,6 +12,7 @@ import (
 
 	"github.com/seaweedfs/go-fuse/v2/fuse"
 	"google.golang.org/grpc"
+	"github.com/zap-proto/go/transport"
 
 	"github.com/hanzoai/s3/s3/cluster"
 	"github.com/hanzoai/s3/s3/filer"
@@ -412,7 +413,12 @@ func NewHanzoFileSystem(option *Option) *WFS {
 			option.PeerEnabled = false
 		} else {
 			dial := func(ctx context.Context, addr pb.ServerAddress, fn func(client filer_pb.HanzoFilerClient) error) error {
-				return pb.WithGrpcFilerClient(false, 0, addr, option.GrpcDialOption, fn)
+				conn, err := transport.Dial("tcp", addr.ToGrpcAddress())
+				if err != nil {
+					return err
+				}
+				defer conn.Close()
+				return fn(newFilerClientAdapter(conn))
 			}
 			wfs.peerRegistrar = NewPeerRegistrar(option.FilerAddresses, dial, selfAddr, option.PeerDataCenter, option.PeerRack)
 			if err := wfs.peerRegistrar.Start(context.Background()); err != nil {
