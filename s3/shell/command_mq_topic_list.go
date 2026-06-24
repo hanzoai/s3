@@ -6,9 +6,10 @@ import (
 	"io"
 
 	"github.com/hanzoai/s3/s3/mq/pub_balancer"
-	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/mq_pb"
+	mq_brokerwire "github.com/hanzoai/s3/s3/wire/mq_broker"
+	mq_schemawire "github.com/hanzoai/s3/s3/wire/mq_schema"
+	"github.com/zap-proto/go/transport"
 )
 
 func init() {
@@ -38,20 +39,33 @@ func (c *commandMqTopicList) Do(args []string, commandEnv *CommandEnv, writer io
 	}
 	fmt.Fprintf(writer, "current balancer: %s\n", brokerBalancer)
 
-	return pb.WithBrokerGrpcClient(false, brokerBalancer, commandEnv.option.GrpcDialOption, func(client mq_pb.HanzoMessagingClient) error {
-		resp, err := client.ListTopics(context.Background(), &mq_pb.ListTopicsRequest{})
+	conn, err := transport.Dial("tcp", brokerBalancer)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	client := mq_brokerwire.NewHanzoMessagingClient(conn, nil)
+	_, body, err := client.ListTopics(mq_brokerwire.NewListTopicsRequest(mq_brokerwire.ListTopicsRequestInput{}))
+	if err != nil {
+		return err
+	}
+	resp, err := mq_brokerwire.WrapListTopicsResponse(body)
+	if err != nil {
+		return err
+	}
+	if resp.TopicsLen() == 0 {
+		fmt.Fprintf(writer, "no topics found\n")
+		return nil
+	}
+	for i := 0; i < resp.TopicsLen(); i++ {
+		topic, err := mq_schemawire.WrapTopic(resp.TopicAt(i))
 		if err != nil {
 			return err
 		}
-		if len(resp.Topics) == 0 {
-			fmt.Fprintf(writer, "no topics found\n")
-			return nil
-		}
-		for _, topic := range resp.Topics {
-			fmt.Fprintf(writer, "  %+v\n", topic)
-		}
-		return nil
-	})
+		fmt.Fprintf(writer, "  %s.%s\n", topic.Namespace(), topic.Name())
+	}
+	return nil
 }
 
 func findBrokerBalancer(commandEnv *CommandEnv) (brokerBalancer string, err error) {

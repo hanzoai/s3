@@ -12,16 +12,12 @@ import (
 
 	"github.com/hanzoai/s3/s3/admin/maintenance"
 	"github.com/hanzoai/s3/s3/glog"
-	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
-	"github.com/hanzoai/s3/s3/security"
 	stats_collect "github.com/hanzoai/s3/s3/stats"
-	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/status"
+	pluginwire "github.com/hanzoai/s3/s3/wire/plugin"
+	workerwire "github.com/hanzoai/s3/s3/wire/worker"
+	"github.com/hanzoai/s3/s3/worker/wirebridge"
+	"github.com/zap-proto/go/transport"
 )
 
 const (
@@ -33,9 +29,9 @@ const (
 	logSendTimeout     = 10 * time.Second
 )
 
-// WorkerGrpcServer implements the WorkerService gRPC interface
+// WorkerGrpcServer serves the WorkerService WorkerStream over the ZAP transport
+// while co-hosting the (still-gRPC) plugin control service on a sibling listener.
 type WorkerGrpcServer struct {
-	worker_pb.UnimplementedWorkerServiceServer
 	adminServer *AdminServer
 
 	// Worker connection management
@@ -46,11 +42,14 @@ type WorkerGrpcServer struct {
 	pendingLogRequests map[string]*LogRequestContext
 	logRequestsMutex   sync.RWMutex
 
-	// gRPC server
-	grpcServer *grpc.Server
-	listener   net.Listener
-	running    bool
-	stopChan   chan struct{}
+	// ZAP transport server for the worker stream.
+	zapServer *transport.Server
+
+	// ZAP transport server for the plugin control stream (sibling listener).
+	pluginServer *transport.Server
+
+	running  bool
+	stopChan chan struct{}
 }
 
 // LogRequestContext tracks pending log requests
@@ -63,7 +62,7 @@ type LogRequestContext struct {
 // WorkerConnection represents an active worker connection
 type WorkerConnection struct {
 	workerID      string
-	stream        worker_pb.WorkerService_WorkerStreamServer
+	stream        *transport.Stream
 	lastSeen      time.Time
 	capabilities  []MaintenanceTaskType
 	address       string
@@ -83,58 +82,82 @@ func NewWorkerGrpcServer(adminServer *AdminServer) *WorkerGrpcServer {
 	}
 }
 
-// StartWithTLS starts the gRPC server on the specified port with optional TLS
+// StartWithTLS starts the worker stream server on the specified port. The
+// WorkerStream bidi RPC now runs over the ZAP transport on that port; the
+// still-gRPC plugin control service is co-hosted on a sibling listener
+// (port+1) until it is cut to ZAP as well.
 func (s *WorkerGrpcServer) StartWithTLS(port int) error {
 	if s.running {
 		return fmt.Errorf("worker gRPC server is already running")
 	}
 
-	// Create listener
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	// Worker stream: ZAP transport on the worker port. Unary dispatch is nil
+	// (WorkerService has only the streaming method); the stream handler drives
+	// each accepted WorkerStream.
+	zapServer, err := transport.ListenStream("tcp", fmt.Sprintf(":%d", port), nil, s.streamHandler)
 	if err != nil {
 		return fmt.Errorf("failed to listen on port %d: %v", port, err)
 	}
+	s.zapServer = zapServer
 
-	// Create gRPC server with optional TLS
-	grpcServer := pb.NewGrpcServer(security.LoadServerTLS(util.GetViper(), "grpc.admin"))
-
-	worker_pb.RegisterWorkerServiceServer(grpcServer, s)
+	// Plugin control service: ZAP transport on a sibling listener (port+1). Its
+	// sole RPC, PluginControlService.WorkerStream, is a bidi stream, so dispatch
+	// is nil and the plugin's ServeWorkerStream drives each accepted stream.
 	if plugin := s.adminServer.GetPlugin(); plugin != nil {
-		plugin_pb.RegisterPluginControlServiceServer(grpcServer, plugin)
-		glog.V(0).Infof("Plugin gRPC service registered on worker gRPC server")
+		pluginServer, pErr := transport.ListenStream("tcp", fmt.Sprintf(":%d", port+1), nil, s.pluginStreamHandler)
+		if pErr != nil {
+			zapServer.Close()
+			return fmt.Errorf("failed to listen on plugin port %d: %v", port+1, pErr)
+		}
+		glog.V(0).Infof("Plugin ZAP service registered on sibling port %d", port+1)
+		s.pluginServer = pluginServer
 	}
 
-	s.grpcServer = grpcServer
-	s.listener = listener
 	s.running = true
 
 	// Start background routines
 	go s.cleanupRoutine()
 	go s.activeLogFetchLoop()
 
-	pb.ServeGrpcOnLocalSocket(grpcServer, port)
-
-	// Start serving in a goroutine
-	go func() {
-		if err := s.grpcServer.Serve(listener); err != nil {
-			if s.running {
-				glog.Errorf("Worker gRPC server error: %v", err)
-			}
-		}
-	}()
-
 	return nil
 }
 
-// ListenPort returns the currently bound worker gRPC listen port.
+// streamHandler adapts a ZAP transport stream to the WorkerStream loop. The
+// transport invokes it on its own goroutine for each opened stream; returning
+// half-closes the send side.
+func (s *WorkerGrpcServer) streamHandler(method uint32, _ []byte, st *transport.Stream) {
+	if method != workerwire.WorkerServiceWorkerStreamOrdinal {
+		return
+	}
+	if err := s.WorkerStream(st); err != nil {
+		glog.V(1).Infof("Worker stream handler exited: %v", err)
+	}
+}
+
+// pluginStreamHandler adapts a ZAP transport stream to the plugin's
+// PluginControlService.WorkerStream loop. The transport invokes it on its own
+// goroutine for each opened stream; returning half-closes the send side.
+func (s *WorkerGrpcServer) pluginStreamHandler(method uint32, init []byte, st *transport.Stream) {
+	if method != pluginwire.PluginControlServiceWorkerStreamOrdinal {
+		return
+	}
+	plugin := s.adminServer.GetPlugin()
+	if plugin == nil {
+		return
+	}
+	plugin.ServeWorkerStream(init, st)
+}
+
+// ListenPort returns the currently bound worker stream (ZAP) listen port.
 func (s *WorkerGrpcServer) ListenPort() int {
-	if s == nil || s.listener == nil {
+	if s == nil || s.zapServer == nil {
 		return 0
 	}
-	if tcpAddr, ok := s.listener.Addr().(*net.TCPAddr); ok {
+	addr := s.zapServer.Addr()
+	if tcpAddr, ok := addr.(*net.TCPAddr); ok {
 		return tcpAddr.Port
 	}
-	_, portStr, err := net.SplitHostPort(s.listener.Addr().String())
+	_, portStr, err := net.SplitHostPort(addr.String())
 	if err != nil {
 		return 0
 	}
@@ -163,38 +186,42 @@ func (s *WorkerGrpcServer) Stop() error {
 	s.connections = make(map[string]*WorkerConnection)
 	s.connMutex.Unlock()
 
-	// Stop gRPC server
-	if s.grpcServer != nil {
-		s.grpcServer.GracefulStop()
+	// Stop ZAP worker stream server (closes its listener + live conns).
+	if s.zapServer != nil {
+		s.zapServer.Close()
 	}
 
-	// Close listener
-	if s.listener != nil {
-		s.listener.Close()
+	// Stop plugin ZAP stream server (closes its listener + live conns).
+	if s.pluginServer != nil {
+		s.pluginServer.Close()
 	}
 
-	glog.Infof("Worker gRPC server stopped")
+	glog.Infof("Worker stream server stopped")
 	return nil
 }
 
-// WorkerStream handles bidirectional communication with workers
-func (s *WorkerGrpcServer) WorkerStream(stream worker_pb.WorkerService_WorkerStreamServer) error {
-	ctx := stream.Context()
-
-	// get client address
-	address := findClientAddress(ctx)
+// WorkerStream handles bidirectional communication with workers over the ZAP
+// transport stream. It runs on the transport's per-stream goroutine.
+func (s *WorkerGrpcServer) WorkerStream(stream *transport.Stream) error {
+	ctx, ctxCancel := context.WithCancel(context.Background())
+	defer ctxCancel()
 
 	// Wait for initial registration message
-	msg, err := stream.Recv()
+	regEnv, err := stream.Recv()
 	if err != nil {
 		return fmt.Errorf("failed to receive registration message: %w", err)
+	}
+	msg, err := wirebridge.DecodeWorkerMessage(regEnv)
+	if err != nil {
+		return fmt.Errorf("failed to decode registration message: %w", err)
 	}
 
 	registration := msg.GetRegistration()
 	if registration == nil {
 		return fmt.Errorf("first message must be registration")
 	}
-	registration.Address = address
+	// The ZAP stream carries no peer address; trust the worker's self-reported
+	// address from its registration.
 
 	workerID := registration.WorkerId
 	if workerID == "" {
@@ -276,12 +303,12 @@ func (s *WorkerGrpcServer) WorkerStream(stream worker_pb.WorkerService_WorkerStr
 		default:
 		}
 
-		msg, err := stream.Recv()
+		env, err := stream.Recv()
 		if err != nil {
 			switch {
 			case err == io.EOF:
 				glog.Infof("Worker %s disconnected", workerID)
-			case errors.Is(err, context.Canceled), status.Code(err) == codes.Canceled:
+			case errors.Is(err, context.Canceled):
 				// Graceful shutdown on either side cancels the stream.
 				glog.V(1).Infof("Worker %s stream canceled: %v", workerID, err)
 			default:
@@ -289,6 +316,12 @@ func (s *WorkerGrpcServer) WorkerStream(stream worker_pb.WorkerService_WorkerStr
 			}
 			s.unregisterWorker(conn, "unregistered")
 			return err
+		}
+		msg, derr := wirebridge.DecodeWorkerMessage(env)
+		if derr != nil {
+			glog.Errorf("Error decoding message from worker %s: %v", workerID, derr)
+			s.unregisterWorker(conn, "unregistered")
+			return derr
 		}
 
 		s.connMutex.Lock()
@@ -309,7 +342,7 @@ func (s *WorkerGrpcServer) handleOutgoingMessages(conn *WorkerConnection) {
 				return
 			}
 
-			if err := conn.stream.Send(msg); err != nil {
+			if err := conn.stream.Send(wirebridge.EncodeAdminMessage(msg)); err != nil {
 				glog.Errorf("Failed to send message to worker %s: %v", conn.workerID, err)
 				conn.cancel()
 				return
@@ -795,20 +828,6 @@ func (s *WorkerGrpcServer) RequestTaskLogsFromAllWorkers(taskID string, maxEntri
 	}
 
 	return results, nil
-}
-
-func findClientAddress(ctx context.Context) string {
-	// fmt.Printf("FromContext %+v\n", ctx)
-	pr, ok := peer.FromContext(ctx)
-	if !ok {
-		glog.Error("failed to get peer from ctx")
-		return ""
-	}
-	if pr.Addr == net.Addr(nil) {
-		glog.Error("failed to get peer address")
-		return ""
-	}
-	return pr.Addr.String()
 }
 
 // activeLogFetchLoop periodically fetches logs for all in-progress tasks

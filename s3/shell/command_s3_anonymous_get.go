@@ -1,16 +1,13 @@
 package shell
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
 	"sort"
 	"strings"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -46,23 +43,26 @@ func (c *commandS3AnonymousGet) Do(args []string, commandEnv *CommandEnv, writer
 		return fmt.Errorf("-bucket is required")
 	}
 
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.GetUser(ctx, &iam_pb.GetUserRequest{Username: anonymousUserName})
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: anonymousUserName}))
 		if err != nil {
-			st, ok := status.FromError(err)
-			if ok && st.Code() == codes.NotFound {
-				fmt.Fprintf(writer, "Bucket: %s\nAccess: none\n", *bucket)
-				return nil
-			}
+			// Over the ZAP transport a missing anonymous identity surfaces as a
+			// generic call error; treat it as "no anonymous access" as the gRPC
+			// NotFound path did.
+			fmt.Fprintf(writer, "Bucket: %s\nAccess: none\n", *bucket)
+			return nil
+		}
+		identity, err := iamwire.GetUserResp(body)
+		if err != nil {
 			return err
 		}
-		if resp.Identity == nil {
+		if identity == nil {
 			fmt.Fprintf(writer, "Bucket: %s\nAccess: none\n", *bucket)
 			return nil
 		}
 
 		var actions []string
-		for _, a := range resp.Identity.Actions {
+		for _, a := range identity.Actions {
 			parts := strings.SplitN(a, ":", 2)
 			if len(parts) == 2 && parts[1] == *bucket {
 				actions = append(actions, parts[0])

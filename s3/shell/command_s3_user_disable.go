@@ -1,13 +1,12 @@
 package shell
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -46,24 +45,28 @@ func (c *commandS3UserDisable) Do(args []string, commandEnv *CommandEnv, writer 
 		return fmt.Errorf("-name is required")
 	}
 
-	err := commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.GetUser(ctx, &iam_pb.GetUserRequest{Username: *name})
+	err := commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: *name}))
 		if err != nil {
 			return fmt.Errorf("get user %q: %w", *name, err)
 		}
-		if resp.Identity == nil {
+		identity, err := iamwire.GetUserResp(body)
+		if err != nil {
+			return err
+		}
+		if identity == nil {
 			return fmt.Errorf("user %q returned empty identity", *name)
 		}
 
-		if resp.Identity.Disabled {
+		if identity.Disabled {
 			return nil
 		}
 
-		resp.Identity.Disabled = true
-		_, err = client.UpdateUser(ctx, &iam_pb.UpdateUserRequest{
+		identity.Disabled = true
+		_, _, err = client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
 			Username: *name,
-			Identity: resp.Identity,
-		})
+			Identity: iamwire.IdentityInputFromPB(identity),
+		}))
 		return err
 	})
 	if err != nil {

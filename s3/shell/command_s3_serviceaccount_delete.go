@@ -1,12 +1,11 @@
 package shell
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -42,8 +41,8 @@ func (c *commandS3ServiceAccountDelete) Do(args []string, commandEnv *CommandEnv
 		return fmt.Errorf("-id is required")
 	}
 
-	err := commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		_, err := client.DeleteServiceAccount(ctx, &iam_pb.DeleteServiceAccountRequest{Id: *id})
+	err := commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, _, err := client.DeleteServiceAccount(iamwire.NewDeleteServiceAccountRequest(iamwire.DeleteServiceAccountRequestInput{ID: *id}))
 		return err
 	})
 	if err != nil {

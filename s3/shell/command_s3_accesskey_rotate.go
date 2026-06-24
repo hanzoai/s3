@@ -1,13 +1,13 @@
 package shell
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
 
 	"github.com/hanzoai/s3/s3/iam"
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -59,25 +59,25 @@ func (c *commandS3AccessKeyRotate) Do(args []string, commandEnv *CommandEnv, wri
 		return fmt.Errorf("generate secret key: %v", err)
 	}
 
-	err = commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
+	err = commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
 		// Create new key first so there's no gap without credentials
-		_, err := client.CreateAccessKey(ctx, &iam_pb.CreateAccessKeyRequest{
+		_, _, err := client.CreateAccessKey(iamwire.NewCreateAccessKeyRequest(iamwire.CreateAccessKeyRequestInput{
 			Username: *user,
-			Credential: &iam_pb.Credential{
+			Credential: iamwire.CredentialInputFromPB(&iam_pb.Credential{
 				AccessKey: newAK,
 				SecretKey: newSK,
 				Status:    iam.AccessKeyStatusActive,
-			},
-		})
+			}),
+		}))
 		if err != nil {
 			return fmt.Errorf("create new key: %v", err)
 		}
 
 		// Delete old key
-		_, err = client.DeleteAccessKey(ctx, &iam_pb.DeleteAccessKeyRequest{
+		_, _, err = client.DeleteAccessKey(iamwire.NewDeleteAccessKeyRequest(iamwire.DeleteAccessKeyRequestInput{
 			Username:  *user,
 			AccessKey: *oldKey,
-		})
+		}))
 		if err != nil {
 			return fmt.Errorf("delete old key (new key %s was already created): %v", newAK, err)
 		}

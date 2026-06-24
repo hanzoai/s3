@@ -1,12 +1,11 @@
 package shell
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"text/tabwriter"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -35,12 +34,15 @@ func (c *commandS3ConfigShow) HasTag(CommandTag) bool {
 }
 
 func (c *commandS3ConfigShow) Do(args []string, commandEnv *CommandEnv, writer io.Writer) error {
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.GetConfiguration(ctx, &iam_pb.GetConfigurationRequest{})
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.GetConfiguration(iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
 		if err != nil {
 			return err
 		}
-		cfg := resp.Configuration
+		cfg, err := iamwire.GetConfigurationResp(body)
+		if err != nil {
+			return err
+		}
 		if cfg == nil {
 			fmt.Fprintln(writer, "No S3 IAM configuration found.")
 			return nil

@@ -86,6 +86,21 @@ func (sa ServerAddress) ToGrpcAddress() string {
 	return ServerToGrpcAddress(string(sa))
 }
 
+// ToIamZapAddress returns the address of the filer's IAM ZAP transport
+// endpoint. The IAM service no longer rides the shared gRPC port; it serves on
+// its own ZAP listener at grpcPort+10000 (i.e. httpPort+20000), the same
+// deterministic offset convention used to derive the gRPC port from the HTTP
+// port. Client and server both compute it from the filer address, so they stay
+// in agreement without extra configuration.
+func (sa ServerAddress) ToIamZapAddress() string {
+	grpcAddr := sa.ToGrpcAddress()
+	host, port, err := hostAndPort(grpcAddr)
+	if err != nil {
+		return grpcAddr
+	}
+	return util.JoinHostPort(host, int(port)+10000)
+}
+
 // ToHost returns the host part only, without any port information.
 func (sa ServerAddress) ToHost() string {
 	httpAddr := sa.ToHttpAddress()

@@ -1,25 +1,34 @@
 package agent
 
 import (
-	"context"
 	"log/slog"
 	"math/rand/v2"
 
+	"github.com/hanzoai/s3/s3/mq/agent/agentconv"
 	"github.com/hanzoai/s3/s3/mq/client/pub_client"
 	"github.com/hanzoai/s3/s3/mq/topic"
-	"github.com/hanzoai/s3/s3/pb/mq_agent_pb"
+	mq_agentwire "github.com/hanzoai/s3/s3/wire/mq_agent"
 )
 
-func (a *MessageQueueAgent) StartPublishSession(ctx context.Context, req *mq_agent_pb.StartPublishSessionRequest) (*mq_agent_pb.StartPublishSessionResponse, error) {
+// StartPublishSession implements the mq_agentwire.HanzoMessagingAgent unary
+// method over the ZAP transport: it decodes the request envelope, opens a
+// publisher session, and returns the response envelope.
+func (a *MessageQueueAgent) StartPublishSession(req []byte) ([]byte, error) {
+	request, err := mq_agentwire.WrapStartPublishSessionRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	pbTopic := agentconv.TopicFromWire(request.Topic())
+
 	sessionId := rand.Int64()
 
 	topicPublisher, err := pub_client.NewTopicPublisher(
 		&pub_client.PublisherConfiguration{
-			Topic:          topic.NewTopic(req.Topic.Namespace, req.Topic.Name),
-			PartitionCount: req.PartitionCount,
+			Topic:          topic.NewTopic(pbTopic.Namespace, pbTopic.Name),
+			PartitionCount: request.PartitionCount(),
 			Brokers:        a.brokersList(),
-			PublisherName:  req.PublisherName,
-			RecordType:     req.RecordType,
+			PublisherName:  request.PublisherName(),
+			RecordType:     agentconv.RecordTypeFromWire(request.RecordType()),
 		})
 	if err != nil {
 		return nil, err
@@ -31,24 +40,33 @@ func (a *MessageQueueAgent) StartPublishSession(ctx context.Context, req *mq_age
 	}
 	a.publishersLock.Unlock()
 
-	return &mq_agent_pb.StartPublishSessionResponse{
+	return mq_agentwire.NewStartPublishSessionResponse(mq_agentwire.StartPublishSessionResponseInput{
 		SessionId: sessionId,
-	}, nil
+	}), nil
 }
 
-func (a *MessageQueueAgent) ClosePublishSession(ctx context.Context, req *mq_agent_pb.ClosePublishSessionRequest) (*mq_agent_pb.ClosePublishSessionResponse, error) {
+// ClosePublishSession implements the mq_agentwire.HanzoMessagingAgent unary
+// method over the ZAP transport.
+func (a *MessageQueueAgent) ClosePublishSession(req []byte) ([]byte, error) {
+	request, err := mq_agentwire.WrapClosePublishSessionRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	sessionId := SessionId(request.SessionId())
+
 	var finishErr string
 	a.publishersLock.Lock()
-	publisherEntry, found := a.publishers[SessionId(req.SessionId)]
+	publisherEntry, found := a.publishers[sessionId]
 	if found {
 		if err := publisherEntry.entry.FinishPublish(); err != nil {
 			finishErr = err.Error()
 			slog.Warn("failed to finish publish", "error", err)
 		}
-		delete(a.publishers, SessionId(req.SessionId))
+		delete(a.publishers, sessionId)
 	}
 	a.publishersLock.Unlock()
-	return &mq_agent_pb.ClosePublishSessionResponse{
+
+	return mq_agentwire.NewClosePublishSessionResponse(mq_agentwire.ClosePublishSessionResponseInput{
 		Error: finishErr,
-	}, nil
+	}), nil
 }

@@ -15,21 +15,22 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"google.golang.org/grpc/reflection"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_lifecycle_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_pb"
 	"github.com/hanzoai/s3/s3/s3api"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
+	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/lifecyclerpc"
 	"github.com/hanzoai/s3/s3/security"
 	stats_collect "github.com/hanzoai/s3/s3/stats"
-	"github.com/hanzoai/s3/s3/zapsvc"
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/grace"
 	"github.com/hanzoai/s3/s3/util/version"
+	"github.com/hanzoai/s3/s3/wire/iamadapt"
+	s3wire "github.com/hanzoai/s3/s3/wire/s3"
+	"github.com/hanzoai/s3/s3/zapsvc"
+	"github.com/zap-proto/go/transport"
 )
 
 var (
@@ -380,7 +381,6 @@ func (s3opt *S3Options) startS3Server() bool {
 	}
 	defer s3ApiServer.Shutdown()
 
-
 	if runtime.GOOS != "windows" {
 		localSocket := *s3opt.localSocket
 		if localSocket == "" {
@@ -415,21 +415,36 @@ func (s3opt *S3Options) startS3Server() bool {
 		}
 	}
 
-	// starting grpc server
+	// HanzoS3LifecycleInternal now speaks the ZAP transport on the same port the
+	// gRPC server used to bind (the lifecycle worker / shell dial it directly),
+	// dispatched through the pb<->wire bridge so the in-process re-fetch +
+	// identity-CAS + object-lock business logic stays pb-typed.
 	grpcPort := *s3opt.portGrpc
 	grpcL, grpcLocalL, err := util.NewIpAndLocalListeners(*s3opt.bindIp, grpcPort, 0)
 	if err != nil {
 		glog.Fatalf("s3 failed to listen on grpc port %d: %v", grpcPort, err)
 	}
-	grpcS := pb.NewGrpcServer(security.LoadServerTLS(util.GetViper(), "grpc.s3"))
-	s3_pb.RegisterHanzoS3IamCacheServer(grpcS, s3ApiServer)
-	s3_lifecycle_pb.RegisterHanzoS3LifecycleInternalServer(grpcS, s3ApiServer)
-	reflection.Register(grpcS)
-	if grpcLocalL != nil {
-		go grpcS.Serve(grpcLocalL)
+	lifecycleDispatch := func(env []byte) ([]byte, error) {
+		return lifecyclerpc.Dispatch(s3ApiServer.LifecycleDelete, env)
 	}
-	go grpcS.Serve(grpcL)
-	pb.ServeGrpcOnLocalSocket(grpcS, grpcPort)
+	lifecycleSrv := transport.Serve(grpcL, lifecycleDispatch)
+	if grpcLocalL != nil {
+		_ = transport.Serve(grpcLocalL, lifecycleDispatch)
+	}
+
+	// HanzoS3IamCache runs on its own ZAP transport listener (filer -> S3 cache
+	// propagation), no longer on the shared gRPC server. Its port is derived
+	// from the gRPC port so the propagating filer can find it via the cluster
+	// node list. Non-fatal: a cache-listener failure must never take down S3.
+	iamCacheAddr := iamadapt.CacheZapAddress(util.JoinHostPort(*s3opt.bindIp, grpcPort))
+	if iamCacheL, iamCacheErr := net.Listen("tcp", iamCacheAddr); iamCacheErr != nil {
+		glog.Errorf("s3 IAM cache ZAP listener on %s failed to start (S3 unaffected): %v", iamCacheAddr, iamCacheErr)
+	} else {
+		_ = transport.Serve(iamCacheL, func(env []byte) ([]byte, error) {
+			return s3wire.DispatchHanzoS3IamCache(s3ApiServer, env)
+		})
+		glog.V(0).Infof("HanzoS3IamCache ZAP service listening on %s", iamCacheAddr)
+	}
 
 	if *s3opt.tlsPrivateKey != "" {
 		// Check for port conflict when both HTTP and HTTPS are enabled on the same port
@@ -481,7 +496,7 @@ func (s3opt *S3Options) startS3Server() bool {
 				go func() {
 					<-s3opt.shutdownCtx.Done()
 					httpS.Shutdown(context.Background())
-					grpcS.Stop()
+					lifecycleSrv.Close()
 				}()
 			}
 			if err = httpS.ServeTLS(s3ApiListener, "", ""); err != nil && err != http.ErrServerClosed {
@@ -522,7 +537,7 @@ func (s3opt *S3Options) startS3Server() bool {
 			go func() {
 				<-s3opt.shutdownCtx.Done()
 				httpS.Shutdown(context.Background())
-				grpcS.Stop()
+				lifecycleSrv.Close()
 			}()
 		}
 		if err = httpS.Serve(s3ApiListener); err != nil && err != http.ErrServerClosed {
@@ -533,7 +548,6 @@ func (s3opt *S3Options) startS3Server() bool {
 	return true
 
 }
-
 
 // deriveS3AdvertisedEndpoint builds the S3 endpoint URL to advertise to
 // Iceberg catalog clients as part of LoadTable FileIO config. To avoid

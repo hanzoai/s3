@@ -3,20 +3,46 @@
 package filerwire
 
 import (
+	"encoding/binary"
+
 	zap "github.com/zap-proto/go"
 )
 
-// setNestedObject embeds a pre-built child sub-buffer as a nested object at the
-// given field offset of ob. A zero-length child writes a null pointer (the slot
-// keeps its zero value). This is the canonical singular-message embedding used
-// across the generated schemas.
+// setNestedObject embeds a pre-built child message (a standalone New<Child>
+// buffer) as a nested object at the given 4-byte object-pointer field offset of
+// ob. A zero-length child writes a null pointer (the slot keeps its zero value).
+// This is the canonical singular-message embedding used across the generated
+// schemas; the reader side is the matching t.o.Object(fieldOff).
+//
+// A ZAP message is a 16-byte header followed by a data segment; the root object
+// block (the object plus its variable tail) lives at child[rootOffset:] and is
+// position-independent — every text/bytes/nested pointer inside it is RELATIVE
+// to its own field cell. So embedding is a rigid copy of that block into the
+// parent builder at an 8-aligned position (WriteBytes aligns), then a relative
+// SetObject pointer to it. No re-layout, no struct marshaling: the child's bytes
+// ARE the nested message, relocated whole. Nested-in-nested survives because the
+// inner block was itself laid contiguously by the same rule. This keeps the
+// 4-byte object-pointer slot the schema offsets reserve (a bytes field would
+// need 8 and overrun the next field).
 func setNestedObject(b *zap.Builder, ob *zap.ObjectBuilder, fieldOff int, child []byte) {
-	if len(child) == 0 {
-		return
+	off := embedMessage(b, child)
+	ob.SetObject(fieldOff, off)
+}
+
+// embedMessage copies the relocatable root-object block of a standalone child
+// message into b and returns its offset (0 for an empty/short child). The block
+// is child[rootOffset:], where rootOffset is the header's root pointer (bytes
+// 8:12). WriteBytes 8-aligns the destination, matching the alignment the child's
+// builder used, so the copied block's internal relative offsets stay valid.
+func embedMessage(b *zap.Builder, child []byte) int {
+	if len(child) < zap.HeaderSize {
+		return 0
 	}
-	nested := b.StartObject(len(child))
-	nested.SetBytesFixed(0, child)
-	ob.SetObject(fieldOff, nested.Finish())
+	rootOff := binary.LittleEndian.Uint32(child[8:12])
+	if int(rootOff) < zap.HeaderSize || int(rootOff) >= len(child) {
+		return 0
+	}
+	return b.WriteBytes(child[rootOff:])
 }
 
 // addObjectList appends each pre-built sub-buffer in elems as an out-of-line

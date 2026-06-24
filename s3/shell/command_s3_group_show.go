@@ -1,13 +1,12 @@
 package shell
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -51,13 +50,17 @@ func (c *commandS3GroupShow) Do(args []string, commandEnv *CommandEnv, writer io
 		return fmt.Errorf("-name is required")
 	}
 
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.GetConfiguration(ctx, &iam_pb.GetConfigurationRequest{})
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.GetConfiguration(iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
+		if err != nil {
+			return err
+		}
+		cfg, err := iamwire.GetConfigurationResp(body)
 		if err != nil {
 			return err
 		}
 
-		for _, g := range resp.Configuration.GetGroups() {
+		for _, g := range cfg.GetGroups() {
 			if g.Name == *name {
 				status := "enabled"
 				if g.Disabled {

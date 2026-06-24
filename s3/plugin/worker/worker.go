@@ -5,8 +5,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"net"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +16,9 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
+	pluginwire "github.com/hanzoai/s3/s3/wire/plugin"
+	pluginzapbridge "github.com/hanzoai/s3/s3/wire/plugin/zapbridge"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -191,20 +196,22 @@ func (w *Worker) Run(ctx context.Context) error {
 func (w *Worker) runOnce(ctx context.Context, adminAddress string) error {
 	defer w.setConnected(false)
 
-	dialCtx, cancelDial := context.WithTimeout(ctx, 5*time.Second)
-	defer cancelDial()
+	// PluginControlService runs on the admin's ZAP transport at the sibling
+	// port (grpc port + 1), matching the admin-side WorkerGrpcServer listener.
+	pluginAddress := pluginZapAddress(adminAddress)
 
-	conn, err := pb.GrpcDial(dialCtx, adminAddress, false, w.opts.GrpcDialOption)
+	conn, err := transport.Dial("tcp", pluginAddress)
 	if err != nil {
-		return fmt.Errorf("dial admin %s: %w", adminAddress, err)
+		return fmt.Errorf("dial admin %s: %w", pluginAddress, err)
 	}
 	defer conn.Close()
 
-	client := plugin_pb.NewPluginControlServiceClient(conn)
 	connCtx, cancelConn := context.WithCancel(ctx)
 	defer cancelConn()
 
-	stream, err := client.WorkerStream(connCtx)
+	// Open the bidi WorkerStream with an empty init payload; the worker hello is
+	// shipped as the first stream message below, mirroring the prior gRPC flow.
+	stream, err := conn.OpenStream(pluginwire.PluginControlServiceWorkerStreamOrdinal, nil)
 	if err != nil {
 		return fmt.Errorf("open worker stream: %w", err)
 	}
@@ -238,7 +245,7 @@ func (w *Worker) runOnce(ctx context.Context, adminAddress string) error {
 				if msg == nil {
 					continue
 				}
-				if err := stream.Send(msg); err != nil {
+				if err := stream.Send(pluginzapbridge.MarshalWorkerToAdmin(msg)); err != nil {
 					select {
 					case sendErrCh <- err:
 					default:
@@ -279,13 +286,33 @@ func (w *Worker) runOnce(ctx context.Context, adminAddress string) error {
 		default:
 		}
 
-		message, err := stream.Recv()
+		env, err := stream.Recv()
 		if err != nil {
 			return fmt.Errorf("recv admin message: %w", err)
+		}
+		message, err := pluginzapbridge.UnmarshalAdminToWorker(env)
+		if err != nil {
+			return fmt.Errorf("decode admin message: %w", err)
 		}
 
 		w.handleAdminMessage(connCtx, message, send)
 	}
+}
+
+// pluginZapAddress maps an admin gRPC address (host:grpcPort) to the plugin
+// control service's ZAP listener address (host:grpcPort+1), the sibling-port
+// convention the admin WorkerGrpcServer binds. A malformed address is returned
+// unchanged so dialing surfaces the original error.
+func pluginZapAddress(grpcAddress string) string {
+	host, portStr, err := net.SplitHostPort(grpcAddress)
+	if err != nil {
+		return grpcAddress
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return grpcAddress
+	}
+	return net.JoinHostPort(host, strconv.Itoa(port+1))
 }
 
 // IsConnected reports whether the worker currently has an active stream to admin.

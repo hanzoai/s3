@@ -5,8 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hanzoai/s3/s3/pb/mq_agent_pb"
 	"github.com/hanzoai/s3/s3/pb/schema_pb"
+	mq_agentwire "github.com/hanzoai/s3/s3/wire/mq_agent"
+	mq_schemawire "github.com/hanzoai/s3/s3/wire/mq_schema"
 )
 
 // SMQOffsetIntegration provides integration between offset management and SMQ broker
@@ -42,14 +43,14 @@ func (integration *SMQOffsetIntegration) PublishRecord(
 	partition *schema_pb.Partition,
 	key []byte,
 	value *schema_pb.RecordValue,
-) (*mq_agent_pb.PublishRecordResponse, error) {
+) (*mq_agentwire.PublishRecordResponse, error) {
 
 	// Assign offset for this record
 	result := integration.offsetAssigner.AssignSingleOffset(namespace, topicName, partition)
 	if result.Error != nil {
-		return &mq_agent_pb.PublishRecordResponse{
+		return wrapPublishRecordResponse(mq_agentwire.PublishRecordResponseInput{
 			Error: fmt.Sprintf("Failed to assign offset: %v", result.Error),
-		}, nil
+		})
 	}
 
 	assignment := result.Assignment
@@ -58,12 +59,21 @@ func (integration *SMQOffsetIntegration) PublishRecord(
 	// Record-to-offset mappings are now handled by persistent storage layer
 
 	// Return response with offset information
-	return &mq_agent_pb.PublishRecordResponse{
+	return wrapPublishRecordResponse(mq_agentwire.PublishRecordResponseInput{
 		AckSequence: assignment.Offset, // Use offset as ack sequence for now
 		BaseOffset:  assignment.Offset,
 		LastOffset:  assignment.Offset,
 		Error:       "",
-	}, nil
+	})
+}
+
+// wrapPublishRecordResponse builds and re-wraps a ZAP PublishRecordResponse.
+func wrapPublishRecordResponse(in mq_agentwire.PublishRecordResponseInput) (*mq_agentwire.PublishRecordResponse, error) {
+	resp, err := mq_agentwire.WrapPublishRecordResponse(mq_agentwire.NewPublishRecordResponse(in))
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
 // PublishRecordBatch publishes a batch of records and assigns them offsets
@@ -71,20 +81,20 @@ func (integration *SMQOffsetIntegration) PublishRecordBatch(
 	namespace, topicName string,
 	partition *schema_pb.Partition,
 	records []PublishRecordRequest,
-) (*mq_agent_pb.PublishRecordResponse, error) {
+) (*mq_agentwire.PublishRecordResponse, error) {
 
 	if len(records) == 0 {
-		return &mq_agent_pb.PublishRecordResponse{
+		return wrapPublishRecordResponse(mq_agentwire.PublishRecordResponseInput{
 			Error: "Empty record batch",
-		}, nil
+		})
 	}
 
 	// Assign batch of offsets
 	result := integration.offsetAssigner.AssignBatchOffsets(namespace, topicName, partition, int64(len(records)))
 	if result.Error != nil {
-		return &mq_agent_pb.PublishRecordResponse{
+		return wrapPublishRecordResponse(mq_agentwire.PublishRecordResponseInput{
 			Error: fmt.Sprintf("Failed to assign batch offsets: %v", result.Error),
-		}, nil
+		})
 	}
 
 	batch := result.Batch
@@ -92,12 +102,12 @@ func (integration *SMQOffsetIntegration) PublishRecordBatch(
 	// Note: Removed in-memory mapping storage to prevent memory leaks
 	// Batch record-to-offset mappings are now handled by persistent storage layer
 
-	return &mq_agent_pb.PublishRecordResponse{
+	return wrapPublishRecordResponse(mq_agentwire.PublishRecordResponseInput{
 		AckSequence: batch.LastOffset, // Use last offset as ack sequence
 		BaseOffset:  batch.BaseOffset,
 		LastOffset:  batch.LastOffset,
 		Error:       "",
-	}, nil
+	})
 }
 
 // CreateSubscription creates an offset-based subscription
@@ -122,7 +132,7 @@ func (integration *SMQOffsetIntegration) CreateSubscription(
 func (integration *SMQOffsetIntegration) SubscribeRecords(
 	subscription *OffsetSubscription,
 	maxRecords int64,
-) ([]*mq_agent_pb.SubscribeRecordResponse, error) {
+) ([]*mq_agentwire.SubscribeRecordResponse, error) {
 
 	if !subscription.IsActive {
 		return nil, fmt.Errorf("subscription is not active")
@@ -136,25 +146,29 @@ func (integration *SMQOffsetIntegration) SubscribeRecords(
 
 	if offsetRange.Count == 0 {
 		// No records available
-		return []*mq_agent_pb.SubscribeRecordResponse{}, nil
+		return []*mq_agentwire.SubscribeRecordResponse{}, nil
 	}
 
 	// TODO: This is where we would integrate with SMQ's actual storage layer
 	// For now, return mock responses with offset information
-	responses := make([]*mq_agent_pb.SubscribeRecordResponse, offsetRange.Count)
+	responses := make([]*mq_agentwire.SubscribeRecordResponse, offsetRange.Count)
 
 	for i := int64(0); i < offsetRange.Count; i++ {
 		offset := offsetRange.StartOffset + i
 
-		responses[i] = &mq_agent_pb.SubscribeRecordResponse{
+		resp, err := mq_agentwire.WrapSubscribeRecordResponse(mq_agentwire.NewSubscribeRecordResponse(mq_agentwire.SubscribeRecordResponseInput{
 			Key:           []byte(fmt.Sprintf("key-%d", offset)),
-			Value:         &schema_pb.RecordValue{}, // Mock value
-			TsNs:          offset * 1000000,         // Mock timestamp based on offset
+			Value:         mq_schemawire.NewRecordValue(mq_schemawire.RecordValueInput{}), // Mock value
+			TsNs:          offset * 1000000,                                               // Mock timestamp based on offset
 			Offset:        offset,
 			IsEndOfStream: false,
 			IsEndOfTopic:  false,
 			Error:         "",
+		}))
+		if err != nil {
+			return nil, err
 		}
+		responses[i] = &resp
 	}
 
 	// Advance the subscription

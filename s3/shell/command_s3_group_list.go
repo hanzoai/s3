@@ -1,11 +1,10 @@
 package shell
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -40,14 +39,18 @@ type s3GroupListEntry struct {
 }
 
 func (c *commandS3GroupList) Do(args []string, commandEnv *CommandEnv, writer io.Writer) error {
-	return commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		resp, err := client.GetConfiguration(ctx, &iam_pb.GetConfigurationRequest{})
+	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, body, err := client.GetConfiguration(iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
+		if err != nil {
+			return err
+		}
+		cfg, err := iamwire.GetConfigurationResp(body)
 		if err != nil {
 			return err
 		}
 
 		var result []s3GroupListEntry
-		for _, g := range resp.Configuration.GetGroups() {
+		for _, g := range cfg.GetGroups() {
 			status := "enabled"
 			if g.Disabled {
 				status = "disabled"

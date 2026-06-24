@@ -3,33 +3,34 @@ package s3server
 import (
 	"context"
 	"encoding/json"
-	"strings"
+	"fmt"
 
 	"github.com/hanzoai/s3/s3/credential"
 	"github.com/hanzoai/s3/s3/glog"
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
 	"github.com/hanzoai/s3/s3/s3api/policy_engine"
 	"github.com/hanzoai/s3/s3/security"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
-// IamGrpcServer implements the IAM gRPC service on the filer.
-// Auth is opt-in: when jwt.filer_signing.key is set in security.toml the
-// service requires a Bearer token in the "authorization" metadata signed with
-// that key; when it is empty every RPC is accepted unauthenticated, matching
-// the rest of Hanzo's gRPC surface. Operators who expose the filer gRPC
-// port beyond a trusted network should configure the key.
+// IamGrpcServer implements the IAM service on the filer over the ZAP transport.
+// It satisfies iamwire.HanzoIdentityAccessManagementHandler: every method takes
+// a ZAP-encoded request envelope and returns a ZAP-encoded response.
+//
+// The legacy gRPC metadata Bearer-token check is gone: the IAM service now
+// rides a dedicated ZAP listener whose transport layer (X-Wing PQ TLS) is the
+// connection-level security boundary, so adminSigningKey is retained only for
+// continuity of construction and is no longer consulted per-call.
 type IamGrpcServer struct {
-	iam_pb.UnimplementedHanzoIdentityAccessManagementServer
 	credentialManager *credential.CredentialManager
 	adminSigningKey   security.SigningKey
 }
 
-// NewIamGrpcServer creates a new IAM gRPC server. If adminSigningKey is empty
-// the service runs unauthenticated; otherwise every RPC requires a Bearer
-// token signed with the key.
+// Compile-time assertion that the server satisfies the wire handler contract.
+var _ iamwire.HanzoIdentityAccessManagementHandler = (*IamGrpcServer)(nil)
+
+// NewIamGrpcServer creates a new IAM server. adminSigningKey is retained for
+// construction compatibility; connection security is provided by the ZAP
+// transport.
 func NewIamGrpcServer(credentialManager *credential.CredentialManager, adminSigningKey security.SigningKey) *IamGrpcServer {
 	return &IamGrpcServer{
 		credentialManager: credentialManager,
@@ -37,213 +38,166 @@ func NewIamGrpcServer(credentialManager *credential.CredentialManager, adminSign
 	}
 }
 
-// checkAdminAuth verifies the caller presented a Bearer token signed by the
-// filer's write-signing key. It is invoked at the top of every IAM RPC.
-// When no signing key is configured the service runs unauthenticated and this
-// check is a no-op.
-func (s *IamGrpcServer) checkAdminAuth(ctx context.Context) error {
-	if len(s.adminSigningKey) == 0 {
-		return nil
-	}
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return status.Error(codes.Unauthenticated, "missing metadata")
-	}
-	authHeaders := md.Get("authorization")
-	if len(authHeaders) == 0 {
-		return status.Error(codes.Unauthenticated, "missing authorization metadata")
-	}
-	// RFC 6750 §2.1: the "Bearer" auth-scheme name is case-insensitive.
-	// Tolerate surrounding whitespace and any spacing between scheme and token.
-	raw := strings.TrimSpace(authHeaders[0])
-	parts := strings.Fields(raw)
-	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || parts[1] == "" {
-		return status.Error(codes.Unauthenticated, "authorization header must use Bearer scheme")
-	}
-	token := parts[1]
-	parsed, err := security.DecodeJwt(s.adminSigningKey, security.EncodedJwt(token), &security.HanzoFilerAdminClaims{})
-	if err != nil || parsed == nil || !parsed.Valid {
-		return status.Error(codes.Unauthenticated, "invalid admin token")
-	}
-	return nil
-}
-
 //////////////////////////////////////////////////
 // Configuration Management
 
-func (s *IamGrpcServer) GetConfiguration(ctx context.Context, req *iam_pb.GetConfigurationRequest) (*iam_pb.GetConfigurationResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) GetConfiguration(req []byte) ([]byte, error) {
+	if _, err := iamwire.WrapGetConfigurationRequest(req); err != nil {
 		return nil, err
-	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
 	}
 	glog.V(4).Infof("GetConfiguration")
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	config, err := s.credentialManager.LoadConfiguration(ctx)
+	config, err := s.credentialManager.LoadConfiguration(context.Background())
 	if err != nil {
 		glog.Errorf("Failed to load configuration: %v", err)
 		return nil, err
 	}
 
-	return &iam_pb.GetConfigurationResponse{
-		Configuration: config,
-	}, nil
+	return iamwire.NewGetConfigurationResponse(iamwire.GetConfigurationResponseInput{
+		Configuration: iamwire.ConfigurationInputFromPB(config),
+	}), nil
 }
 
-func (s *IamGrpcServer) PutConfiguration(ctx context.Context, req *iam_pb.PutConfigurationRequest) (*iam_pb.PutConfigurationResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) PutConfiguration(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapPutConfigurationRequest(req)
+	if err != nil {
 		return nil, err
-	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
 	}
 	glog.V(4).Infof("PutConfiguration")
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	if req.Configuration == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "configuration is nil")
-	}
-
-	err := s.credentialManager.SaveConfiguration(ctx, req.Configuration)
-	if err != nil {
+	config := iamwire.ConfigurationToPB(request.Configuration())
+	if err := s.credentialManager.SaveConfiguration(context.Background(), config); err != nil {
 		glog.Errorf("Failed to save configuration: %v", err)
 		return nil, err
 	}
 
-	return &iam_pb.PutConfigurationResponse{}, nil
+	return iamwire.NewPutConfigurationResponse(iamwire.PutConfigurationResponseInput{}), nil
 }
 
 //////////////////////////////////////////////////
 // User Management
 
-func (s *IamGrpcServer) CreateUser(ctx context.Context, req *iam_pb.CreateUserRequest) (*iam_pb.CreateUserResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) CreateUser(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapCreateUserRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil || req.Identity == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "identity is required")
-	}
-	glog.V(4).Infof("IAM: Filer.CreateUser %s", req.Identity.Name)
+	identity := iamwire.IdentityToPB(request.Identity())
+	glog.V(4).Infof("IAM: Filer.CreateUser %s", identity.Name)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	err := s.credentialManager.CreateUser(ctx, req.Identity)
-	if err != nil {
+	if err := s.credentialManager.CreateUser(context.Background(), identity); err != nil {
 		if err == credential.ErrUserAlreadyExists {
-			return nil, status.Errorf(codes.AlreadyExists, "user %s already exists", req.Identity.Name)
+			return nil, fmt.Errorf("user %s already exists", identity.Name)
 		}
-		glog.Errorf("Failed to create user %s: %v", req.Identity.Name, err)
-		return nil, status.Errorf(codes.Internal, "failed to create user: %v", err)
+		glog.Errorf("Failed to create user %s: %v", identity.Name, err)
+		return nil, fmt.Errorf("failed to create user: %v", err)
 	}
 
-	return &iam_pb.CreateUserResponse{}, nil
+	return iamwire.NewCreateUserResponse(iamwire.CreateUserResponseInput{}), nil
 }
 
-func (s *IamGrpcServer) GetUser(ctx context.Context, req *iam_pb.GetUserRequest) (*iam_pb.GetUserResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) GetUser(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapGetUserRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
-	}
-	glog.V(4).Infof("GetUser: %s", req.Username)
+	username := request.Username()
+	glog.V(4).Infof("GetUser: %s", username)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	identity, err := s.credentialManager.GetUser(ctx, req.Username)
+	identity, err := s.credentialManager.GetUser(context.Background(), username)
 	if err != nil {
 		if err == credential.ErrUserNotFound {
 			// Fall back to static identities (loaded from -s3.config file)
-			if si := s.credentialManager.GetStaticIdentity(req.Username); si != nil {
-				return &iam_pb.GetUserResponse{Identity: si}, nil
+			if si := s.credentialManager.GetStaticIdentity(username); si != nil {
+				return iamwire.NewGetUserResponse(iamwire.GetUserResponseInput{
+					Identity: iamwire.IdentityInputFromPB(si),
+				}), nil
 			}
-			return nil, status.Errorf(codes.NotFound, "user %s not found", req.Username)
+			return nil, fmt.Errorf("user %s not found", username)
 		}
-		glog.Errorf("Failed to get user %s: %v", req.Username, err)
-		return nil, status.Errorf(codes.Internal, "failed to get user: %v", err)
+		glog.Errorf("Failed to get user %s: %v", username, err)
+		return nil, fmt.Errorf("failed to get user: %v", err)
 	}
 
-	return &iam_pb.GetUserResponse{
-		Identity: identity,
-	}, nil
+	return iamwire.NewGetUserResponse(iamwire.GetUserResponseInput{
+		Identity: iamwire.IdentityInputFromPB(identity),
+	}), nil
 }
 
-func (s *IamGrpcServer) UpdateUser(ctx context.Context, req *iam_pb.UpdateUserRequest) (*iam_pb.UpdateUserResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) UpdateUser(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapUpdateUserRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil || req.Identity == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "identity is required")
-	}
-	glog.V(4).Infof("IAM: Filer.UpdateUser %s", req.Username)
+	username := request.Username()
+	identity := iamwire.IdentityToPB(request.Identity())
+	glog.V(4).Infof("IAM: Filer.UpdateUser %s", username)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	err := s.credentialManager.UpdateUser(ctx, req.Username, req.Identity)
-	if err != nil {
+	if err := s.credentialManager.UpdateUser(context.Background(), username, identity); err != nil {
 		if err == credential.ErrUserNotFound {
-			return nil, status.Errorf(codes.NotFound, "user %s not found", req.Username)
+			return nil, fmt.Errorf("user %s not found", username)
 		}
-		glog.Errorf("Failed to update user %s: %v", req.Username, err)
-		return nil, status.Errorf(codes.Internal, "failed to update user: %v", err)
+		glog.Errorf("Failed to update user %s: %v", username, err)
+		return nil, fmt.Errorf("failed to update user: %v", err)
 	}
 
-	return &iam_pb.UpdateUserResponse{}, nil
+	return iamwire.NewUpdateUserResponse(iamwire.UpdateUserResponseInput{}), nil
 }
 
-func (s *IamGrpcServer) DeleteUser(ctx context.Context, req *iam_pb.DeleteUserRequest) (*iam_pb.DeleteUserResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) DeleteUser(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapDeleteUserRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
-	}
-	glog.V(4).Infof("IAM: Filer.DeleteUser %s", req.Username)
+	username := request.Username()
+	glog.V(4).Infof("IAM: Filer.DeleteUser %s", username)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	err := s.credentialManager.DeleteUser(ctx, req.Username)
-	if err != nil {
+	if err := s.credentialManager.DeleteUser(context.Background(), username); err != nil {
 		if err == credential.ErrUserNotFound {
-			return nil, status.Errorf(codes.NotFound, "user %s not found", req.Username)
+			return nil, fmt.Errorf("user %s not found", username)
 		}
-		glog.Errorf("Failed to delete user %s: %v", req.Username, err)
-		return nil, status.Errorf(codes.Internal, "failed to delete user: %v", err)
+		glog.Errorf("Failed to delete user %s: %v", username, err)
+		return nil, fmt.Errorf("failed to delete user: %v", err)
 	}
 
-	return &iam_pb.DeleteUserResponse{}, nil
+	return iamwire.NewDeleteUserResponse(iamwire.DeleteUserResponseInput{}), nil
 }
 
-func (s *IamGrpcServer) ListUsers(ctx context.Context, req *iam_pb.ListUsersRequest) (*iam_pb.ListUsersResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) ListUsers(req []byte) ([]byte, error) {
+	if _, err := iamwire.WrapListUsersRequest(req); err != nil {
 		return nil, err
-	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
 	}
 	glog.V(4).Infof("ListUsers")
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	usernames, err := s.credentialManager.ListUsers(ctx)
+	usernames, err := s.credentialManager.ListUsers(context.Background())
 	if err != nil {
 		glog.Errorf("Failed to list users: %v", err)
 		return nil, err
@@ -263,381 +217,368 @@ func (s *IamGrpcServer) ListUsers(ctx context.Context, req *iam_pb.ListUsersRequ
 		}
 	}
 
-	return &iam_pb.ListUsersResponse{
+	return iamwire.NewListUsersResponse(iamwire.ListUsersResponseInput{
 		Usernames: usernames,
-	}, nil
+	}), nil
 }
 
 //////////////////////////////////////////////////
 // Access Key Management
 
-func (s *IamGrpcServer) CreateAccessKey(ctx context.Context, req *iam_pb.CreateAccessKeyRequest) (*iam_pb.CreateAccessKeyResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) CreateAccessKey(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapCreateAccessKeyRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil || req.Credential == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "credential is required")
-	}
-	glog.V(4).Infof("CreateAccessKey for user: %s", req.Username)
+	username := request.Username()
+	cred := iamwire.CredentialToPBExported(request.Credential())
+	glog.V(4).Infof("CreateAccessKey for user: %s", username)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	err := s.credentialManager.CreateAccessKey(ctx, req.Username, req.Credential)
-	if err != nil {
+	if err := s.credentialManager.CreateAccessKey(context.Background(), username, cred); err != nil {
 		if err == credential.ErrUserNotFound {
-			return nil, status.Errorf(codes.NotFound, "user %s not found", req.Username)
+			return nil, fmt.Errorf("user %s not found", username)
 		}
-		glog.Errorf("Failed to create access key for user %s: %v", req.Username, err)
-		return nil, status.Errorf(codes.Internal, "failed to create access key: %v", err)
+		glog.Errorf("Failed to create access key for user %s: %v", username, err)
+		return nil, fmt.Errorf("failed to create access key: %v", err)
 	}
 
-	return &iam_pb.CreateAccessKeyResponse{}, nil
+	return iamwire.NewCreateAccessKeyResponse(iamwire.CreateAccessKeyResponseInput{}), nil
 }
 
-func (s *IamGrpcServer) DeleteAccessKey(ctx context.Context, req *iam_pb.DeleteAccessKeyRequest) (*iam_pb.DeleteAccessKeyResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) DeleteAccessKey(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapDeleteAccessKeyRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
-	}
-	glog.V(4).Infof("DeleteAccessKey: %s for user: %s", req.AccessKey, req.Username)
+	username := request.Username()
+	accessKey := request.AccessKey()
+	glog.V(4).Infof("DeleteAccessKey: %s for user: %s", accessKey, username)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	err := s.credentialManager.DeleteAccessKey(ctx, req.Username, req.AccessKey)
-	if err != nil {
+	if err := s.credentialManager.DeleteAccessKey(context.Background(), username, accessKey); err != nil {
 		if err == credential.ErrUserNotFound {
-			return nil, status.Errorf(codes.NotFound, "user %s not found", req.Username)
+			return nil, fmt.Errorf("user %s not found", username)
 		}
 		if err == credential.ErrAccessKeyNotFound {
-			return nil, status.Errorf(codes.NotFound, "access key %s not found", req.AccessKey)
+			return nil, fmt.Errorf("access key %s not found", accessKey)
 		}
-		glog.Errorf("Failed to delete access key %s for user %s: %v", req.AccessKey, req.Username, err)
-		return nil, status.Errorf(codes.Internal, "failed to delete access key: %v", err)
+		glog.Errorf("Failed to delete access key %s for user %s: %v", accessKey, username, err)
+		return nil, fmt.Errorf("failed to delete access key: %v", err)
 	}
 
-	return &iam_pb.DeleteAccessKeyResponse{}, nil
+	return iamwire.NewDeleteAccessKeyResponse(iamwire.DeleteAccessKeyResponseInput{}), nil
 }
 
-func (s *IamGrpcServer) GetUserByAccessKey(ctx context.Context, req *iam_pb.GetUserByAccessKeyRequest) (*iam_pb.GetUserByAccessKeyResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) GetUserByAccessKey(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapGetUserByAccessKeyRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
-	}
-	glog.V(4).Infof("GetUserByAccessKey: %s", req.AccessKey)
+	accessKey := request.AccessKey()
+	glog.V(4).Infof("GetUserByAccessKey: %s", accessKey)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	identity, err := s.credentialManager.GetUserByAccessKey(ctx, req.AccessKey)
+	identity, err := s.credentialManager.GetUserByAccessKey(context.Background(), accessKey)
 	if err != nil {
 		if err == credential.ErrAccessKeyNotFound {
-			return nil, status.Errorf(codes.NotFound, "access key %s not found", req.AccessKey)
+			return nil, fmt.Errorf("access key %s not found", accessKey)
 		}
-		glog.Errorf("Failed to get user by access key %s: %v", req.AccessKey, err)
-		return nil, status.Errorf(codes.Internal, "failed to get user: %v", err)
+		glog.Errorf("Failed to get user by access key %s: %v", accessKey, err)
+		return nil, fmt.Errorf("failed to get user: %v", err)
 	}
 
-	return &iam_pb.GetUserByAccessKeyResponse{
-		Identity: identity,
-	}, nil
+	return iamwire.NewGetUserByAccessKeyResponse(iamwire.GetUserByAccessKeyResponseInput{
+		Identity: iamwire.IdentityInputFromPB(identity),
+	}), nil
 }
 
 //////////////////////////////////////////////////
 // Policy Management
 
-func (s *IamGrpcServer) PutPolicy(ctx context.Context, req *iam_pb.PutPolicyRequest) (*iam_pb.PutPolicyResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) PutPolicy(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapPutPolicyRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
-	}
-	glog.V(4).Infof("IAM: Filer.PutPolicy %s", req.Name)
+	name := request.Name()
+	content := request.Content()
+	glog.V(4).Infof("IAM: Filer.PutPolicy %s", name)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	if req.Name == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "policy name is required")
+	if name == "" {
+		return nil, fmt.Errorf("policy name is required")
 	}
-	if err := credential.ValidatePolicyName(req.Name); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "%v", err)
+	if err := credential.ValidatePolicyName(name); err != nil {
+		return nil, err
 	}
-	if req.Content == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "policy content is required")
+	if content == "" {
+		return nil, fmt.Errorf("policy content is required")
 	}
 
 	var policy policy_engine.PolicyDocument
-	if err := json.Unmarshal([]byte(req.Content), &policy); err != nil {
-		glog.Errorf("Failed to unmarshal policy %s: %v", req.Name, err)
+	if err := json.Unmarshal([]byte(content), &policy); err != nil {
+		glog.Errorf("Failed to unmarshal policy %s: %v", name, err)
 		return nil, err
 	}
 
-	err := s.credentialManager.PutPolicy(ctx, req.Name, policy)
-	if err != nil {
-		glog.Errorf("Failed to put policy %s: %v", req.Name, err)
+	if err := s.credentialManager.PutPolicy(context.Background(), name, policy); err != nil {
+		glog.Errorf("Failed to put policy %s: %v", name, err)
 		return nil, err
 	}
 
-	return &iam_pb.PutPolicyResponse{}, nil
+	return iamwire.NewPutPolicyResponse(iamwire.PutPolicyResponseInput{}), nil
 }
 
-func (s *IamGrpcServer) GetPolicy(ctx context.Context, req *iam_pb.GetPolicyRequest) (*iam_pb.GetPolicyResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) GetPolicy(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapGetPolicyRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
-	}
-	glog.V(4).Infof("GetPolicy: %s", req.Name)
+	name := request.Name()
+	glog.V(4).Infof("GetPolicy: %s", name)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	policy, err := s.credentialManager.GetPolicy(ctx, req.Name)
+	policy, err := s.credentialManager.GetPolicy(context.Background(), name)
 	if err != nil {
-		glog.Errorf("Failed to get policy %s: %v", req.Name, err)
+		glog.Errorf("Failed to get policy %s: %v", name, err)
 		return nil, err
 	}
 
 	if policy == nil {
-		return nil, status.Errorf(codes.NotFound, "policy %s not found", req.Name)
+		return nil, fmt.Errorf("policy %s not found", name)
 	}
 
 	jsonBytes, err := json.Marshal(policy)
 	if err != nil {
-		glog.Errorf("Failed to marshal policy %s: %v", req.Name, err)
+		glog.Errorf("Failed to marshal policy %s: %v", name, err)
 		return nil, err
 	}
 
-	return &iam_pb.GetPolicyResponse{
-		Name:    req.Name,
+	return iamwire.NewGetPolicyResponse(iamwire.GetPolicyResponseInput{
+		Name:    name,
 		Content: string(jsonBytes),
-	}, nil
+	}), nil
 }
 
-func (s *IamGrpcServer) ListPolicies(ctx context.Context, req *iam_pb.ListPoliciesRequest) (*iam_pb.ListPoliciesResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) ListPolicies(req []byte) ([]byte, error) {
+	if _, err := iamwire.WrapListPoliciesRequest(req); err != nil {
 		return nil, err
-	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
 	}
 	glog.V(4).Infof("ListPolicies")
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	policiesData, err := s.credentialManager.GetPolicies(ctx)
+	policiesData, err := s.credentialManager.GetPolicies(context.Background())
 	if err != nil {
 		glog.Errorf("Failed to list policies: %v", err)
 		return nil, err
 	}
 
-	var policies []*iam_pb.Policy
+	var policies []iamwire.PolicyInput
 	for name, policy := range policiesData {
 		jsonBytes, err := json.Marshal(policy)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal policy %s: %v", name, err)
+			return nil, fmt.Errorf("failed to marshal policy %s: %v", name, err)
 		}
-		policies = append(policies, &iam_pb.Policy{
+		policies = append(policies, iamwire.PolicyInput{
 			Name:    name,
 			Content: string(jsonBytes),
 		})
 	}
 
-	return &iam_pb.ListPoliciesResponse{
+	return iamwire.NewListPoliciesResponse(iamwire.ListPoliciesResponseInput{
 		Policies: policies,
-	}, nil
+	}), nil
 }
 
-func (s *IamGrpcServer) DeletePolicy(ctx context.Context, req *iam_pb.DeletePolicyRequest) (*iam_pb.DeletePolicyResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) DeletePolicy(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapDeletePolicyRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
-	}
-	glog.V(4).Infof("DeletePolicy: %s", req.Name)
+	name := request.Name()
+	glog.V(4).Infof("DeletePolicy: %s", name)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	err := s.credentialManager.DeletePolicy(ctx, req.Name)
-	if err != nil {
-		glog.Errorf("Failed to delete policy %s: %v", req.Name, err)
+	if err := s.credentialManager.DeletePolicy(context.Background(), name); err != nil {
+		glog.Errorf("Failed to delete policy %s: %v", name, err)
 		return nil, err
 	}
 
-	return &iam_pb.DeletePolicyResponse{}, nil
+	return iamwire.NewDeletePolicyResponse(iamwire.DeletePolicyResponseInput{}), nil
 }
 
 //////////////////////////////////////////////////
 // Service Account Management
 
-func (s *IamGrpcServer) CreateServiceAccount(ctx context.Context, req *iam_pb.CreateServiceAccountRequest) (*iam_pb.CreateServiceAccountResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) CreateServiceAccount(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapCreateServiceAccountRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil || req.ServiceAccount == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "service account is required")
+	sa := iamwire.ServiceAccountToPB(request.ServiceAccount())
+	if err := credential.ValidateServiceAccountId(sa.Id); err != nil {
+		return nil, err
 	}
-	if err := credential.ValidateServiceAccountId(req.ServiceAccount.Id); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	glog.V(4).Infof("CreateServiceAccount: %s", req.ServiceAccount.Id)
+	glog.V(4).Infof("CreateServiceAccount: %s", sa.Id)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	err := s.credentialManager.CreateServiceAccount(ctx, req.ServiceAccount)
-	if err != nil {
-		glog.Errorf("Failed to create service account %s: %v", req.ServiceAccount.Id, err)
-		return nil, status.Errorf(codes.Internal, "failed to create service account: %v", err)
+	if err := s.credentialManager.CreateServiceAccount(context.Background(), sa); err != nil {
+		glog.Errorf("Failed to create service account %s: %v", sa.Id, err)
+		return nil, fmt.Errorf("failed to create service account: %v", err)
 	}
 
-	return &iam_pb.CreateServiceAccountResponse{}, nil
+	return iamwire.NewCreateServiceAccountResponse(iamwire.CreateServiceAccountResponseInput{}), nil
 }
 
-func (s *IamGrpcServer) UpdateServiceAccount(ctx context.Context, req *iam_pb.UpdateServiceAccountRequest) (*iam_pb.UpdateServiceAccountResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) UpdateServiceAccount(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapUpdateServiceAccountRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil || req.ServiceAccount == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "service account is required")
-	}
-	glog.V(4).Infof("UpdateServiceAccount: %s", req.Id)
+	id := request.ID()
+	sa := iamwire.ServiceAccountToPB(request.ServiceAccount())
+	glog.V(4).Infof("UpdateServiceAccount: %s", id)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	err := s.credentialManager.UpdateServiceAccount(ctx, req.Id, req.ServiceAccount)
-	if err != nil {
-		glog.Errorf("Failed to update service account %s: %v", req.Id, err)
-		return nil, status.Errorf(codes.Internal, "failed to update service account: %v", err)
+	if err := s.credentialManager.UpdateServiceAccount(context.Background(), id, sa); err != nil {
+		glog.Errorf("Failed to update service account %s: %v", id, err)
+		return nil, fmt.Errorf("failed to update service account: %v", err)
 	}
 
-	return &iam_pb.UpdateServiceAccountResponse{}, nil
+	return iamwire.NewUpdateServiceAccountResponse(iamwire.UpdateServiceAccountResponseInput{}), nil
 }
 
-func (s *IamGrpcServer) DeleteServiceAccount(ctx context.Context, req *iam_pb.DeleteServiceAccountRequest) (*iam_pb.DeleteServiceAccountResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) DeleteServiceAccount(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapDeleteServiceAccountRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
-	}
-	glog.V(4).Infof("DeleteServiceAccount: %s", req.Id)
+	id := request.ID()
+	glog.V(4).Infof("DeleteServiceAccount: %s", id)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	err := s.credentialManager.DeleteServiceAccount(ctx, req.Id)
-	if err != nil {
+	if err := s.credentialManager.DeleteServiceAccount(context.Background(), id); err != nil {
 		if err == credential.ErrServiceAccountNotFound {
-			return nil, status.Errorf(codes.NotFound, "service account %s not found", req.Id)
+			return nil, fmt.Errorf("service account %s not found", id)
 		}
-		glog.Errorf("Failed to delete service account %s: %v", req.Id, err)
-		return nil, status.Errorf(codes.Internal, "failed to delete service account: %v", err)
+		glog.Errorf("Failed to delete service account %s: %v", id, err)
+		return nil, fmt.Errorf("failed to delete service account: %v", err)
 	}
 
-	return &iam_pb.DeleteServiceAccountResponse{}, nil
+	return iamwire.NewDeleteServiceAccountResponse(iamwire.DeleteServiceAccountResponseInput{}), nil
 }
 
-func (s *IamGrpcServer) GetServiceAccount(ctx context.Context, req *iam_pb.GetServiceAccountRequest) (*iam_pb.GetServiceAccountResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) GetServiceAccount(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapGetServiceAccountRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
-	}
-	glog.V(4).Infof("GetServiceAccount: %s", req.Id)
+	id := request.ID()
+	glog.V(4).Infof("GetServiceAccount: %s", id)
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	sa, err := s.credentialManager.GetServiceAccount(ctx, req.Id)
+	sa, err := s.credentialManager.GetServiceAccount(context.Background(), id)
 	if err != nil {
-		glog.Errorf("Failed to get service account %s: %v", req.Id, err)
-		return nil, status.Errorf(codes.Internal, "failed to get service account: %v", err)
+		glog.Errorf("Failed to get service account %s: %v", id, err)
+		return nil, fmt.Errorf("failed to get service account: %v", err)
 	}
 
 	if sa == nil {
-		return nil, status.Errorf(codes.NotFound, "service account %s not found", req.Id)
+		return nil, fmt.Errorf("service account %s not found", id)
 	}
 
-	return &iam_pb.GetServiceAccountResponse{
-		ServiceAccount: sa,
-	}, nil
+	return iamwire.NewGetServiceAccountResponse(iamwire.GetServiceAccountResponseInput{
+		ServiceAccount: iamwire.ServiceAccountInputFromPB(sa),
+	}), nil
 }
 
-func (s *IamGrpcServer) ListServiceAccounts(ctx context.Context, req *iam_pb.ListServiceAccountsRequest) (*iam_pb.ListServiceAccountsResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) ListServiceAccounts(req []byte) ([]byte, error) {
+	if _, err := iamwire.WrapListServiceAccountsRequest(req); err != nil {
 		return nil, err
-	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
 	}
 	glog.V(4).Infof("ListServiceAccounts")
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	accounts, err := s.credentialManager.ListServiceAccounts(ctx)
+	accounts, err := s.credentialManager.ListServiceAccounts(context.Background())
 	if err != nil {
 		glog.Errorf("Failed to list service accounts: %v", err)
-		return nil, status.Errorf(codes.Internal, "failed to list service accounts: %v", err)
+		return nil, fmt.Errorf("failed to list service accounts: %v", err)
 	}
 
-	return &iam_pb.ListServiceAccountsResponse{
-		ServiceAccounts: accounts,
-	}, nil
+	saInputs := make([]iamwire.ServiceAccountInput, 0, len(accounts))
+	for _, sa := range accounts {
+		if v := iamwire.ServiceAccountInputFromPB(sa); v != nil {
+			saInputs = append(saInputs, *v)
+		}
+	}
+
+	return iamwire.NewListServiceAccountsResponse(iamwire.ListServiceAccountsResponseInput{
+		ServiceAccounts: saInputs,
+	}), nil
 }
 
-func (s *IamGrpcServer) GetServiceAccountByAccessKey(ctx context.Context, req *iam_pb.GetServiceAccountByAccessKeyRequest) (*iam_pb.GetServiceAccountByAccessKeyResponse, error) {
-	if err := s.checkAdminAuth(ctx); err != nil {
+func (s *IamGrpcServer) GetServiceAccountByAccessKey(req []byte) ([]byte, error) {
+	request, err := iamwire.WrapGetServiceAccountByAccessKeyRequest(req)
+	if err != nil {
 		return nil, err
 	}
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "request is required")
-	}
-	glog.V(4).Infof("GetServiceAccountByAccessKey: %s", req.AccessKey)
-	if req.AccessKey == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "access key is required")
+	accessKey := request.AccessKey()
+	glog.V(4).Infof("GetServiceAccountByAccessKey: %s", accessKey)
+	if accessKey == "" {
+		return nil, fmt.Errorf("access key is required")
 	}
 
 	if s.credentialManager == nil {
-		return nil, status.Errorf(codes.FailedPrecondition, "credential manager is not configured")
+		return nil, fmt.Errorf("credential manager is not configured")
 	}
 
-	sa, err := s.credentialManager.GetStore().GetServiceAccountByAccessKey(ctx, req.AccessKey)
+	sa, err := s.credentialManager.GetStore().GetServiceAccountByAccessKey(context.Background(), accessKey)
 	if err != nil {
 		if err == credential.ErrAccessKeyNotFound {
-			return nil, status.Errorf(codes.NotFound, "access key %s not found", req.AccessKey)
+			return nil, fmt.Errorf("access key %s not found", accessKey)
 		}
-		glog.Errorf("Failed to get service account by access key %s: %v", req.AccessKey, err)
-		return nil, status.Errorf(codes.Internal, "failed to get service account: %v", err)
+		glog.Errorf("Failed to get service account by access key %s: %v", accessKey, err)
+		return nil, fmt.Errorf("failed to get service account: %v", err)
 	}
 
-	return &iam_pb.GetServiceAccountByAccessKeyResponse{
-		ServiceAccount: sa,
-	}, nil
+	return iamwire.NewGetServiceAccountByAccessKeyResponse(iamwire.GetServiceAccountByAccessKeyResponseInput{
+		ServiceAccount: iamwire.ServiceAccountInputFromPB(sa),
+	}), nil
 }

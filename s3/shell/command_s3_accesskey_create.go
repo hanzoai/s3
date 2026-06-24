@@ -1,13 +1,13 @@
 package shell
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
 
 	"github.com/hanzoai/s3/s3/iam"
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 )
 
 func init() {
@@ -66,15 +66,15 @@ func (c *commandS3AccessKeyCreate) Do(args []string, commandEnv *CommandEnv, wri
 		return fmt.Errorf("both -access_key and -secret_key must be provided together, or omit both to auto-generate")
 	}
 
-	err := commandEnv.withIamClient(func(ctx context.Context, client iam_pb.HanzoIdentityAccessManagementClient) error {
-		_, err := client.CreateAccessKey(ctx, &iam_pb.CreateAccessKeyRequest{
+	err := commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
+		_, _, err := client.CreateAccessKey(iamwire.NewCreateAccessKeyRequest(iamwire.CreateAccessKeyRequestInput{
 			Username: *user,
-			Credential: &iam_pb.Credential{
+			Credential: iamwire.CredentialInputFromPB(&iam_pb.Credential{
 				AccessKey: ak,
 				SecretKey: sk,
 				Status:    iam.AccessKeyStatusActive,
-			},
-		})
+			}),
+		}))
 		return err
 	})
 	if err != nil {

@@ -11,9 +11,12 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
-	"github.com/hanzoai/s3/s3/pb/s3_pb"
 	"github.com/hanzoai/s3/s3/s3api/policy_engine"
 	"github.com/hanzoai/s3/s3/wdclient"
+	iamwire "github.com/hanzoai/s3/s3/wire/iam"
+	"github.com/hanzoai/s3/s3/wire/iamadapt"
+	s3wire "github.com/hanzoai/s3/s3/wire/s3"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
 )
 
@@ -48,7 +51,7 @@ func (s *PropagatingCredentialStore) SetFilerAddressFunc(getFiler func() pb.Serv
 	}
 }
 
-func (s *PropagatingCredentialStore) propagateChange(ctx context.Context, fn func(context.Context, s3_pb.HanzoS3IamCacheClient) error) {
+func (s *PropagatingCredentialStore) propagateChange(ctx context.Context, fn func(context.Context, *s3wire.HanzoS3IamCacheClient) error) {
 	if s.masterClient == nil {
 		return
 	}
@@ -86,12 +89,18 @@ func (s *PropagatingCredentialStore) propagateChange(ctx context.Context, fn fun
 		wg.Add(1)
 		go func(server string) {
 			defer wg.Done()
-			err := pb.WithGrpcClient(context.Background(), false, 0, func(conn *grpc.ClientConn) error {
-				glog.V(4).Infof("IAM: successfully connected to S3 server %s for propagation", server)
-				client := s3_pb.NewHanzoS3IamCacheClient(conn)
-				return fn(propagateCtx, client)
-			}, server, false, s.grpcDialOption)
+			// HanzoS3IamCache now speaks the ZAP transport on a dedicated port
+			// derived from the server's gRPC address.
+			cacheAddr := iamadapt.CacheZapAddress(pb.ServerToGrpcAddress(server))
+			conn, err := transport.Dial("tcp", cacheAddr)
 			if err != nil {
+				glog.V(1).Infof("failed to dial s3 server %s (%s) for propagation: %v", server, cacheAddr, err)
+				return
+			}
+			defer conn.Close()
+			glog.V(4).Infof("IAM: successfully connected to S3 server %s for propagation", server)
+			client := s3wire.NewHanzoS3IamCacheClient(conn, nil)
+			if err := fn(propagateCtx, client); err != nil {
 				glog.V(1).Infof("failed to propagate change to s3 server %s: %v", server, err)
 			}
 		}(server)
@@ -110,8 +119,8 @@ func (s *PropagatingCredentialStore) AttachUserPolicy(ctx context.Context, usern
 		glog.Warningf("failed to get user %s after attaching policy: %v", username, err)
 		return nil
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		_, err := client.PutIdentity(tx, &iam_pb.PutIdentityRequest{Identity: identity})
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		_, _, err := client.PutIdentity(iamwire.NewPutIdentityRequest(iamwire.PutIdentityRequestInput{Identity: iamadapt.IdentityInput(identity)}))
 		return err
 	})
 	return nil
@@ -128,8 +137,8 @@ func (s *PropagatingCredentialStore) DetachUserPolicy(ctx context.Context, usern
 		glog.Warningf("failed to get user %s after detaching policy: %v", username, err)
 		return nil
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		_, err := client.PutIdentity(tx, &iam_pb.PutIdentityRequest{Identity: identity})
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		_, _, err := client.PutIdentity(iamwire.NewPutIdentityRequest(iamwire.PutIdentityRequestInput{Identity: iamadapt.IdentityInput(identity)}))
 		return err
 	})
 	return nil
@@ -176,12 +185,12 @@ func (s *PropagatingCredentialStore) SaveConfiguration(ctx context.Context, conf
 		}
 	}
 
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
 		for _, ident := range config.Identities {
 			if ident == nil {
 				continue
 			}
-			if _, err := client.PutIdentity(tx, &iam_pb.PutIdentityRequest{Identity: ident}); err != nil {
+			if _, _, err := client.PutIdentity(iamwire.NewPutIdentityRequest(iamwire.PutIdentityRequestInput{Identity: iamadapt.IdentityInput(ident)})); err != nil {
 				return err
 			}
 		}
@@ -189,7 +198,7 @@ func (s *PropagatingCredentialStore) SaveConfiguration(ctx context.Context, conf
 			if g == nil {
 				continue
 			}
-			if _, err := client.PutGroup(tx, &iam_pb.PutGroupRequest{Group: g}); err != nil {
+			if _, _, err := client.PutGroup(iamwire.NewPutGroupRequest(iamwire.PutGroupRequestInput{Group: iamadapt.GroupInput(g)})); err != nil {
 				return err
 			}
 		}
@@ -197,7 +206,7 @@ func (s *PropagatingCredentialStore) SaveConfiguration(ctx context.Context, conf
 			if _, kept := keptUsers[name]; kept {
 				continue
 			}
-			if _, err := client.RemoveIdentity(tx, &iam_pb.RemoveIdentityRequest{Username: name}); err != nil {
+			if _, _, err := client.RemoveIdentity(iamwire.NewRemoveIdentityRequest(iamwire.RemoveIdentityRequestInput{Username: name})); err != nil {
 				return err
 			}
 		}
@@ -205,7 +214,7 @@ func (s *PropagatingCredentialStore) SaveConfiguration(ctx context.Context, conf
 			if _, kept := keptGroups[name]; kept {
 				continue
 			}
-			if _, err := client.RemoveGroup(tx, &iam_pb.RemoveGroupRequest{GroupName: name}); err != nil {
+			if _, _, err := client.RemoveGroup(iamwire.NewRemoveGroupRequest(iamwire.RemoveGroupRequestInput{GroupName: name})); err != nil {
 				return err
 			}
 		}
@@ -219,8 +228,8 @@ func (s *PropagatingCredentialStore) CreateUser(ctx context.Context, identity *i
 	if err := s.CredentialStore.CreateUser(ctx, identity); err != nil {
 		return err
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		_, err := client.PutIdentity(tx, &iam_pb.PutIdentityRequest{Identity: identity})
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		_, _, err := client.PutIdentity(iamwire.NewPutIdentityRequest(iamwire.PutIdentityRequestInput{Identity: iamadapt.IdentityInput(identity)}))
 		return err
 	})
 	return nil
@@ -231,12 +240,12 @@ func (s *PropagatingCredentialStore) UpdateUser(ctx context.Context, username st
 	if err := s.CredentialStore.UpdateUser(ctx, username, identity); err != nil {
 		return err
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		if _, err := client.PutIdentity(tx, &iam_pb.PutIdentityRequest{Identity: identity}); err != nil {
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		if _, _, err := client.PutIdentity(iamwire.NewPutIdentityRequest(iamwire.PutIdentityRequestInput{Identity: iamadapt.IdentityInput(identity)})); err != nil {
 			return err
 		}
 		if username != identity.Name {
-			if _, err := client.RemoveIdentity(tx, &iam_pb.RemoveIdentityRequest{Username: username}); err != nil {
+			if _, _, err := client.RemoveIdentity(iamwire.NewRemoveIdentityRequest(iamwire.RemoveIdentityRequestInput{Username: username})); err != nil {
 				return err
 			}
 		}
@@ -250,8 +259,8 @@ func (s *PropagatingCredentialStore) DeleteUser(ctx context.Context, username st
 	if err := s.CredentialStore.DeleteUser(ctx, username); err != nil {
 		return err
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		_, err := client.RemoveIdentity(tx, &iam_pb.RemoveIdentityRequest{Username: username})
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		_, _, err := client.RemoveIdentity(iamwire.NewRemoveIdentityRequest(iamwire.RemoveIdentityRequestInput{Username: username}))
 		return err
 	})
 	return nil
@@ -267,8 +276,8 @@ func (s *PropagatingCredentialStore) CreateAccessKey(ctx context.Context, userna
 		glog.Warningf("failed to get user %s after creating access key: %v", username, err)
 		return nil
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		_, err := client.PutIdentity(tx, &iam_pb.PutIdentityRequest{Identity: identity})
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		_, _, err := client.PutIdentity(iamwire.NewPutIdentityRequest(iamwire.PutIdentityRequestInput{Identity: iamadapt.IdentityInput(identity)}))
 		return err
 	})
 	return nil
@@ -284,8 +293,8 @@ func (s *PropagatingCredentialStore) DeleteAccessKey(ctx context.Context, userna
 		glog.Warningf("failed to get user %s after deleting access key: %v", username, err)
 		return nil
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		_, err := client.PutIdentity(tx, &iam_pb.PutIdentityRequest{Identity: identity})
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		_, _, err := client.PutIdentity(iamwire.NewPutIdentityRequest(iamwire.PutIdentityRequestInput{Identity: iamadapt.IdentityInput(identity)}))
 		return err
 	})
 	return nil
@@ -296,12 +305,12 @@ func (s *PropagatingCredentialStore) PutPolicy(ctx context.Context, name string,
 	if err := s.CredentialStore.PutPolicy(ctx, name, document); err != nil {
 		return err
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
 		content, err := json.Marshal(document)
 		if err != nil {
 			return err
 		}
-		_, err = client.PutPolicy(tx, &iam_pb.PutPolicyRequest{Name: name, Content: string(content)})
+		_, _, err = client.PutPolicy(iamwire.NewPutPolicyRequest(iamwire.PutPolicyRequestInput{Name: name, Content: string(content)}))
 		return err
 	})
 	return nil
@@ -312,8 +321,8 @@ func (s *PropagatingCredentialStore) DeletePolicy(ctx context.Context, name stri
 	if err := s.CredentialStore.DeletePolicy(ctx, name); err != nil {
 		return err
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		_, err := client.DeletePolicy(tx, &iam_pb.DeletePolicyRequest{Name: name})
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		_, _, err := client.DeletePolicy(iamwire.NewDeletePolicyRequest(iamwire.DeletePolicyRequestInput{Name: name}))
 		return err
 	})
 	return nil
@@ -428,12 +437,12 @@ func (s *PropagatingCredentialStore) CreatePolicy(ctx context.Context, name stri
 			return err
 		}
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
 		content, err := json.Marshal(document)
 		if err != nil {
 			return err
 		}
-		_, err = client.PutPolicy(tx, &iam_pb.PutPolicyRequest{Name: name, Content: string(content)})
+		_, _, err = client.PutPolicy(iamwire.NewPutPolicyRequest(iamwire.PutPolicyRequestInput{Name: name, Content: string(content)}))
 		return err
 	})
 	return nil
@@ -449,12 +458,12 @@ func (s *PropagatingCredentialStore) UpdatePolicy(ctx context.Context, name stri
 			return err
 		}
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
 		content, err := json.Marshal(document)
 		if err != nil {
 			return err
 		}
-		_, err = client.PutPolicy(tx, &iam_pb.PutPolicyRequest{Name: name, Content: string(content)})
+		_, _, err = client.PutPolicy(iamwire.NewPutPolicyRequest(iamwire.PutPolicyRequestInput{Name: name, Content: string(content)}))
 		return err
 	})
 	return nil
@@ -471,8 +480,8 @@ func (s *PropagatingCredentialStore) CreateServiceAccount(ctx context.Context, s
 		glog.Warningf("failed to get parent user %s after creating service account: %v", sa.ParentUser, err)
 		return nil
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		_, err := client.PutIdentity(tx, &iam_pb.PutIdentityRequest{Identity: identity})
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		_, _, err := client.PutIdentity(iamwire.NewPutIdentityRequest(iamwire.PutIdentityRequestInput{Identity: iamadapt.IdentityInput(identity)}))
 		return err
 	})
 	return nil
@@ -488,8 +497,8 @@ func (s *PropagatingCredentialStore) UpdateServiceAccount(ctx context.Context, i
 		glog.Warningf("failed to get parent user %s after updating service account: %v", sa.ParentUser, err)
 		return nil
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		_, err := client.PutIdentity(tx, &iam_pb.PutIdentityRequest{Identity: identity})
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		_, _, err := client.PutIdentity(iamwire.NewPutIdentityRequest(iamwire.PutIdentityRequestInput{Identity: iamadapt.IdentityInput(identity)}))
 		return err
 	})
 	return nil
@@ -517,8 +526,8 @@ func (s *PropagatingCredentialStore) DeleteServiceAccount(ctx context.Context, i
 		glog.Warningf("failed to get parent user %s after deleting service account: %v", sa.ParentUser, err)
 		return nil
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		_, err := client.PutIdentity(tx, &iam_pb.PutIdentityRequest{Identity: identity})
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		_, _, err := client.PutIdentity(iamwire.NewPutIdentityRequest(iamwire.PutIdentityRequestInput{Identity: iamadapt.IdentityInput(identity)}))
 		return err
 	})
 	return nil
@@ -531,8 +540,8 @@ func (s *PropagatingCredentialStore) CreateGroup(ctx context.Context, group *iam
 	if err := s.CredentialStore.CreateGroup(ctx, group); err != nil {
 		return err
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		_, err := client.PutGroup(tx, &iam_pb.PutGroupRequest{Group: group})
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		_, _, err := client.PutGroup(iamwire.NewPutGroupRequest(iamwire.PutGroupRequestInput{Group: iamadapt.GroupInput(group)}))
 		return err
 	})
 	return nil
@@ -547,8 +556,8 @@ func (s *PropagatingCredentialStore) DeleteGroup(ctx context.Context, groupName 
 	if err := s.CredentialStore.DeleteGroup(ctx, groupName); err != nil {
 		return err
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		_, err := client.RemoveGroup(tx, &iam_pb.RemoveGroupRequest{GroupName: groupName})
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		_, _, err := client.RemoveGroup(iamwire.NewRemoveGroupRequest(iamwire.RemoveGroupRequestInput{GroupName: groupName}))
 		return err
 	})
 	return nil
@@ -565,8 +574,8 @@ func (s *PropagatingCredentialStore) UpdateGroup(ctx context.Context, group *iam
 	if err := s.CredentialStore.UpdateGroup(ctx, group); err != nil {
 		return err
 	}
-	s.propagateChange(ctx, func(tx context.Context, client s3_pb.HanzoS3IamCacheClient) error {
-		_, err := client.PutGroup(tx, &iam_pb.PutGroupRequest{Group: group})
+	s.propagateChange(ctx, func(tx context.Context, client *s3wire.HanzoS3IamCacheClient) error {
+		_, _, err := client.PutGroup(iamwire.NewPutGroupRequest(iamwire.PutGroupRequestInput{Group: iamadapt.GroupInput(group)}))
 		return err
 	})
 	return nil

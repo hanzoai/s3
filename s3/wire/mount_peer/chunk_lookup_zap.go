@@ -162,11 +162,7 @@ func NewChunkLookupResponsePeersByFidEntry(in ChunkLookupResponsePeersByFidEntry
 	b := zap.NewBuilder(256)
 	ob := b.StartObject(chunkLookupResponsePeersByFidEntrySize)
 	ob.SetText(chunkLookupResponsePeersByFidEntryKeyOff, in.Key)
-	if len(in.Value) > 0 {
-		nested := b.StartObject(len(in.Value))
-		nested.SetBytesFixed(0, in.Value)
-		ob.SetObject(chunkLookupResponsePeersByFidEntryValueOff, nested.Finish())
-	}
+	embedObject(b, ob, chunkLookupResponsePeersByFidEntryValueOff, in.Value)
 	ob.FinishAsRoot()
 	return b.Finish()
 }
