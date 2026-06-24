@@ -435,6 +435,11 @@ func (fo *FilerOptions) startFiler() {
 	// starting the filer service over the native ZAP transport
 	grpcPort := *fo.portGrpc
 
+	// zapServers collects every ZAP transport listener started below so shutdown
+	// can close them all (closing releases the port for restart — important for
+	// the start/stop/start cycle of s3 mini and integration tests).
+	var zapServers []*transport.Server
+
 	// Serve the IAM service over the ZAP transport on its own listener at
 	// grpcPort+10000 (ServerAddress.ToIamZapAddress). Connection-level security is
 	// provided by the ZAP transport.
@@ -449,10 +454,12 @@ func (fo *FilerOptions) startFiler() {
 		iamDispatch := func(env []byte) ([]byte, error) {
 			return iamwire.DispatchHanzoIdentityAccessManagement(iamServer, env)
 		}
+		// transport.Serve starts its own accept loop and returns the *Server
+		// handle; keep it so Close() can stop the listener on shutdown.
 		if iamLocalL != nil {
-			go func() { _ = transport.Serve(iamLocalL, iamDispatch) }()
+			zapServers = append(zapServers, transport.Serve(iamLocalL, iamDispatch))
 		}
-		go func() { _ = transport.Serve(iamL, iamDispatch) }()
+		zapServers = append(zapServers, transport.Serve(iamL, iamDispatch))
 		glog.V(0).Infof("Serving IAM service over ZAP transport on port %d", iamPort)
 	}
 
@@ -461,23 +468,24 @@ func (fo *FilerOptions) startFiler() {
 	// (unary) and transport.OpenStream (streaming) — see pb.WithGrpcFilerClient and
 	// the filerzap backend. This replaces the legacy gRPC HanzoFiler server: the
 	// whole filer (28 unary + 5 streaming RPCs) now answers over ZAP, no gRPC.
-	filerZapSrv, zapErr := transport.ListenStream("tcp", fmt.Sprintf("%s:%d", *fo.bindIp, grpcPort),
+	filerZapSrv, zapErr := transport.ListenStream("tcp", util.JoinHostPort(*fo.bindIp, grpcPort),
 		filerwire.Dispatch(filerzap.NewServerBackend(fs)),
 		filerstream.Handler(filerzap.NewStreamServer(fs)))
 	if zapErr != nil {
 		glog.Fatalf("failed to serve filer over ZAP on port %d: %v", grpcPort, zapErr)
 	}
+	zapServers = append(zapServers, filerZapSrv)
 	glog.V(0).Infof("Serving HanzoFiler over native ZAP transport on port %d", grpcPort)
 
-	// Helper to gracefully stop the gRPC server, waiting for active RPCs.
-	gracefulTimeout := fo.gracefulStopTimeout
-	if gracefulTimeout <= 0 {
-		gracefulTimeout = 10 * time.Second
+	// stopZapServers closes every ZAP listener (filer + IAM). Server.Close is
+	// idempotent, so the multiple shutdown paths below may all call it safely.
+	stopZapServers := func() {
+		glog.V(0).Infof("Stopping filer/IAM ZAP transport servers")
+		for _, s := range zapServers {
+			_ = s.Close()
+		}
 	}
-	stopGrpcServer := func() {
-		glog.V(0).Infof("Stopping filer ZAP transport server")
-		_ = filerZapSrv.Close()
-	}
+	stopGrpcServer := stopZapServers
 
 	var socketServer *http.Server
 	if runtime.GOOS != "windows" {
@@ -575,7 +583,7 @@ func (fo *FilerOptions) startFiler() {
 			go func() {
 				<-fo.shutdownCtx.Done()
 				httpS.Shutdown(context.Background())
-				_ = filerZapSrv.Close()
+				stopZapServers()
 			}()
 		}
 		if err := httpS.ServeTLS(filerListener, "", ""); err != nil && err != http.ErrServerClosed {
@@ -620,7 +628,7 @@ func (fo *FilerOptions) startFiler() {
 			go func() {
 				<-fo.shutdownCtx.Done()
 				httpS.Shutdown(context.Background())
-				_ = filerZapSrv.Close()
+				stopZapServers()
 			}()
 		}
 		if err := httpS.Serve(filerListener); err != nil && err != http.ErrServerClosed {

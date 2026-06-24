@@ -3,11 +3,19 @@
 //
 // stream_server.go is the server-side half of the filer's streaming RPCs: a
 // filerstream.Server that wraps the existing filer_pb.HanzoFilerServer so its
-// server-streaming methods answer over transport.ListenStream. ListEntries —
-// the one the IAM/policy stores use to enumerate a directory — is migrated; it
-// drives the gRPC streaming server method through a Send-adapter that ships each
-// proto response as a zero-copy wire frame. The other 5 streaming RPCs are
-// stubbed (no-op) until their backends are wired.
+// streaming methods answer over transport.ListenStream. All 6 are implemented —
+// ListEntries, StreamRenameEntry, TraverseBfsMetadata, SubscribeMetadata and
+// SubscribeLocalMetadata (server-streams) drive the engine method through a
+// Send-adapter that ships each proto response as a zero-copy wire frame;
+// StreamMutateEntry (bidi) replays the open frame then pumps Recv/Send.
+//
+// KNOWN LIMITATION (transport-gated): the backend uses context.Background — the
+// current transport.Stream exposes no per-stream cancellation/disconnect signal,
+// so a client that drops an IDLE SubscribeMetadata stream is not observed as gone
+// and its engine goroutine/subscription leaks. Fixing this needs the zap-proto/go
+// transport to surface a per-stream Context/close channel; until then a long-idle
+// subscriber can accumulate. Send-driven streams (ListEntries, rename) surface a
+// dead peer via Send error and are unaffected.
 
 package filerzap
 
