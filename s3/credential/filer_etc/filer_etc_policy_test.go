@@ -10,10 +10,14 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/filer"
+	"github.com/hanzoai/s3/s3/filerzap"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
 	"github.com/hanzoai/s3/s3/s3api/policy_engine"
+	filerwire "github.com/hanzoai/s3/s3/wire/filer"
+	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
+	"github.com/zap-proto/go/transport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -147,28 +151,25 @@ func newPolicyTestStore(t *testing.T) *FilerEtcStore {
 func newPolicyTestStoreWithServer(t *testing.T) (*FilerEtcStore, *policyTestFilerServer) {
 	t.Helper()
 
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-
 	server := newPolicyTestFilerServer()
-	grpcServer := pb.NewGrpcServer()
-	filer_pb.RegisterHanzoFilerServer(grpcServer, server)
-	go func() {
-		_ = grpcServer.Serve(lis)
-	}()
+	// Serve the fake filer over the native ZAP transport — unary RPCs via
+	// filerwire.Dispatch and ListEntries streaming via filerstream.Handler, on
+	// one listener. This is the wire WithGrpcFilerClient now dials (transport.Dial),
+	// so the test exercises the real ZAP client+server path, not gRPC.
+	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		filerwire.Dispatch(filerzap.NewServerBackend(server)),
+		filerstream.Handler(filerzap.NewStreamServer(server)))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = srv.Close() })
 
-	t.Cleanup(func() {
-		grpcServer.Stop()
-		_ = lis.Close()
-	})
+	host, portString, err := net.SplitHostPort(srv.Addr().String())
+	require.NoError(t, err)
+	port, err := strconv.Atoi(portString)
+	require.NoError(t, err)
 
 	store := &FilerEtcStore{}
-	host, portString, err := net.SplitHostPort(lis.Addr().String())
-	require.NoError(t, err)
-	grpcPort, err := strconv.Atoi(portString)
-	require.NoError(t, err)
 	store.SetFilerAddressFunc(func() pb.ServerAddress {
-		return pb.NewServerAddress(host, 1, grpcPort)
+		return pb.NewServerAddress(host, 1, port)
 	}, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	return store, server
