@@ -11,12 +11,12 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/mq/agent/agentconv"
 	"github.com/hanzoai/s3/s3/mq/broker/brokerpb"
+	"github.com/hanzoai/s3/s3/mqzap"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/util/log_buffer"
 	mq_brokerwire "github.com/hanzoai/s3/s3/wire/mq_broker"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
 )
 
 type LocalPartition struct {
@@ -250,7 +250,7 @@ func (p *LocalPartition) WaitUntilNoPublishers() {
 	}
 }
 
-func (p *LocalPartition) MaybeConnectToFollowers(initMessage *mq_pb.PublishMessageRequest_InitMessage, _ grpc.DialOption) (err error) {
+func (p *LocalPartition) MaybeConnectToFollowers(initMessage *mq_pb.PublishMessageRequest_InitMessage) (err error) {
 	if p.publishFolloweMeStream != nil {
 		return nil
 	}
@@ -259,7 +259,7 @@ func (p *LocalPartition) MaybeConnectToFollowers(initMessage *mq_pb.PublishMessa
 	}
 
 	p.Follower = initMessage.FollowerBroker
-	p.followerConn, err = transport.Dial("tcp", p.Follower)
+	p.followerConn, err = mqzap.DialBroker(p.Follower)
 	if err != nil {
 		return fmt.Errorf("fail to dial %s: %v", p.Follower, err)
 	}
