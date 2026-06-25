@@ -12,6 +12,7 @@ import (
 	"github.com/hanzoai/s3/s3/mq/agent/agentconv"
 	"github.com/hanzoai/s3/s3/mq/sub_coordinator"
 	"github.com/hanzoai/s3/s3/mq/topic"
+	"github.com/hanzoai/s3/s3/mqzap"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/pb/schema_pb"
@@ -85,7 +86,7 @@ func (b *MessageQueueBroker) SubscribeMessage(stream mq_pb.HanzoMessaging_Subscr
 	glog.V(0).Infof("follower broker: %v", req.GetInit().FollowerBroker)
 	if req.GetInit().FollowerBroker != "" {
 		follower := req.GetInit().FollowerBroker
-		if followerConn, err = transport.Dial("tcp", follower); err != nil {
+		if followerConn, err = mqzap.DialBroker(follower); err != nil {
 			return fmt.Errorf("fail to dial %s: %v", follower, err)
 		}
 		defer func() {
