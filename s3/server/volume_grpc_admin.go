@@ -3,13 +3,8 @@ package s3server
 import (
 	"context"
 	"fmt"
-	"net"
 	"path/filepath"
 	"time"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/status"
 
 	"github.com/hanzoai/s3/s3/util/version"
 
@@ -27,45 +22,18 @@ import (
 	"github.com/hanzoai/s3/s3/storage/types"
 )
 
-// checkGrpcAdminAuth verifies the gRPC caller is authorized for destructive
-// admin operations by checking the peer address against the guard's whitelist.
+// checkGrpcAdminAuth authorizes destructive volume admin operations.
 //
-// IP extraction prefers a typed *net.TCPAddr where available, falling back to
-// SplitHostPort on the string form, then to the raw string. The fallback
-// chain matters because in-process/passthrough connections used in tests
-// surface as unparseable strings like "@"; with an empty whitelist the
-// allow-all branch in IsWhiteListed accepts them, with a whitelist they're
-// denied as expected.
-//
-// Failed authorization attempts are logged so an operator running with a
-// configured whitelist can spot misconfigured callers and probe attempts.
+// All volume RPCs now arrive over the native ZAP mesh, whose per-call context
+// carries no peer address (unlike gRPC's peer.FromContext). On that transport the
+// caller is authenticated at the TRANSPORT by PQ-mTLS — pb.ServerTLSConfig
+// requires and verifies the client cert against the CA and the allowed-CN gate,
+// and fails closed without a CA. The legacy IP whitelist was a gRPC-era fallback
+// that has no source IP to match over ZAP, so the transport's mTLS is the
+// authorization boundary here. (When no guard is configured the call is a local /
+// dev path and is likewise allowed.)
 func (vs *VolumeServer) checkGrpcAdminAuth(ctx context.Context) error {
-	if vs.guard == nil {
-		return nil
-	}
-	pr, ok := peer.FromContext(ctx)
-	if !ok {
-		// No gRPC peer means the call arrived over the native ZAP mesh, not gRPC.
-		// On that path the caller is authenticated at the TRANSPORT by PQ-mTLS —
-		// pb.ServerTLSConfig requires and verifies the client cert against the CA
-		// and the allowed-CN gate, and fails closed without a CA. The IP whitelist
-		// is a gRPC-era fallback that cannot apply over ZAP (there is no peer IP to
-		// match), so the transport's mTLS is the authorization boundary here.
-		return nil
-	}
-	addr := pr.Addr.String()
-	var host string
-	if tcpAddr, ok := pr.Addr.(*net.TCPAddr); ok {
-		host = tcpAddr.IP.String()
-	} else if h, _, splitErr := net.SplitHostPort(addr); splitErr == nil {
-		host = h
-	} else {
-		host = addr
-	}
-	if !vs.guard.IsWhiteListed(host) {
-		glog.V(0).Infof("gRPC admin auth failed: %s is not whitelisted (remote: %s)", host, addr)
-		return status.Errorf(codes.PermissionDenied, "not authorized: %s", host)
-	}
+	_ = ctx
 	return nil
 }
 
@@ -472,7 +440,7 @@ func (vs *VolumeServer) Ping(ctx context.Context, req *volume_server_pb.PingRequ
 	// Empty target is a self-liveness probe and stays unauthenticated.
 	if req.Target != "" && !vs.isKnownPingTarget(req.Target, req.TargetType) {
 		resp.StopTimeNs = time.Now().UnixNano()
-		return resp, status.Errorf(codes.InvalidArgument, "unknown ping target %s of type %s", req.Target, req.TargetType)
+		return resp, fmt.Errorf("InvalidArgument: unknown ping target %s of type %s", req.Target, req.TargetType)
 	}
 	if req.TargetType == cluster.FilerType {
 		pingErr = pb.WithFilerClient(false, 0, pb.ServerAddress(req.Target), vs.grpcDialOption, func(client filer_pb.HanzoFilerClient) error {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"math/rand/v2"
-	"net"
 	"sync/atomic"
 	"time"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/hanzoai/s3/s3/mq/topic"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/pb/schema_pb"
-	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -241,19 +239,15 @@ func (b *MessageQueueBroker) validateRecordValue(record *schema_pb.RecordValue, 
 	return nil
 }
 
-// duplicated from master_grpc_server.go
+// findClientAddress returns the publisher's network address for the diagnostic
+// client name. The broker now serves over the native ZAP transport, whose
+// per-stream context carries no peer address (unlike gRPC's peer.FromContext),
+// so there is nothing to extract — the caller appends a random suffix that keeps
+// each client name unique regardless. The client cert (PQ-mTLS) is the identity
+// of record on this path, not the source IP.
 func findClientAddress(ctx context.Context) string {
-	// fmt.Printf("FromContext %+v\n", ctx)
-	pr, ok := peer.FromContext(ctx)
-	if !ok {
-		glog.Error("failed to get peer from ctx")
-		return ""
-	}
-	if pr.Addr == net.Addr(nil) {
-		glog.Error("failed to get peer address")
-		return ""
-	}
-	return pr.Addr.String()
+	_ = ctx
+	return ""
 }
 
 // GetPartitionRangeInfo returns comprehensive range information for a partition (offsets, timestamps, etc.)
