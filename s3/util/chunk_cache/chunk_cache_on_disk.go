@@ -5,8 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/syndtr/goleveldb/leveldb/opt"
-
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/storage"
 	"github.com/hanzoai/s3/s3/storage/backend"
@@ -65,12 +63,7 @@ func LoadOrCreateChunkCacheVolume(fileName string, preallocate int64) (*ChunkCac
 	}
 
 	glog.V(1).Infoln("loading leveldb", v.fileName+".ldb")
-	opts := &opt.Options{
-		BlockCacheCapacity:            2 * 1024 * 1024, // default value is 8MiB
-		WriteBuffer:                   1 * 1024 * 1024, // default value is 4MiB
-		CompactionTableSizeMultiplier: 10,              // default value is 1
-	}
-	if v.nm, err = storage.NewLevelDbNeedleMap(v.fileName+".ldb", indexFile, opts, 0, needle.GetCurrentVersion()); err != nil {
+	if v.nm, err = storage.NewLevelDbNeedleMap(v.fileName+".ldb", indexFile, 0, needle.GetCurrentVersion()); err != nil {
 		return nil, fmt.Errorf("loading leveldb %s error: %v", v.fileName+".ldb", err)
 	}
 
