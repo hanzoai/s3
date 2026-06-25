@@ -46,7 +46,7 @@ func (balancer *PubBalancer) ExecuteBalanceActionMove(move *BalanceActionMove, _
 					Partition: partitionBuf,
 				}),
 			},
-			IsLeader:   true,
+			IsPrimary:   true,
 			IsDraining: draining,
 		})
 		return err

@@ -16,7 +16,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/backend"
 	"github.com/hanzoai/s3/s3/util"
 
-	"github.com/seaweedfs/raft"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
@@ -89,7 +88,7 @@ func (ms *MasterServer) SendHeartbeat(stream master_pb.Hanzo_SendHeartbeatServer
 			glog.V(0).Infof("unregister disconnected volume server %s:%d", dn.Ip, dn.Port)
 			ms.UnRegisterUuids(dn.Ip, dn.Port)
 
-			if ms.Topo.IsLeader() && (len(message.DeletedVids) > 0 || len(message.DeletedEcVids) > 0) {
+			if ms.Topo.IsWriter() && (len(message.DeletedVids) > 0 || len(message.DeletedEcVids) > 0) {
 				ms.broadcastToClients(&master_pb.KeepConnectedResponse{VolumeLocation: message})
 			}
 		}
@@ -114,12 +113,12 @@ func (ms *MasterServer) SendHeartbeat(stream master_pb.Hanzo_SendHeartbeatServer
 			return err
 		}
 
-		if !ms.Topo.IsLeader() {
+		if !ms.Topo.IsWriter() {
 			// tell the volume servers about the leader
-			newLeader, err := ms.Topo.MaybeLeader()
+			newLeader, err := ms.Topo.MaybeWriter()
 			if err != nil || newLeader == "" {
 				glog.Warningf("SendHeartbeat find leader: %v, %v", newLeader, err)
-				return raft.NotLeaderError
+				return topology.ErrNotWriter
 			}
 			if err := stream.Send(&master_pb.HeartbeatResponse{
 				Leader: string(newLeader),
@@ -282,7 +281,7 @@ func (ms *MasterServer) KeepConnected(stream master_pb.Hanzo_KeepConnectedServer
 		return recvErr
 	}
 
-	if !ms.Topo.IsLeader() {
+	if !ms.Topo.IsWriter() {
 		return ms.informNewLeader(stream)
 	}
 
@@ -319,7 +318,7 @@ func (ms *MasterServer) KeepConnected(stream master_pb.Hanzo_KeepConnectedServer
 	volumeLocations := ms.Topo.ToVolumeLocations()
 	if len(volumeLocations) == 0 {
 		// Always send at least one message with leader info so the client can unblock
-		leader, _ := ms.Topo.Leader()
+		leader, _ := ms.Topo.Writer()
 		if sendErr := stream.Send(&master_pb.KeepConnectedResponse{
 			VolumeLocation: &master_pb.VolumeLocation{
 				Leader: string(leader),
@@ -330,7 +329,7 @@ func (ms *MasterServer) KeepConnected(stream master_pb.Hanzo_KeepConnectedServer
 	} else {
 		for i, message := range volumeLocations {
 			if i == 0 {
-				if leader, err := ms.Topo.Leader(); err == nil {
+				if leader, err := ms.Topo.Writer(); err == nil {
 					message.Leader = string(leader)
 				}
 			}
@@ -373,7 +372,7 @@ func (ms *MasterServer) KeepConnected(stream master_pb.Hanzo_KeepConnectedServer
 				return err
 			}
 		case <-ticker.C:
-			if !ms.Topo.IsLeader() {
+			if !ms.Topo.IsWriter() {
 				stats.MasterRaftIsleader.Set(0)
 				stats.MasterAdminLock.Reset()
 				stats.MasterReplicaPlacementMismatch.Reset()
@@ -431,10 +430,10 @@ func (ms *MasterServer) broadcastVolumeLocationsToClients(locations []*master_pb
 }
 
 func (ms *MasterServer) informNewLeader(stream master_pb.Hanzo_KeepConnectedServer) error {
-	leader, err := ms.Topo.Leader()
+	leader, err := ms.Topo.Writer()
 	if err != nil {
 		glog.Errorf("topo leader: %v", err)
-		return raft.NotLeaderError
+		return topology.ErrNotWriter
 	}
 	if err := stream.Send(&master_pb.KeepConnectedResponse{
 		VolumeLocation: &master_pb.VolumeLocation{
@@ -485,7 +484,7 @@ func findClientAddress(ctx context.Context, grpcPort uint32) string {
 func (ms *MasterServer) GetMasterConfiguration(ctx context.Context, req *master_pb.GetMasterConfigurationRequest) (*master_pb.GetMasterConfigurationResponse, error) {
 
 	// tell the volume servers about the leader
-	leader, _ := ms.Topo.Leader()
+	leader, _ := ms.Topo.Writer()
 
 	// MIGRATION: expose maintenance scripts for admin server seeding. Remove after March 2027.
 	v := util.GetViper()

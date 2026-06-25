@@ -11,8 +11,6 @@ import (
 //go:embed master.html
 var masterHtml string
 
-//go:embed masterNewRaft.html
-var masterNewRaftHtml string
 
 var templateFunctions = template.FuncMap{
 	"url": func(input string) string {
@@ -27,4 +25,3 @@ var templateFunctions = template.FuncMap{
 
 var StatusTpl = template.Must(template.New("status").Funcs(templateFunctions).Parse(masterHtml))
 
-var StatusNewRaftTpl = template.Must(template.New("status").Funcs(templateFunctions).Parse(masterNewRaftHtml))

@@ -193,7 +193,7 @@ func AssignTopicPartitionsReqToWire(r *mq_pb.AssignTopicPartitionsRequest) []byt
 	return mq_brokerwire.NewAssignTopicPartitionsRequest(mq_brokerwire.AssignTopicPartitionsRequestInput{
 		Topic:                      topicToWire(r.Topic),
 		BrokerPartitionAssignments: assignmentsToWire(r.BrokerPartitionAssignments),
-		IsLeader:                   r.IsLeader,
+		IsPrimary:                   r.IsPrimary,
 		IsDraining:                 r.IsDraining,
 	})
 }

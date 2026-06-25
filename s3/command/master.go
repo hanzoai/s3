@@ -3,24 +3,18 @@ package command
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
-	"math/rand/v2"
 	"net"
 	"net/http"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/hanzoai/s3/s3/util/version"
 
-	hashicorpRaft "github.com/hashicorp/raft"
-
 	"slices"
 
 	"github.com/gorilla/mux"
-	"github.com/seaweedfs/raft/protobuf"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/reflection"
 
@@ -42,10 +36,6 @@ import (
 
 var (
 	m MasterOptions
-)
-
-const (
-	raftJoinCheckDelay = 1500 * time.Millisecond // delay before checking if we should join a raft cluster
 )
 
 type MasterOptions struct {
@@ -209,69 +199,32 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 		glog.Fatalf("Master startup error: %v", e)
 	}
 
-	// start raftServer
-	metaDir := path.Join(*masterOption.metaFolder, fmt.Sprintf("m%d", *masterOption.port))
+	// Leaderless coordination: no raft server, no election. NewMasterServer
+	// installed an in-process LocalCoordinator on the topology; configure it
+	// with the real peer membership so the pinned writer is computed over the
+	// cluster, then ensure the TopologyId exists. The schain-backed Coordinator
+	// (production durable backend, over ZAP) is swapped in here when a schain
+	// endpoint is configured.
+	if endpoint := schainEndpoint(); endpoint != "" {
+		ms.Topo.Coordinator = s3server.NewSchainCoordinator(ms.Topo, endpoint,
+			security.LoadClientTLS(util.GetViper(), "grpc.master"))
+		glog.V(0).Infof("master coordination backed by schain VM at %s", endpoint)
+	}
+	ms.ConfigureCoordinator(myMasterAddress, masterPeers)
+	r.HandleFunc("/cluster/status", ms.ClusterStatusHandler).Methods(http.MethodGet, http.MethodHead)
+	r.HandleFunc("/cluster/healthz", ms.ClusterHealthzHandler).Methods(http.MethodGet, http.MethodHead)
 
-	isSingleMaster := isSingleMasterMode(*masterOption.peers)
-
-	raftServerOption := &s3server.RaftServerOption{
-		GrpcDialOption:    security.LoadClientTLS(util.GetViper(), "grpc.master"),
-		Peers:             masterPeers,
-		ServerAddr:        myMasterAddress,
-		DataDir:           util.ResolvePath(metaDir),
-		Topo:              ms.Topo,
-		RaftResumeState:   *masterOption.raftResumeState,
-		SingleMaster:      isSingleMaster,
-		HeartbeatInterval: *masterOption.heartbeatInterval,
-		ElectionTimeout:   *masterOption.electionTimeout,
-		RaftBootstrap:     *masterOption.raftBootstrap,
-	}
-	var raftServer *s3server.RaftServer
-	var err error
-	if *masterOption.raftHashicorp {
-		if raftServer, err = s3server.NewHashicorpRaftServer(raftServerOption); err != nil {
-			glog.Fatalf("NewHashicorpRaftServer: %s", err)
-		}
-	} else {
-		raftServer, err = s3server.NewRaftServer(raftServerOption)
-		if raftServer == nil {
-			glog.Fatalf("please verify %s is writable, see https://github.com/hanzoai/s3/issues/717: %s", *masterOption.metaFolder, err)
-		}
-		// For single-master mode with a fresh log, initialize cluster immediately.
-		// When resuming with existing state, the server is already a member and
-		// will self-elect via fastResume — sending another JoinCommand would block
-		// because goraft's setCommitIndex returns early on JoinCommand entries,
-		// preventing the new entry's event from being notified when old uncommitted
-		// JoinCommands exist in the log.
-		if isSingleMaster && !raftServer.HasExistingState() {
-			glog.V(0).Infof("Single-master mode: initializing cluster immediately")
-			raftServer.DoJoinCommand()
-		}
-	}
-	ms.SetRaftServer(raftServer)
-	r.HandleFunc("/cluster/status", raftServer.StatusHandler).Methods(http.MethodGet, http.MethodHead)
-	r.HandleFunc("/cluster/healthz", raftServer.HealthzHandler).Methods(http.MethodGet, http.MethodHead)
-	if *masterOption.raftHashicorp {
-		r.HandleFunc("/raft/stats", raftServer.StatsRaftHandler).Methods(http.MethodGet)
-	}
-	// starting grpc server
+	// starting grpc server — the master service rides the native ZAP transport
+	// below; this gRPC server now carries only reflection (the raft consensus
+	// service that used to live here is gone).
 	grpcPort := *masterOption.portGrpc
 	grpcL, grpcLocalL, err := util.NewIpAndLocalListeners(*masterOption.ipBind, grpcPort, 0)
 	if err != nil {
 		glog.Fatalf("master failed to listen on grpc port %d: %v", grpcPort, err)
 	}
-	// grpcS now serves ONLY raft (the consensus service) + reflection. The Hanzo
-	// master service (master_pb.HanzoServer) no longer rides gRPC at all — it is
-	// served entirely over the native ZAP transport below. Raft migration off
-	// gRPC is a separate consensus effort; it keeps this grpc.Server until then.
 	grpcS := pb.NewGrpcServer(security.LoadServerTLS(util.GetViper(), "grpc.master"))
-	if *masterOption.raftHashicorp {
-		raftServer.TransportManager.Register(grpcS)
-	} else {
-		protobuf.RegisterRaftServer(grpcS, raftServer)
-	}
 	reflection.Register(grpcS)
-	glog.V(0).Infof("Start Hanzo S3 Master %s raft grpc server at %s:%d", version.Version(), *masterOption.ipBind, grpcPort)
+	glog.V(0).Infof("Start Hanzo S3 Master %s grpc server at %s:%d", version.Version(), *masterOption.ipBind, grpcPort)
 	if grpcLocalL != nil {
 		go grpcS.Serve(grpcLocalL)
 	}
@@ -314,35 +267,6 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 		glog.Fatalf("master failed to serve over ZAP on %s: %v", masterZapAddr, zapErr)
 	}
 	grace.OnInterrupt(func() { masterZapSrv.Close() })
-
-	// For multi-master mode with non-Hashicorp raft, wait and check if we should join
-	if !*masterOption.raftHashicorp && !isSingleMaster {
-		go func() {
-			// Stagger bootstrap by peer index so masters don't all check
-			// simultaneously. Peer 0 waits ~1.5s, peer 1 ~3s, etc.
-			idx := peerIndex(myMasterAddress, peers)
-			delay := time.Duration(float64(raftJoinCheckDelay) * (rand.Float64()*0.25 + 1) * float64(idx+1))
-			glog.V(0).Infof("bootstrap check in %v (peer index %d of %d)", delay, idx, len(peers))
-			time.Sleep(delay)
-
-			ms.Topo.RaftServerAccessLock.RLock()
-			isEmptyMaster := ms.Topo.RaftServer.Leader() == "" && ms.Topo.RaftServer.IsLogEmpty()
-			isFirst := idx == 0
-			if isEmptyMaster && isFirst {
-				existingLeader := ms.MasterClient.FindLeaderFromOtherPeers(myMasterAddress)
-				if existingLeader == "" {
-					raftServer.DoJoinCommand()
-				} else {
-					glog.V(0).Infof("skip bootstrap: existing leader %s found from peers", existingLeader)
-				}
-			} else if !isEmptyMaster {
-				glog.V(0).Infof("skip bootstrap: leader=%q logEmpty=%v", ms.Topo.RaftServer.Leader(), ms.Topo.RaftServer.IsLogEmpty())
-			} else {
-				glog.V(0).Infof("skip bootstrap: %v is not the first master in peers (index %d)", myMasterAddress, idx)
-			}
-			ms.Topo.RaftServerAccessLock.RUnlock()
-		}()
-	}
 
 	go ms.MasterClient.KeepConnectedToMaster(context.Background())
 
@@ -400,11 +324,6 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	grace.OnInterrupt(ms.Shutdown)
 	grace.OnInterrupt(grpcS.Stop)
 	grace.OnReload(ms.Reload)
-	grace.OnReload(func() {
-		if ms.Topo.HashicorpRaft != nil && ms.Topo.HashicorpRaft.State() == hashicorpRaft.Leader {
-			ms.Topo.HashicorpRaft.LeadershipTransfer()
-		}
-	})
 	if masterOption.shutdownCtx != nil {
 		<-masterOption.shutdownCtx.Done()
 		ms.Shutdown()
@@ -417,6 +336,13 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 func isSingleMasterMode(peers string) bool {
 	p := strings.ToLower(strings.TrimSpace(peers))
 	return p == "none"
+}
+
+// schainEndpoint returns the configured schain VM endpoint that the production
+// Coordinator delegates allocation to over ZAP, or "" to use the in-process
+// LocalCoordinator. Configured via master.coordinator.schain_endpoint.
+func schainEndpoint() string {
+	return strings.TrimSpace(util.GetViper().GetString("master.coordinator.schain_endpoint"))
 }
 
 func checkPeers(masterIp string, masterPort int, masterGrpcPort int, peers string) (masterAddress pb.ServerAddress, cleanedPeers []pb.ServerAddress) {

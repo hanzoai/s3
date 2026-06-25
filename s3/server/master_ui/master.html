@@ -30,22 +30,10 @@
                     <th>Max</th>
                     <td>{{ .Topology.Max }}</td>
                 </tr>
-                {{ with .RaftServer }}
                 <tr>
-                    <th>Leader</th>
-                    <td><a href="{{ url .Leader }}">{{ .Leader }}</a></td>
+                    <th>Writer</th>
+                    <td><a href="{{ url .Writer }}">{{ .Writer }}</a></td>
                 </tr>
-                <tr>
-                    <th>Other Masters</th>
-                    <td class="col-sm-5">
-                        <ul class="list-unstyled">
-                            {{ range $k, $p := .Peers }}
-                            <li><a href="{{ url $p.Name }}/ui/index.html">{{ $p.Name }}</a></li>
-                            {{ end }}
-                        </ul>
-                    </td>
-                </tr>
-                {{ end }}
                 </tbody>
             </table>
         </div>

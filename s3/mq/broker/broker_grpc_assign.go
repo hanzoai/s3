@@ -42,7 +42,7 @@ func (b *MessageQueueBroker) AssignTopicPartitions(c context.Context, request *m
 	}
 
 	// if is leader, notify the followers to drain existing topic partition subscriptions
-	if request.IsLeader {
+	if request.IsPrimary {
 		for _, brokerPartition := range request.BrokerPartitionAssignments {
 			if follower := brokerPartition.FollowerBroker; follower != "" {
 				err := pb.WithBrokerGrpcClient(false, follower, b.grpcDialOption, func(client mq_pb.HanzoMessagingClient) error {
@@ -76,7 +76,7 @@ func (b *MessageQueueBroker) assignTopicPartitionsToBrokers(ctx context.Context,
 							Partition: bpa.Partition,
 						},
 					},
-					IsLeader:   true,
+					IsPrimary:   true,
 					IsDraining: !isAdd,
 				})
 				if doCreateErr != nil {

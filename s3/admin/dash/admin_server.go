@@ -1021,11 +1021,11 @@ func (s *AdminServer) GetClusterMasters() (*ClusterMastersData, error) {
 	for _, master := range topology.Masters {
 		masterInfo := &MasterInfo{
 			Address:  pb.ServerAddress(master.Address).ToHttpAddress(),
-			IsLeader: master.IsLeader,
+			IsWriter: master.IsWriter,
 			Suffrage: "",
 		}
 
-		if master.IsLeader {
+		if master.IsWriter {
 			leaderCount++
 		}
 
@@ -1047,19 +1047,19 @@ func (s *AdminServer) GetClusterMasters() (*ClusterMastersData, error) {
 			// Update existing master info or create new one
 			if masterInfo, exists := masterMap[httpAddress]; exists {
 				// Update existing master with raft data
-				masterInfo.IsLeader = server.IsLeader
+				masterInfo.IsWriter = server.IsWriter
 				masterInfo.Suffrage = server.Suffrage
 			} else {
 				// Create new master info from raft data
 				masterInfo := &MasterInfo{
 					Address:  httpAddress,
-					IsLeader: server.IsLeader,
+					IsWriter: server.IsWriter,
 					Suffrage: server.Suffrage,
 				}
 				masterMap[httpAddress] = masterInfo
 			}
 
-			if server.IsLeader {
+			if server.IsWriter {
 				// Update leader count based on raft data
 				leaderCount = 1 // There should only be one leader
 			}
@@ -1090,7 +1090,7 @@ func (s *AdminServer) GetClusterMasters() (*ClusterMastersData, error) {
 		if currentMaster != "" {
 			masters = append(masters, MasterInfo{
 				Address:  pb.ServerAddress(currentMaster).ToHttpAddress(),
-				IsLeader: true,
+				IsWriter: true,
 				Suffrage: "Voter",
 			})
 			leaderCount = 1

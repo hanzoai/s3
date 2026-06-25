@@ -250,7 +250,7 @@ func GetTopicSubscribersRespToInput(r *mq_pb.GetTopicSubscribersResponse) mq_bro
 func AssignTopicPartitionsReqFromView(v mq_brokerwire.AssignTopicPartitionsRequest) *mq_pb.AssignTopicPartitionsRequest {
 	req := &mq_pb.AssignTopicPartitionsRequest{
 		Topic:      topicFromWire(v.Topic()),
-		IsLeader:   v.IsLeader(),
+		IsPrimary:   v.IsPrimary(),
 		IsDraining: v.IsDraining(),
 	}
 	for i := 0; i < v.BrokerPartitionAssignmentsLen(); i++ {

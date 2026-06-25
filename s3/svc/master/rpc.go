@@ -326,7 +326,7 @@ func RaftListClusterServersRespFromWire(b []byte) (*master_pb.RaftListClusterSer
 	for i := 0; i < v.ClusterServersLen(); i++ {
 		if s, ok := v.ClusterServerAt(i); ok {
 			resp.ClusterServers = append(resp.ClusterServers, &master_pb.RaftListClusterServersResponse_ClusterServers{
-				Id: s.Id(), Address: s.Address(), Suffrage: s.Suffrage(), IsLeader: s.IsLeader(),
+				Id: s.Id(), Address: s.Address(), Suffrage: s.Suffrage(), IsWriter: s.IsWriter(),
 			})
 		}
 	}

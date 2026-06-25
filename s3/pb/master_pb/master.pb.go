@@ -4499,7 +4499,7 @@ type RaftListClusterServersResponse_ClusterServers struct {
 	Id       string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Address  string `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
 	Suffrage string `protobuf:"bytes,3,opt,name=suffrage,proto3" json:"suffrage,omitempty"`
-	IsLeader bool   `protobuf:"varint,4,opt,name=isLeader,proto3" json:"isLeader,omitempty"`
+	IsWriter bool   `protobuf:"varint,4,opt,name=isWriter,proto3" json:"isWriter,omitempty"`
 }
 
 func (x *RaftListClusterServersResponse_ClusterServers) Reset() {
@@ -4555,9 +4555,9 @@ func (x *RaftListClusterServersResponse_ClusterServers) GetSuffrage() string {
 	return ""
 }
 
-func (x *RaftListClusterServersResponse_ClusterServers) GetIsLeader() bool {
+func (x *RaftListClusterServersResponse_ClusterServers) GetIsWriter() bool {
 	if x != nil {
-		return x.IsLeader
+		return x.IsWriter
 	}
 	return false
 }

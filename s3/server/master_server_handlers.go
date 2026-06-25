@@ -54,7 +54,7 @@ func (ms *MasterServer) dirLookupHandler(w http.ResponseWriter, r *http.Request)
 	location := ms.findVolumeLocation(collection, vid)
 	httpStatus := http.StatusOK
 	if location.Error != "" || location.Locations == nil {
-		if location.NotFound && ms.Topo.IsLeader() && ms.Topo.IsWarmingUp() {
+		if location.NotFound && ms.Topo.IsWriter() && ms.Topo.IsWarmingUp() {
 			httpStatus = http.StatusServiceUnavailable
 			remaining := ms.Topo.RemainingWarmupDuration()
 			if remaining < time.Second {
@@ -78,7 +78,7 @@ func (ms *MasterServer) dirLookupHandler(w http.ResponseWriter, r *http.Request)
 func (ms *MasterServer) findVolumeLocation(collection, vid string) operation.LookupResult {
 	var locations []operation.Location
 	var err error
-	if ms.Topo.IsLeader() {
+	if ms.Topo.IsWriter() {
 		volumeId, newVolumeIdErr := needle.NewVolumeId(vid)
 		if newVolumeIdErr != nil {
 			err = fmt.Errorf("Unknown volume id %s", vid)
@@ -122,7 +122,7 @@ func (ms *MasterServer) findVolumeLocation(collection, vid string) operation.Loo
 }
 
 func (ms *MasterServer) dirAssignHandler(w http.ResponseWriter, r *http.Request) {
-	if ms.Topo.IsLeader() && ms.Topo.IsWarmingUp() {
+	if ms.Topo.IsWriter() && ms.Topo.IsWarmingUp() {
 		remaining := ms.Topo.RemainingWarmupDuration()
 		if remaining < time.Second {
 			remaining = time.Second

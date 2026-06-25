@@ -16,7 +16,7 @@ import (
 func (t *Topology) StartRefreshWritableVolumes(grpcDialOption pb.DialOption, garbageThreshold float64, concurrentVacuumLimitPerVolumeServer int, growThreshold float64, preallocate int64) {
 	go func() {
 		for {
-			if t.IsLeader() {
+			if t.IsWriter() {
 				freshThreshHold := time.Now().Unix() - 3*t.pulse //3 times of sleep interval
 				t.CollectDeadNodeAndFullVolumes(freshThreshHold, t.volumeSizeLimit, growThreshold)
 			}
@@ -25,7 +25,7 @@ func (t *Topology) StartRefreshWritableVolumes(grpcDialOption pb.DialOption, gar
 	}()
 	go func(garbageThreshold float64) {
 		for {
-			if t.IsLeader() {
+			if t.IsWriter() {
 				// Safety net: if vacuum was disabled by the plugin monitor but the
 				// admin server is no longer connected, automatically re-enable.
 				// This handles the case where the admin server crashes without
