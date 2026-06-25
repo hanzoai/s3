@@ -1,3 +1,6 @@
-[leveldb2]
+[luxdb]
+# Filer metadata store over luxfi/database (the lux-canonical KV abstraction).
+# backend: zapdb (default, ZAP-native) | pebble | leveldb.
 enabled = true
+backend = "zapdb"
 dir = "/data/filerldb2"

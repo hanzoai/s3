@@ -1,6 +1,10 @@
 package meta_cache
 
-import "github.com/hanzoai/s3/s3/util"
+import (
+	"strings"
+
+	"github.com/hanzoai/s3/s3/util"
+)
 
 var (
 	_ = util.Configuration(&cacheConfig{})
@@ -8,10 +12,14 @@ var (
 
 // implementing util.Configuration
 type cacheConfig struct {
-	dir string
+	dir     string
+	backend string
 }
 
 func (c cacheConfig) GetString(key string) string {
+	if strings.HasSuffix(key, "backend") {
+		return c.backend
+	}
 	return c.dir
 }
 
