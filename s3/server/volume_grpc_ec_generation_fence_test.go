@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage"
@@ -22,7 +23,7 @@ import (
 func buildEcStoreWithGeneration(t *testing.T, dir, collection string, vid needle.VolumeId, encodeTsNs int64, shardIds []erasure_coding.ShardId) *storage.Store {
 	t.Helper()
 	require.NoError(t, os.MkdirAll(dir, 0o755))
-	store := storage.NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := storage.NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir}, []int32{100}, []util.MinFreeSpace{{}}, "",
 		storage.NeedleMapInMemory, []types.DiskType{types.HardDriveType}, nil, 3, stats.DefaultDiskIOProbeConfig())
 	done := make(chan struct{})

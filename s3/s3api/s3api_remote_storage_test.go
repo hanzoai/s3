@@ -12,13 +12,16 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/filer"
+	"github.com/hanzoai/s3/s3/filerzap"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/filerstub"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
+	filerwire "github.com/hanzoai/s3/s3/wire/filer"
+	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/zap-proto/go/transport"
 )
 
 // TestIsInRemoteOnly tests the IsInRemoteOnly method on filer_pb.Entry
@@ -496,11 +499,12 @@ func TestCopyObjectRemoteOnlySourceDetection(t *testing.T) {
 	}
 }
 
-// fakeCacheFiler is a minimal HanzoFiler gRPC server whose
-// CacheRemoteObjectToLocalCluster behavior is driven by a callback, so tests can
-// model a slow (still-caching) filer or one that returns cached chunks.
+// fakeCacheFiler is a minimal HanzoFiler whose CacheRemoteObjectToLocalCluster
+// behavior is driven by a callback, so tests can model a slow (still-caching)
+// filer or one that returns cached chunks. The embedded filerstub.FilerServer
+// supplies the methods this test doesn't exercise.
 type fakeCacheFiler struct {
-	filer_pb.UnimplementedHanzoFilerServer
+	filerstub.FilerServer
 	cache func(context.Context, *filer_pb.CacheRemoteObjectToLocalClusterRequest) (*filer_pb.CacheRemoteObjectToLocalClusterResponse, error)
 }
 
@@ -508,17 +512,17 @@ func (f *fakeCacheFiler) CacheRemoteObjectToLocalCluster(ctx context.Context, re
 	return f.cache(ctx, req)
 }
 
-// startFakeCacheFiler serves impl on a random localhost port and returns the
-// S3-style filer address whose ToGrpcAddress resolves back to that port.
+// startFakeCacheFiler serves impl over the native ZAP transport (the HanzoFiler
+// service rides the gRPC port directly) on a random localhost port and returns
+// the S3-style filer address whose ToGrpcAddress resolves back to that port.
 func startFakeCacheFiler(t *testing.T, impl *fakeCacheFiler) pb.ServerAddress {
 	t.Helper()
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		filerwire.Dispatch(filerzap.NewServerBackend(impl)),
+		filerstream.Handler(filerzap.NewStreamServer(impl)))
 	require.NoError(t, err)
-	srv := grpc.NewServer()
-	filer_pb.RegisterHanzoFilerServer(srv, impl)
-	go srv.Serve(lis)
-	t.Cleanup(srv.Stop)
-	port := lis.Addr().(*net.TCPAddr).Port
+	t.Cleanup(func() { _ = srv.Close() })
+	port := srv.Addr().(*net.TCPAddr).Port
 	return pb.ServerAddress(fmt.Sprintf("127.0.0.1:1.%d", port))
 }
 
@@ -527,7 +531,7 @@ func newRemoteCacheTestServer(filerAddr pb.ServerAddress) *S3ApiServer {
 		option: &S3ApiServerOption{
 			Filers:         []pb.ServerAddress{filerAddr},
 			BucketsPath:    "/buckets",
-			GrpcDialOption: grpc.WithTransportCredentials(insecure.NewCredentials()),
+			GrpcDialOption: pb.DialOption{},
 		},
 	}
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	workertypes "github.com/hanzoai/s3/s3/worker/types"
-	"google.golang.org/grpc"
 )
 
 // CollectVolumeMetricsFromMasters dials the provided master addresses in order
@@ -24,11 +23,8 @@ func CollectVolumeMetricsFromMasters(
 	ctx context.Context,
 	masterAddresses []string,
 	collectionFilter string,
-	grpcDialOption grpc.DialOption,
+	grpcDialOption pb.DialOption,
 ) ([]*workertypes.VolumeHealthMetrics, *topology.ActiveTopology, map[uint32][]workertypes.ReplicaLocation, error) {
-	if grpcDialOption == nil {
-		return nil, nil, nil, fmt.Errorf("grpc dial option is not configured")
-	}
 	if len(masterAddresses) == 0 {
 		return nil, nil, nil, fmt.Errorf("no master addresses provided in cluster context")
 	}
@@ -63,10 +59,7 @@ func CollectVolumeMetricsFromMasters(
 // (GetMasterConfiguration), used by detectors as the replica-placement fallback so
 // the plugin path matches the shell. Returns "" if it cannot be fetched, so callers
 // fall back to even spread rather than failing detection.
-func FetchDefaultReplicaPlacement(ctx context.Context, masterAddresses []string, grpcDialOption grpc.DialOption) string {
-	if grpcDialOption == nil {
-		return ""
-	}
+func FetchDefaultReplicaPlacement(ctx context.Context, masterAddresses []string, grpcDialOption pb.DialOption) string {
 	for _, address := range masterAddresses {
 		if ctx.Err() != nil {
 			return ""
@@ -89,7 +82,7 @@ func FetchDefaultReplicaPlacement(ctx context.Context, masterAddresses []string,
 	return ""
 }
 
-func FetchVolumeList(ctx context.Context, address string, grpcDialOption grpc.DialOption) (*master_pb.VolumeListResponse, error) {
+func FetchVolumeList(ctx context.Context, address string, grpcDialOption pb.DialOption) (*master_pb.VolumeListResponse, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}

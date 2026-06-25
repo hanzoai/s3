@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -43,7 +44,7 @@ func (c *commandS3UserDelete) Do(args []string, commandEnv *CommandEnv, writer i
 	}
 
 	err := commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.DeleteUser(iamwire.NewDeleteUserRequest(iamwire.DeleteUserRequestInput{Username: *name}))
+		_, _, err := client.DeleteUser(context.Background(), iamwire.NewDeleteUserRequest(iamwire.DeleteUserRequestInput{Username: *name}))
 		return err
 	})
 	if err != nil {

@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -113,7 +114,7 @@ func (c *commandS3UserProvision) Do(args []string, commandEnv *CommandEnv, write
 		// user surfaces as a generic call error (the gRPC NotFound path), so any
 		// GetUser error is treated as "user does not exist".
 		var existingIdentity *iam_pb.Identity
-		if _, body, getErr := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: *name})); getErr == nil {
+		if _, body, getErr := client.GetUser(context.Background(), iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: *name})); getErr == nil {
 			identity, derr := iamwire.GetUserResp(body)
 			if derr != nil {
 				return derr
@@ -125,7 +126,7 @@ func (c *commandS3UserProvision) Do(args []string, commandEnv *CommandEnv, write
 		}
 
 		// Step 1: Create policy
-		_, _, err := client.PutPolicy(iamwire.NewPutPolicyRequest(iamwire.PutPolicyRequestInput{
+		_, _, err := client.PutPolicy(context.Background(), iamwire.NewPutPolicyRequest(iamwire.PutPolicyRequestInput{
 			Name:    policyName,
 			Content: string(policyJSON),
 		}))
@@ -137,7 +138,7 @@ func (c *commandS3UserProvision) Do(args []string, commandEnv *CommandEnv, write
 		// rollbackPolicy removes the policy we just created. Used when a later
 		// step fails, to avoid leaving the policy orphaned.
 		rollbackPolicy := func() {
-			if _, _, delErr := client.DeletePolicy(iamwire.NewDeletePolicyRequest(iamwire.DeletePolicyRequestInput{Name: policyName})); delErr != nil {
+			if _, _, delErr := client.DeletePolicy(context.Background(), iamwire.NewDeletePolicyRequest(iamwire.DeletePolicyRequestInput{Name: policyName})); delErr != nil {
 				fmt.Fprintf(writer, "Warning: failed to rollback policy %q: %v\n", policyName, delErr)
 			}
 		}
@@ -151,7 +152,7 @@ func (c *commandS3UserProvision) Do(args []string, commandEnv *CommandEnv, write
 				}
 			}
 			existingIdentity.PolicyNames = append(existingIdentity.PolicyNames, policyName)
-			_, _, err = client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{Username: *name, Identity: iamwire.IdentityInputFromPB(existingIdentity)}))
+			_, _, err = client.UpdateUser(context.Background(), iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{Username: *name, Identity: iamwire.IdentityInputFromPB(existingIdentity)}))
 			if err != nil {
 				rollbackPolicy()
 				return fmt.Errorf("attach policy to existing user: %w", err)
@@ -181,7 +182,7 @@ func (c *commandS3UserProvision) Do(args []string, commandEnv *CommandEnv, write
 				},
 				PolicyNames: []string{policyName},
 			}
-			_, _, err = client.CreateUser(iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{Identity: iamwire.IdentityInputFromPB(identity)}))
+			_, _, err = client.CreateUser(context.Background(), iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{Identity: iamwire.IdentityInputFromPB(identity)}))
 			if err != nil {
 				rollbackPolicy()
 				return fmt.Errorf("create user: %w", err)

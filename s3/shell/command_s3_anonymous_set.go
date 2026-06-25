@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -98,9 +99,9 @@ func (c *commandS3AnonymousSet) Do(args []string, commandEnv *CommandEnv, writer
 		identity.Actions = kept
 
 		if isNew {
-			_, _, err = client.CreateUser(iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{Identity: iamwire.IdentityInputFromPB(identity)}))
+			_, _, err = client.CreateUser(context.Background(), iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{Identity: iamwire.IdentityInputFromPB(identity)}))
 		} else {
-			_, _, err = client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
+			_, _, err = client.UpdateUser(context.Background(), iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
 				Username: anonymousUserName,
 				Identity: iamwire.IdentityInputFromPB(identity),
 			}))
@@ -115,7 +116,7 @@ func (c *commandS3AnonymousSet) Do(args []string, commandEnv *CommandEnv, writer
 }
 
 func getOrCreateAnonymousUser(client *iamwire.HanzoIdentityAccessManagementClient) (*iam_pb.Identity, bool, error) {
-	_, body, err := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: anonymousUserName}))
+	_, body, err := client.GetUser(context.Background(), iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: anonymousUserName}))
 	if err == nil {
 		identity, derr := iamwire.GetUserResp(body)
 		if derr != nil {

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage/erasure_coding"
@@ -76,7 +77,7 @@ func TestLoneVifDoesNotCreatePhantomDat(t *testing.T) {
 	}
 
 	diskIOProbeConfig := stats.DefaultDiskIOProbeConfig()
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir0, dir1},
 		[]int32{100, 100},
 		[]util.MinFreeSpace{{}, {}},
@@ -162,7 +163,7 @@ func TestEmptyEcDatStubIsSwept(t *testing.T) {
 	}
 
 	diskIOProbeConfig := stats.DefaultDiskIOProbeConfig()
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir0, dir1},
 		[]int32{100, 100},
 		[]util.MinFreeSpace{{}, {}},
@@ -249,7 +250,7 @@ func TestRemoveEmptyEcDatStubFindsVifInIdxDir(t *testing.T) {
 // notification channels until cleanup.
 func startEcTestStore(t *testing.T, dir string) *Store {
 	t.Helper()
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir},
 		[]int32{100},
 		[]util.MinFreeSpace{{}},

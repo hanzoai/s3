@@ -13,7 +13,6 @@ import (
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/util"
 	util_http "github.com/hanzoai/s3/s3/util/http"
-	"google.golang.org/grpc"
 )
 
 var (
@@ -54,7 +53,7 @@ func main() {
 
 }
 
-func genFile(grpcDialOption grpc.DialOption, i int) (*operation.AssignResult, string) {
+func genFile(grpcDialOption pb.DialOption, i int) (*operation.AssignResult, string) {
 	assignResult, err := operation.Assign(context.Background(), func(_ context.Context) pb.ServerAddress { return pb.ServerAddress(*master) }, grpcDialOption, &operation.VolumeAssignRequest{
 		Count:       1,
 		Replication: *replication,

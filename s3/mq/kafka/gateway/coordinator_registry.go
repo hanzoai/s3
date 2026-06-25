@@ -20,7 +20,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
-	"google.golang.org/grpc"
 )
 
 // CoordinatorRegistry manages consumer group coordinator assignments
@@ -72,7 +71,7 @@ const (
 )
 
 // NewCoordinatorRegistry creates a new coordinator registry
-func NewCoordinatorRegistry(gatewayAddress string, masters []pb.ServerAddress, grpcDialOption grpc.DialOption) *CoordinatorRegistry {
+func NewCoordinatorRegistry(gatewayAddress string, masters []pb.ServerAddress, grpcDialOption pb.DialOption) *CoordinatorRegistry {
 	// Create filer discovery service that will periodically refresh filers from all masters
 	filerDiscoveryService := filer_client.NewFilerDiscoveryService(masters, grpcDialOption)
 
@@ -114,7 +113,7 @@ func NewCoordinatorRegistry(gatewayAddress string, masters []pb.ServerAddress, g
 
 	// Create filer client accessor that uses dynamic filer discovery
 	registry.filerClientAccessor = &filer_client.FilerClientAccessor{
-		GetGrpcDialOption: func() grpc.DialOption {
+		GetGrpcDialOption: func() pb.DialOption {
 			return grpcDialOption
 		},
 		GetFilers: func() []pb.ServerAddress {

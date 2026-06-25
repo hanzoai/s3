@@ -9,7 +9,6 @@ import (
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
-	"google.golang.org/grpc"
 )
 
 func init() {
@@ -66,7 +65,7 @@ func (c *commandVolumeServerLeave) Do(args []string, commandEnv *CommandEnv, wri
 
 }
 
-func volumeServerLeave(grpcDialOption grpc.DialOption, volumeServer pb.ServerAddress, writer io.Writer, applyChanges bool) (err error) {
+func volumeServerLeave(grpcDialOption pb.DialOption, volumeServer pb.ServerAddress, writer io.Writer, applyChanges bool) (err error) {
 	if !applyChanges {
 		fmt.Fprintf(writer, "Would ask volume server %s to leave (dry-run)\n", volumeServer)
 		return nil

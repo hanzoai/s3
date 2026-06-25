@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -44,7 +45,7 @@ func (c *commandS3GroupDelete) Do(args []string, commandEnv *CommandEnv, writer 
 	}
 
 	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetConfiguration(iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
+		_, body, err := client.GetConfiguration(context.Background(), iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
 		if err != nil {
 			return err
 		}
@@ -65,7 +66,7 @@ func (c *commandS3GroupDelete) Do(args []string, commandEnv *CommandEnv, writer 
 					return fmt.Errorf("cannot delete group %s: has %d attached policy(ies)", *name, len(g.PolicyNames))
 				}
 				cfg.Groups = append(cfg.Groups[:i], cfg.Groups[i+1:]...)
-				if _, _, err := client.PutConfiguration(iamwire.NewPutConfigurationRequest(iamwire.PutConfigurationRequestInput{Configuration: iamwire.ConfigurationInputFromPB(cfg)})); err != nil {
+				if _, _, err := client.PutConfiguration(context.Background(), iamwire.NewPutConfigurationRequest(iamwire.PutConfigurationRequestInput{Configuration: iamwire.ConfigurationInputFromPB(cfg)})); err != nil {
 					return err
 				}
 				return json.NewEncoder(writer).Encode(map[string]string{"deleted": *name})

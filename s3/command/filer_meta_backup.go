@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/viper"
+
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/glog"
-	"github.com/spf13/viper"
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
@@ -23,7 +23,7 @@ var (
 )
 
 type FilerMetaBackupOptions struct {
-	grpcDialOption    grpc.DialOption
+	grpcDialOption    pb.DialOption
 	filerAddress      *string
 	filerDirectory    *string
 	includePrefixes   *string

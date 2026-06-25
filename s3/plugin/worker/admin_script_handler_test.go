@@ -6,8 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 )
 
 func TestAdminScriptFilerAddressKeepsGrpcPortOffConvention(t *testing.T) {
@@ -15,7 +17,7 @@ func TestAdminScriptFilerAddressKeepsGrpcPortOffConvention(t *testing.T) {
 	// shell derives the gRPC port from FilerAddress via ToGrpcAddress(); it must
 	// land on the real gRPC port even when that port is off the httpPort+10000
 	// convention, not double the offset into a non-existent filer:28890.
-	h := NewAdminScriptHandler(nil)
+	h := NewAdminScriptHandler(pb.DialOption{})
 	options, err := h.buildAdminScriptShellOptions(&plugin_pb.ClusterContext{
 		MasterGrpcAddresses: []string{"master:19333"},
 		FilerAddresses:      []string{"filer:8888.18890"},
@@ -32,7 +34,7 @@ func TestAdminScriptFilerAddressKeepsGrpcPortOffConvention(t *testing.T) {
 }
 
 func TestAdminScriptShellOptionsRequireMasters(t *testing.T) {
-	h := NewAdminScriptHandler(nil)
+	h := NewAdminScriptHandler(pb.DialOption{})
 	if _, err := h.buildAdminScriptShellOptions(&plugin_pb.ClusterContext{
 		FilerAddresses: []string{"filer:8888.18890"},
 	}); err == nil {
@@ -41,7 +43,7 @@ func TestAdminScriptShellOptionsRequireMasters(t *testing.T) {
 }
 
 func TestAdminScriptDescriptorDefaults(t *testing.T) {
-	descriptor := NewAdminScriptHandler(nil).Descriptor()
+	descriptor := NewAdminScriptHandler(pb.DialOption{}).Descriptor()
 	if descriptor == nil {
 		t.Fatalf("expected descriptor")
 	}
@@ -66,7 +68,7 @@ func TestAdminScriptDescriptorDefaults(t *testing.T) {
 }
 
 func TestAdminScriptDetectSkipsByRunInterval(t *testing.T) {
-	handler := NewAdminScriptHandler(nil)
+	handler := NewAdminScriptHandler(pb.DialOption{})
 	sender := &recordingDetectionSender{}
 	err := handler.Detect(context.Background(), &plugin_pb.RunDetectionRequest{
 		JobType:           adminScriptJobType,
@@ -101,7 +103,7 @@ func TestAdminScriptDetectSkipsByRunInterval(t *testing.T) {
 }
 
 func TestAdminScriptDetectCreatesProposalWhenIntervalElapsed(t *testing.T) {
-	handler := NewAdminScriptHandler(nil)
+	handler := NewAdminScriptHandler(pb.DialOption{})
 	sender := &recordingDetectionSender{}
 	err := handler.Detect(context.Background(), &plugin_pb.RunDetectionRequest{
 		JobType:           adminScriptJobType,

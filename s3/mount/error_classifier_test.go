@@ -12,11 +12,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Regression: wfs_save.go used to wrap the gRPC error with fmt.Errorf(... %v ...)
-// which stringified the status and made status.FromError fall through to the
-// default EIO mapping. Wrapping with %w must preserve the code so that
-// codes.Canceled from a closing filer connection surfaces as ETIMEDOUT (a
-// retryable hint for FUSE callers) rather than EIO.
+// A Canceled error from a closing filer connection must surface as ETIMEDOUT (a
+// retryable hint for FUSE callers) rather than EIO, even when wrapped by a
+// caller. wfs_save.go wraps with %w; the ZAP classifier matches the "Canceled"
+// code name the filer tags onto the error string.
 func TestGrpcErrorToFuseStatusUnwrapsCanceledThroughFmtErrorf(t *testing.T) {
 	grpcErr := status.Error(codes.Canceled, "grpc: the client connection is closing")
 
@@ -29,17 +28,21 @@ func TestGrpcErrorToFuseStatusUnwrapsCanceledThroughFmtErrorf(t *testing.T) {
 	}
 }
 
-// Guard against regressing the wrap verb: %v loses the gRPC status and the
-// classifier must fall through to EIO. This test documents that behavior so
-// anyone reverting the %w change sees the intent.
-func TestGrpcErrorToFuseStatusDropsCanceledThroughPercentV(t *testing.T) {
+// The filer speaks ZAP now: the error is a string carrying the "Canceled" code
+// name, so classification is by code-name match and no longer depends on the
+// wrap verb. A Canceled error wrapped with %v (which flattens the old gRPC
+// status object) classifies identically to %w — both ETIMEDOUT. This guards the
+// verb-agnostic ZAP contract so a future change can't reintroduce status-object
+// unwrapping that would make %v drop to EIO again.
+func TestGrpcErrorToFuseStatusClassifiesCanceledThroughPercentV(t *testing.T) {
 	grpcErr := status.Error(codes.Canceled, "grpc: the client connection is closing")
 
 	wrapped := fmt.Errorf("UpdateEntry dir /some/path: %v", grpcErr)
 
 	got := grpcErrorToFuseStatus(wrapped)
-	if got != fuse.EIO {
-		t.Fatalf("grpcErrorToFuseStatus(canceled wrapped with %%v) = %v, want EIO (regression guard)", got)
+	want := fuse.Status(syscall.ETIMEDOUT)
+	if got != want {
+		t.Fatalf("grpcErrorToFuseStatus(canceled wrapped with %%v) = %v, want %v (ZAP classifies by code name, verb-agnostic)", got, want)
 	}
 }
 

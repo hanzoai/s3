@@ -6,6 +6,8 @@ import (
 	"net"
 	"testing"
 
+	"github.com/zap-proto/go/transport"
+
 	"github.com/hanzoai/s3/s3/credential"
 	_ "github.com/hanzoai/s3/s3/credential/memory"
 	"github.com/hanzoai/s3/s3/pb"
@@ -13,7 +15,6 @@ import (
 	"github.com/hanzoai/s3/s3/security"
 	s3server "github.com/hanzoai/s3/s3/server"
 	iamwire "github.com/hanzoai/s3/s3/wire/iam"
-	"github.com/zap-proto/go/transport"
 )
 
 // TestIamGrpcStore_RoundTrip pins the production client path: IamGrpcStore dials
@@ -58,7 +59,7 @@ func TestIamGrpcStore_RoundTrip(t *testing.T) {
 	serverAddr := pb.ServerAddress(fmt.Sprintf("127.0.0.1:0.%d", grpcPort))
 
 	store := &IamGrpcStore{}
-	store.SetFilerAddressFunc(func() pb.ServerAddress { return serverAddr }, nil)
+	store.SetFilerAddressFunc(func() pb.ServerAddress { return serverAddr }, pb.DialOption{})
 
 	ctx := context.Background()
 

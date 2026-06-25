@@ -9,10 +9,9 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/rpc"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
 	"github.com/stretchr/testify/assert"
-	grpc "google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 type testListEntriesStream struct {
@@ -29,20 +28,12 @@ func (s *testListEntriesStream) Recv() (*filer_pb.ListEntriesResponse, error) {
 	return resp, nil
 }
 
-func (s *testListEntriesStream) Header() (metadata.MD, error) { return metadata.MD{}, nil }
-func (s *testListEntriesStream) Trailer() metadata.MD         { return metadata.MD{} }
-func (s *testListEntriesStream) Close() error                 { return nil }
-func (s *testListEntriesStream) Context() context.Context     { return context.Background() }
-func (s *testListEntriesStream) SendMsg(m interface{}) error  { return nil }
-func (s *testListEntriesStream) RecvMsg(m interface{}) error  { return nil }
-func (s *testListEntriesStream) CloseSend() error             { return nil }
-
 type testFilerClient struct {
 	filer_pb.HanzoFilerClient
 	entriesByDir map[string][]*filer_pb.Entry
 }
 
-func (c *testFilerClient) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.ListEntriesResponse], error) {
+func (c *testFilerClient) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest) (rpc.ServerStream[filer_pb.ListEntriesResponse], error) {
 	entries := c.entriesByDir[in.Directory]
 	// Simplified mock: implements basic prefix filtering but ignores Limit, StartFromFileName, and InclusiveStartFrom
 	// to keep test logic focused. Prefix "/" is treated as no filter for bucket root compatibility.
@@ -74,7 +65,7 @@ type markerEchoFilerClient struct {
 // and simulates a backend that may echo StartFromFileName. entriesByDir controls
 // returned entries; returnFollowing controls whether ListEntries returns only the
 // echoed marker or the echoed marker plus following entries.
-func (c *markerEchoFilerClient) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.ListEntriesResponse], error) {
+func (c *markerEchoFilerClient) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest) (rpc.ServerStream[filer_pb.ListEntriesResponse], error) {
 	entries := c.entriesByDir[in.Directory]
 	ensureEntryAttributes(entries)
 	if in.StartFromFileName == "" {

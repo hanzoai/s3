@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -65,7 +66,7 @@ func (c *commandS3IAMImport) Do(args []string, commandEnv *CommandEnv, writer io
 	}
 
 	err = commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.PutConfiguration(iamwire.NewPutConfigurationRequest(iamwire.PutConfigurationRequestInput{
+		_, _, err := client.PutConfiguration(context.Background(), iamwire.NewPutConfigurationRequest(iamwire.PutConfigurationRequestInput{
 			Configuration: iamwire.ConfigurationInputFromPB(config),
 		}))
 		return err

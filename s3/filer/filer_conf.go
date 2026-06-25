@@ -8,35 +8,35 @@ import (
 
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"google.golang.org/grpc"
+
+	"github.com/viant/ptrie"
+	jsonpb "google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/util"
-	"github.com/viant/ptrie"
-	jsonpb "google.golang.org/protobuf/encoding/protojson"
 )
 
 const (
-	DirectoryEtcRoot      = "/etc/"
-	DirectoryEtcHanzo = "/etc/hanzo"
-	DirectoryEtcRemote    = "/etc/remote"
-	FilerConfName         = "filer.conf"
-	IamConfigDirectory    = "/etc/iam"
-	IamIdentityFile       = "identity.json"
-	IamPoliciesFile       = "policies.json"
+	DirectoryEtcRoot   = "/etc/"
+	DirectoryEtcHanzo  = "/etc/hanzo"
+	DirectoryEtcRemote = "/etc/remote"
+	FilerConfName      = "filer.conf"
+	IamConfigDirectory = "/etc/iam"
+	IamIdentityFile    = "identity.json"
+	IamPoliciesFile    = "policies.json"
 )
 
 type FilerConf struct {
 	rules ptrie.Trie[*filer_pb.FilerConf_PathConf]
 }
 
-func ReadFilerConf(filerGrpcAddress pb.ServerAddress, grpcDialOption grpc.DialOption, masterClient *wdclient.MasterClient) (*FilerConf, error) {
+func ReadFilerConf(filerGrpcAddress pb.ServerAddress, grpcDialOption pb.DialOption, masterClient *wdclient.MasterClient) (*FilerConf, error) {
 	return ReadFilerConfFromFilers([]pb.ServerAddress{filerGrpcAddress}, grpcDialOption, masterClient)
 }
 
 // ReadFilerConfFromFilers reads filer configuration with multi-filer failover support
-func ReadFilerConfFromFilers(filerGrpcAddresses []pb.ServerAddress, grpcDialOption grpc.DialOption, masterClient *wdclient.MasterClient) (*FilerConf, error) {
+func ReadFilerConfFromFilers(filerGrpcAddresses []pb.ServerAddress, grpcDialOption pb.DialOption, masterClient *wdclient.MasterClient) (*FilerConf, error) {
 	var data []byte
 	if err := pb.WithOneOfGrpcFilerClients(false, filerGrpcAddresses, grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
 		if masterClient != nil {

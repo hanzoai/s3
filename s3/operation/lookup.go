@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb"
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 )
@@ -41,7 +40,7 @@ var (
 	vc VidCache // caching of volume locations, re-check if after 10 minutes
 )
 
-func LookupFileId(masterFn GetMasterFn, grpcDialOption grpc.DialOption, fileId string) (fullUrl string, jwt string, err error) {
+func LookupFileId(masterFn GetMasterFn, grpcDialOption pb.DialOption, fileId string) (fullUrl string, jwt string, err error) {
 	parts := strings.Split(fileId, ",")
 	if len(parts) != 2 {
 		return "", jwt, errors.New("Invalid fileId " + fileId)
@@ -56,13 +55,13 @@ func LookupFileId(masterFn GetMasterFn, grpcDialOption grpc.DialOption, fileId s
 	return "http://" + lookup.Locations[rand.IntN(len(lookup.Locations))].Url + "/" + fileId, lookup.Jwt, nil
 }
 
-func LookupVolumeId(masterFn GetMasterFn, grpcDialOption grpc.DialOption, vid string) (*LookupResult, error) {
+func LookupVolumeId(masterFn GetMasterFn, grpcDialOption pb.DialOption, vid string) (*LookupResult, error) {
 	results, err := LookupVolumeIds(masterFn, grpcDialOption, []string{vid})
 	return results[vid], err
 }
 
 // LookupVolumeIds find volume locations by cache and actual lookup
-func LookupVolumeIds(masterFn GetMasterFn, grpcDialOption grpc.DialOption, vids []string) (map[string]*LookupResult, error) {
+func LookupVolumeIds(masterFn GetMasterFn, grpcDialOption pb.DialOption, vids []string) (map[string]*LookupResult, error) {
 	ret := make(map[string]*LookupResult)
 	var unknown_vids []string
 

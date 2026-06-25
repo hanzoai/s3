@@ -297,7 +297,7 @@ func convertToRecordValue(data interface{}) (*schema_pb.RecordValue, error) {
 // transport.
 func discoverFiler(masterHTTPAddress string) (string, error) {
 	var filerGRPCAddress string
-	err := pb.WithMasterClient(context.Background(), false, pb.ServerAddress(masterHTTPAddress), nil, false, func(client master_pb.HanzoClient) error {
+	err := pb.WithMasterClient(context.Background(), false, pb.ServerAddress(masterHTTPAddress), pb.DialOption{}, false, func(client master_pb.HanzoClient) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 

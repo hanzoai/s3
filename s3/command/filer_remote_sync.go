@@ -10,13 +10,12 @@ import (
 	"github.com/hanzoai/s3/s3/replication/source"
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
 )
 
 type RemoteSyncOptions struct {
 	filerAddress       *string
 	storageClass       *string
-	grpcDialOption     grpc.DialOption
+	grpcDialOption     pb.DialOption
 	readChunkFromFiler *bool
 	timeAgo            *time.Duration
 	dir                *string

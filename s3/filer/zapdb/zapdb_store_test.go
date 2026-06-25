@@ -13,7 +13,7 @@ import (
 )
 
 func TestCreateAndFind(t *testing.T) {
-	testFiler := filer.NewFiler(pb.ServerDiscovery{}, nil, "", "", "", "", "", 255, nil)
+	testFiler := filer.NewFiler(pb.ServerDiscovery{}, pb.DialOption{}, "", "", "", "", "", 255, nil)
 	dir := t.TempDir()
 	store := &ZapDBStore{}
 	store.initialize(dir)
@@ -66,7 +66,7 @@ func TestCreateAndFind(t *testing.T) {
 }
 
 func TestEmptyRoot(t *testing.T) {
-	testFiler := filer.NewFiler(pb.ServerDiscovery{}, nil, "", "", "", "", "", 255, nil)
+	testFiler := filer.NewFiler(pb.ServerDiscovery{}, pb.DialOption{}, "", "", "", "", "", 255, nil)
 	dir := t.TempDir()
 	store := &ZapDBStore{}
 	store.initialize(dir)
@@ -88,7 +88,7 @@ func TestEmptyRoot(t *testing.T) {
 }
 
 func BenchmarkInsertEntry(b *testing.B) {
-	testFiler := filer.NewFiler(pb.ServerDiscovery{}, nil, "", "", "", "", "", 255, nil)
+	testFiler := filer.NewFiler(pb.ServerDiscovery{}, pb.DialOption{}, "", "", "", "", "", 255, nil)
 	dir := b.TempDir()
 	store := &ZapDBStore{}
 	store.initialize(dir)

@@ -21,7 +21,7 @@ func TestLockClientHostMatchesFilerRing(t *testing.T) {
 	filerRing := lock_manager.NewHashRing(lock_manager.DefaultVnodeCount)
 	filerRing.SetServers(servers)
 
-	lc := NewLockClient(nil, "seed:8888")
+	lc := NewLockClient(pb.DialOption{}, "seed:8888")
 	lc.SetRing(servers, 1)
 
 	for _, key := range []string{
@@ -40,7 +40,7 @@ func TestLockClientHostMatchesFilerRing(t *testing.T) {
 // Without a ring view, the client falls back to the seed filer (which the filer
 // forwards from), preserving the pre-optimization behavior.
 func TestLockClientHostFallsBackToSeed(t *testing.T) {
-	lc := NewLockClient(nil, "seed:8888")
+	lc := NewLockClient(pb.DialOption{}, "seed:8888")
 	if got := lc.hostForKey("any-key"); got != "seed:8888" {
 		t.Errorf("expected seed fallback, got %q", got)
 	}
@@ -55,7 +55,7 @@ func TestLockClientHostFallsBackToSeed(t *testing.T) {
 // A stale (older-version) update must not regress a newer ring view, while
 // version 0 always applies as a bootstrap.
 func TestLockClientSetRingVersionGuard(t *testing.T) {
-	lc := NewLockClient(nil, "seed:8888")
+	lc := NewLockClient(pb.DialOption{}, "seed:8888")
 
 	newer := []pb.ServerAddress{"filer-a:8888", "filer-b:8888"}
 	lc.SetRing(newer, 10)
@@ -78,7 +78,7 @@ func TestLockClientSetRingVersionGuard(t *testing.T) {
 // caller falls back to the distributed lock) and the ring owner afterwards,
 // unlike hostForKey which falls back to the seed.
 func TestLockClientPrimaryForKey(t *testing.T) {
-	lc := NewLockClient(nil, "seed:8888")
+	lc := NewLockClient(pb.DialOption{}, "seed:8888")
 	if got := lc.PrimaryForKey("k"); got != "" {
 		t.Errorf("expected empty before ring, got %q", got)
 	}
@@ -96,7 +96,7 @@ func TestLockClientPrimaryForKey(t *testing.T) {
 // A moved key reports its previous owner within the cooling-off window; an unmoved
 // key reports none.
 func TestLockClientPriorOwnerForKey(t *testing.T) {
-	lc := NewLockClient(nil, "seed:8888")
+	lc := NewLockClient(pb.DialOption{}, "seed:8888")
 
 	setA := []pb.ServerAddress{"filer-a:8888", "filer-b:8888", "filer-c:8888"}
 	lc.SetRing(setA, 1)
@@ -137,7 +137,7 @@ func TestLockClientPriorOwnerForKey(t *testing.T) {
 
 // The prior owner is only offered within the cooling-off window.
 func TestLockClientPriorOwnerForKeyExpires(t *testing.T) {
-	lc := NewLockClient(nil, "seed:8888")
+	lc := NewLockClient(pb.DialOption{}, "seed:8888")
 	lc.priorWindow = 20 * time.Millisecond
 
 	lc.SetRing([]pb.ServerAddress{"filer-a:8888", "filer-b:8888", "filer-c:8888"}, 1)

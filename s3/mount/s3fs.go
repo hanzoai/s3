@@ -12,7 +12,6 @@ import (
 
 	"github.com/seaweedfs/go-fuse/v2/fuse"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/cluster"
 	"github.com/hanzoai/s3/s3/filer"
@@ -37,7 +36,7 @@ type Option struct {
 	filerIndex                  int32 // align memory for atomic read/write
 	FilerAddresses              []pb.ServerAddress
 	MountDirectory              string
-	GrpcDialOption              grpc.DialOption
+	GrpcDialOption              pb.DialOption
 	FilerSigningKey             security.SigningKey
 	FilerSigningExpiresAfterSec int
 	FilerMountRootPath          string

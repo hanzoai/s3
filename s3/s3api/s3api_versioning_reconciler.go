@@ -5,14 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // versioningHealLogPrefix is the grep-able tag every line in the .versions/
@@ -256,7 +255,7 @@ func (s3a *S3ApiServer) healVersionsPointer(bucket, object string) error {
 	versionsObjectPath := object + s3_constants.VersionsFolder
 	versionsEntry, err := s3a.getEntry(bucketDir, versionsObjectPath)
 	if err != nil {
-		if errors.Is(err, filer_pb.ErrNotFound) || status.Code(err) == codes.NotFound {
+		if errors.Is(err, filer_pb.ErrNotFound) || strings.Contains(err.Error(), filer_pb.ErrNotFound.Error()) {
 			// Directory is gone — no stranded state to heal.
 			return nil
 		}
@@ -274,7 +273,7 @@ func (s3a *S3ApiServer) healVersionsPointer(bucket, object string) error {
 	if _, probeErr := s3a.getEntry(bucketDir+"/"+versionsObjectPath, latestFile); probeErr == nil {
 		// Pointer is consistent.
 		return nil
-	} else if !errors.Is(probeErr, filer_pb.ErrNotFound) && status.Code(probeErr) != codes.NotFound {
+	} else if !errors.Is(probeErr, filer_pb.ErrNotFound) && !strings.Contains(probeErr.Error(), filer_pb.ErrNotFound.Error()) {
 		// Transient — surface so the reconciler retries with backoff
 		// rather than invoking heal on a possibly-incomplete listing
 		// (which could rewrite the pointer to an older version).

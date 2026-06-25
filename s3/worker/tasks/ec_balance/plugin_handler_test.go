@@ -3,10 +3,12 @@ package ec_balance
 import (
 	"testing"
 
+	"google.golang.org/protobuf/proto"
+
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	workertypes "github.com/hanzoai/s3/s3/worker/types"
-	"google.golang.org/protobuf/proto"
 )
 
 func TestDeriveECBalanceWorkerConfig(t *testing.T) {
@@ -274,7 +276,7 @@ func TestDecodeECBalanceTaskParamsMissingShardID(t *testing.T) {
 }
 
 func TestECBalanceHandlerCapability(t *testing.T) {
-	handler := NewECBalanceHandler(nil)
+	handler := NewECBalanceHandler(pb.DialOption{})
 	cap := handler.Capability()
 
 	if cap.JobType != "ec_balance" {

@@ -18,15 +18,16 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/grpc/metadata"
+
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/util/request_id"
-	"google.golang.org/grpc/metadata"
 
 	"github.com/hanzoai/s3/s3/filer"
 
-	"google.golang.org/grpc"
-
 	"github.com/gorilla/mux"
+
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
@@ -135,7 +136,7 @@ func debug(params ...interface{}) {
 	glog.V(4).Infoln(params...)
 }
 
-func submitForClientHandler(w http.ResponseWriter, r *http.Request, masterFn operation.GetMasterFn, grpcDialOption grpc.DialOption) {
+func submitForClientHandler(w http.ResponseWriter, r *http.Request, masterFn operation.GetMasterFn, grpcDialOption pb.DialOption) {
 	ctx := r.Context()
 	m := make(map[string]interface{})
 	if r.Method != http.MethodPost {

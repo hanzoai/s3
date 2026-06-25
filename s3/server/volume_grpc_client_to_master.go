@@ -10,8 +10,6 @@ import (
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/stats"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/storage/backend"
@@ -126,7 +124,7 @@ func (vs *VolumeServer) StopHeartbeat() (isAlreadyStopping bool) {
 	return false
 }
 
-func (vs *VolumeServer) doHeartbeatWithRetry(masterAddress pb.ServerAddress, grpcDialOption grpc.DialOption, sleepInterval time.Duration, duplicateRetryCount int) (newLeader pb.ServerAddress, err error) {
+func (vs *VolumeServer) doHeartbeatWithRetry(masterAddress pb.ServerAddress, grpcDialOption pb.DialOption, sleepInterval time.Duration, duplicateRetryCount int) (newLeader pb.ServerAddress, err error) {
 	_ = grpcDialOption // ZAP path derives TLS from grpc.master config, not the dial option
 
 	ctx, cancel := context.WithCancel(context.Background())

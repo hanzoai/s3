@@ -34,7 +34,6 @@ import (
 	_ "github.com/hanzoai/s3/s3/kms/gcp"
 	_ "github.com/hanzoai/s3/s3/kms/local"
 	_ "github.com/hanzoai/s3/s3/kms/openbao"
-	"google.golang.org/grpc"
 )
 
 type Action string
@@ -63,7 +62,7 @@ type IdentityAccessManagement struct {
 	isAuthEnabled     bool
 	credentialManager *credential.CredentialManager
 	filerClient       *wdclient.FilerClient
-	grpcDialOption    grpc.DialOption
+	grpcDialOption    pb.DialOption
 
 	// IAM Integration for advanced features
 	iamIntegration IAMIntegration
@@ -180,7 +179,7 @@ func (iam *IdentityAccessManagement) SetFilerClient(filerClient *wdclient.FilerC
 	// Update credential store to use FilerClient's current filer for HA
 	if store := iam.credentialManager.GetStore(); store != nil {
 		if filerFuncSetter, ok := store.(interface {
-			SetFilerAddressFunc(func() pb.ServerAddress, grpc.DialOption)
+			SetFilerAddressFunc(func() pb.ServerAddress, pb.DialOption)
 		}); ok {
 			filerFuncSetter.SetFilerAddressFunc(filerClient.GetCurrentFiler, iam.grpcDialOption)
 		}
@@ -248,7 +247,7 @@ func NewIdentityAccessManagementWithStore(option *S3ApiServerOption, filerClient
 	// This will be updated to use FilerClient's GetCurrentFiler after FilerClient is created
 	if store := credentialManager.GetStore(); store != nil {
 		if filerFuncSetter, ok := store.(interface {
-			SetFilerAddressFunc(func() pb.ServerAddress, grpc.DialOption)
+			SetFilerAddressFunc(func() pb.ServerAddress, pb.DialOption)
 		}); ok {
 			// Temporary setup: use first filer until FilerClient is available
 			// See s3api_server.go where this is updated to FilerClient.GetCurrentFiler

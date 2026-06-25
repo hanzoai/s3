@@ -8,7 +8,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
 )
 
 func init() {
@@ -18,7 +17,7 @@ func init() {
 // FilerEtcStore implements CredentialStore using Hanzo filer for storage
 type FilerEtcStore struct {
 	filerAddressFunc func() pb.ServerAddress // Function to get current active filer
-	grpcDialOption   grpc.DialOption
+	grpcDialOption   pb.DialOption
 	mu               sync.RWMutex // Protects filerAddressFunc and grpcDialOption
 	policyMu         sync.Mutex   // Serializes legacy managed-policy mutations
 }
@@ -47,7 +46,7 @@ func (store *FilerEtcStore) Initialize(configuration util.Configuration, prefix 
 
 // SetFilerAddressFunc sets a function that returns the current active filer address
 // This enables high availability by using the currently active filer
-func (store *FilerEtcStore) SetFilerAddressFunc(getFiler func() pb.ServerAddress, grpcDialOption grpc.DialOption) {
+func (store *FilerEtcStore) SetFilerAddressFunc(getFiler func() pb.ServerAddress, grpcDialOption pb.DialOption) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 	store.filerAddressFunc = getFiler

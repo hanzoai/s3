@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"google.golang.org/grpc"
+	"github.com/hanzoai/s3/s3/pb"
 )
 
 // JobCategory groups job types by resource profile so that workers can be
@@ -34,7 +34,7 @@ type HandlerFactory struct {
 // HandlerBuildOptions carries parameters forwarded from the CLI to handler
 // constructors.
 type HandlerBuildOptions struct {
-	GrpcDialOption grpc.DialOption
+	GrpcDialOption pb.DialOption
 	MaxExecute     int
 	WorkingDir     string
 }

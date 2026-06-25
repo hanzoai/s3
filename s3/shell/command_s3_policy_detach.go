@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -47,7 +48,7 @@ func (c *commandS3PolicyDetach) Do(args []string, commandEnv *CommandEnv, writer
 	}
 
 	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: *user}))
+		_, body, err := client.GetUser(context.Background(), iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: *user}))
 		if err != nil {
 			return fmt.Errorf("get user %q: %w", *user, err)
 		}
@@ -73,7 +74,7 @@ func (c *commandS3PolicyDetach) Do(args []string, commandEnv *CommandEnv, writer
 		}
 
 		identity.PolicyNames = kept
-		_, _, err = client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
+		_, _, err = client.UpdateUser(context.Background(), iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
 			Username: *user,
 			Identity: iamwire.IdentityInputFromPB(identity),
 		}))

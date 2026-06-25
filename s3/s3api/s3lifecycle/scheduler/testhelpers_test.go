@@ -8,11 +8,10 @@ import (
 	"sync/atomic"
 
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
+	"github.com/hanzoai/s3/s3/pb/rpc"
 )
 
-// fakeListStream implements grpc.ServerStreamingClient[filer_pb.ListEntriesResponse]
+// fakeListStream implements rpc.ServerStream[filer_pb.ListEntriesResponse]
 // for configload tests.
 type fakeListStream struct {
 	responses []*filer_pb.ListEntriesResponse
@@ -34,18 +33,6 @@ func (s *fakeListStream) Recv() (*filer_pb.ListEntriesResponse, error) {
 	return r, nil
 }
 
-func (s *fakeListStream) Header() (metadata.MD, error) { return metadata.MD{}, nil }
-func (s *fakeListStream) Trailer() metadata.MD         { return metadata.MD{} }
-func (s *fakeListStream) CloseSend() error             { return nil }
-func (s *fakeListStream) Context() context.Context {
-	if s.ctx != nil {
-		return s.ctx
-	}
-	return context.Background()
-}
-func (s *fakeListStream) SendMsg(any) error { return nil }
-func (s *fakeListStream) RecvMsg(any) error { return nil }
-
 // fakeFilerClient is the in-memory filer used by configload tests.
 type fakeFilerClient struct {
 	filer_pb.HanzoFilerClient
@@ -56,7 +43,7 @@ type fakeFilerClient struct {
 	listedN int32
 }
 
-func (c *fakeFilerClient) LookupDirectoryEntry(_ context.Context, in *filer_pb.LookupDirectoryEntryRequest, _ ...grpc.CallOption) (*filer_pb.LookupDirectoryEntryResponse, error) {
+func (c *fakeFilerClient) LookupDirectoryEntry(_ context.Context, in *filer_pb.LookupDirectoryEntryRequest) (*filer_pb.LookupDirectoryEntryResponse, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for _, e := range c.tree[in.Directory] {
@@ -67,7 +54,7 @@ func (c *fakeFilerClient) LookupDirectoryEntry(_ context.Context, in *filer_pb.L
 	return nil, filer_pb.ErrNotFound
 }
 
-func (c *fakeFilerClient) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest, _ ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.ListEntriesResponse], error) {
+func (c *fakeFilerClient) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest) (rpc.ServerStream[filer_pb.ListEntriesResponse], error) {
 	c.mu.Lock()
 	c.listed = append(c.listed, in.Directory)
 	src := c.tree[in.Directory]

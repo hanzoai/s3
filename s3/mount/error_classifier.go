@@ -5,46 +5,37 @@ import (
 	"syscall"
 
 	"github.com/seaweedfs/go-fuse/v2/fuse"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
+// grpcErrorToFuseStatus maps a filer RPC error to a FUSE status. The filer
+// speaks ZAP now, which carries the error as a string; the server tags each
+// failure with its code name (e.g. "NotFound: ..."), so we classify by matching
+// that name. Order matters: check the specific code names before the generic
+// transport fallback.
 func grpcErrorToFuseStatus(err error) fuse.Status {
 	if err == nil {
 		return fuse.OK
 	}
 
-	// Unpack error for inspection
-	if s, ok := status.FromError(err); ok {
-		switch s.Code() {
-		case codes.OK:
-			return fuse.OK
-		case codes.Canceled, codes.DeadlineExceeded:
-			return fuse.Status(syscall.ETIMEDOUT)
-		case codes.Unavailable:
-			return fuse.Status(syscall.EAGAIN)
-		case codes.ResourceExhausted:
-			return fuse.Status(syscall.EAGAIN) // Or syscall.ENOSPC
-		case codes.PermissionDenied:
-			return fuse.Status(syscall.EACCES)
-		case codes.Unauthenticated:
-			return fuse.Status(syscall.EPERM)
-		case codes.NotFound:
-			return fuse.ENOENT
-		case codes.AlreadyExists:
-			return fuse.Status(syscall.EEXIST)
-		case codes.InvalidArgument:
-			return fuse.EINVAL
-		}
-	}
-
-	// String matching for errors that don't have proper gRPC codes but are known
-	errStr := err.Error()
-	if strings.Contains(errStr, "transport") {
+	s := err.Error()
+	switch {
+	case has(s, "Canceled"), has(s, "DeadlineExceeded"):
+		return fuse.Status(syscall.ETIMEDOUT)
+	case has(s, "Unavailable"), has(s, "ResourceExhausted"):
+		return fuse.Status(syscall.EAGAIN)
+	case has(s, "PermissionDenied"):
+		return fuse.Status(syscall.EACCES)
+	case has(s, "Unauthenticated"):
+		return fuse.Status(syscall.EPERM)
+	case has(s, "NotFound"):
+		return fuse.ENOENT
+	case has(s, "AlreadyExists"):
+		return fuse.Status(syscall.EEXIST)
+	case has(s, "InvalidArgument"):
+		return fuse.EINVAL
+	case has(s, "transport"):
 		return fuse.Status(syscall.EAGAIN)
 	}
-	// Add other string matches if necessary
-
 	return fuse.EIO
 }
 
@@ -54,21 +45,22 @@ func grpcErrorToFuseStatus(err error) fuse.Status {
 // (NotFound/AlreadyExists/InvalidArgument/PermissionDenied/Unauthenticated/
 // FailedPrecondition) short-circuit the retry loop. Everything else —
 // transport errors, Canceled/Unavailable/ResourceExhausted, or errors with no
-// gRPC status — is treated as potentially transient and retried.
+// code name — is treated as potentially transient and retried.
 func isRetryableFilerError(err error) bool {
 	if err == nil {
 		return false
 	}
-	if s, ok := status.FromError(err); ok {
-		switch s.Code() {
-		case codes.NotFound,
-			codes.AlreadyExists,
-			codes.InvalidArgument,
-			codes.PermissionDenied,
-			codes.Unauthenticated,
-			codes.FailedPrecondition:
-			return false
-		}
+	s := err.Error()
+	switch {
+	case has(s, "NotFound"),
+		has(s, "AlreadyExists"),
+		has(s, "InvalidArgument"),
+		has(s, "PermissionDenied"),
+		has(s, "Unauthenticated"),
+		has(s, "FailedPrecondition"):
+		return false
 	}
 	return true
 }
+
+func has(s, code string) bool { return strings.Contains(s, code) }

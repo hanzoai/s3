@@ -9,8 +9,6 @@ import (
 	"path"
 	"strings"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/security"
@@ -68,7 +66,7 @@ func runDownload(cmd *Command, args []string) bool {
 	return true
 }
 
-func downloadToFile(masterFn operation.GetMasterFn, grpcDialOption grpc.DialOption, fileId, saveDir string) error {
+func downloadToFile(masterFn operation.GetMasterFn, grpcDialOption pb.DialOption, fileId, saveDir string) error {
 	fileUrl, jwt, lookupError := operation.LookupFileId(masterFn, grpcDialOption, fileId)
 	if lookupError != nil {
 		return lookupError
@@ -120,7 +118,7 @@ func downloadToFile(masterFn operation.GetMasterFn, grpcDialOption grpc.DialOpti
 	return nil
 }
 
-func fetchContent(masterFn operation.GetMasterFn, grpcDialOption grpc.DialOption, fileId string) (filename string, content []byte, e error) {
+func fetchContent(masterFn operation.GetMasterFn, grpcDialOption pb.DialOption, fileId string) (filename string, content []byte, e error) {
 	fileUrl, jwt, lookupError := operation.LookupFileId(masterFn, grpcDialOption, fileId)
 	if lookupError != nil {
 		return "", nil, lookupError

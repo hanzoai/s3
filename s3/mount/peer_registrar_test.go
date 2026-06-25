@@ -7,7 +7,6 @@ import (
 
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"google.golang.org/grpc"
 )
 
 // fakeFilerClient captures MountRegister/MountList calls and lets the test
@@ -21,14 +20,14 @@ type fakeFilerClient struct {
 	listResponse  filer_pb.MountListResponse
 }
 
-func (f *fakeFilerClient) MountRegister(ctx context.Context, req *filer_pb.MountRegisterRequest, opts ...grpc.CallOption) (*filer_pb.MountRegisterResponse, error) {
+func (f *fakeFilerClient) MountRegister(ctx context.Context, req *filer_pb.MountRegisterRequest) (*filer_pb.MountRegisterResponse, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.registerCalls = append(f.registerCalls, *req)
 	return &filer_pb.MountRegisterResponse{}, nil
 }
 
-func (f *fakeFilerClient) MountList(ctx context.Context, req *filer_pb.MountListRequest, opts ...grpc.CallOption) (*filer_pb.MountListResponse, error) {
+func (f *fakeFilerClient) MountList(ctx context.Context, req *filer_pb.MountListRequest) (*filer_pb.MountListResponse, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	resp := f.listResponse // value copy

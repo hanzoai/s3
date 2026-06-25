@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -17,10 +18,6 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/wdclient"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
@@ -458,7 +455,7 @@ func clearPreexistingEcShards(commandEnv *CommandEnv, topologyInfo *master_pb.To
 					// be re-stamped by a later copy installing the new .vif). A missing
 					// full_teardown ack from a reachable pre-upgrade node is fatal too: it may
 					// still hold an orphan a later copy would re-stamp into the new generation.
-					// Stay best-effort only for a node that is truly unreachable: codes.Unavailable
+					// Stay best-effort only for a node that is truly unreachable: Unavailable
 					// alone is ambiguous — a genuinely-down node and a reachable Rust volume
 					// server in maintenance mode both return it (a Go server returns Unknown for
 					// maintenance, already fatal above). Confirm with a non-maintenance-gated Ping
@@ -558,15 +555,14 @@ func resweepSkippedNodes(commandEnv *CommandEnv, skipped map[pb.ServerAddress]st
 // isNodeUnreachable reports whether err means the volume server could not be
 // reached at all, as opposed to an RPC that reached the node and failed. Only an
 // unreachable node is safe to skip in the orphan sweep. A dead peer surfaces as
-// a gRPC codes.Unavailable from the RPC (the dial is lazy, so it never fails at
-// connect time); any non-status error reached node logic and is treated as
+// an Unavailable from the RPC (the dial is lazy, so it never fails at connect
+// time); any error without that code name reached node logic and is treated as
 // reachable, so the sweep stays fatal rather than silently leaving stale state.
 func isNodeUnreachable(err error) bool {
 	if err == nil {
 		return false
 	}
-	st, ok := status.FromError(err)
-	return ok && st.Code() == codes.Unavailable
+	return strings.Contains(err.Error(), "Unavailable")
 }
 
 // nodeLiveness is the tri-state result of a pingVolumeServer probe.
@@ -576,7 +572,7 @@ const (
 	// nodeUp: Ping succeeded — the node is reachable (e.g. a Rust volume server
 	// in maintenance mode that fails the delete but answers Ping).
 	nodeUp nodeLiveness = iota
-	// nodeDown: Ping itself transport-failed with codes.Unavailable — the node is
+	// nodeDown: Ping itself transport-failed with Unavailable — the node is
 	// confirmed unreachable. The only state the orphan sweep may skip.
 	nodeDown
 	// nodeLivenessUnknown: Ping reached failing logic with any non-Unavailable
@@ -586,7 +582,7 @@ const (
 )
 
 // classifyNodeLiveness maps a pingVolumeServer error into the tri-state. A nil
-// error is nodeUp, a transport codes.Unavailable is nodeDown (reusing the same
+// error is nodeUp, a transport Unavailable is nodeDown (reusing the same
 // rule as isNodeUnreachable), and every other Ping failure is nodeLivenessUnknown.
 func classifyNodeLiveness(pingErr error) nodeLiveness {
 	if pingErr == nil {
@@ -700,7 +696,7 @@ func doDeleteVolumesWithLocations(commandEnv *CommandEnv, volumeIds []needle.Vol
 	return nil
 }
 
-func generateEcShards(grpcDialOption grpc.DialOption, volumeId needle.VolumeId, collection string, sourceVolumeServer pb.ServerAddress) error {
+func generateEcShards(grpcDialOption pb.DialOption, volumeId needle.VolumeId, collection string, sourceVolumeServer pb.ServerAddress) error {
 
 	fmt.Printf("generateEcShards %d (collection %q) on %s ...\n", volumeId, collection, sourceVolumeServer)
 

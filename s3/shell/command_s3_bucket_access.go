@@ -2,6 +2,7 @@ package shell
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -118,12 +119,12 @@ func (c *commandS3BucketAccess) Do(args []string, commandEnv *CommandEnv, writer
 
 		// Save
 		if isNewUser {
-			if _, _, err := client.CreateUser(iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{Identity: iamwire.IdentityInputFromPB(identity)})); err != nil {
+			if _, _, err := client.CreateUser(context.Background(), iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{Identity: iamwire.IdentityInputFromPB(identity)})); err != nil {
 				return fmt.Errorf("failed to create user %s: %w", *userName, err)
 			}
 			fmt.Fprintf(writer, "Created user %q and set access on bucket %s.\n", *userName, *bucketName)
 		} else {
-			if _, _, err := client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{Username: *userName, Identity: iamwire.IdentityInputFromPB(identity)})); err != nil {
+			if _, _, err := client.UpdateUser(context.Background(), iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{Username: *userName, Identity: iamwire.IdentityInputFromPB(identity)})); err != nil {
 				return fmt.Errorf("failed to update user %s: %w", *userName, err)
 			}
 			fmt.Fprintf(writer, "Updated access for user %q on bucket %s.\n", *userName, *bucketName)
@@ -135,7 +136,7 @@ func (c *commandS3BucketAccess) Do(args []string, commandEnv *CommandEnv, writer
 }
 
 func getOrCreateIdentity(client *iamwire.HanzoIdentityAccessManagementClient, userName string) (*iam_pb.Identity, bool, error) {
-	_, body, getErr := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{
+	_, body, getErr := client.GetUser(context.Background(), iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{
 		Username: userName,
 	}))
 	if getErr == nil {

@@ -8,8 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc"
-
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/storage"
 	"github.com/hanzoai/s3/s3/util"
 
@@ -406,7 +405,7 @@ type deletionOutcome struct {
 }
 
 // deleteFilesAndClassify performs deletion and classifies outcomes for a list of file IDs
-func deleteFilesAndClassify(grpcDialOption grpc.DialOption, fileIds []string, lookupFunc func([]string) (map[string]*operation.LookupResult, error)) map[string]deletionOutcome {
+func deleteFilesAndClassify(grpcDialOption pb.DialOption, fileIds []string, lookupFunc func([]string) (map[string]*operation.LookupResult, error)) map[string]deletionOutcome {
 	// Perform deletion
 	results := operation.DeleteFileIdsWithLookupVolumeId(grpcDialOption, fileIds, lookupFunc)
 

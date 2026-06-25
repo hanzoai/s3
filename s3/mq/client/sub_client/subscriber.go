@@ -5,16 +5,16 @@ import (
 	"sync"
 
 	"github.com/hanzoai/s3/s3/mq/topic"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/pb/schema_pb"
-	"google.golang.org/grpc"
 )
 
 type SubscriberConfiguration struct {
 	ClientId                string
 	ConsumerGroup           string
 	ConsumerGroupInstanceId string
-	GrpcDialOption          grpc.DialOption
+	GrpcDialOption          pb.DialOption
 	MaxPartitionCount       int32 // how many partitions to process concurrently
 	SlidingWindowSize       int32 // how many messages to process concurrently per partition
 }

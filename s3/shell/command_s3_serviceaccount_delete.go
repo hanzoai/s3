@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -42,7 +43,7 @@ func (c *commandS3ServiceAccountDelete) Do(args []string, commandEnv *CommandEnv
 	}
 
 	err := commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.DeleteServiceAccount(iamwire.NewDeleteServiceAccountRequest(iamwire.DeleteServiceAccountRequestInput{ID: *id}))
+		_, _, err := client.DeleteServiceAccount(context.Background(), iamwire.NewDeleteServiceAccountRequest(iamwire.DeleteServiceAccountRequestInput{ID: *id}))
 		return err
 	})
 	if err != nil {

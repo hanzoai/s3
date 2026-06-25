@@ -12,11 +12,10 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"google.golang.org/grpc"
 )
 
 type LockClient struct {
-	grpcDialOption  grpc.DialOption
+	grpcDialOption  pb.DialOption
 	maxLockDuration time.Duration
 	sleepDuration   time.Duration
 	seedFiler       pb.ServerAddress
@@ -37,7 +36,7 @@ type LockClient struct {
 	priorWindow   time.Duration
 }
 
-func NewLockClient(grpcDialOption grpc.DialOption, seedFiler pb.ServerAddress) *LockClient {
+func NewLockClient(grpcDialOption pb.DialOption, seedFiler pb.ServerAddress) *LockClient {
 	return &LockClient{
 		grpcDialOption:  grpcDialOption,
 		maxLockDuration: 5 * time.Second,
@@ -123,7 +122,7 @@ type LiveLock struct {
 	hostFiler           pb.ServerAddress
 	cancelCh            chan struct{}
 	renewalDone         chan struct{} // closed when the renewal goroutine exits; nil if there is none
-	grpcDialOption      grpc.DialOption
+	grpcDialOption      pb.DialOption
 	isLocked            int32 // 0 = unlocked, 1 = locked; use atomic operations
 	self                string
 	lc                  *LockClient

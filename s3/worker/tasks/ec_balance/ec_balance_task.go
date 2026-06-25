@@ -15,7 +15,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/erasure_coding"
 	"github.com/hanzoai/s3/s3/worker/types"
 	"github.com/hanzoai/s3/s3/worker/types/base"
-	"google.golang.org/grpc"
 )
 
 // ECBalanceTask implements a single EC shard move operation.
@@ -24,13 +23,13 @@ type ECBalanceTask struct {
 	*base.BaseTask
 	volumeID       uint32
 	collection     string
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 	progress       uint64 // atomic; stores float64 bits via math.Float64bits
 	reporting      int32  // atomic; re-entry guard to prevent recursive reportProgress calls
 }
 
 // NewECBalanceTask creates a new EC balance task instance
-func NewECBalanceTask(id string, volumeID uint32, collection string, grpcDialOption grpc.DialOption) *ECBalanceTask {
+func NewECBalanceTask(id string, volumeID uint32, collection string, grpcDialOption pb.DialOption) *ECBalanceTask {
 	return &ECBalanceTask{
 		BaseTask:       base.NewBaseTask(id, types.TaskTypeECBalance),
 		volumeID:       volumeID,

@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -46,7 +47,7 @@ func (c *commandS3UserDisable) Do(args []string, commandEnv *CommandEnv, writer 
 	}
 
 	err := commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: *name}))
+		_, body, err := client.GetUser(context.Background(), iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: *name}))
 		if err != nil {
 			return fmt.Errorf("get user %q: %w", *name, err)
 		}
@@ -63,7 +64,7 @@ func (c *commandS3UserDisable) Do(args []string, commandEnv *CommandEnv, writer 
 		}
 
 		identity.Disabled = true
-		_, _, err = client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
+		_, _, err = client.UpdateUser(context.Background(), iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
 			Username: *name,
 			Identity: iamwire.IdentityInputFromPB(identity),
 		}))

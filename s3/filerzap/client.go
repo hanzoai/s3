@@ -61,224 +61,224 @@ var _ filer_pb.HanzoFilerClient = (*zapFilerClient)(nil)
 
 // --- unary RPCs ------------------------------------------------------------
 
-func (a *zapFilerClient) LookupDirectoryEntry(_ context.Context, in *filer_pb.LookupDirectoryEntryRequest) (*filer_pb.LookupDirectoryEntryResponse, error) {
-	_, body, err := a.unary.LookupDirectoryEntry(LookupDirectoryEntryReqToWire(in))
+func (a *zapFilerClient) LookupDirectoryEntry(ctx context.Context, in *filer_pb.LookupDirectoryEntryRequest) (*filer_pb.LookupDirectoryEntryResponse, error) {
+	_, body, err := a.unary.LookupDirectoryEntry(ctx, LookupDirectoryEntryReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return LookupDirectoryEntryRespFromWire(body)
 }
 
-func (a *zapFilerClient) CreateEntry(_ context.Context, in *filer_pb.CreateEntryRequest) (*filer_pb.CreateEntryResponse, error) {
-	_, body, err := a.unary.CreateEntry(CreateEntryReqToWire(in))
+func (a *zapFilerClient) CreateEntry(ctx context.Context, in *filer_pb.CreateEntryRequest) (*filer_pb.CreateEntryResponse, error) {
+	_, body, err := a.unary.CreateEntry(ctx, CreateEntryReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return CreateEntryRespFromWire(body)
 }
 
-func (a *zapFilerClient) UpdateEntry(_ context.Context, in *filer_pb.UpdateEntryRequest) (*filer_pb.UpdateEntryResponse, error) {
-	_, body, err := a.unary.UpdateEntry(UpdateEntryReqToWire(in))
+func (a *zapFilerClient) UpdateEntry(ctx context.Context, in *filer_pb.UpdateEntryRequest) (*filer_pb.UpdateEntryResponse, error) {
+	_, body, err := a.unary.UpdateEntry(ctx, UpdateEntryReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return UpdateEntryRespFromWire(body)
 }
 
-func (a *zapFilerClient) TouchAccessTime(_ context.Context, in *filer_pb.TouchAccessTimeRequest) (*filer_pb.TouchAccessTimeResponse, error) {
-	_, body, err := a.unary.TouchAccessTime(TouchAccessTimeReqToWire(in))
+func (a *zapFilerClient) TouchAccessTime(ctx context.Context, in *filer_pb.TouchAccessTimeRequest) (*filer_pb.TouchAccessTimeResponse, error) {
+	_, body, err := a.unary.TouchAccessTime(ctx, TouchAccessTimeReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return TouchAccessTimeRespFromWire(body)
 }
 
-func (a *zapFilerClient) AppendToEntry(_ context.Context, in *filer_pb.AppendToEntryRequest) (*filer_pb.AppendToEntryResponse, error) {
-	_, body, err := a.unary.AppendToEntry(AppendToEntryReqToWire(in))
+func (a *zapFilerClient) AppendToEntry(ctx context.Context, in *filer_pb.AppendToEntryRequest) (*filer_pb.AppendToEntryResponse, error) {
+	_, body, err := a.unary.AppendToEntry(ctx, AppendToEntryReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return AppendToEntryRespFromWire(body)
 }
 
-func (a *zapFilerClient) DeleteEntry(_ context.Context, in *filer_pb.DeleteEntryRequest) (*filer_pb.DeleteEntryResponse, error) {
-	_, body, err := a.unary.DeleteEntry(DeleteEntryReqToWire(in))
+func (a *zapFilerClient) DeleteEntry(ctx context.Context, in *filer_pb.DeleteEntryRequest) (*filer_pb.DeleteEntryResponse, error) {
+	_, body, err := a.unary.DeleteEntry(ctx, DeleteEntryReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return DeleteEntryRespFromWire(body)
 }
 
-func (a *zapFilerClient) ObjectTransaction(_ context.Context, in *filer_pb.ObjectTransactionRequest) (*filer_pb.ObjectTransactionResponse, error) {
-	_, body, err := a.unary.ObjectTransaction(ObjectTransactionReqToWire(in))
+func (a *zapFilerClient) ObjectTransaction(ctx context.Context, in *filer_pb.ObjectTransactionRequest) (*filer_pb.ObjectTransactionResponse, error) {
+	_, body, err := a.unary.ObjectTransaction(ctx, ObjectTransactionReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return ObjectTransactionRespFromWire(body)
 }
 
-func (a *zapFilerClient) ObjectTransactionBatch(_ context.Context, in *filer_pb.ObjectTransactionBatchRequest) (*filer_pb.ObjectTransactionBatchResponse, error) {
-	_, body, err := a.unary.ObjectTransactionBatch(ObjectTransactionBatchReqToWire(in))
+func (a *zapFilerClient) ObjectTransactionBatch(ctx context.Context, in *filer_pb.ObjectTransactionBatchRequest) (*filer_pb.ObjectTransactionBatchResponse, error) {
+	_, body, err := a.unary.ObjectTransactionBatch(ctx, ObjectTransactionBatchReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return ObjectTransactionBatchRespFromWire(body)
 }
 
-func (a *zapFilerClient) PosixLock(_ context.Context, in *filer_pb.PosixLockRequest) (*filer_pb.PosixLockResponse, error) {
-	_, body, err := a.unary.PosixLock(PosixLockReqToWire(in))
+func (a *zapFilerClient) PosixLock(ctx context.Context, in *filer_pb.PosixLockRequest) (*filer_pb.PosixLockResponse, error) {
+	_, body, err := a.unary.PosixLock(ctx, PosixLockReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return PosixLockRespFromWire(body)
 }
 
-func (a *zapFilerClient) AtomicRenameEntry(_ context.Context, in *filer_pb.AtomicRenameEntryRequest) (*filer_pb.AtomicRenameEntryResponse, error) {
-	_, body, err := a.unary.AtomicRenameEntry(AtomicRenameEntryReqToWire(in))
+func (a *zapFilerClient) AtomicRenameEntry(ctx context.Context, in *filer_pb.AtomicRenameEntryRequest) (*filer_pb.AtomicRenameEntryResponse, error) {
+	_, body, err := a.unary.AtomicRenameEntry(ctx, AtomicRenameEntryReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return AtomicRenameEntryRespFromWire(body)
 }
 
-func (a *zapFilerClient) AssignVolume(_ context.Context, in *filer_pb.AssignVolumeRequest) (*filer_pb.AssignVolumeResponse, error) {
-	_, body, err := a.unary.AssignVolume(AssignVolumeReqToWire(in))
+func (a *zapFilerClient) AssignVolume(ctx context.Context, in *filer_pb.AssignVolumeRequest) (*filer_pb.AssignVolumeResponse, error) {
+	_, body, err := a.unary.AssignVolume(ctx, AssignVolumeReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return AssignVolumeRespFromWire(body)
 }
 
-func (a *zapFilerClient) LookupVolume(_ context.Context, in *filer_pb.LookupVolumeRequest) (*filer_pb.LookupVolumeResponse, error) {
-	_, body, err := a.unary.LookupVolume(LookupVolumeReqToWire(in))
+func (a *zapFilerClient) LookupVolume(ctx context.Context, in *filer_pb.LookupVolumeRequest) (*filer_pb.LookupVolumeResponse, error) {
+	_, body, err := a.unary.LookupVolume(ctx, LookupVolumeReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return LookupVolumeRespFromWire(body)
 }
 
-func (a *zapFilerClient) CollectionList(_ context.Context, in *filer_pb.CollectionListRequest) (*filer_pb.CollectionListResponse, error) {
-	_, body, err := a.unary.CollectionList(CollectionListReqToWire(in))
+func (a *zapFilerClient) CollectionList(ctx context.Context, in *filer_pb.CollectionListRequest) (*filer_pb.CollectionListResponse, error) {
+	_, body, err := a.unary.CollectionList(ctx, CollectionListReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return CollectionListRespFromWire(body)
 }
 
-func (a *zapFilerClient) DeleteCollection(_ context.Context, in *filer_pb.DeleteCollectionRequest) (*filer_pb.DeleteCollectionResponse, error) {
-	_, body, err := a.unary.DeleteCollection(DeleteCollectionReqToWire(in))
+func (a *zapFilerClient) DeleteCollection(ctx context.Context, in *filer_pb.DeleteCollectionRequest) (*filer_pb.DeleteCollectionResponse, error) {
+	_, body, err := a.unary.DeleteCollection(ctx, DeleteCollectionReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return DeleteCollectionRespFromWire(body)
 }
 
-func (a *zapFilerClient) Statistics(_ context.Context, in *filer_pb.StatisticsRequest) (*filer_pb.StatisticsResponse, error) {
-	_, body, err := a.unary.Statistics(StatisticsReqToWire(in))
+func (a *zapFilerClient) Statistics(ctx context.Context, in *filer_pb.StatisticsRequest) (*filer_pb.StatisticsResponse, error) {
+	_, body, err := a.unary.Statistics(ctx, StatisticsReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return StatisticsRespFromWire(body)
 }
 
-func (a *zapFilerClient) Ping(_ context.Context, in *filer_pb.PingRequest) (*filer_pb.PingResponse, error) {
-	_, body, err := a.unary.Ping(PingReqToWire(in))
+func (a *zapFilerClient) Ping(ctx context.Context, in *filer_pb.PingRequest) (*filer_pb.PingResponse, error) {
+	_, body, err := a.unary.Ping(ctx, PingReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return PingRespFromWire(body)
 }
 
-func (a *zapFilerClient) GetFilerConfiguration(_ context.Context, in *filer_pb.GetFilerConfigurationRequest) (*filer_pb.GetFilerConfigurationResponse, error) {
-	_, body, err := a.unary.GetFilerConfiguration(GetFilerConfigurationReqToWire(in))
+func (a *zapFilerClient) GetFilerConfiguration(ctx context.Context, in *filer_pb.GetFilerConfigurationRequest) (*filer_pb.GetFilerConfigurationResponse, error) {
+	_, body, err := a.unary.GetFilerConfiguration(ctx, GetFilerConfigurationReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return GetFilerConfigurationRespFromWire(body)
 }
 
-func (a *zapFilerClient) ListMetadataSubscribers(_ context.Context, in *filer_pb.ListMetadataSubscribersRequest) (*filer_pb.ListMetadataSubscribersResponse, error) {
-	_, body, err := a.unary.ListMetadataSubscribers(ListMetadataSubscribersReqToWire(in))
+func (a *zapFilerClient) ListMetadataSubscribers(ctx context.Context, in *filer_pb.ListMetadataSubscribersRequest) (*filer_pb.ListMetadataSubscribersResponse, error) {
+	_, body, err := a.unary.ListMetadataSubscribers(ctx, ListMetadataSubscribersReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return ListMetadataSubscribersRespFromWire(body)
 }
 
-func (a *zapFilerClient) KvGet(_ context.Context, in *filer_pb.KvGetRequest) (*filer_pb.KvGetResponse, error) {
-	_, body, err := a.unary.KvGet(KvGetReqToWire(in))
+func (a *zapFilerClient) KvGet(ctx context.Context, in *filer_pb.KvGetRequest) (*filer_pb.KvGetResponse, error) {
+	_, body, err := a.unary.KvGet(ctx, KvGetReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return KvGetRespFromWire(body)
 }
 
-func (a *zapFilerClient) KvPut(_ context.Context, in *filer_pb.KvPutRequest) (*filer_pb.KvPutResponse, error) {
-	_, body, err := a.unary.KvPut(KvPutReqToWire(in))
+func (a *zapFilerClient) KvPut(ctx context.Context, in *filer_pb.KvPutRequest) (*filer_pb.KvPutResponse, error) {
+	_, body, err := a.unary.KvPut(ctx, KvPutReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return KvPutRespFromWire(body)
 }
 
-func (a *zapFilerClient) CacheRemoteObjectToLocalCluster(_ context.Context, in *filer_pb.CacheRemoteObjectToLocalClusterRequest) (*filer_pb.CacheRemoteObjectToLocalClusterResponse, error) {
-	_, body, err := a.unary.CacheRemoteObjectToLocalCluster(CacheRemoteObjectToLocalClusterReqToWire(in))
+func (a *zapFilerClient) CacheRemoteObjectToLocalCluster(ctx context.Context, in *filer_pb.CacheRemoteObjectToLocalClusterRequest) (*filer_pb.CacheRemoteObjectToLocalClusterResponse, error) {
+	_, body, err := a.unary.CacheRemoteObjectToLocalCluster(ctx, CacheRemoteObjectToLocalClusterReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return CacheRemoteObjectToLocalClusterRespFromWire(body)
 }
 
-func (a *zapFilerClient) DistributedLock(_ context.Context, in *filer_pb.LockRequest) (*filer_pb.LockResponse, error) {
-	_, body, err := a.unary.DistributedLock(DistributedLockReqToWire(in))
+func (a *zapFilerClient) DistributedLock(ctx context.Context, in *filer_pb.LockRequest) (*filer_pb.LockResponse, error) {
+	_, body, err := a.unary.DistributedLock(ctx, DistributedLockReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return DistributedLockRespFromWire(body)
 }
 
-func (a *zapFilerClient) DistributedUnlock(_ context.Context, in *filer_pb.UnlockRequest) (*filer_pb.UnlockResponse, error) {
-	_, body, err := a.unary.DistributedUnlock(DistributedUnlockReqToWire(in))
+func (a *zapFilerClient) DistributedUnlock(ctx context.Context, in *filer_pb.UnlockRequest) (*filer_pb.UnlockResponse, error) {
+	_, body, err := a.unary.DistributedUnlock(ctx, DistributedUnlockReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return DistributedUnlockRespFromWire(body)
 }
 
-func (a *zapFilerClient) FindLockOwner(_ context.Context, in *filer_pb.FindLockOwnerRequest) (*filer_pb.FindLockOwnerResponse, error) {
-	_, body, err := a.unary.FindLockOwner(FindLockOwnerReqToWire(in))
+func (a *zapFilerClient) FindLockOwner(ctx context.Context, in *filer_pb.FindLockOwnerRequest) (*filer_pb.FindLockOwnerResponse, error) {
+	_, body, err := a.unary.FindLockOwner(ctx, FindLockOwnerReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return FindLockOwnerRespFromWire(body)
 }
 
-func (a *zapFilerClient) TransferLocks(_ context.Context, in *filer_pb.TransferLocksRequest) (*filer_pb.TransferLocksResponse, error) {
-	_, body, err := a.unary.TransferLocks(TransferLocksReqToWire(in))
+func (a *zapFilerClient) TransferLocks(ctx context.Context, in *filer_pb.TransferLocksRequest) (*filer_pb.TransferLocksResponse, error) {
+	_, body, err := a.unary.TransferLocks(ctx, TransferLocksReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return TransferLocksRespFromWire(body)
 }
 
-func (a *zapFilerClient) ReplicateLock(_ context.Context, in *filer_pb.ReplicateLockRequest) (*filer_pb.ReplicateLockResponse, error) {
-	_, body, err := a.unary.ReplicateLock(ReplicateLockReqToWire(in))
+func (a *zapFilerClient) ReplicateLock(ctx context.Context, in *filer_pb.ReplicateLockRequest) (*filer_pb.ReplicateLockResponse, error) {
+	_, body, err := a.unary.ReplicateLock(ctx, ReplicateLockReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return ReplicateLockRespFromWire(body)
 }
 
-func (a *zapFilerClient) MountRegister(_ context.Context, in *filer_pb.MountRegisterRequest) (*filer_pb.MountRegisterResponse, error) {
-	_, body, err := a.unary.MountRegister(MountRegisterReqToWire(in))
+func (a *zapFilerClient) MountRegister(ctx context.Context, in *filer_pb.MountRegisterRequest) (*filer_pb.MountRegisterResponse, error) {
+	_, body, err := a.unary.MountRegister(ctx, MountRegisterReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return MountRegisterRespFromWire(body)
 }
 
-func (a *zapFilerClient) MountList(_ context.Context, in *filer_pb.MountListRequest) (*filer_pb.MountListResponse, error) {
-	_, body, err := a.unary.MountList(MountListReqToWire(in))
+func (a *zapFilerClient) MountList(ctx context.Context, in *filer_pb.MountListRequest) (*filer_pb.MountListResponse, error) {
+	_, body, err := a.unary.MountList(ctx, MountListReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +287,7 @@ func (a *zapFilerClient) MountList(_ context.Context, in *filer_pb.MountListRequ
 
 // --- streaming RPCs --------------------------------------------------------
 
-func (a *zapFilerClient) ListEntries(_ context.Context, in *filer_pb.ListEntriesRequest) (rpc.ServerStream[filer_pb.ListEntriesResponse], error) {
+func (a *zapFilerClient) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest) (rpc.ServerStream[filer_pb.ListEntriesResponse], error) {
 	s, err := a.stream.ListEntries(ListEntriesReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -295,7 +295,7 @@ func (a *zapFilerClient) ListEntries(_ context.Context, in *filer_pb.ListEntries
 	return &zapListEntriesClientStream{s: s}, nil
 }
 
-func (a *zapFilerClient) StreamRenameEntry(_ context.Context, in *filer_pb.StreamRenameEntryRequest) (rpc.ServerStream[filer_pb.StreamRenameEntryResponse], error) {
+func (a *zapFilerClient) StreamRenameEntry(ctx context.Context, in *filer_pb.StreamRenameEntryRequest) (rpc.ServerStream[filer_pb.StreamRenameEntryResponse], error) {
 	s, err := a.stream.StreamRenameEntry(StreamRenameEntryReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -303,7 +303,7 @@ func (a *zapFilerClient) StreamRenameEntry(_ context.Context, in *filer_pb.Strea
 	return &zapStreamRenameClientStream{s: s}, nil
 }
 
-func (a *zapFilerClient) TraverseBfsMetadata(_ context.Context, in *filer_pb.TraverseBfsMetadataRequest) (rpc.ServerStream[filer_pb.TraverseBfsMetadataResponse], error) {
+func (a *zapFilerClient) TraverseBfsMetadata(ctx context.Context, in *filer_pb.TraverseBfsMetadataRequest) (rpc.ServerStream[filer_pb.TraverseBfsMetadataResponse], error) {
 	s, err := a.stream.TraverseBfsMetadata(TraverseBfsMetadataReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -311,7 +311,7 @@ func (a *zapFilerClient) TraverseBfsMetadata(_ context.Context, in *filer_pb.Tra
 	return &zapTraverseBfsClientStream{s: s}, nil
 }
 
-func (a *zapFilerClient) SubscribeMetadata(_ context.Context, in *filer_pb.SubscribeMetadataRequest) (rpc.ServerStream[filer_pb.SubscribeMetadataResponse], error) {
+func (a *zapFilerClient) SubscribeMetadata(ctx context.Context, in *filer_pb.SubscribeMetadataRequest) (rpc.ServerStream[filer_pb.SubscribeMetadataResponse], error) {
 	s, err := a.stream.SubscribeMetadata(SubscribeMetadataReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -319,7 +319,7 @@ func (a *zapFilerClient) SubscribeMetadata(_ context.Context, in *filer_pb.Subsc
 	return &zapSubscribeMetadataClientStream{s: s}, nil
 }
 
-func (a *zapFilerClient) SubscribeLocalMetadata(_ context.Context, in *filer_pb.SubscribeMetadataRequest) (rpc.ServerStream[filer_pb.SubscribeMetadataResponse], error) {
+func (a *zapFilerClient) SubscribeLocalMetadata(ctx context.Context, in *filer_pb.SubscribeMetadataRequest) (rpc.ServerStream[filer_pb.SubscribeMetadataResponse], error) {
 	s, err := a.stream.SubscribeLocalMetadata(SubscribeMetadataReqToWire(in))
 	if err != nil {
 		return nil, err

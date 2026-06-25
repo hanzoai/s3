@@ -12,7 +12,6 @@ import (
 	"github.com/hanzoai/s3/s3/replication/sink"
 	"github.com/hanzoai/s3/s3/replication/source"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
 )
 
 type Replicator struct {
@@ -171,7 +170,7 @@ func metadataEventTarget(key string, newEntry *filer_pb.Entry, newParentPath str
 	return util.Join(targetParent, newEntry.Name), targetParent
 }
 
-func ReadFilerSignature(grpcDialOption grpc.DialOption, filer pb.ServerAddress) (filerSignature int32, readErr error) {
+func ReadFilerSignature(grpcDialOption pb.DialOption, filer pb.ServerAddress) (filerSignature int32, readErr error) {
 	if readErr = pb.WithFilerClient(false, 0, filer, grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
 		if resp, err := client.GetFilerConfiguration(context.Background(), &filer_pb.GetFilerConfigurationRequest{}); err != nil {
 			return fmt.Errorf("GetFilerConfiguration %s: %v", filer, err)

@@ -7,12 +7,11 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"google.golang.org/grpc"
+	"github.com/hanzoai/s3/s3/pb/rpc"
 )
 
 // fakeSubscribeStream plays back a scripted sequence of responses, one per Recv.
 type fakeSubscribeStream struct {
-	grpc.ClientStream
 	responses []*filer_pb.SubscribeMetadataResponse
 	delay     time.Duration
 	idx       int
@@ -38,7 +37,7 @@ type fakeFilerClient struct {
 	stream *fakeSubscribeStream
 }
 
-func (c *fakeFilerClient) SubscribeMetadata(ctx context.Context, in *filer_pb.SubscribeMetadataRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.SubscribeMetadataResponse], error) {
+func (c *fakeFilerClient) SubscribeMetadata(ctx context.Context, in *filer_pb.SubscribeMetadataRequest) (rpc.ServerStream[filer_pb.SubscribeMetadataResponse], error) {
 	return c.stream, nil
 }
 

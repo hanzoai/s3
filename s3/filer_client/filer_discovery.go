@@ -10,7 +10,6 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -25,7 +24,7 @@ const (
 // FilerDiscoveryService handles dynamic discovery and refresh of filers from masters
 type FilerDiscoveryService struct {
 	masters        []pb.ServerAddress
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 	filers         []pb.ServerAddress
 	filersMutex    sync.RWMutex
 	refreshTicker  *time.Ticker
@@ -35,7 +34,7 @@ type FilerDiscoveryService struct {
 }
 
 // NewFilerDiscoveryService creates a new filer discovery service
-func NewFilerDiscoveryService(masters []pb.ServerAddress, grpcDialOption grpc.DialOption) *FilerDiscoveryService {
+func NewFilerDiscoveryService(masters []pb.ServerAddress, grpcDialOption pb.DialOption) *FilerDiscoveryService {
 	return &FilerDiscoveryService{
 		masters:        masters,
 		grpcDialOption: grpcDialOption,

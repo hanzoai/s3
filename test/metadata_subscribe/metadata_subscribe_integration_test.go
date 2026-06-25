@@ -17,15 +17,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/util"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 const slowConsumerMetadataPayloadSize = 4096
@@ -561,7 +560,7 @@ func TestMetadataSubscribeMillionUpdates(t *testing.T) {
 			createWg.Add(1)
 			go func(workerId int) {
 				defer createWg.Done()
-				grpcDialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+				grpcDialOption := pb.DialOption{}
 
 				err := pb.WithFilerClient(false, 0, pb.ServerAddress("127.0.0.1:8888"), grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
 					for i := 0; i < entriesPerWorker; i++ {
@@ -985,9 +984,6 @@ func subscribeToMetadataFromBeginning(ctx context.Context, filerGrpcAddress, pat
 
 func subscribeToMetadataWithOptions(ctx context.Context, filerGrpcAddress, pathPrefix string, sinceNs int64, eventsChan chan<- *filer_pb.SubscribeMetadataResponse) error {
 	grpcDialOption := security.LoadClientTLS(util.GetViper(), "grpc.client")
-	if grpcDialOption == nil {
-		grpcDialOption = grpc.WithTransportCredentials(insecure.NewCredentials())
-	}
 
 	return pb.WithFilerClient(false, 0, pb.ServerAddress(filerGrpcAddress), grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
 		stream, err := client.SubscribeMetadata(ctx, &filer_pb.SubscribeMetadataRequest{
@@ -1029,9 +1025,6 @@ func followMetadataSlowly(
 	onEvent func(resp *filer_pb.SubscribeMetadataResponse),
 ) error {
 	grpcDialOption := security.LoadClientTLS(util.GetViper(), "grpc.client")
-	if grpcDialOption == nil {
-		grpcDialOption = grpc.WithTransportCredentials(insecure.NewCredentials())
-	}
 
 	option := &pb.MetadataFollowOption{
 		ClientName:     "slow_consumer_test",
@@ -1063,7 +1056,7 @@ func followMetadataSlowly(
 func createMetadataEntries(ctx context.Context, filerGrpcAddress string, startIndex, total int, payload []byte) error {
 	const workers = 10
 
-	grpcDialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	grpcDialOption := pb.DialOption{}
 	errCh := make(chan error, workers)
 	var wg sync.WaitGroup
 

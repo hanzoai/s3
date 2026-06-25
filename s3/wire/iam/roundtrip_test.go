@@ -4,6 +4,7 @@
 package iamwire
 
 import (
+	"context"
 	"testing"
 
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
@@ -275,10 +276,10 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	// CreateUser -> GetUser.
-	if err := cli.CreateUser(want); err != nil {
+	if err := cli.CreateUser(context.Background(), want); err != nil {
 		t.Fatalf("CreateUser: %v", err)
 	}
-	got, err := cli.GetUser("alice")
+	got, err := cli.GetUser(context.Background(), "alice")
 	if err != nil {
 		t.Fatalf("GetUser: %v", err)
 	}
@@ -289,7 +290,7 @@ func TestRoundTrip(t *testing.T) {
 
 	// GetUser of an unknown user yields a nil identity (gRPC nil-pointer
 	// semantics preserved through the wire's absent-message encoding).
-	missing, err := cli.GetUser("nobody")
+	missing, err := cli.GetUser(context.Background(), "nobody")
 	if err != nil {
 		t.Fatalf("GetUser(missing): %v", err)
 	}
@@ -298,7 +299,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	// GetUserByAccessKey resolves the indexed key back to alice.
-	byKey, err := cli.GetUserByAccessKey("AKIA2")
+	byKey, err := cli.GetUserByAccessKey(context.Background(), "AKIA2")
 	if err != nil {
 		t.Fatalf("GetUserByAccessKey: %v", err)
 	}
@@ -307,7 +308,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	// ListUsers sees exactly the one user.
-	names, err := cli.ListUsers()
+	names, err := cli.ListUsers(context.Background())
 	if err != nil {
 		t.Fatalf("ListUsers: %v", err)
 	}
@@ -317,17 +318,17 @@ func TestRoundTrip(t *testing.T) {
 
 	// PutPolicy -> GetPolicy round-trips the JSON document.
 	const doc = `{"Version":"2012-10-17","Statement":[]}`
-	if err := cli.PutPolicy("p-read", doc); err != nil {
+	if err := cli.PutPolicy(context.Background(), "p-read", doc); err != nil {
 		t.Fatalf("PutPolicy: %v", err)
 	}
-	gotName, gotDoc, err := cli.GetPolicy("p-read")
+	gotName, gotDoc, err := cli.GetPolicy(context.Background(), "p-read")
 	if err != nil {
 		t.Fatalf("GetPolicy: %v", err)
 	}
 	if gotName != "p-read" || gotDoc != doc {
 		t.Fatalf("GetPolicy = (%q,%q), want (p-read,%q)", gotName, gotDoc, doc)
 	}
-	pols, err := cli.ListPolicies()
+	pols, err := cli.ListPolicies(context.Background())
 	if err != nil {
 		t.Fatalf("ListPolicies: %v", err)
 	}
@@ -346,10 +347,10 @@ func TestRoundTrip(t *testing.T) {
 		CreatedAt:  1766708400,
 		CreatedBy:  "alice",
 	}
-	if err := cli.CreateServiceAccount(sa); err != nil {
+	if err := cli.CreateServiceAccount(context.Background(), sa); err != nil {
 		t.Fatalf("CreateServiceAccount: %v", err)
 	}
-	gotSA, err := cli.GetServiceAccount("sa-1")
+	gotSA, err := cli.GetServiceAccount(context.Background(), "sa-1")
 	if err != nil {
 		t.Fatalf("GetServiceAccount: %v", err)
 	}
@@ -358,14 +359,14 @@ func TestRoundTrip(t *testing.T) {
 		gotSA.Expiration != sa.Expiration || gotSA.CreatedAt != sa.CreatedAt {
 		t.Fatalf("GetServiceAccount = %+v, want sa-1", gotSA)
 	}
-	byKeySA, err := cli.GetServiceAccountByAccessKey("SAKEY1")
+	byKeySA, err := cli.GetServiceAccountByAccessKey(context.Background(), "SAKEY1")
 	if err != nil {
 		t.Fatalf("GetServiceAccountByAccessKey: %v", err)
 	}
 	if byKeySA == nil || byKeySA.Id != "sa-1" {
 		t.Fatalf("GetServiceAccountByAccessKey = %+v, want sa-1", byKeySA)
 	}
-	sas, err := cli.ListServiceAccounts()
+	sas, err := cli.ListServiceAccounts(context.Background())
 	if err != nil {
 		t.Fatalf("ListServiceAccounts: %v", err)
 	}
@@ -374,7 +375,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	// GetConfiguration reflects the user we created (nested repeated tree).
-	cfg, err := cli.GetConfiguration()
+	cfg, err := cli.GetConfiguration(context.Background())
 	if err != nil {
 		t.Fatalf("GetConfiguration: %v", err)
 	}
@@ -383,10 +384,10 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	// DeleteUser then confirm it is gone.
-	if err := cli.DeleteUser("alice"); err != nil {
+	if err := cli.DeleteUser(context.Background(), "alice"); err != nil {
 		t.Fatalf("DeleteUser: %v", err)
 	}
-	if gone, _ := cli.GetUser("alice"); gone != nil {
+	if gone, _ := cli.GetUser(context.Background(), "alice"); gone != nil {
 		t.Fatalf("GetUser after delete = %+v, want nil", gone)
 	}
 }

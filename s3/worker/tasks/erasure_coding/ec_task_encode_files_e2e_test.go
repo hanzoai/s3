@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/test/volume_server/framework"
-	"github.com/hanzoai/s3/test/volume_server/matrix"
+	"github.com/stretchr/testify/require"
+
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	"github.com/hanzoai/s3/s3/storage/erasure_coding"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/hanzoai/s3/test/volume_server/framework"
+	"github.com/hanzoai/s3/test/volume_server/matrix"
 )
 
 // End-to-end on two servers: a volume with a real replica on server A and a
@@ -33,7 +33,7 @@ func TestEcEncodeLeavesRightFilesAndRemovesStubAndSource(t *testing.T) {
 	}
 
 	cluster := framework.StartMultiVolumeCluster(t, matrix.P1(), 2)
-	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOption := pb.DialOption{}
 
 	const (
 		volumeID   = uint32(9490)
@@ -66,8 +66,8 @@ func TestEcEncodeLeavesRightFilesAndRemovesStubAndSource(t *testing.T) {
 
 	dataShards := int(erasure_coding.DataShardsCount)
 	totalShards := int(erasure_coding.DataShardsCount + erasure_coding.ParityShardsCount)
-	aShards := shardRange(0, dataShards)            // 0..DataShardsCount-1 on A
-	bShards := shardRange(dataShards, totalShards)  // parity range on B
+	aShards := shardRange(0, dataShards)           // 0..DataShardsCount-1 on A
+	bShards := shardRange(dataShards, totalShards) // parity range on B
 
 	task := NewErasureCodingTask("ec-e2e", addrA, volumeID, collection, dialOption)
 	params := &worker_pb.TaskParams{

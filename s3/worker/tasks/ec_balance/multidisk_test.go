@@ -3,6 +3,7 @@ package ec_balance
 import (
 	"testing"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 )
 
@@ -15,7 +16,7 @@ import (
 // such a move would erase the shard. Validate must reject it, while allowing a
 // cross-node move and a same-node/same-disk dedup.
 func TestValidateRejectsSameNodeCrossDiskMove(t *testing.T) {
-	task := NewECBalanceTask("t1", 100, "col1", nil)
+	task := NewECBalanceTask("t1", 100, "col1", pb.DialOption{})
 
 	mk := func(srcNode string, srcDisk uint32, dstNode string, dstDisk uint32) *worker_pb.TaskParams {
 		return &worker_pb.TaskParams{

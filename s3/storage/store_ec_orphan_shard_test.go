@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage/erasure_coding"
@@ -104,7 +105,7 @@ func TestLoadEcShardsWhenIndexFilesOnDifferentDisk(t *testing.T) {
 
 	// Build the Store with both disks. NewStore triggers per-disk loading
 	// during construction, which is the codepath under test.
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir0, dir1},
 		[]int32{100, 100},
 		[]util.MinFreeSpace{{}, {}},
@@ -206,7 +207,7 @@ func TestLoadEcShardsOrphanWithoutSiblingEcx(t *testing.T) {
 	}
 
 	diskIOProbeConfig := stats.DefaultDiskIOProbeConfig()
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir0, dir1},
 		[]int32{100, 100},
 		[]util.MinFreeSpace{{}, {}},
@@ -311,7 +312,7 @@ func TestReconcileNoOpWhenEachDiskIsSelfContained(t *testing.T) {
 	writeFullEcLayout(dir1, []int{8, 12})
 	diskIOProbeConfig := stats.DefaultDiskIOProbeConfig()
 
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir0, dir1},
 		[]int32{100, 100},
 		[]util.MinFreeSpace{{}, {}},
@@ -424,7 +425,7 @@ func TestLoadEcShardsWhenOwnerEcxIsInDataDir(t *testing.T) {
 	diskIOProbeConfig := stats.DefaultDiskIOProbeConfig()
 	// idxDir is configured but intentionally empty for this volume — we
 	// want IdxDirectory != Directory while the .ecx lives in Directory.
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir0, dir1},
 		[]int32{100, 100},
 		[]util.MinFreeSpace{{}, {}},

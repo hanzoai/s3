@@ -7,14 +7,13 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
 )
 
 const (
 	SyncKeyPrefix = "remote.sync."
 )
 
-func GetSyncOffset(grpcDialOption grpc.DialOption, filer pb.ServerAddress, dir string) (lastOffsetTsNs int64, readErr error) {
+func GetSyncOffset(grpcDialOption pb.DialOption, filer pb.ServerAddress, dir string) (lastOffsetTsNs int64, readErr error) {
 
 	dirHash := uint32(util.HashStringToLong(dir))
 
@@ -43,7 +42,7 @@ func GetSyncOffset(grpcDialOption grpc.DialOption, filer pb.ServerAddress, dir s
 
 }
 
-func SetSyncOffset(grpcDialOption grpc.DialOption, filer pb.ServerAddress, dir string, offsetTsNs int64) error {
+func SetSyncOffset(grpcDialOption pb.DialOption, filer pb.ServerAddress, dir string, offsetTsNs int64) error {
 
 	dirHash := uint32(util.HashStringToLong(dir))
 

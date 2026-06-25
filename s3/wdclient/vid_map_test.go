@@ -8,11 +8,10 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb"
-	"google.golang.org/grpc"
 )
 
 func TestLookupFileId(t *testing.T) {
-	mc := NewMasterClient(grpc.EmptyDialOption{}, "", "", "", "", "", pb.ServerDiscovery{})
+	mc := NewMasterClient(pb.DialOption{}, "", "", "", "", "", pb.ServerDiscovery{})
 	length := 5
 
 	//Construct a cache linked list of length 5
@@ -82,7 +81,7 @@ func TestLookupFileId(t *testing.T) {
 }
 
 func TestConcurrentGetLocations(t *testing.T) {
-	mc := NewMasterClient(grpc.EmptyDialOption{}, "", "", "", "", "", pb.ServerDiscovery{})
+	mc := NewMasterClient(pb.DialOption{}, "", "", "", "", "", pb.ServerDiscovery{})
 	location := Location{Url: "TestDataRacing"}
 	mc.addLocation(1, location)
 
@@ -119,7 +118,7 @@ func TestConcurrentGetLocations(t *testing.T) {
 }
 
 func TestHasVolumeServer(t *testing.T) {
-	mc := NewMasterClient(grpc.EmptyDialOption{}, "", "", "", "", "", pb.ServerDiscovery{})
+	mc := NewMasterClient(pb.DialOption{}, "", "", "", "", "", pb.ServerDiscovery{})
 
 	regular := Location{Url: "10.0.0.1:8080", GrpcPort: 18080}
 	ecOnly := Location{Url: "10.0.0.2:8080", GrpcPort: 18080}

@@ -16,7 +16,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // VolumeServer provides a minimal volume server for erasure coding tests.
@@ -455,7 +454,7 @@ func (v *VolumeServer) VolumeCopy(req *volume_server_pb.VolumeCopyRequest, strea
 	v.volumeCopyCalls++
 	v.mu.Unlock()
 
-	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOption := pb.DialOption{}
 	var statusResp *volume_server_pb.ReadVolumeFileStatusResponse
 	if err := operation.WithVolumeServerClient(false, pb.ServerAddress(req.SourceDataNode), dialOption,
 		func(client volume_server_pb.VolumeServerClient) error {
@@ -495,7 +494,7 @@ func (v *VolumeServer) VolumeTailReceiver(ctx context.Context, req *volume_serve
 	return &volume_server_pb.VolumeTailReceiverResponse{}, nil
 }
 
-func (v *VolumeServer) copyRemoteFile(ctx context.Context, sourceDataNode string, volumeID uint32, ext string, fileSize uint64, dialOption grpc.DialOption) error {
+func (v *VolumeServer) copyRemoteFile(ctx context.Context, sourceDataNode string, volumeID uint32, ext string, fileSize uint64, dialOption pb.DialOption) error {
 	path := v.filePath(volumeID, ext)
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err

@@ -5,9 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func TestWorkerBuildHelloUsesConfiguredConcurrency(t *testing.T) {
@@ -24,7 +23,7 @@ func TestWorkerBuildHelloUsesConfiguredConcurrency(t *testing.T) {
 
 	worker, err := NewWorker(WorkerOptions{
 		AdminServer:             "localhost:23646",
-		GrpcDialOption:          grpc.WithTransportCredentials(insecure.NewCredentials()),
+		GrpcDialOption:          pb.DialOption{},
 		Handler:                 handler,
 		MaxDetectionConcurrency: 3,
 		MaxExecutionConcurrency: 4,
@@ -52,7 +51,7 @@ func TestWorkerBuildHelloUsesConfiguredConcurrency(t *testing.T) {
 func TestWorkerBuildHelloIncludesMultipleCapabilities(t *testing.T) {
 	worker, err := NewWorker(WorkerOptions{
 		AdminServer:    "localhost:23646",
-		GrpcDialOption: grpc.WithTransportCredentials(insecure.NewCredentials()),
+		GrpcDialOption: pb.DialOption{},
 		Handlers: []JobHandler{
 			&testJobHandler{
 				capability: &plugin_pb.JobTypeCapability{JobType: "vacuum", CanDetect: true, CanExecute: true},
@@ -93,7 +92,7 @@ func TestWorkerBuildHelloIncludesMultipleCapabilities(t *testing.T) {
 func TestWorkerCancelWorkByTargetID(t *testing.T) {
 	worker, err := NewWorker(WorkerOptions{
 		AdminServer:    "localhost:23646",
-		GrpcDialOption: grpc.WithTransportCredentials(insecure.NewCredentials()),
+		GrpcDialOption: pb.DialOption{},
 		Handler: &testJobHandler{
 			capability: &plugin_pb.JobTypeCapability{JobType: "vacuum"},
 			descriptor: &plugin_pb.JobTypeDescriptor{JobType: "vacuum"},
@@ -126,7 +125,7 @@ func TestWorkerCancelWorkByTargetID(t *testing.T) {
 func TestWorkerHandleCancelRequestAck(t *testing.T) {
 	worker, err := NewWorker(WorkerOptions{
 		AdminServer:    "localhost:23646",
-		GrpcDialOption: grpc.WithTransportCredentials(insecure.NewCredentials()),
+		GrpcDialOption: pb.DialOption{},
 		Handler: &testJobHandler{
 			capability: &plugin_pb.JobTypeCapability{JobType: "vacuum"},
 			descriptor: &plugin_pb.JobTypeDescriptor{JobType: "vacuum"},
@@ -180,7 +179,7 @@ func TestWorkerHandleCancelRequestAck(t *testing.T) {
 func TestWorkerSchemaRequestRequiresJobTypeWhenMultipleHandlers(t *testing.T) {
 	worker, err := NewWorker(WorkerOptions{
 		AdminServer:    "localhost:23646",
-		GrpcDialOption: grpc.WithTransportCredentials(insecure.NewCredentials()),
+		GrpcDialOption: pb.DialOption{},
 		Handlers: []JobHandler{
 			&testJobHandler{
 				capability: &plugin_pb.JobTypeCapability{JobType: "vacuum"},
@@ -229,7 +228,7 @@ func TestWorkerHandleDetectionQueuesWhenAtCapacity(t *testing.T) {
 
 	worker, err := NewWorker(WorkerOptions{
 		AdminServer:             "localhost:23646",
-		GrpcDialOption:          grpc.WithTransportCredentials(insecure.NewCredentials()),
+		GrpcDialOption:          pb.DialOption{},
 		Handler:                 handler,
 		MaxDetectionConcurrency: 1,
 	})
@@ -301,7 +300,7 @@ func TestWorkerHeartbeatReflectsActiveDetectionLoad(t *testing.T) {
 
 	worker, err := NewWorker(WorkerOptions{
 		AdminServer:             "localhost:23646",
-		GrpcDialOption:          grpc.WithTransportCredentials(insecure.NewCredentials()),
+		GrpcDialOption:          pb.DialOption{},
 		Handler:                 handler,
 		MaxDetectionConcurrency: 1,
 	})
@@ -361,7 +360,7 @@ func TestWorkerHeartbeatReflectsActiveExecutionLoad(t *testing.T) {
 
 	worker, err := NewWorker(WorkerOptions{
 		AdminServer:             "localhost:23646",
-		GrpcDialOption:          grpc.WithTransportCredentials(insecure.NewCredentials()),
+		GrpcDialOption:          pb.DialOption{},
 		Handler:                 handler,
 		MaxExecutionConcurrency: 1,
 	})

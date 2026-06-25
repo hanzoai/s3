@@ -7,6 +7,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/zap-proto/go/transport"
+	"golang.org/x/time/rate"
+
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
@@ -18,9 +21,6 @@ import (
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/engine"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/scheduler"
 	s3_lifecyclewire "github.com/hanzoai/s3/s3/wire/s3_lifecycle"
-	"github.com/zap-proto/go/transport"
-	"golang.org/x/time/rate"
-	"google.golang.org/grpc"
 )
 
 func init() {
@@ -40,10 +40,10 @@ func init() {
 // job per worker so a fresh proposal only spawns a new run after the
 // prior one exits.
 type Handler struct {
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 }
 
-func NewHandler(grpcDialOption grpc.DialOption) *Handler {
+func NewHandler(grpcDialOption pb.DialOption) *Handler {
 	return &Handler{grpcDialOption: grpcDialOption}
 }
 

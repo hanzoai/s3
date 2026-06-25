@@ -3,6 +3,7 @@
 package workerwire
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/zap-proto/go/rpc"
@@ -15,8 +16,11 @@ const (
 )
 
 // WorkerServiceChannel ships one Call envelope and awaits its correlated Response.
+// CallContext is Call that also aborts when ctx is done (transport.Conn satisfies
+// both).
 type WorkerServiceChannel interface {
 	Call(envelope []byte) (rpc.Response, error)
+	CallContext(ctx context.Context, envelope []byte) (rpc.Response, error)
 }
 
 // WorkerServiceClient is a typed RPC client for the WorkerService service over a
@@ -44,8 +48,8 @@ func NewWorkerServiceClient(ch WorkerServiceChannel, capability []byte) *WorkerS
 // AdminMessage envelope (Wrap with WrapAdminMessage); the full duplex stream
 // body lands when the transport streaming primitive ships. The request and
 // response message schemas are already complete.
-func (c *WorkerServiceClient) WorkerStream(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeWorkerStream(rpc.NoTarget, req)
+func (c *WorkerServiceClient) WorkerStream(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeWorkerStream(ctx, rpc.NoTarget, req)
 }
 
 // WorkerStreamOn issues WorkerStream as a dependent call pipelined on the answer
@@ -53,13 +57,13 @@ func (c *WorkerServiceClient) WorkerStream(req []byte) (rpc.Promise, []byte, err
 // before dispatch, so it ships without waiting for on to round-trip.
 //
 // STREAMING: see WorkerStream.
-func (c *WorkerServiceClient) WorkerStreamOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeWorkerStream(on.ID, nil)
+func (c *WorkerServiceClient) WorkerStreamOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeWorkerStream(ctx, on.ID, nil)
 }
 
-func (c *WorkerServiceClient) invokeWorkerStream(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *WorkerServiceClient) invokeWorkerStream(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    WorkerServiceWorkerStreamOrdinal,
 		PromiseID: p.ID,
 		Target:    target,

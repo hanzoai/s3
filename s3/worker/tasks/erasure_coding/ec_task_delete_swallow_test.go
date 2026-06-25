@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/test/volume_server/framework"
-	"github.com/hanzoai/s3/test/volume_server/matrix"
+	"github.com/stretchr/testify/require"
+
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/hanzoai/s3/test/volume_server/framework"
+	"github.com/hanzoai/s3/test/volume_server/matrix"
 )
 
 // One reachable replica + one unreachable: the reachable delete still
@@ -42,7 +42,7 @@ func TestDeleteOriginalVolumeSurfacesReplicaFailures(t *testing.T) {
 		clusterHarness.VolumeServerAddress(),
 		volumeID,
 		"",
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		pb.DialOption{},
 	)
 
 	unreachable := "127.0.0.1:1"
@@ -97,7 +97,7 @@ func TestDeleteOriginalVolumeSucceedsWhenAllReplicasReachable(t *testing.T) {
 		clusterHarness.VolumeServerAddress(),
 		volumeID,
 		"",
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		pb.DialOption{},
 	)
 	task.sources = []*worker_pb.TaskSource{
 		{Node: clusterHarness.VolumeServerAddress(), VolumeId: volumeID},

@@ -60,168 +60,168 @@ var _ master_pb.HanzoClient = (*zapMasterClient)(nil)
 
 // --- unary RPCs ------------------------------------------------------------
 
-func (a *zapMasterClient) LookupVolume(_ context.Context, in *master_pb.LookupVolumeRequest) (*master_pb.LookupVolumeResponse, error) {
-	_, body, err := a.unary.LookupVolume(LookupVolumeReqToWire(in))
+func (a *zapMasterClient) LookupVolume(ctx context.Context, in *master_pb.LookupVolumeRequest) (*master_pb.LookupVolumeResponse, error) {
+	_, body, err := a.unary.LookupVolume(ctx, LookupVolumeReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return LookupVolumeRespFromWire(body)
 }
 
-func (a *zapMasterClient) Assign(_ context.Context, in *master_pb.AssignRequest) (*master_pb.AssignResponse, error) {
-	_, body, err := a.unary.Assign(AssignReqToWire(in))
+func (a *zapMasterClient) Assign(ctx context.Context, in *master_pb.AssignRequest) (*master_pb.AssignResponse, error) {
+	_, body, err := a.unary.Assign(ctx, AssignReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return AssignRespFromWire(body)
 }
 
-func (a *zapMasterClient) Statistics(_ context.Context, in *master_pb.StatisticsRequest) (*master_pb.StatisticsResponse, error) {
-	_, body, err := a.unary.Statistics(StatisticsReqToWire(in))
+func (a *zapMasterClient) Statistics(ctx context.Context, in *master_pb.StatisticsRequest) (*master_pb.StatisticsResponse, error) {
+	_, body, err := a.unary.Statistics(ctx, StatisticsReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return StatisticsRespFromWire(body)
 }
 
-func (a *zapMasterClient) CollectionList(_ context.Context, in *master_pb.CollectionListRequest) (*master_pb.CollectionListResponse, error) {
-	_, body, err := a.unary.CollectionList(CollectionListReqToWire(in))
+func (a *zapMasterClient) CollectionList(ctx context.Context, in *master_pb.CollectionListRequest) (*master_pb.CollectionListResponse, error) {
+	_, body, err := a.unary.CollectionList(ctx, CollectionListReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return CollectionListRespFromWire(body)
 }
 
-func (a *zapMasterClient) CollectionDelete(_ context.Context, in *master_pb.CollectionDeleteRequest) (*master_pb.CollectionDeleteResponse, error) {
-	_, body, err := a.unary.CollectionDelete(CollectionDeleteReqToWire(in))
+func (a *zapMasterClient) CollectionDelete(ctx context.Context, in *master_pb.CollectionDeleteRequest) (*master_pb.CollectionDeleteResponse, error) {
+	_, body, err := a.unary.CollectionDelete(ctx, CollectionDeleteReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return CollectionDeleteRespFromWire(body)
 }
 
-func (a *zapMasterClient) VolumeList(_ context.Context, in *master_pb.VolumeListRequest) (*master_pb.VolumeListResponse, error) {
-	_, body, err := a.unary.VolumeList(VolumeListReqToWire(in))
+func (a *zapMasterClient) VolumeList(ctx context.Context, in *master_pb.VolumeListRequest) (*master_pb.VolumeListResponse, error) {
+	_, body, err := a.unary.VolumeList(ctx, VolumeListReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return VolumeListRespFromWire(body)
 }
 
-func (a *zapMasterClient) LookupEcVolume(_ context.Context, in *master_pb.LookupEcVolumeRequest) (*master_pb.LookupEcVolumeResponse, error) {
-	_, body, err := a.unary.LookupEcVolume(LookupEcVolumeReqToWire(in))
+func (a *zapMasterClient) LookupEcVolume(ctx context.Context, in *master_pb.LookupEcVolumeRequest) (*master_pb.LookupEcVolumeResponse, error) {
+	_, body, err := a.unary.LookupEcVolume(ctx, LookupEcVolumeReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return LookupEcVolumeRespFromWire(body)
 }
 
-func (a *zapMasterClient) VacuumVolume(_ context.Context, in *master_pb.VacuumVolumeRequest) (*master_pb.VacuumVolumeResponse, error) {
-	_, body, err := a.unary.VacuumVolume(VacuumVolumeReqToWire(in))
+func (a *zapMasterClient) VacuumVolume(ctx context.Context, in *master_pb.VacuumVolumeRequest) (*master_pb.VacuumVolumeResponse, error) {
+	_, body, err := a.unary.VacuumVolume(ctx, VacuumVolumeReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return VacuumVolumeRespFromWire(body)
 }
 
-func (a *zapMasterClient) DisableVacuum(_ context.Context, in *master_pb.DisableVacuumRequest) (*master_pb.DisableVacuumResponse, error) {
-	_, body, err := a.unary.DisableVacuum(DisableVacuumReqToWire(in))
+func (a *zapMasterClient) DisableVacuum(ctx context.Context, in *master_pb.DisableVacuumRequest) (*master_pb.DisableVacuumResponse, error) {
+	_, body, err := a.unary.DisableVacuum(ctx, DisableVacuumReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return DisableVacuumRespFromWire(body)
 }
 
-func (a *zapMasterClient) EnableVacuum(_ context.Context, in *master_pb.EnableVacuumRequest) (*master_pb.EnableVacuumResponse, error) {
-	_, body, err := a.unary.EnableVacuum(EnableVacuumReqToWire(in))
+func (a *zapMasterClient) EnableVacuum(ctx context.Context, in *master_pb.EnableVacuumRequest) (*master_pb.EnableVacuumResponse, error) {
+	_, body, err := a.unary.EnableVacuum(ctx, EnableVacuumReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return EnableVacuumRespFromWire(body)
 }
 
-func (a *zapMasterClient) VolumeMarkReadonly(_ context.Context, in *master_pb.VolumeMarkReadonlyRequest) (*master_pb.VolumeMarkReadonlyResponse, error) {
-	_, body, err := a.unary.VolumeMarkReadonly(VolumeMarkReadonlyReqToWire(in))
+func (a *zapMasterClient) VolumeMarkReadonly(ctx context.Context, in *master_pb.VolumeMarkReadonlyRequest) (*master_pb.VolumeMarkReadonlyResponse, error) {
+	_, body, err := a.unary.VolumeMarkReadonly(ctx, VolumeMarkReadonlyReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return VolumeMarkReadonlyRespFromWire(body)
 }
 
-func (a *zapMasterClient) GetMasterConfiguration(_ context.Context, in *master_pb.GetMasterConfigurationRequest) (*master_pb.GetMasterConfigurationResponse, error) {
-	_, body, err := a.unary.GetMasterConfiguration(GetMasterConfigurationReqToWire(in))
+func (a *zapMasterClient) GetMasterConfiguration(ctx context.Context, in *master_pb.GetMasterConfigurationRequest) (*master_pb.GetMasterConfigurationResponse, error) {
+	_, body, err := a.unary.GetMasterConfiguration(ctx, GetMasterConfigurationReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return GetMasterConfigurationRespFromWire(body)
 }
 
-func (a *zapMasterClient) ListClusterNodes(_ context.Context, in *master_pb.ListClusterNodesRequest) (*master_pb.ListClusterNodesResponse, error) {
-	_, body, err := a.unary.ListClusterNodes(ListClusterNodesReqToWire(in))
+func (a *zapMasterClient) ListClusterNodes(ctx context.Context, in *master_pb.ListClusterNodesRequest) (*master_pb.ListClusterNodesResponse, error) {
+	_, body, err := a.unary.ListClusterNodes(ctx, ListClusterNodesReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return ListClusterNodesRespFromWire(body)
 }
 
-func (a *zapMasterClient) LeaseAdminToken(_ context.Context, in *master_pb.LeaseAdminTokenRequest) (*master_pb.LeaseAdminTokenResponse, error) {
-	_, body, err := a.unary.LeaseAdminToken(LeaseAdminTokenReqToWire(in))
+func (a *zapMasterClient) LeaseAdminToken(ctx context.Context, in *master_pb.LeaseAdminTokenRequest) (*master_pb.LeaseAdminTokenResponse, error) {
+	_, body, err := a.unary.LeaseAdminToken(ctx, LeaseAdminTokenReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return LeaseAdminTokenRespFromWire(body)
 }
 
-func (a *zapMasterClient) ReleaseAdminToken(_ context.Context, in *master_pb.ReleaseAdminTokenRequest) (*master_pb.ReleaseAdminTokenResponse, error) {
-	_, body, err := a.unary.ReleaseAdminToken(ReleaseAdminTokenReqToWire(in))
+func (a *zapMasterClient) ReleaseAdminToken(ctx context.Context, in *master_pb.ReleaseAdminTokenRequest) (*master_pb.ReleaseAdminTokenResponse, error) {
+	_, body, err := a.unary.ReleaseAdminToken(ctx, ReleaseAdminTokenReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return ReleaseAdminTokenRespFromWire(body)
 }
 
-func (a *zapMasterClient) Ping(_ context.Context, in *master_pb.PingRequest) (*master_pb.PingResponse, error) {
-	_, body, err := a.unary.Ping(PingReqToWire(in))
+func (a *zapMasterClient) Ping(ctx context.Context, in *master_pb.PingRequest) (*master_pb.PingResponse, error) {
+	_, body, err := a.unary.Ping(ctx, PingReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return PingRespFromWire(body)
 }
 
-func (a *zapMasterClient) RaftListClusterServers(_ context.Context, in *master_pb.RaftListClusterServersRequest) (*master_pb.RaftListClusterServersResponse, error) {
-	_, body, err := a.unary.RaftListClusterServers(RaftListClusterServersReqToWire(in))
+func (a *zapMasterClient) RaftListClusterServers(ctx context.Context, in *master_pb.RaftListClusterServersRequest) (*master_pb.RaftListClusterServersResponse, error) {
+	_, body, err := a.unary.RaftListClusterServers(ctx, RaftListClusterServersReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return RaftListClusterServersRespFromWire(body)
 }
 
-func (a *zapMasterClient) RaftAddServer(_ context.Context, in *master_pb.RaftAddServerRequest) (*master_pb.RaftAddServerResponse, error) {
-	_, body, err := a.unary.RaftAddServer(RaftAddServerReqToWire(in))
+func (a *zapMasterClient) RaftAddServer(ctx context.Context, in *master_pb.RaftAddServerRequest) (*master_pb.RaftAddServerResponse, error) {
+	_, body, err := a.unary.RaftAddServer(ctx, RaftAddServerReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return RaftAddServerRespFromWire(body)
 }
 
-func (a *zapMasterClient) RaftRemoveServer(_ context.Context, in *master_pb.RaftRemoveServerRequest) (*master_pb.RaftRemoveServerResponse, error) {
-	_, body, err := a.unary.RaftRemoveServer(RaftRemoveServerReqToWire(in))
+func (a *zapMasterClient) RaftRemoveServer(ctx context.Context, in *master_pb.RaftRemoveServerRequest) (*master_pb.RaftRemoveServerResponse, error) {
+	_, body, err := a.unary.RaftRemoveServer(ctx, RaftRemoveServerReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return RaftRemoveServerRespFromWire(body)
 }
 
-func (a *zapMasterClient) RaftLeadershipTransfer(_ context.Context, in *master_pb.RaftLeadershipTransferRequest) (*master_pb.RaftLeadershipTransferResponse, error) {
-	_, body, err := a.unary.RaftLeadershipTransfer(RaftLeadershipTransferReqToWire(in))
+func (a *zapMasterClient) RaftLeadershipTransfer(ctx context.Context, in *master_pb.RaftLeadershipTransferRequest) (*master_pb.RaftLeadershipTransferResponse, error) {
+	_, body, err := a.unary.RaftLeadershipTransfer(ctx, RaftLeadershipTransferReqToWire(in))
 	if err != nil {
 		return nil, err
 	}
 	return RaftLeadershipTransferRespFromWire(body)
 }
 
-func (a *zapMasterClient) VolumeGrow(_ context.Context, in *master_pb.VolumeGrowRequest) (*master_pb.VolumeGrowResponse, error) {
-	_, body, err := a.unary.VolumeGrow(VolumeGrowReqToWire(in))
+func (a *zapMasterClient) VolumeGrow(ctx context.Context, in *master_pb.VolumeGrowRequest) (*master_pb.VolumeGrowResponse, error) {
+	_, body, err := a.unary.VolumeGrow(ctx, VolumeGrowReqToWire(in))
 	if err != nil {
 		return nil, err
 	}

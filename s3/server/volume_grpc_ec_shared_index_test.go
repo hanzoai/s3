@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage"
@@ -30,7 +31,7 @@ func TestEcShardDeleteKeepsSharedIndexWhileSiblingHasShards(t *testing.T) {
 	const collection = "ec-shared-index"
 	vid := needle.VolumeId(77)
 
-	store := storage.NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := storage.NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir0, dir1}, []int32{100, 100}, []util.MinFreeSpace{{}, {}}, "",
 		storage.NeedleMapInMemory, []types.DiskType{types.HardDriveType, types.HardDriveType}, nil, 3, stats.DefaultDiskIOProbeConfig())
 	done := make(chan struct{})

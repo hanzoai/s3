@@ -8,14 +8,15 @@ import (
 	"testing"
 
 	filer_pb "github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/filerstub"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	"github.com/zap-proto/go/transport"
 )
 
 // fakeFiler is a minimal in-memory filer_pb.HanzoFilerServer for the round-trip:
-// the embedded Unimplemented* supplies the 30 methods this test doesn't exercise.
+// the embedded filerstub.FilerServer supplies the methods this test doesn't exercise.
 type fakeFiler struct {
-	filer_pb.UnimplementedHanzoFilerServer
+	filerstub.FilerServer
 	entries map[string]*filer_pb.Entry
 }
 

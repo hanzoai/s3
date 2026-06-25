@@ -10,17 +10,16 @@ import (
 	"github.com/hanzoai/s3/s3/filerzap"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/filerstub"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 )
 
 type fsMvTestFilerServer struct {
-	filer_pb.UnimplementedHanzoFilerServer
+	filerstub.FilerServer
 
 	lookupReq *filer_pb.LookupDirectoryEntryRequest
 	renameReq *filer_pb.AtomicRenameEntryRequest
@@ -95,7 +94,7 @@ func newFsMvTestCommandEnv(t *testing.T, filerServer filer_pb.HanzoFilerServer) 
 	return &CommandEnv{
 		option: &ShellOptions{
 			FilerAddress:   pb.ServerAddress(fmt.Sprintf("127.0.0.1:0.%d", grpcPort)),
-			GrpcDialOption: grpc.WithTransportCredentials(insecure.NewCredentials()),
+			GrpcDialOption: pb.DialOption{},
 			Directory:      "/",
 		},
 	}, cleanup

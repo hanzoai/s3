@@ -6,7 +6,6 @@ import (
 	"github.com/hanzoai/s3/s3/credential"
 	_ "github.com/hanzoai/s3/s3/credential/filer_etc" // Import to register filer_etc store
 	"github.com/hanzoai/s3/s3/pb"
-	"google.golang.org/grpc"
 )
 
 // TestFilerAddressFunctionInterface tests that the filer_etc store
@@ -31,7 +30,7 @@ func TestFilerAddressFunctionInterface(t *testing.T) {
 	// Check if store implements SetFilerAddressFunc interface
 	// This is the critical check for bug #7575
 	filerFuncSetter, ok := store.(interface {
-		SetFilerAddressFunc(func() pb.ServerAddress, grpc.DialOption)
+		SetFilerAddressFunc(func() pb.ServerAddress, pb.DialOption)
 	})
 	if !ok {
 		t.Fatal("FilerEtcStore does not implement SetFilerAddressFunc interface - bug #7575")
@@ -41,7 +40,7 @@ func TestFilerAddressFunctionInterface(t *testing.T) {
 	mockFilerAddress := pb.ServerAddress("localhost:8888")
 	filerFuncSetter.SetFilerAddressFunc(func() pb.ServerAddress {
 		return mockFilerAddress
-	}, grpc.WithInsecure())
+	}, pb.DialOption{})
 
 	t.Log("FilerEtcStore correctly implements SetFilerAddressFunc interface")
 }

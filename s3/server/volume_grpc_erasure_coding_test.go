@@ -7,6 +7,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage"
@@ -183,7 +184,7 @@ func TestVolumeEcShardsInfo_AggregatesAcrossDisks(t *testing.T) {
 	shardsOnDisk1 := []erasure_coding.ShardId{7, 12}
 	diskIOProbeConfig := stats.DefaultDiskIOProbeConfig()
 
-	store := storage.NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := storage.NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir0, dir1},
 		[]int32{100, 100},
 		[]util.MinFreeSpace{{}, {}},

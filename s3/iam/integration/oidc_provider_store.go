@@ -17,7 +17,6 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"google.golang.org/grpc"
 )
 
 // Sentinel errors returned by the IAM manager and OIDCProviderStore. Callers
@@ -184,7 +183,7 @@ func (m *MemoryOIDCProviderStore) DeleteProvider(ctx context.Context, _ string, 
 // FilerOIDCProviderStore persists records as JSON files in a filer directory,
 // mirroring FilerRoleStore.
 type FilerOIDCProviderStore struct {
-	grpcDialOption       grpc.DialOption
+	grpcDialOption       pb.DialOption
 	basePath             string
 	filerAddressProvider func() string
 }

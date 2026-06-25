@@ -7,8 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/hanzoai/s3/s3/admin/topology"
 	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
@@ -16,8 +19,6 @@ import (
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/wildcard"
 	workertypes "github.com/hanzoai/s3/s3/worker/types"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
 )
 
 func init() {
@@ -37,11 +38,11 @@ type erasureCodingWorkerConfig struct {
 
 // ErasureCodingHandler is the plugin job handler for erasure coding.
 type ErasureCodingHandler struct {
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 	workingDir     string
 }
 
-func NewErasureCodingHandler(grpcDialOption grpc.DialOption, workingDir string) *ErasureCodingHandler {
+func NewErasureCodingHandler(grpcDialOption pb.DialOption, workingDir string) *ErasureCodingHandler {
 	return &ErasureCodingHandler{grpcDialOption: grpcDialOption, workingDir: strings.TrimSpace(workingDir)}
 }
 

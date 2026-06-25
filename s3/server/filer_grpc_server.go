@@ -21,8 +21,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/needle"
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func (fs *FilerServer) LookupDirectoryEntry(ctx context.Context, req *filer_pb.LookupDirectoryEntryRequest) (*filer_pb.LookupDirectoryEntryResponse, error) {
@@ -343,7 +341,7 @@ func (fs *FilerServer) ObjectTransaction(ctx context.Context, req *filer_pb.Obje
 // succeeds or fails on its own.
 func (fs *FilerServer) ObjectTransactionBatch(ctx context.Context, req *filer_pb.ObjectTransactionBatchRequest) (*filer_pb.ObjectTransactionBatchResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "request is required")
+		return nil, fmt.Errorf("InvalidArgument: request is required")
 	}
 	resp := &filer_pb.ObjectTransactionBatchResponse{
 		Responses: make([]*filer_pb.ObjectTransactionResponse, 0, len(req.Transactions)),
@@ -630,12 +628,12 @@ func validateUpdateEntryPreconditions(entry *filer.Entry, expectedExtended map[s
 		}
 		if ok {
 			if !bytes.Equal(actualValue, expectedValue) {
-				return status.Errorf(codes.FailedPrecondition, "extended attribute %q changed", key)
+				return fmt.Errorf("FailedPrecondition: extended attribute %q changed", key)
 			}
 			continue
 		}
 		if len(expectedValue) > 0 {
-			return status.Errorf(codes.FailedPrecondition, "extended attribute %q changed", key)
+			return fmt.Errorf("FailedPrecondition: extended attribute %q changed", key)
 		}
 	}
 

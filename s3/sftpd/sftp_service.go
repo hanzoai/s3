@@ -11,12 +11,12 @@ import (
 	"time"
 
 	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
+
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/sftpd/auth"
 	"github.com/hanzoai/s3/s3/sftpd/user"
-	"golang.org/x/crypto/ssh"
-	"google.golang.org/grpc"
 )
 
 // SFTPService holds configuration for the SFTP service.
@@ -28,7 +28,7 @@ type SFTPService struct {
 
 // SFTPServiceOptions contains all configuration options for the SFTP service.
 type SFTPServiceOptions struct {
-	GrpcDialOption grpc.DialOption
+	GrpcDialOption pb.DialOption
 	DataCenter     string
 	FilerGroup     string
 	Filer          pb.ServerAddress

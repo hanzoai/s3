@@ -14,12 +14,12 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/security/certreload"
 	"github.com/hanzoai/s3/s3/util"
 	util_http_client "github.com/hanzoai/s3/s3/util/http/client"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/credentials/tls/certprovider/pemfile"
 	"google.golang.org/grpc/security/advancedtls"
 )
@@ -147,11 +147,11 @@ func LoadServerTLS(config *util.ViperProxy, component string) (grpc.ServerOption
 	return grpc.Creds(ta), nil
 }
 
-func LoadClientTLSFromFile(configFile string, component string) (grpc.DialOption, error) {
+func LoadClientTLSFromFile(configFile string, component string) (pb.DialOption, error) {
 	v := viper.New()
 	v.SetConfigFile(configFile)
 	if err := v.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("failed to read security config %s: %v", configFile, err)
+		return pb.DialOption{}, fmt.Errorf("failed to read security config %s: %v", configFile, err)
 	}
 	// Resolve relative PEM paths against the config file's directory.
 	configDir := filepath.Dir(configFile)
@@ -164,54 +164,13 @@ func LoadClientTLSFromFile(configFile string, component string) (grpc.DialOption
 	return LoadClientTLS(&util.ViperProxy{Viper: v}, component), nil
 }
 
-func LoadClientTLS(config *util.ViperProxy, component string) grpc.DialOption {
-	if config == nil {
-		return grpc.WithTransportCredentials(insecure.NewCredentials())
-	}
-
-	certFileName, keyFileName, caFileName := config.GetString(component+".cert"), config.GetString(component+".key"), config.GetString("grpc.ca")
-	if certFileName == "" || keyFileName == "" || caFileName == "" {
-		return grpc.WithTransportCredentials(insecure.NewCredentials())
-	}
-
-	clientOptions := pemfile.Options{
-		CertFile:        certFileName,
-		KeyFile:         keyFileName,
-		RefreshDuration: CredRefreshingInterval,
-	}
-	clientProvider, err := pemfile.NewProvider(clientOptions)
-	if err != nil {
-		glog.Warningf("pemfile.NewProvider(%v) failed %v", clientOptions, err)
-		return grpc.WithTransportCredentials(insecure.NewCredentials())
-	}
-	clientRootOptions := pemfile.Options{
-		RootFile:        config.GetString("grpc.ca"),
-		RefreshDuration: CredRefreshingInterval,
-	}
-	clientRootProvider, err := pemfile.NewProvider(clientRootOptions)
-	if err != nil {
-		glog.Warningf("pemfile.NewProvider(%v) failed: %v", clientRootOptions, err)
-		return grpc.WithTransportCredentials(insecure.NewCredentials())
-	}
-	options := &advancedtls.Options{
-		IdentityOptions: advancedtls.IdentityCertificateOptions{
-			IdentityProvider: clientProvider,
-		},
-		AdditionalPeerVerification: func(params *advancedtls.HandshakeVerificationInfo) (*advancedtls.PostHandshakeVerificationResults, error) {
-			return &advancedtls.PostHandshakeVerificationResults{}, nil
-		},
-		RootOptions: advancedtls.RootCertificateOptions{
-			RootProvider: clientRootProvider,
-		},
-		VerificationType: advancedtls.CertVerification,
-	}
-	ta, err := advancedtls.NewClientCreds(options)
-	if err != nil {
-		glog.Warningf("advancedtls.NewClientCreds(%v) failed: %v", options, err)
-		return grpc.WithTransportCredentials(insecure.NewCredentials())
-	}
-	wrapped := &SNIStrippingTransportCredentials{creds: ta}
-	return grpc.WithTransportCredentials(wrapped)
+// LoadClientTLS returns the client dial option for the s3 RPC stack: the
+// <component> client *tls.Config (presents the component cert, trusts grpc.ca),
+// or an empty option (plaintext) when no cert/key is configured. The ZAP
+// transport wraps TLS with PQTLSConfig at dial time; the volume/broker grpc
+// fallback wraps it with credentials.NewTLS. One config, both transports.
+func LoadClientTLS(config *util.ViperProxy, component string) pb.DialOption {
+	return pb.DialOption{TLS: pb.ClientTLSConfig(config, component)}
 }
 
 // LoadHTTPClientFromFile creates an HTTP client using the https.client TLS
@@ -328,113 +287,4 @@ func TlsCipherSuiteByNames(cipherSuiteNames string) ([]uint16, error) {
 		cipherIds = append(cipherIds, cipherSuites[index].ID)
 	}
 	return cipherIds, nil
-}
-
-// --- raw *tls.Config for the native ZAP transport (PQ-TLS) ---
-// LoadServerTLS/LoadClientTLS return gRPC credentials; the ZAP transport needs a
-// raw *tls.Config. ServerTLSConfig/ClientTLSConfig build one from the SAME
-// <component>.cert/.key + grpc.ca + <component>.allowed_commonNames config, so
-// the ZAP filer enforces the same mTLS the legacy gRPC filer did. Wrap the
-// result with transport.PQTLSConfig to pin the X25519MLKEM768 PQ X-Wing curve.
-// Both return nil when no cert/key is configured (caller serves/dials plaintext).
-
-func certPoolFromFile(caFile string) (*x509.CertPool, error) {
-	data, err := os.ReadFile(caFile)
-	if err != nil {
-		return nil, err
-	}
-	pool := x509.NewCertPool()
-	if !pool.AppendCertsFromPEM(data) {
-		return nil, fmt.Errorf("no certificates parsed from %s", caFile)
-	}
-	return pool, nil
-}
-
-// applyCommonNameVerification mirrors Authenticator: gate the peer leaf cert's
-// CommonName against <component>.allowed_commonNames / grpc.allowed_wildcard_domain.
-func applyCommonNameVerification(cfg *tls.Config, config *util.ViperProxy, component string) {
-	allowedCN := config.GetString(component + ".allowed_commonNames")
-	allowedWildcard := config.GetString("grpc.allowed_wildcard_domain")
-	if allowedCN == "" && allowedWildcard == "" {
-		return
-	}
-	allowed := make(map[string]bool)
-	for _, s := range strings.Split(allowedCN, ",") {
-		if s != "" {
-			allowed[s] = true
-		}
-	}
-	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
-		if len(rawCerts) == 0 {
-			return fmt.Errorf("no peer certificate presented")
-		}
-		leaf, err := x509.ParseCertificate(rawCerts[0])
-		if err != nil {
-			return err
-		}
-		cn := leaf.Subject.CommonName
-		if allowedWildcard != "" && strings.HasSuffix(cn, allowedWildcard) {
-			return nil
-		}
-		if allowed[cn] {
-			return nil
-		}
-		return fmt.Errorf("invalid peer common name: %s", cn)
-	}
-}
-
-// ServerTLSConfig returns a server *tls.Config (mTLS: RequireAndVerifyClientCert
-// + CN gate) for the ZAP transport, or nil if <component>.cert/.key is unset.
-func ServerTLSConfig(config *util.ViperProxy, component string) *tls.Config {
-	if config == nil {
-		return nil
-	}
-	certFile, keyFile := config.GetString(component+".cert"), config.GetString(component+".key")
-	if certFile == "" || keyFile == "" {
-		return nil
-	}
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		glog.Warningf("ServerTLSConfig(%s): load keypair: %v", component, err)
-		return nil
-	}
-	cfg := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS13}
-	if caFile := config.GetString("grpc.ca"); caFile != "" {
-		pool, err := certPoolFromFile(caFile)
-		if err != nil {
-			glog.Warningf("ServerTLSConfig(%s): ca: %v", component, err)
-			return nil
-		}
-		cfg.ClientCAs = pool
-		cfg.ClientAuth = tls.RequireAndVerifyClientCert
-	}
-	applyCommonNameVerification(cfg, config, component)
-	return cfg
-}
-
-// ClientTLSConfig returns a client *tls.Config (presents <component> cert, trusts
-// grpc.ca) for the ZAP transport, or nil if <component>.cert/.key is unset.
-func ClientTLSConfig(config *util.ViperProxy, component string) *tls.Config {
-	if config == nil {
-		return nil
-	}
-	certFile, keyFile := config.GetString(component+".cert"), config.GetString(component+".key")
-	if certFile == "" || keyFile == "" {
-		return nil
-	}
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		glog.Warningf("ClientTLSConfig(%s): load keypair: %v", component, err)
-		return nil
-	}
-	cfg := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS13}
-	if caFile := config.GetString("grpc.ca"); caFile != "" {
-		pool, err := certPoolFromFile(caFile)
-		if err != nil {
-			glog.Warningf("ClientTLSConfig(%s): ca: %v", component, err)
-			return nil
-		}
-		cfg.RootCAs = pool
-	}
-	return cfg
 }

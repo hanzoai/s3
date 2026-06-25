@@ -14,7 +14,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
-	"google.golang.org/grpc"
 )
 
 func ensureLogger(logger logger) logger {
@@ -98,7 +97,7 @@ func (g *glogFallbackLogger) Error(msg string, args ...interface{}) {
 
 // DistributeEcShards distributes locally generated EC shards to destination servers.
 // Returns the shard assignment map used for mounting.
-func DistributeEcShards(volumeID uint32, collection string, targets []*worker_pb.TaskTarget, shardFiles map[string]string, dialOption grpc.DialOption, logger logger) (map[string][]string, error) {
+func DistributeEcShards(volumeID uint32, collection string, targets []*worker_pb.TaskTarget, shardFiles map[string]string, dialOption pb.DialOption, logger logger) (map[string][]string, error) {
 	if len(targets) == 0 {
 		return nil, fmt.Errorf("no targets specified for EC shard distribution")
 	}
@@ -227,7 +226,7 @@ func DistributeEcShards(volumeID uint32, collection string, targets []*worker_pb
 // MountEcShards mounts EC shards on destination servers using an assignment map.
 // sourceDiskType is forwarded to VolumeEcShardsMount so the resulting EC volume
 // reports under the source's disk type rather than the destination's (#9423).
-func MountEcShards(volumeID uint32, collection string, shardAssignment map[string][]string, sourceDiskType string, dialOption grpc.DialOption, logger logger) error {
+func MountEcShards(volumeID uint32, collection string, shardAssignment map[string][]string, sourceDiskType string, dialOption pb.DialOption, logger logger) error {
 	if shardAssignment == nil {
 		return fmt.Errorf("shard assignment not available for mounting")
 	}
@@ -300,7 +299,7 @@ func MountEcShards(volumeID uint32, collection string, shardAssignment map[strin
 }
 
 // diskID=0 leaves disk placement to the server's auto-select.
-func sendShardFileToDestination(volumeID uint32, collection string, dialOption grpc.DialOption, destServer string, diskID uint32, filePath, shardType string) error {
+func sendShardFileToDestination(volumeID uint32, collection string, dialOption pb.DialOption, destServer string, diskID uint32, filePath, shardType string) error {
 	return operation.WithVolumeServerClient(false, pb.ServerAddress(destServer), dialOption,
 		func(client volume_server_pb.VolumeServerClient) error {
 			file, err := os.Open(filePath)

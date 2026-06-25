@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -43,7 +44,7 @@ func (c *commandS3ServiceAccountList) Do(args []string, commandEnv *CommandEnv, 
 	}
 
 	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.ListServiceAccounts(iamwire.NewListServiceAccountsRequest(iamwire.ListServiceAccountsRequestInput{}))
+		_, body, err := client.ListServiceAccounts(context.Background(), iamwire.NewListServiceAccountsRequest(iamwire.ListServiceAccountsRequestInput{}))
 		if err != nil {
 			return err
 		}

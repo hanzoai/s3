@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/test/volume_server/framework"
-	"github.com/hanzoai/s3/test/volume_server/matrix"
+	"github.com/stretchr/testify/require"
+
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/hanzoai/s3/test/volume_server/framework"
+	"github.com/hanzoai/s3/test/volume_server/matrix"
 )
 
 func TestReplicasPendingDelete(t *testing.T) {
@@ -54,7 +54,7 @@ func TestSweepEmptyReplicasDeletesStubKeepsData(t *testing.T) {
 	conn, grpcClient := framework.DialVolumeServer(t, clusterHarness.VolumeGRPCAddress())
 	defer conn.Close()
 
-	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOption := pb.DialOption{}
 	server := clusterHarness.VolumeServerAddress()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -88,7 +88,7 @@ func TestSweepEmptyReplicasDeletesStubKeepsData(t *testing.T) {
 	require.NoError(t, err, "data-bearing volume must survive the sweep")
 }
 
-func newSweepTaskForTest(server string, volumeID uint32, collection string, dialOption grpc.DialOption) *ErasureCodingTask {
+func newSweepTaskForTest(server string, volumeID uint32, collection string, dialOption pb.DialOption) *ErasureCodingTask {
 	task := NewErasureCodingTask("sweep-"+collection, server, volumeID, collection, dialOption)
 	task.sources = []*worker_pb.TaskSource{{Node: server, VolumeId: volumeID}}
 	return task

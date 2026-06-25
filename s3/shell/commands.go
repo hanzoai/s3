@@ -10,8 +10,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/storage/needle_map"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/util"
@@ -21,7 +19,7 @@ import (
 
 type ShellOptions struct {
 	Masters        *string
-	GrpcDialOption grpc.DialOption
+	GrpcDialOption pb.DialOption
 	// shell transient context
 	FilerHost    string
 	FilerPort    int64
@@ -179,7 +177,7 @@ func handleHelpRequest(c command, args []string, writer io.Writer) bool {
 	return false
 }
 
-func readNeedleStatus(grpcDialOption grpc.DialOption, sourceVolumeServer pb.ServerAddress, volumeId uint32, needleValue needle_map.NeedleValue) (resp *volume_server_pb.VolumeNeedleStatusResponse, err error) {
+func readNeedleStatus(grpcDialOption pb.DialOption, sourceVolumeServer pb.ServerAddress, volumeId uint32, needleValue needle_map.NeedleValue) (resp *volume_server_pb.VolumeNeedleStatusResponse, err error) {
 	err = operation.WithVolumeServerClient(false, sourceVolumeServer, grpcDialOption,
 		func(client volume_server_pb.VolumeServerClient) error {
 			if resp, err = client.VolumeNeedleStatus(context.Background(), &volume_server_pb.VolumeNeedleStatusRequest{

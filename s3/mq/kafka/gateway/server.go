@@ -13,8 +13,6 @@ import (
 	"github.com/hanzoai/s3/s3/mq/kafka/protocol"
 	"github.com/hanzoai/s3/s3/mq/kafka/schema"
 	"github.com/hanzoai/s3/s3/pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // resolveAdvertisedAddress resolves the appropriate address to advertise to Kafka clients
@@ -160,7 +158,7 @@ func (s *Server) Start() error {
 		// Parse all masters from the comma-separated list using pb.ServerAddresses
 		masters := pb.ServerAddresses(s.opts.Masters).ToAddresses()
 
-		grpcDialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+		grpcDialOption := pb.DialOption{}
 
 		s.coordinatorRegistry = NewCoordinatorRegistry(gatewayAddress, masters, grpcDialOption)
 		s.handler.SetCoordinatorRegistry(s.coordinatorRegistry)

@@ -8,7 +8,6 @@ import (
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
-	"google.golang.org/grpc"
 )
 
 type ServerShardInventory struct {
@@ -21,7 +20,7 @@ type ServerShardInventory struct {
 // healthy peers when one server is down. The caller gates destructive
 // actions on RequireRecoverableShardSet against the returned union.
 func VerifyShardsAcrossServers(ctx context.Context, volumeID uint32,
-	servers []string, dialOption grpc.DialOption) (
+	servers []string, dialOption pb.DialOption) (
 	union ShardBits, perServer map[string]ServerShardInventory) {
 
 	perServer = make(map[string]ServerShardInventory, len(servers))

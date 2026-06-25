@@ -4,13 +4,12 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/worker/tasks/vacuum"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func TestWorkerDefaultJobTypes(t *testing.T) {
-	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOption := pb.DialOption{}
 	handlers, err := buildPluginWorkerHandlers(*workerJobType, dialOption, int(vacuum.DefaultMaxExecutionConcurrency), "")
 	if err != nil {
 		t.Fatalf("buildPluginWorkerHandlers(default worker flag) err = %v", err)

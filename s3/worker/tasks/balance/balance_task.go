@@ -15,7 +15,6 @@ import (
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/worker/types"
 	"github.com/hanzoai/s3/s3/worker/types/base"
-	"google.golang.org/grpc"
 )
 
 // BalanceTask implements the Task interface
@@ -25,11 +24,11 @@ type BalanceTask struct {
 	volumeID       uint32
 	collection     string
 	progress       float64
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 }
 
 // NewBalanceTask creates a new balance task instance
-func NewBalanceTask(id string, server string, volumeID uint32, collection string, grpcDialOption grpc.DialOption) *BalanceTask {
+func NewBalanceTask(id string, server string, volumeID uint32, collection string, grpcDialOption pb.DialOption) *BalanceTask {
 	return &BalanceTask{
 		BaseTask:       base.NewBaseTask(id, types.TaskTypeBalance),
 		server:         server,

@@ -10,8 +10,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func TestFindLockOwnerExpiredLockReturnsNotFound(t *testing.T) {
@@ -29,8 +27,8 @@ func TestFindLockOwnerExpiredLockReturnsNotFound(t *testing.T) {
 	})
 	require.Nil(t, resp)
 	require.Error(t, err)
-
-	st, ok := status.FromError(err)
-	require.True(t, ok)
-	require.Equal(t, codes.NotFound, st.Code())
+	// The filer speaks ZAP now: the server tags the error with its code name
+	// ("NotFound: ...") rather than a gRPC status, and clients classify on that
+	// (see mount/error_classifier.go).
+	require.Contains(t, err.Error(), "NotFound")
 }

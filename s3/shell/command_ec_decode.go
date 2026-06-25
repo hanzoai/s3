@@ -11,10 +11,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/storage/types"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
@@ -196,22 +192,22 @@ func doEcDecode(commandEnv *CommandEnv, topoInfo *master_pb.TopologyInfo, collec
 }
 
 func isEcDecodeEmptyVolumeErr(err error) bool {
-	st, ok := status.FromError(err)
-	if !ok {
+	if err == nil {
 		return false
 	}
-	if st.Code() != codes.FailedPrecondition {
+	s := err.Error()
+	if !strings.Contains(s, "FailedPrecondition") {
 		return false
 	}
 	// Keep this robust against wording tweaks while still being specific.
-	return strings.Contains(st.Message(), erasure_coding.EcNoLiveEntriesSubstring)
+	return strings.Contains(s, erasure_coding.EcNoLiveEntriesSubstring)
 }
 
-func unmountAndDeleteEcShards(grpcDialOption grpc.DialOption, collection string, nodeToShardsInfo map[pb.ServerAddress]*erasure_coding.ShardsInfo, vid needle.VolumeId) error {
+func unmountAndDeleteEcShards(grpcDialOption pb.DialOption, collection string, nodeToShardsInfo map[pb.ServerAddress]*erasure_coding.ShardsInfo, vid needle.VolumeId) error {
 	return unmountAndDeleteEcShardsWithPrefix("unmountAndDeleteEcShards", grpcDialOption, collection, nodeToShardsInfo, vid)
 }
 
-func unmountAndDeleteEcShardsWithPrefix(prefix string, grpcDialOption grpc.DialOption, collection string, nodeToShardsInfo map[pb.ServerAddress]*erasure_coding.ShardsInfo, vid needle.VolumeId) error {
+func unmountAndDeleteEcShardsWithPrefix(prefix string, grpcDialOption pb.DialOption, collection string, nodeToShardsInfo map[pb.ServerAddress]*erasure_coding.ShardsInfo, vid needle.VolumeId) error {
 	ewg := NewErrorWaitGroup(len(nodeToShardsInfo))
 
 	// unmount and delete ec shards in parallel (one goroutine per location)
@@ -233,7 +229,7 @@ func unmountAndDeleteEcShardsWithPrefix(prefix string, grpcDialOption grpc.DialO
 	return ewg.Wait()
 }
 
-func verifyDecodedVolumeBeforeDelete(grpcDialOption grpc.DialOption, target pb.ServerAddress, vid needle.VolumeId) error {
+func verifyDecodedVolumeBeforeDelete(grpcDialOption pb.DialOption, target pb.ServerAddress, vid needle.VolumeId) error {
 	var resp *volume_server_pb.ReadVolumeFileStatusResponse
 	if err := operation.WithVolumeServerClient(false, target, grpcDialOption, func(client volume_server_pb.VolumeServerClient) error {
 		r, e := client.ReadVolumeFileStatus(context.Background(), &volume_server_pb.ReadVolumeFileStatusRequest{
@@ -257,7 +253,7 @@ func verifyDecodedVolumeBeforeDelete(grpcDialOption grpc.DialOption, target pb.S
 	return nil
 }
 
-func mountDecodedVolume(grpcDialOption grpc.DialOption, targetNodeLocation pb.ServerAddress, vid needle.VolumeId) error {
+func mountDecodedVolume(grpcDialOption pb.DialOption, targetNodeLocation pb.ServerAddress, vid needle.VolumeId) error {
 	return operation.WithVolumeServerClient(false, targetNodeLocation, grpcDialOption, func(volumeServerClient volume_server_pb.VolumeServerClient) error {
 		_, mountErr := volumeServerClient.VolumeMount(context.Background(), &volume_server_pb.VolumeMountRequest{
 			VolumeId: uint32(vid),
@@ -266,7 +262,7 @@ func mountDecodedVolume(grpcDialOption grpc.DialOption, targetNodeLocation pb.Se
 	})
 }
 
-func generateNormalVolume(grpcDialOption grpc.DialOption, vid needle.VolumeId, collection string, sourceVolumeServer pb.ServerAddress) error {
+func generateNormalVolume(grpcDialOption pb.DialOption, vid needle.VolumeId, collection string, sourceVolumeServer pb.ServerAddress) error {
 	fmt.Printf("generateNormalVolume from ec volume %d on %s\n", vid, sourceVolumeServer)
 
 	err := operation.WithVolumeServerClient(false, sourceVolumeServer, grpcDialOption, func(volumeServerClient volume_server_pb.VolumeServerClient) error {

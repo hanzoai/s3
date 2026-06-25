@@ -22,7 +22,6 @@ import (
 	util_http "github.com/hanzoai/s3/s3/util/http"
 	"github.com/hanzoai/s3/s3/util/version"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"google.golang.org/grpc"
 )
 
 type BenchmarkOptions struct {
@@ -40,7 +39,7 @@ type BenchmarkOptions struct {
 	diskType         *string
 	cpuprofile       *string
 	maxCpu           *int
-	grpcDialOption   grpc.DialOption
+	grpcDialOption   pb.DialOption
 	masterClient     *wdclient.MasterClient
 	fsync            *bool
 }

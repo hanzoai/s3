@@ -13,8 +13,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/util"
 	util_http "github.com/hanzoai/s3/s3/util/http"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
@@ -57,7 +55,7 @@ func main() {
 }
 
 func startGenerateMetadata() {
-	pb.WithFilerClient(false, util.RandomInt32(), pb.ServerAddress(*tailFiler), grpc.WithTransportCredentials(insecure.NewCredentials()), func(client filer_pb.HanzoFilerClient) error {
+	pb.WithFilerClient(false, util.RandomInt32(), pb.ServerAddress(*tailFiler), pb.DialOption{}, func(client filer_pb.HanzoFilerClient) error {
 
 		for i := 0; i < *n; i++ {
 			name := fmt.Sprintf("file%d", i)
@@ -100,7 +98,7 @@ func startSubscribeMetadata(eachEntryFunc func(event *filer_pb.SubscribeMetadata
 		StopTsNs:               0,
 		EventErrorType:         pb.TrivialOnError,
 	}
-	tailErr := pb.FollowMetadata(pb.ServerAddress(*tailFiler), grpc.WithTransportCredentials(insecure.NewCredentials()), metadataFollowOption, eachEntryFunc)
+	tailErr := pb.FollowMetadata(pb.ServerAddress(*tailFiler), pb.DialOption{}, metadataFollowOption, eachEntryFunc)
 
 	if tailErr != nil {
 		fmt.Printf("tail %s: %v\n", *tailFiler, tailErr)

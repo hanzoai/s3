@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -46,7 +47,7 @@ func (c *commandS3GroupRemoveUser) Do(args []string, commandEnv *CommandEnv, wri
 	}
 
 	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetConfiguration(iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
+		_, body, err := client.GetConfiguration(context.Background(), iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
 		if err != nil {
 			return err
 		}
@@ -63,7 +64,7 @@ func (c *commandS3GroupRemoveUser) Do(args []string, commandEnv *CommandEnv, wri
 				for i, m := range g.Members {
 					if m == *user {
 						g.Members = append(g.Members[:i], g.Members[i+1:]...)
-						if _, _, err := client.PutConfiguration(iamwire.NewPutConfigurationRequest(iamwire.PutConfigurationRequestInput{Configuration: iamwire.ConfigurationInputFromPB(cfg)})); err != nil {
+						if _, _, err := client.PutConfiguration(context.Background(), iamwire.NewPutConfigurationRequest(iamwire.PutConfigurationRequestInput{Configuration: iamwire.ConfigurationInputFromPB(cfg)})); err != nil {
 							return err
 						}
 						return json.NewEncoder(writer).Encode(map[string]string{"group": *group, "removed": *user})

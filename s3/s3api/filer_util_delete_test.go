@@ -10,9 +10,6 @@ import (
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	grpc "google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type deleteObjectEntryTestClient struct {
@@ -29,7 +26,7 @@ type deleteObjectEntryTestClient struct {
 	updateReq *filer_pb.UpdateEntryRequest
 }
 
-func (c *deleteObjectEntryTestClient) DeleteEntry(_ context.Context, req *filer_pb.DeleteEntryRequest, _ ...grpc.CallOption) (*filer_pb.DeleteEntryResponse, error) {
+func (c *deleteObjectEntryTestClient) DeleteEntry(_ context.Context, req *filer_pb.DeleteEntryRequest) (*filer_pb.DeleteEntryResponse, error) {
 	c.deleteReq = req
 	if c.deleteResp == nil {
 		return &filer_pb.DeleteEntryResponse{}, c.deleteErr
@@ -37,7 +34,7 @@ func (c *deleteObjectEntryTestClient) DeleteEntry(_ context.Context, req *filer_
 	return c.deleteResp, c.deleteErr
 }
 
-func (c *deleteObjectEntryTestClient) LookupDirectoryEntry(_ context.Context, req *filer_pb.LookupDirectoryEntryRequest, _ ...grpc.CallOption) (*filer_pb.LookupDirectoryEntryResponse, error) {
+func (c *deleteObjectEntryTestClient) LookupDirectoryEntry(_ context.Context, req *filer_pb.LookupDirectoryEntryRequest) (*filer_pb.LookupDirectoryEntryResponse, error) {
 	c.lookupReq = req
 	if c.lookupResp == nil {
 		return &filer_pb.LookupDirectoryEntryResponse{}, c.lookupErr
@@ -45,7 +42,7 @@ func (c *deleteObjectEntryTestClient) LookupDirectoryEntry(_ context.Context, re
 	return c.lookupResp, c.lookupErr
 }
 
-func (c *deleteObjectEntryTestClient) UpdateEntry(_ context.Context, req *filer_pb.UpdateEntryRequest, _ ...grpc.CallOption) (*filer_pb.UpdateEntryResponse, error) {
+func (c *deleteObjectEntryTestClient) UpdateEntry(_ context.Context, req *filer_pb.UpdateEntryRequest) (*filer_pb.UpdateEntryResponse, error) {
 	c.updateReq = req
 	return &filer_pb.UpdateEntryResponse{}, c.updateErr
 }
@@ -70,7 +67,7 @@ func TestDeleteObjectEntryDemotesNonEmptyDirectoryMarker(t *testing.T) {
 					s3_constants.ExtAmzOwnerKey:               []byte("owner"),
 					s3_constants.AmzUserMetaPrefix + "Color":  []byte("blue"),
 					s3_constants.AmzObjectTaggingPrefix + "k": []byte("v"),
-					"xattr-keep":           []byte("keep-me"),
+					"xattr-keep":       []byte("keep-me"),
 					"x-hanzo-internal": []byte("keep-me-too"),
 				},
 			},
@@ -91,7 +88,7 @@ func TestDeleteObjectEntryDemotesNonEmptyDirectoryMarker(t *testing.T) {
 	assert.Nil(t, updated.Content)
 	assert.Nil(t, updated.Chunks)
 	assert.Equal(t, map[string][]byte{
-		"xattr-keep":           []byte("keep-me"),
+		"xattr-keep":       []byte("keep-me"),
 		"x-hanzo-internal": []byte("keep-me-too"),
 	}, updated.Extended)
 }
@@ -130,7 +127,7 @@ func TestDeleteObjectEntryIgnoresConcurrentUpdateNotFound(t *testing.T) {
 				},
 			},
 		},
-		updateErr: status.Error(codes.NotFound, "already removed"),
+		updateErr: filer_pb.ErrNotFound,
 	}
 
 	err := deleteObjectEntry(client, "/buckets/test", "photos", true, false)

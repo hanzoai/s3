@@ -11,9 +11,9 @@ import (
 
 	"github.com/hanzoai/s3/s3/util/version"
 
-	"github.com/hanzoai/s3/s3/util/buffered_writer"
 	"golang.org/x/net/webdav"
-	"google.golang.org/grpc"
+
+	"github.com/hanzoai/s3/s3/util/buffered_writer"
 
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
@@ -30,7 +30,7 @@ type WebDavOption struct {
 	FilerRootPath  string
 	DomainName     string
 	BucketsPath    string
-	GrpcDialOption grpc.DialOption
+	GrpcDialOption pb.DialOption
 	Collection     string
 	Replication    string
 	DiskType       string
@@ -44,7 +44,7 @@ type WebDavOption struct {
 
 type WebDavServer struct {
 	option         *WebDavOption
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 	Handler        *webdav.Handler
 }
 

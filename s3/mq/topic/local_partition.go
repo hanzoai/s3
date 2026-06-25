@@ -8,15 +8,16 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/zap-proto/go/transport"
+
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/mq/agent/agentconv"
 	"github.com/hanzoai/s3/s3/mq/broker/brokerpb"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/util/log_buffer"
 	mq_brokerwire "github.com/hanzoai/s3/s3/wire/mq_broker"
-	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
 )
 
 type LocalPartition struct {
@@ -250,7 +251,7 @@ func (p *LocalPartition) WaitUntilNoPublishers() {
 	}
 }
 
-func (p *LocalPartition) MaybeConnectToFollowers(initMessage *mq_pb.PublishMessageRequest_InitMessage, _ grpc.DialOption) (err error) {
+func (p *LocalPartition) MaybeConnectToFollowers(initMessage *mq_pb.PublishMessageRequest_InitMessage, _ pb.DialOption) (err error) {
 	if p.publishFolloweMeStream != nil {
 		return nil
 	}

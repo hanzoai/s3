@@ -9,7 +9,6 @@ import (
 
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"google.golang.org/grpc"
 )
 
 // objectRoot is where S3 objects live in the filer namespace:
@@ -24,11 +23,11 @@ const objectRoot = "/buckets"
 // transport) until the master↔volume↔filer rip; the SERVICE boundary is ZAP.
 type FilerStore struct {
 	filers     []pb.ServerAddress
-	dialOption grpc.DialOption
+	dialOption pb.DialOption
 }
 
 // NewFilerStore targets the given filer(s).
-func NewFilerStore(filers []pb.ServerAddress, dialOption grpc.DialOption) *FilerStore {
+func NewFilerStore(filers []pb.ServerAddress, dialOption pb.DialOption) *FilerStore {
 	return &FilerStore{filers: filers, dialOption: dialOption}
 }
 

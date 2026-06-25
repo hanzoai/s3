@@ -165,7 +165,7 @@ func startMasterFollower(masterOptions MasterOptions) {
 	masterStream := masterstream.Handler(s3server.NewMasterZapStreamServer(ms))
 	var masterZapSrv *transport.Server
 	var zapErr error
-	if tlsCfg := security.ServerTLSConfig(util.GetViper(), "grpc.master"); tlsCfg != nil {
+	if tlsCfg := pb.ServerTLSConfig(util.GetViper(), "grpc.master"); tlsCfg != nil {
 		masterZapSrv, zapErr = transport.ListenStreamTLS("tcp", zapAddr,
 			transport.PQTLSConfig(tlsCfg), masterDispatch, masterStream)
 	} else {
