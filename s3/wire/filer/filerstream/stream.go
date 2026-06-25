@@ -38,6 +38,7 @@
 package filerstream
 
 import (
+	"context"
 	"io"
 
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
@@ -97,6 +98,9 @@ type Server interface {
 // ships one ListEntriesResponse (a filerwire NewListEntriesResponse buffer).
 type ListEntriesStream struct{ s *transport.Stream }
 
+// Context is cancelled when this stream ends or the connection drops.
+func (x *ListEntriesStream) Context() context.Context { return x.s.Context() }
+
 // Send ships one ListEntriesResponse frame (the bytes ARE the message).
 func (s *ListEntriesStream) Send(frame []byte) error { return s.s.Send(frame) }
 
@@ -106,6 +110,9 @@ func (s *ListEntriesStream) CloseSend() error { return s.s.CloseSend() }
 // StreamRenameEntryStream is the server's half of a StreamRenameEntry stream.
 type StreamRenameEntryStream struct{ s *transport.Stream }
 
+// Context is cancelled when this stream ends or the connection drops.
+func (x *StreamRenameEntryStream) Context() context.Context { return x.s.Context() }
+
 // Send ships one StreamRenameEntryResponse frame.
 func (s *StreamRenameEntryStream) Send(frame []byte) error { return s.s.Send(frame) }
 
@@ -114,6 +121,9 @@ func (s *StreamRenameEntryStream) CloseSend() error { return s.s.CloseSend() }
 
 // TraverseBfsMetadataStream is the server's half of a TraverseBfsMetadata stream.
 type TraverseBfsMetadataStream struct{ s *transport.Stream }
+
+// Context is cancelled when this stream ends or the connection drops.
+func (x *TraverseBfsMetadataStream) Context() context.Context { return x.s.Context() }
 
 // Send ships one TraverseBfsMetadataResponse frame.
 func (s *TraverseBfsMetadataStream) Send(frame []byte) error { return s.s.Send(frame) }
@@ -125,6 +135,9 @@ func (s *TraverseBfsMetadataStream) CloseSend() error { return s.s.CloseSend() }
 // SubscribeMetadata stream.
 type SubscribeMetadataStream struct{ s *transport.Stream }
 
+// Context is cancelled when this stream ends or the connection drops.
+func (x *SubscribeMetadataStream) Context() context.Context { return x.s.Context() }
+
 // Send ships one SubscribeMetadataResponse frame.
 func (s *SubscribeMetadataStream) Send(frame []byte) error { return s.s.Send(frame) }
 
@@ -135,6 +148,9 @@ func (s *SubscribeMetadataStream) CloseSend() error { return s.s.CloseSend() }
 // StreamMutateEntry stream: Recv yields successive StreamMutateEntryRequest
 // frames (request_id-correlated), Send ships StreamMutateEntryResponse frames.
 type StreamMutateEntryStream struct{ s *transport.Stream }
+
+// Context is cancelled when this stream ends or the connection drops.
+func (x *StreamMutateEntryStream) Context() context.Context { return x.s.Context() }
 
 // Recv returns the next request frame as a zero-copy view, or io.EOF once the
 // client half-closes its send side.
