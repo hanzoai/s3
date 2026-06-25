@@ -251,7 +251,7 @@ func (p *LocalPartition) WaitUntilNoPublishers() {
 	}
 }
 
-func (p *LocalPartition) MaybeConnectToFollowers(initMessage *mq_pb.PublishMessageRequest_InitMessage, _ pb.DialOption) (err error) {
+func (p *LocalPartition) MaybeConnectToFollowers(initMessage *mq_pb.PublishMessageRequest_InitMessage) (err error) {
 	if p.publishFolloweMeStream != nil {
 		return nil
 	}
@@ -260,7 +260,7 @@ func (p *LocalPartition) MaybeConnectToFollowers(initMessage *mq_pb.PublishMessa
 	}
 
 	p.Follower = initMessage.FollowerBroker
-	p.followerConn, err = transport.Dial("tcp", p.Follower)
+	p.followerConn, err = pb.DialBrokerZapAddr(p.Follower)
 	if err != nil {
 		return fmt.Errorf("fail to dial %s: %v", p.Follower, err)
 	}
