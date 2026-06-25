@@ -1,1 +1,0 @@
-Deprecated by cassandra2
