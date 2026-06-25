@@ -16,9 +16,15 @@
 //     until io.EOF then stream.SendAndClose(resp); the adapter maps each inbound
 //     wire frame to the pb oneof request and ships the single terminal reply.
 //
-// The grpc.ServerStream embedded in each adapter supplies the streaming
-// interface's remaining methods (Header/Trailer/SetHeader/...), which the volume
-// engine does not call on these paths — exactly the filerzap doctrine.
+// Each adapter's Context() delegates to the wire stream's per-stream context
+// (vsw.<Rpc>ServerStream.Context() -> transport.Stream.Context()), which is
+// cancelled when the stream ends OR the peer drops the connection (zap-proto/go
+// v1.6.2+). A backend handler that gates an idle wait on stream.Context().Done()
+// — or passes it to request-scoped auth (checkGrpcAdminAuth) — is therefore
+// released on client disconnect, no goroutine leak. This mirrors the filerzap
+// stream adapters exactly. The grpc.ServerStream embedded in each adapter
+// supplies the streaming interface's remaining methods (Header/Trailer/...),
+// which the volume engine does not call on these paths.
 
 package volumezap
 
@@ -38,7 +44,7 @@ func (b serverBackend) VacuumVolumeCompact(s vsw.VacuumVolumeCompactServerStream
 	if err != nil {
 		return err
 	}
-	return b.vs.VacuumVolumeCompact(VacuumVolumeCompactReqFromView(v), &vacuumVolumeCompactSend{ctx: b.ctx, out: s})
+	return b.vs.VacuumVolumeCompact(VacuumVolumeCompactReqFromView(v), &vacuumVolumeCompactSend{out: s})
 }
 
 func (b serverBackend) VolumeIncrementalCopy(s vsw.VolumeIncrementalCopyServerStream) error {
@@ -46,7 +52,7 @@ func (b serverBackend) VolumeIncrementalCopy(s vsw.VolumeIncrementalCopyServerSt
 	if err != nil {
 		return err
 	}
-	return b.vs.VolumeIncrementalCopy(VolumeIncrementalCopyReqFromView(v), &volumeIncrementalCopySend{ctx: b.ctx, out: s})
+	return b.vs.VolumeIncrementalCopy(VolumeIncrementalCopyReqFromView(v), &volumeIncrementalCopySend{out: s})
 }
 
 func (b serverBackend) VolumeCopy(s vsw.VolumeCopyServerStream) error {
@@ -54,7 +60,7 @@ func (b serverBackend) VolumeCopy(s vsw.VolumeCopyServerStream) error {
 	if err != nil {
 		return err
 	}
-	return b.vs.VolumeCopy(VolumeCopyReqFromView(v), &volumeCopySend{ctx: b.ctx, out: s})
+	return b.vs.VolumeCopy(VolumeCopyReqFromView(v), &volumeCopySend{out: s})
 }
 
 func (b serverBackend) CopyFile(s vsw.CopyFileServerStream) error {
@@ -62,7 +68,7 @@ func (b serverBackend) CopyFile(s vsw.CopyFileServerStream) error {
 	if err != nil {
 		return err
 	}
-	return b.vs.CopyFile(CopyFileReqFromView(v), &copyFileSend{ctx: b.ctx, out: s})
+	return b.vs.CopyFile(CopyFileReqFromView(v), &copyFileSend{out: s})
 }
 
 func (b serverBackend) ReadAllNeedles(s vsw.ReadAllNeedlesServerStream) error {
@@ -70,7 +76,7 @@ func (b serverBackend) ReadAllNeedles(s vsw.ReadAllNeedlesServerStream) error {
 	if err != nil {
 		return err
 	}
-	return b.vs.ReadAllNeedles(ReadAllNeedlesReqFromView(v), &readAllNeedlesSend{ctx: b.ctx, out: s})
+	return b.vs.ReadAllNeedles(ReadAllNeedlesReqFromView(v), &readAllNeedlesSend{out: s})
 }
 
 func (b serverBackend) VolumeTailSender(s vsw.VolumeTailSenderServerStream) error {
@@ -78,7 +84,7 @@ func (b serverBackend) VolumeTailSender(s vsw.VolumeTailSenderServerStream) erro
 	if err != nil {
 		return err
 	}
-	return b.vs.VolumeTailSender(VolumeTailSenderReqFromView(v), &volumeTailSenderSend{ctx: b.ctx, out: s})
+	return b.vs.VolumeTailSender(VolumeTailSenderReqFromView(v), &volumeTailSenderSend{out: s})
 }
 
 func (b serverBackend) VolumeEcShardRead(s vsw.VolumeEcShardReadServerStream) error {
@@ -86,7 +92,7 @@ func (b serverBackend) VolumeEcShardRead(s vsw.VolumeEcShardReadServerStream) er
 	if err != nil {
 		return err
 	}
-	return b.vs.VolumeEcShardRead(VolumeEcShardReadReqFromView(v), &volumeEcShardReadSend{ctx: b.ctx, out: s})
+	return b.vs.VolumeEcShardRead(VolumeEcShardReadReqFromView(v), &volumeEcShardReadSend{out: s})
 }
 
 func (b serverBackend) VolumeTierMoveDatToRemote(s vsw.VolumeTierMoveDatToRemoteServerStream) error {
@@ -94,7 +100,7 @@ func (b serverBackend) VolumeTierMoveDatToRemote(s vsw.VolumeTierMoveDatToRemote
 	if err != nil {
 		return err
 	}
-	return b.vs.VolumeTierMoveDatToRemote(VolumeTierMoveDatToRemoteReqFromView(v), &volumeTierToRemoteSend{ctx: b.ctx, out: s})
+	return b.vs.VolumeTierMoveDatToRemote(VolumeTierMoveDatToRemoteReqFromView(v), &volumeTierToRemoteSend{out: s})
 }
 
 func (b serverBackend) VolumeTierMoveDatFromRemote(s vsw.VolumeTierMoveDatFromRemoteServerStream) error {
@@ -102,7 +108,7 @@ func (b serverBackend) VolumeTierMoveDatFromRemote(s vsw.VolumeTierMoveDatFromRe
 	if err != nil {
 		return err
 	}
-	return b.vs.VolumeTierMoveDatFromRemote(VolumeTierMoveDatFromRemoteReqFromView(v), &volumeTierFromRemoteSend{ctx: b.ctx, out: s})
+	return b.vs.VolumeTierMoveDatFromRemote(VolumeTierMoveDatFromRemoteReqFromView(v), &volumeTierFromRemoteSend{out: s})
 }
 
 func (b serverBackend) Query(s vsw.QueryServerStream) error {
@@ -110,126 +116,119 @@ func (b serverBackend) Query(s vsw.QueryServerStream) error {
 	if err != nil {
 		return err
 	}
-	return b.vs.Query(QueryReqFromView(v), &querySend{ctx: b.ctx, out: s})
+	return b.vs.Query(QueryReqFromView(v), &querySend{out: s})
 }
 
 // --- client-streaming (1): engine drives Recv()/SendAndClose() ---
 
 func (b serverBackend) ReceiveFile(s vsw.ReceiveFileServerStream) error {
-	return b.vs.ReceiveFile(&receiveFileRecv{ctx: b.ctx, in: s})
+	return b.vs.ReceiveFile(&receiveFileRecv{in: s})
 }
 
 // --- server-stream Send adapters (pb Send -> wire frame on the ZAP stream) ---
+//
+// Context() delegates to the wire stream's per-stream context, so engine
+// handlers see the real cancel-on-disconnect context, not context.Background().
 
 type vacuumVolumeCompactSend struct {
 	grpc.ServerStream
-	ctx context.Context
 	out vsw.VacuumVolumeCompactServerStream
 }
 
 func (a *vacuumVolumeCompactSend) Send(resp *volume_server_pb.VacuumVolumeCompactResponse) error {
 	return a.out.Send(VacuumVolumeCompactRespToInput(resp))
 }
-func (a *vacuumVolumeCompactSend) Context() context.Context { return a.ctx }
+func (a *vacuumVolumeCompactSend) Context() context.Context { return a.out.Context() }
 
 type volumeIncrementalCopySend struct {
 	grpc.ServerStream
-	ctx context.Context
 	out vsw.VolumeIncrementalCopyServerStream
 }
 
 func (a *volumeIncrementalCopySend) Send(resp *volume_server_pb.VolumeIncrementalCopyResponse) error {
 	return a.out.Send(VolumeIncrementalCopyRespToInput(resp))
 }
-func (a *volumeIncrementalCopySend) Context() context.Context { return a.ctx }
+func (a *volumeIncrementalCopySend) Context() context.Context { return a.out.Context() }
 
 type volumeCopySend struct {
 	grpc.ServerStream
-	ctx context.Context
 	out vsw.VolumeCopyServerStream
 }
 
 func (a *volumeCopySend) Send(resp *volume_server_pb.VolumeCopyResponse) error {
 	return a.out.Send(VolumeCopyRespToInput(resp))
 }
-func (a *volumeCopySend) Context() context.Context { return a.ctx }
+func (a *volumeCopySend) Context() context.Context { return a.out.Context() }
 
 type copyFileSend struct {
 	grpc.ServerStream
-	ctx context.Context
 	out vsw.CopyFileServerStream
 }
 
 func (a *copyFileSend) Send(resp *volume_server_pb.CopyFileResponse) error {
 	return a.out.Send(CopyFileRespToInput(resp))
 }
-func (a *copyFileSend) Context() context.Context { return a.ctx }
+func (a *copyFileSend) Context() context.Context { return a.out.Context() }
 
 type readAllNeedlesSend struct {
 	grpc.ServerStream
-	ctx context.Context
 	out vsw.ReadAllNeedlesServerStream
 }
 
 func (a *readAllNeedlesSend) Send(resp *volume_server_pb.ReadAllNeedlesResponse) error {
 	return a.out.Send(ReadAllNeedlesRespToInput(resp))
 }
-func (a *readAllNeedlesSend) Context() context.Context { return a.ctx }
+func (a *readAllNeedlesSend) Context() context.Context { return a.out.Context() }
 
 type volumeTailSenderSend struct {
 	grpc.ServerStream
-	ctx context.Context
 	out vsw.VolumeTailSenderServerStream
 }
 
 func (a *volumeTailSenderSend) Send(resp *volume_server_pb.VolumeTailSenderResponse) error {
 	return a.out.Send(VolumeTailSenderRespToInput(resp))
 }
-func (a *volumeTailSenderSend) Context() context.Context { return a.ctx }
+func (a *volumeTailSenderSend) Context() context.Context { return a.out.Context() }
 
 type volumeEcShardReadSend struct {
 	grpc.ServerStream
-	ctx context.Context
 	out vsw.VolumeEcShardReadServerStream
 }
 
 func (a *volumeEcShardReadSend) Send(resp *volume_server_pb.VolumeEcShardReadResponse) error {
 	return a.out.Send(VolumeEcShardReadRespToInput(resp))
 }
-func (a *volumeEcShardReadSend) Context() context.Context { return a.ctx }
+func (a *volumeEcShardReadSend) Context() context.Context { return a.out.Context() }
 
 type volumeTierToRemoteSend struct {
 	grpc.ServerStream
-	ctx context.Context
 	out vsw.VolumeTierMoveDatToRemoteServerStream
 }
 
 func (a *volumeTierToRemoteSend) Send(resp *volume_server_pb.VolumeTierMoveDatToRemoteResponse) error {
 	return a.out.Send(VolumeTierMoveDatToRemoteRespToInput(resp))
 }
-func (a *volumeTierToRemoteSend) Context() context.Context { return a.ctx }
+func (a *volumeTierToRemoteSend) Context() context.Context { return a.out.Context() }
 
 type volumeTierFromRemoteSend struct {
 	grpc.ServerStream
-	ctx context.Context
 	out vsw.VolumeTierMoveDatFromRemoteServerStream
 }
 
 func (a *volumeTierFromRemoteSend) Send(resp *volume_server_pb.VolumeTierMoveDatFromRemoteResponse) error {
 	return a.out.Send(VolumeTierMoveDatFromRemoteRespToInput(resp))
 }
-func (a *volumeTierFromRemoteSend) Context() context.Context { return a.ctx }
+func (a *volumeTierFromRemoteSend) Context() context.Context { return a.out.Context() }
 
 type querySend struct {
 	grpc.ServerStream
-	ctx context.Context
 	out vsw.QueryServerStream
 }
 
 func (a *querySend) Send(resp *volume_server_pb.QueriedStripe) error {
 	return a.out.Send(QueriedStripeToInput(resp))
 }
-func (a *querySend) Context() context.Context { return a.ctx }
+func (a *querySend) Context() context.Context { return a.out.Context() }
 
 // --- client-stream Recv adapter (wire frame -> pb oneof request; reply on close) ---
 
@@ -239,8 +238,7 @@ func (a *querySend) Context() context.Context { return a.ctx }
 // client half-closes) then calls SendAndClose once with the terminal reply.
 type receiveFileRecv struct {
 	grpc.ServerStream
-	ctx context.Context
-	in  vsw.ReceiveFileServerStream
+	in vsw.ReceiveFileServerStream
 }
 
 func (a *receiveFileRecv) Recv() (*volume_server_pb.ReceiveFileRequest, error) {
@@ -253,4 +251,4 @@ func (a *receiveFileRecv) Recv() (*volume_server_pb.ReceiveFileRequest, error) {
 func (a *receiveFileRecv) SendAndClose(resp *volume_server_pb.ReceiveFileResponse) error {
 	return a.in.Reply(ReceiveFileRespToInput(resp))
 }
-func (a *receiveFileRecv) Context() context.Context { return a.ctx }
+func (a *receiveFileRecv) Context() context.Context { return a.in.Context() }
