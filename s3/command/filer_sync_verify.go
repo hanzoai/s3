@@ -177,10 +177,7 @@ type simpleFilerClient struct {
 }
 
 func (c *simpleFilerClient) WithFilerClient(streamingMode bool, fn func(filer_pb.HanzoFilerClient) error) error {
-	return pb.WithGrpcClient(context.Background(), streamingMode, 0, func(grpcConnection *grpc.ClientConn) error {
-		client := filer_pb.NewHanzoFilerClient(grpcConnection)
-		return fn(client)
-	}, c.grpcAddress.ToGrpcAddress(), false, c.grpcDialOption)
+	return pb.WithFilerClient(streamingMode, 0, c.grpcAddress, c.grpcDialOption, fn)
 }
 
 func (c *simpleFilerClient) AdjustedUrl(location *filer_pb.Location) string {

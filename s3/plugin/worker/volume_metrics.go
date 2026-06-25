@@ -68,60 +68,46 @@ func FetchDefaultReplicaPlacement(ctx context.Context, masterAddresses []string,
 		return ""
 	}
 	for _, address := range masterAddresses {
-		for _, candidate := range MasterAddressCandidates(address) {
-			if ctx.Err() != nil {
-				return ""
-			}
-			dialCtx, cancelDial := context.WithTimeout(ctx, 5*time.Second)
-			conn, err := pb.GrpcDial(dialCtx, candidate, false, grpcDialOption)
-			cancelDial()
-			if err != nil {
-				continue
-			}
-			client := master_pb.NewHanzoClient(conn)
+		if ctx.Err() != nil {
+			return ""
+		}
+		var replication string
+		callErr := pb.WithMasterClient(ctx, false, pb.ServerAddress(address), grpcDialOption, false, func(client master_pb.HanzoClient) error {
 			callCtx, cancelCall := context.WithTimeout(ctx, 10*time.Second)
-			resp, callErr := client.GetMasterConfiguration(callCtx, &master_pb.GetMasterConfigurationRequest{})
-			cancelCall()
-			_ = conn.Close()
-			if callErr == nil {
-				return resp.DefaultReplication
+			defer cancelCall()
+			resp, err := client.GetMasterConfiguration(callCtx, &master_pb.GetMasterConfigurationRequest{})
+			if err != nil {
+				return err
 			}
+			replication = resp.DefaultReplication
+			return nil
+		})
+		if callErr == nil {
+			return replication
 		}
 	}
 	return ""
 }
 
 func FetchVolumeList(ctx context.Context, address string, grpcDialOption grpc.DialOption) (*master_pb.VolumeListResponse, error) {
-	var lastErr error
-	for _, candidate := range MasterAddressCandidates(address) {
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-
-		dialCtx, cancelDial := context.WithTimeout(ctx, 5*time.Second)
-		conn, err := pb.GrpcDial(dialCtx, candidate, false, grpcDialOption)
-		cancelDial()
-		if err != nil {
-			lastErr = err
-			continue
-		}
-
-		client := master_pb.NewHanzoClient(conn)
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	var response *master_pb.VolumeListResponse
+	err := pb.WithMasterClient(ctx, false, pb.ServerAddress(address), grpcDialOption, false, func(client master_pb.HanzoClient) error {
 		callCtx, cancelCall := context.WithTimeout(ctx, 10*time.Second)
-		response, callErr := client.VolumeList(callCtx, &master_pb.VolumeListRequest{})
-		cancelCall()
-		_ = conn.Close()
-
-		if callErr == nil {
-			return response, nil
+		defer cancelCall()
+		resp, callErr := client.VolumeList(callCtx, &master_pb.VolumeListRequest{})
+		if callErr != nil {
+			return callErr
 		}
-		lastErr = callErr
+		response = resp
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	if lastErr == nil {
-		lastErr = fmt.Errorf("no valid master address candidate")
-	}
-	return nil, lastErr
+	return response, nil
 }
 
 func buildVolumeMetrics(

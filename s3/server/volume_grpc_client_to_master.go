@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hanzoai/s3/s3/masterzap"
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/stats"
 
@@ -126,17 +127,21 @@ func (vs *VolumeServer) StopHeartbeat() (isAlreadyStopping bool) {
 }
 
 func (vs *VolumeServer) doHeartbeatWithRetry(masterAddress pb.ServerAddress, grpcDialOption grpc.DialOption, sleepInterval time.Duration, duplicateRetryCount int) (newLeader pb.ServerAddress, err error) {
+	_ = grpcDialOption // ZAP path derives TLS from grpc.master config, not the dial option
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	grpcConnection, err := pb.GrpcDial(ctx, masterAddress.ToGrpcAddress(), false, grpcDialOption)
+	// Dedicated long-lived ZAP connection to the master's native transport (the
+	// heartbeat owns reconnect/leader-change itself, so it does not borrow from
+	// the shared masterPool).
+	conn, err := pb.DialMasterZapAddr(masterAddress.ToMasterZapAddress())
 	if err != nil {
 		return "", fmt.Errorf("fail to dial %s : %v", masterAddress, err)
 	}
-	defer grpcConnection.Close()
+	defer conn.Close()
 
-	client := master_pb.NewHanzoClient(grpcConnection)
+	client := masterzap.New(conn, nil)
 	stream, err := client.SendHeartbeat(ctx)
 	if err != nil {
 		glog.V(0).Infof("SendHeartbeat to %s: %v", masterAddress, err)
@@ -262,10 +267,10 @@ func (vs *VolumeServer) doHeartbeatWithRetry(masterAddress pb.ServerAddress, grp
 		case first := <-vs.store.NewEcShardsChan:
 			shards := util.DrainChannel(vs.store.NewEcShardsChan, first)
 			deltaBeat := &master_pb.Heartbeat{
-				Ip:           ip,
-				Port:         port,
-				DataCenter:   dataCenter,
-				Rack:         rack,
+				Ip:          ip,
+				Port:        port,
+				DataCenter:  dataCenter,
+				Rack:        rack,
 				NewEcShards: shards,
 			}
 			for _, s := range shards {
@@ -295,10 +300,10 @@ func (vs *VolumeServer) doHeartbeatWithRetry(masterAddress pb.ServerAddress, grp
 		case first := <-vs.store.DeletedEcShardsChan:
 			shards := util.DrainChannel(vs.store.DeletedEcShardsChan, first)
 			deltaBeat := &master_pb.Heartbeat{
-				Ip:               ip,
-				Port:             port,
-				DataCenter:       dataCenter,
-				Rack:             rack,
+				Ip:              ip,
+				Port:            port,
+				DataCenter:      dataCenter,
+				Rack:            rack,
 				DeletedEcShards: shards,
 			}
 			for _, s := range shards {

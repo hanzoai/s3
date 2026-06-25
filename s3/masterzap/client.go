@@ -13,8 +13,8 @@
 //     *master_pb.<Rpc>Response with the converters in rpc.go;
 //   - the 3 streaming RPCs (SendHeartbeat, KeepConnected, StreamAssign) are
 //     bidirectional; each opens a transport stream via the masterstream client
-//     and returns a grpc.BidiStreamingClient whose Send()/Recv() encode/decode
-//     each frame with the converters in stream.go.
+//     and returns an rpc.BidiStream whose Send()/Recv() encode/decode each frame
+//     with the converters in stream.go.
 //
 // Because the adapter satisfies master_pb.HanzoClient, no call site changes:
 // callers keep building *master_pb requests and reading *master_pb responses.
@@ -27,12 +27,10 @@ package masterzap
 import (
 	"context"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
-
 	"github.com/zap-proto/go/transport"
 
 	master_pb "github.com/hanzoai/s3/s3/pb/master_pb"
+	"github.com/hanzoai/s3/s3/pb/rpc"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
 	masterstream "github.com/hanzoai/s3/s3/wire/master/masterstream"
 )
@@ -62,7 +60,7 @@ var _ master_pb.HanzoClient = (*zapMasterClient)(nil)
 
 // --- unary RPCs ------------------------------------------------------------
 
-func (a *zapMasterClient) LookupVolume(_ context.Context, in *master_pb.LookupVolumeRequest, _ ...grpc.CallOption) (*master_pb.LookupVolumeResponse, error) {
+func (a *zapMasterClient) LookupVolume(_ context.Context, in *master_pb.LookupVolumeRequest) (*master_pb.LookupVolumeResponse, error) {
 	_, body, err := a.unary.LookupVolume(LookupVolumeReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -70,7 +68,7 @@ func (a *zapMasterClient) LookupVolume(_ context.Context, in *master_pb.LookupVo
 	return LookupVolumeRespFromWire(body)
 }
 
-func (a *zapMasterClient) Assign(_ context.Context, in *master_pb.AssignRequest, _ ...grpc.CallOption) (*master_pb.AssignResponse, error) {
+func (a *zapMasterClient) Assign(_ context.Context, in *master_pb.AssignRequest) (*master_pb.AssignResponse, error) {
 	_, body, err := a.unary.Assign(AssignReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -78,7 +76,7 @@ func (a *zapMasterClient) Assign(_ context.Context, in *master_pb.AssignRequest,
 	return AssignRespFromWire(body)
 }
 
-func (a *zapMasterClient) Statistics(_ context.Context, in *master_pb.StatisticsRequest, _ ...grpc.CallOption) (*master_pb.StatisticsResponse, error) {
+func (a *zapMasterClient) Statistics(_ context.Context, in *master_pb.StatisticsRequest) (*master_pb.StatisticsResponse, error) {
 	_, body, err := a.unary.Statistics(StatisticsReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -86,7 +84,7 @@ func (a *zapMasterClient) Statistics(_ context.Context, in *master_pb.Statistics
 	return StatisticsRespFromWire(body)
 }
 
-func (a *zapMasterClient) CollectionList(_ context.Context, in *master_pb.CollectionListRequest, _ ...grpc.CallOption) (*master_pb.CollectionListResponse, error) {
+func (a *zapMasterClient) CollectionList(_ context.Context, in *master_pb.CollectionListRequest) (*master_pb.CollectionListResponse, error) {
 	_, body, err := a.unary.CollectionList(CollectionListReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -94,7 +92,7 @@ func (a *zapMasterClient) CollectionList(_ context.Context, in *master_pb.Collec
 	return CollectionListRespFromWire(body)
 }
 
-func (a *zapMasterClient) CollectionDelete(_ context.Context, in *master_pb.CollectionDeleteRequest, _ ...grpc.CallOption) (*master_pb.CollectionDeleteResponse, error) {
+func (a *zapMasterClient) CollectionDelete(_ context.Context, in *master_pb.CollectionDeleteRequest) (*master_pb.CollectionDeleteResponse, error) {
 	_, body, err := a.unary.CollectionDelete(CollectionDeleteReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -102,7 +100,7 @@ func (a *zapMasterClient) CollectionDelete(_ context.Context, in *master_pb.Coll
 	return CollectionDeleteRespFromWire(body)
 }
 
-func (a *zapMasterClient) VolumeList(_ context.Context, in *master_pb.VolumeListRequest, _ ...grpc.CallOption) (*master_pb.VolumeListResponse, error) {
+func (a *zapMasterClient) VolumeList(_ context.Context, in *master_pb.VolumeListRequest) (*master_pb.VolumeListResponse, error) {
 	_, body, err := a.unary.VolumeList(VolumeListReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -110,7 +108,7 @@ func (a *zapMasterClient) VolumeList(_ context.Context, in *master_pb.VolumeList
 	return VolumeListRespFromWire(body)
 }
 
-func (a *zapMasterClient) LookupEcVolume(_ context.Context, in *master_pb.LookupEcVolumeRequest, _ ...grpc.CallOption) (*master_pb.LookupEcVolumeResponse, error) {
+func (a *zapMasterClient) LookupEcVolume(_ context.Context, in *master_pb.LookupEcVolumeRequest) (*master_pb.LookupEcVolumeResponse, error) {
 	_, body, err := a.unary.LookupEcVolume(LookupEcVolumeReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -118,7 +116,7 @@ func (a *zapMasterClient) LookupEcVolume(_ context.Context, in *master_pb.Lookup
 	return LookupEcVolumeRespFromWire(body)
 }
 
-func (a *zapMasterClient) VacuumVolume(_ context.Context, in *master_pb.VacuumVolumeRequest, _ ...grpc.CallOption) (*master_pb.VacuumVolumeResponse, error) {
+func (a *zapMasterClient) VacuumVolume(_ context.Context, in *master_pb.VacuumVolumeRequest) (*master_pb.VacuumVolumeResponse, error) {
 	_, body, err := a.unary.VacuumVolume(VacuumVolumeReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -126,7 +124,7 @@ func (a *zapMasterClient) VacuumVolume(_ context.Context, in *master_pb.VacuumVo
 	return VacuumVolumeRespFromWire(body)
 }
 
-func (a *zapMasterClient) DisableVacuum(_ context.Context, in *master_pb.DisableVacuumRequest, _ ...grpc.CallOption) (*master_pb.DisableVacuumResponse, error) {
+func (a *zapMasterClient) DisableVacuum(_ context.Context, in *master_pb.DisableVacuumRequest) (*master_pb.DisableVacuumResponse, error) {
 	_, body, err := a.unary.DisableVacuum(DisableVacuumReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -134,7 +132,7 @@ func (a *zapMasterClient) DisableVacuum(_ context.Context, in *master_pb.Disable
 	return DisableVacuumRespFromWire(body)
 }
 
-func (a *zapMasterClient) EnableVacuum(_ context.Context, in *master_pb.EnableVacuumRequest, _ ...grpc.CallOption) (*master_pb.EnableVacuumResponse, error) {
+func (a *zapMasterClient) EnableVacuum(_ context.Context, in *master_pb.EnableVacuumRequest) (*master_pb.EnableVacuumResponse, error) {
 	_, body, err := a.unary.EnableVacuum(EnableVacuumReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -142,7 +140,7 @@ func (a *zapMasterClient) EnableVacuum(_ context.Context, in *master_pb.EnableVa
 	return EnableVacuumRespFromWire(body)
 }
 
-func (a *zapMasterClient) VolumeMarkReadonly(_ context.Context, in *master_pb.VolumeMarkReadonlyRequest, _ ...grpc.CallOption) (*master_pb.VolumeMarkReadonlyResponse, error) {
+func (a *zapMasterClient) VolumeMarkReadonly(_ context.Context, in *master_pb.VolumeMarkReadonlyRequest) (*master_pb.VolumeMarkReadonlyResponse, error) {
 	_, body, err := a.unary.VolumeMarkReadonly(VolumeMarkReadonlyReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -150,7 +148,7 @@ func (a *zapMasterClient) VolumeMarkReadonly(_ context.Context, in *master_pb.Vo
 	return VolumeMarkReadonlyRespFromWire(body)
 }
 
-func (a *zapMasterClient) GetMasterConfiguration(_ context.Context, in *master_pb.GetMasterConfigurationRequest, _ ...grpc.CallOption) (*master_pb.GetMasterConfigurationResponse, error) {
+func (a *zapMasterClient) GetMasterConfiguration(_ context.Context, in *master_pb.GetMasterConfigurationRequest) (*master_pb.GetMasterConfigurationResponse, error) {
 	_, body, err := a.unary.GetMasterConfiguration(GetMasterConfigurationReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -158,7 +156,7 @@ func (a *zapMasterClient) GetMasterConfiguration(_ context.Context, in *master_p
 	return GetMasterConfigurationRespFromWire(body)
 }
 
-func (a *zapMasterClient) ListClusterNodes(_ context.Context, in *master_pb.ListClusterNodesRequest, _ ...grpc.CallOption) (*master_pb.ListClusterNodesResponse, error) {
+func (a *zapMasterClient) ListClusterNodes(_ context.Context, in *master_pb.ListClusterNodesRequest) (*master_pb.ListClusterNodesResponse, error) {
 	_, body, err := a.unary.ListClusterNodes(ListClusterNodesReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -166,7 +164,7 @@ func (a *zapMasterClient) ListClusterNodes(_ context.Context, in *master_pb.List
 	return ListClusterNodesRespFromWire(body)
 }
 
-func (a *zapMasterClient) LeaseAdminToken(_ context.Context, in *master_pb.LeaseAdminTokenRequest, _ ...grpc.CallOption) (*master_pb.LeaseAdminTokenResponse, error) {
+func (a *zapMasterClient) LeaseAdminToken(_ context.Context, in *master_pb.LeaseAdminTokenRequest) (*master_pb.LeaseAdminTokenResponse, error) {
 	_, body, err := a.unary.LeaseAdminToken(LeaseAdminTokenReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -174,7 +172,7 @@ func (a *zapMasterClient) LeaseAdminToken(_ context.Context, in *master_pb.Lease
 	return LeaseAdminTokenRespFromWire(body)
 }
 
-func (a *zapMasterClient) ReleaseAdminToken(_ context.Context, in *master_pb.ReleaseAdminTokenRequest, _ ...grpc.CallOption) (*master_pb.ReleaseAdminTokenResponse, error) {
+func (a *zapMasterClient) ReleaseAdminToken(_ context.Context, in *master_pb.ReleaseAdminTokenRequest) (*master_pb.ReleaseAdminTokenResponse, error) {
 	_, body, err := a.unary.ReleaseAdminToken(ReleaseAdminTokenReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -182,7 +180,7 @@ func (a *zapMasterClient) ReleaseAdminToken(_ context.Context, in *master_pb.Rel
 	return ReleaseAdminTokenRespFromWire(body)
 }
 
-func (a *zapMasterClient) Ping(_ context.Context, in *master_pb.PingRequest, _ ...grpc.CallOption) (*master_pb.PingResponse, error) {
+func (a *zapMasterClient) Ping(_ context.Context, in *master_pb.PingRequest) (*master_pb.PingResponse, error) {
 	_, body, err := a.unary.Ping(PingReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -190,7 +188,7 @@ func (a *zapMasterClient) Ping(_ context.Context, in *master_pb.PingRequest, _ .
 	return PingRespFromWire(body)
 }
 
-func (a *zapMasterClient) RaftListClusterServers(_ context.Context, in *master_pb.RaftListClusterServersRequest, _ ...grpc.CallOption) (*master_pb.RaftListClusterServersResponse, error) {
+func (a *zapMasterClient) RaftListClusterServers(_ context.Context, in *master_pb.RaftListClusterServersRequest) (*master_pb.RaftListClusterServersResponse, error) {
 	_, body, err := a.unary.RaftListClusterServers(RaftListClusterServersReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -198,7 +196,7 @@ func (a *zapMasterClient) RaftListClusterServers(_ context.Context, in *master_p
 	return RaftListClusterServersRespFromWire(body)
 }
 
-func (a *zapMasterClient) RaftAddServer(_ context.Context, in *master_pb.RaftAddServerRequest, _ ...grpc.CallOption) (*master_pb.RaftAddServerResponse, error) {
+func (a *zapMasterClient) RaftAddServer(_ context.Context, in *master_pb.RaftAddServerRequest) (*master_pb.RaftAddServerResponse, error) {
 	_, body, err := a.unary.RaftAddServer(RaftAddServerReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -206,7 +204,7 @@ func (a *zapMasterClient) RaftAddServer(_ context.Context, in *master_pb.RaftAdd
 	return RaftAddServerRespFromWire(body)
 }
 
-func (a *zapMasterClient) RaftRemoveServer(_ context.Context, in *master_pb.RaftRemoveServerRequest, _ ...grpc.CallOption) (*master_pb.RaftRemoveServerResponse, error) {
+func (a *zapMasterClient) RaftRemoveServer(_ context.Context, in *master_pb.RaftRemoveServerRequest) (*master_pb.RaftRemoveServerResponse, error) {
 	_, body, err := a.unary.RaftRemoveServer(RaftRemoveServerReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -214,7 +212,7 @@ func (a *zapMasterClient) RaftRemoveServer(_ context.Context, in *master_pb.Raft
 	return RaftRemoveServerRespFromWire(body)
 }
 
-func (a *zapMasterClient) RaftLeadershipTransfer(_ context.Context, in *master_pb.RaftLeadershipTransferRequest, _ ...grpc.CallOption) (*master_pb.RaftLeadershipTransferResponse, error) {
+func (a *zapMasterClient) RaftLeadershipTransfer(_ context.Context, in *master_pb.RaftLeadershipTransferRequest) (*master_pb.RaftLeadershipTransferResponse, error) {
 	_, body, err := a.unary.RaftLeadershipTransfer(RaftLeadershipTransferReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -222,7 +220,7 @@ func (a *zapMasterClient) RaftLeadershipTransfer(_ context.Context, in *master_p
 	return RaftLeadershipTransferRespFromWire(body)
 }
 
-func (a *zapMasterClient) VolumeGrow(_ context.Context, in *master_pb.VolumeGrowRequest, _ ...grpc.CallOption) (*master_pb.VolumeGrowResponse, error) {
+func (a *zapMasterClient) VolumeGrow(_ context.Context, in *master_pb.VolumeGrowRequest) (*master_pb.VolumeGrowResponse, error) {
 	_, body, err := a.unary.VolumeGrow(VolumeGrowReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -232,7 +230,7 @@ func (a *zapMasterClient) VolumeGrow(_ context.Context, in *master_pb.VolumeGrow
 
 // --- streaming RPCs --------------------------------------------------------
 
-func (a *zapMasterClient) SendHeartbeat(_ context.Context, _ ...grpc.CallOption) (grpc.BidiStreamingClient[master_pb.Heartbeat, master_pb.HeartbeatResponse], error) {
+func (a *zapMasterClient) SendHeartbeat(_ context.Context) (rpc.BidiStream[master_pb.Heartbeat, master_pb.HeartbeatResponse], error) {
 	// The bidi stream carries Heartbeat frames via Send; open it with an empty
 	// Heartbeat opener frame so the server has a parseable opener.
 	s, err := a.stream.SendHeartbeat(masterwire.NewHeartbeat(masterwire.HeartbeatInput{}))
@@ -242,7 +240,7 @@ func (a *zapMasterClient) SendHeartbeat(_ context.Context, _ ...grpc.CallOption)
 	return &zapHeartbeatClientStream{s: s}, nil
 }
 
-func (a *zapMasterClient) KeepConnected(_ context.Context, _ ...grpc.CallOption) (grpc.BidiStreamingClient[master_pb.KeepConnectedRequest, master_pb.KeepConnectedResponse], error) {
+func (a *zapMasterClient) KeepConnected(_ context.Context) (rpc.BidiStream[master_pb.KeepConnectedRequest, master_pb.KeepConnectedResponse], error) {
 	s, err := a.stream.KeepConnected(masterwire.NewKeepConnectedRequest(masterwire.KeepConnectedRequestInput{}))
 	if err != nil {
 		return nil, err
@@ -250,7 +248,7 @@ func (a *zapMasterClient) KeepConnected(_ context.Context, _ ...grpc.CallOption)
 	return &zapKeepConnectedClientStream{s: s}, nil
 }
 
-func (a *zapMasterClient) StreamAssign(_ context.Context, _ ...grpc.CallOption) (grpc.BidiStreamingClient[master_pb.AssignRequest, master_pb.AssignResponse], error) {
+func (a *zapMasterClient) StreamAssign(_ context.Context) (rpc.BidiStream[master_pb.AssignRequest, master_pb.AssignResponse], error) {
 	s, err := a.stream.StreamAssign(masterwire.NewAssignRequest(masterwire.AssignRequestInput{}))
 	if err != nil {
 		return nil, err
@@ -258,25 +256,15 @@ func (a *zapMasterClient) StreamAssign(_ context.Context, _ ...grpc.CallOption) 
 	return &zapAssignClientStream{s: s}, nil
 }
 
-// --- grpc.ClientStream stub shared by every adapter stream -----------------
-
-// zapClientStreamStub satisfies the non-Recv/Send half of grpc.ClientStream. The
-// consumers only ever call Recv()/Send()/CloseSend(); the remaining methods
-// exist solely to satisfy the interface.
-type zapClientStreamStub struct{}
-
-func (zapClientStreamStub) Header() (metadata.MD, error) { return nil, nil }
-func (zapClientStreamStub) Trailer() metadata.MD         { return nil }
-func (zapClientStreamStub) Context() context.Context     { return context.Background() }
-func (zapClientStreamStub) SendMsg(any) error            { return nil }
-func (zapClientStreamStub) RecvMsg(any) error            { return nil }
+// The three adapter streams below satisfy rpc.BidiStream[Req, Resp]
+// (Send/Recv/CloseSend) — exactly the methods the master callers use. No grpc
+// ClientStream plumbing (Header/Trailer/Context/SendMsg/RecvMsg) is needed.
 
 // zapHeartbeatClientStream adapts a masterstream SendHeartbeat stream to
-// grpc.BidiStreamingClient[Heartbeat, HeartbeatResponse]. The stream is opened
-// with an empty Heartbeat frame; each Send ships a real Heartbeat as a data
-// frame and each Recv decodes a HeartbeatResponse.
+// rpc.BidiStream[Heartbeat, HeartbeatResponse]. The stream is opened with an
+// empty Heartbeat frame; each Send ships a real Heartbeat as a data frame and
+// each Recv decodes a HeartbeatResponse.
 type zapHeartbeatClientStream struct {
-	zapClientStreamStub
 	s *masterstream.ClientHeartbeatStream
 }
 
@@ -294,7 +282,6 @@ func (x *zapHeartbeatClientStream) CloseSend() error { return x.s.CloseSend() }
 
 // zapKeepConnectedClientStream adapts a masterstream KeepConnected stream.
 type zapKeepConnectedClientStream struct {
-	zapClientStreamStub
 	s *masterstream.ClientKeepConnectedStream
 }
 
@@ -312,7 +299,6 @@ func (x *zapKeepConnectedClientStream) CloseSend() error { return x.s.CloseSend(
 
 // zapAssignClientStream adapts a masterstream StreamAssign stream.
 type zapAssignClientStream struct {
-	zapClientStreamStub
 	s *masterstream.ClientAssignStream
 }
 
