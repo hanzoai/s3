@@ -48,33 +48,31 @@ func NewFilerDiscoveryService(masters []pb.ServerAddress, grpcDialOption grpc.Di
 
 // discoverFilersFromMaster discovers filers from a single master
 func (fds *FilerDiscoveryService) discoverFilersFromMaster(masterAddr pb.ServerAddress) ([]pb.ServerAddress, error) {
-	// Convert HTTP master address to gRPC address (HTTP port + 10000)
-	grpcAddr := masterAddr.ToGrpcAddress()
+	// The master service is served over the native ZAP transport;
+	// pb.WithMasterClient dials it (ToMasterZapAddress) and runs fn with a
+	// master_pb.HanzoClient backed by that connection.
+	var filers []pb.ServerAddress
+	err := pb.WithMasterClient(context.Background(), false, masterAddr, fds.grpcDialOption, false, func(client master_pb.HanzoClient) error {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 
-	conn, err := pb.GrpcDial(context.Background(), grpcAddr, false, fds.grpcDialOption)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to master at %s: %v", grpcAddr, err)
-	}
-	defer conn.Close()
+		resp, err := client.ListClusterNodes(ctx, &master_pb.ListClusterNodesRequest{
+			ClientType: cluster.FilerType,
+		})
+		if err != nil {
+			glog.Errorf("FILER DISCOVERY: ListClusterNodes failed for master %s: %v", masterAddr, err)
+			return fmt.Errorf("failed to list filers from master %s: %v", masterAddr, err)
+		}
 
-	client := master_pb.NewHanzoClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	resp, err := client.ListClusterNodes(ctx, &master_pb.ListClusterNodesRequest{
-		ClientType: cluster.FilerType,
+		for _, node := range resp.ClusterNodes {
+			// Return HTTP address (lock client will convert to gRPC when needed)
+			filers = append(filers, pb.ServerAddress(node.Address))
+		}
+		return nil
 	})
 	if err != nil {
-		glog.Errorf("FILER DISCOVERY: ListClusterNodes failed for master %s: %v", masterAddr, err)
-		return nil, fmt.Errorf("failed to list filers from master %s: %v", masterAddr, err)
+		return nil, err
 	}
-
-	var filers []pb.ServerAddress
-	for _, node := range resp.ClusterNodes {
-		// Return HTTP address (lock client will convert to gRPC when needed)
-		filers = append(filers, pb.ServerAddress(node.Address))
-	}
-
 	return filers, nil
 }
 

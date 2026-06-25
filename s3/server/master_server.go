@@ -33,10 +33,10 @@ import (
 	"github.com/hanzoai/s3/s3/shell"
 	"github.com/hanzoai/s3/s3/topology"
 	"github.com/hanzoai/s3/s3/util"
-	masterwire "github.com/hanzoai/s3/s3/wire/master"
 	util_http "github.com/hanzoai/s3/s3/util/http"
 	"github.com/hanzoai/s3/s3/util/version"
 	"github.com/hanzoai/s3/s3/wdclient"
+	masterwire "github.com/hanzoai/s3/s3/wire/master"
 )
 
 const (
@@ -527,10 +527,11 @@ func (ms *MasterServer) OnPeerUpdate(update *master_pb.ClusterNodeUpdate, startF
 				hashicorpRaft.ServerAddress(peerAddress.ToGrpcAddress()), 0, 0)
 		}
 	} else {
-		// Liveness probe of the departing peer over the native ZAP transport
-		// (Ping is bridged — see masterZapBridge.Ping). The raft membership
-		// removal below stays on the gRPC master client: RaftRemoveServer is part
-		// of the consensus path and is migrated separately.
+		// Liveness probe of the departing peer over the native ZAP transport: the
+		// whole master service is served over ZAP (see masterzap.NewServerBackend),
+		// so dial the master ZAP endpoint directly. The raft membership removal
+		// below stays on the gRPC raft client: it is part of the consensus path and
+		// is migrated separately.
 		pingFailed := false
 		if zapClient, dialErr := masterwire.Dial("tcp", peerAddress.ToMasterZapAddress()); dialErr != nil {
 			pingFailed = true

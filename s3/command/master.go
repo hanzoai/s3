@@ -29,13 +29,15 @@ import (
 	"github.com/hanzoai/s3/s3/util/grace"
 
 	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/masterzap"
 	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/security"
 	s3server "github.com/hanzoai/s3/s3/server"
 	"github.com/hanzoai/s3/s3/storage/backend"
 	"github.com/hanzoai/s3/s3/util"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
+	masterstream "github.com/hanzoai/s3/s3/wire/master/masterstream"
+	"github.com/zap-proto/go/transport"
 )
 
 var (
@@ -258,31 +260,42 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	if err != nil {
 		glog.Fatalf("master failed to listen on grpc port %d: %v", grpcPort, err)
 	}
+	// grpcS now serves ONLY raft (the consensus service) + reflection. The Hanzo
+	// master service (master_pb.HanzoServer) no longer rides gRPC at all — it is
+	// served entirely over the native ZAP transport below. Raft migration off
+	// gRPC is a separate consensus effort; it keeps this grpc.Server until then.
 	grpcS := pb.NewGrpcServer(security.LoadServerTLS(util.GetViper(), "grpc.master"))
-	master_pb.RegisterHanzoServer(grpcS, ms)
 	if *masterOption.raftHashicorp {
 		raftServer.TransportManager.Register(grpcS)
 	} else {
 		protobuf.RegisterRaftServer(grpcS, raftServer)
 	}
 	reflection.Register(grpcS)
-	glog.V(0).Infof("Start Hanzo S3 Master %s grpc server at %s:%d", version.Version(), *masterOption.ipBind, grpcPort)
+	glog.V(0).Infof("Start Hanzo S3 Master %s raft grpc server at %s:%d", version.Version(), *masterOption.ipBind, grpcPort)
 	if grpcLocalL != nil {
 		go grpcS.Serve(grpcLocalL)
 	}
 	go grpcS.Serve(grpcL)
 	pb.ServeGrpcOnLocalSocket(grpcS, grpcPort)
 
-	// Native ZAP transport for the master's unary RPCs, on the deterministic
-	// grpcPort+10000 offset (same convention as ToIamZapAddress). The legacy
-	// gRPC listener above still serves raft + the streaming RPCs during the
-	// strangler. Non-fatal: a ZAP bind failure must never take down the master.
-	zapAddr := util.JoinHostPort(*masterOption.ipBind, grpcPort+10000)
-	if zapServer, zapErr := masterwire.Serve("tcp", zapAddr, s3server.NewMasterZapBackend(ms)); zapErr != nil {
-		glog.Warningf("master ZAP transport failed to listen on %s: %v", zapAddr, zapErr)
+	// Serve the WHOLE Hanzo master service (21 unary + 3 streaming RPCs) over the
+	// native ZAP transport on the deterministic grpcPort+10000 offset
+	// (ServerAddress.ToMasterZapAddress, same convention as ToIamZapAddress).
+	// transport.ListenStream carries both the unary dispatch (masterwire.Dispatch
+	// over masterzap.NewServerBackend) and the bidirectional streams
+	// (masterstream.Handler over masterzap.NewStreamServer) on one listener —
+	// exactly as command/filer.go serves the filer. Clients reach it via
+	// pb.WithMasterClient over the masterPool. This replaces the legacy gRPC
+	// HanzoServer registration: no master RPC rides gRPC anymore. Fatal on bind
+	// error: the master cannot serve its API without it.
+	masterZapAddr := util.JoinHostPort(*masterOption.ipBind, grpcPort+10000)
+	masterDispatch := masterwire.Dispatch(masterzap.NewServerBackend(ms))
+	masterStream := masterstream.Handler(masterzap.NewStreamServer(ms))
+	if masterZapSrv, zapErr := transport.ListenStream("tcp", masterZapAddr, masterDispatch, masterStream); zapErr != nil {
+		glog.Fatalf("master failed to serve over ZAP on %s: %v", masterZapAddr, zapErr)
 	} else {
-		glog.V(0).Infof("Start Hanzo S3 Master %s ZAP transport at %s", version.Version(), zapAddr)
-		grace.OnInterrupt(func() { zapServer.Close() })
+		glog.V(0).Infof("Start Hanzo S3 Master %s ZAP transport (unary+streaming) at %s", version.Version(), masterZapAddr)
+		grace.OnInterrupt(func() { masterZapSrv.Close() })
 	}
 
 	// For multi-master mode with non-Hashicorp raft, wait and check if we should join
