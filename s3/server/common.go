@@ -18,8 +18,6 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc/metadata"
-
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/util/request_id"
@@ -414,14 +412,14 @@ func ProcessRangeRequest(r *http.Request, w http.ResponseWriter, totalSize int64
 	return nil
 }
 
+// requestIDMiddleware ensures every request carries a server-generated
+// x-amz-request-id, stored in the request context (request_id.Set) and echoed on
+// the response header. Downstream RPCs ride the native ZAP transport and read the
+// id from the context via request_id.Get — there is no gRPC outgoing-metadata
+// hop anymore, so request_id.Middleware (which Ensures the id in the context) is
+// the whole job.
 func requestIDMiddleware(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		request_id.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := metadata.NewOutgoingContext(r.Context(),
-				metadata.New(map[string]string{
-					request_id.AmzRequestIDHeader: request_id.Get(r.Context()),
-				}))
-			h(w, r.WithContext(ctx))
-		})).ServeHTTP(w, r)
+		request_id.Middleware(h).ServeHTTP(w, r)
 	}
 }
