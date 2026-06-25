@@ -11,6 +11,8 @@
 package zapsvc
 
 import (
+	"crypto/tls"
+
 	objectwire "github.com/hanzoai/s3/s3/wire/object"
 	"github.com/zap-proto/go/transport"
 )
@@ -62,8 +64,17 @@ func Dispatch(store ObjectStore) transport.Dispatch {
 	}
 }
 
-// Serve starts the native ZAP S3 service on network/addr (e.g. "tcp",
-// ":18901"), backed by store. Returns the running server; Close stops it.
+// ServeTLS starts the native ZAP S3 service over PQ-secured TLS — the default
+// for the production mesh. conf must carry the service certificate (from KMS);
+// it is wrapped with transport.PQTLSConfig so the X25519MLKEM768 hybrid (PQ
+// X-Wing) is REQUIRED — a classical-only peer fails the handshake, no downgrade.
+func ServeTLS(network, addr string, store ObjectStore, conf *tls.Config) (*transport.Server, error) {
+	return transport.ListenTLS(network, addr, transport.PQTLSConfig(conf), Dispatch(store))
+}
+
+// Serve starts the native ZAP S3 service over plaintext on network/addr (e.g.
+// "tcp", ":18901"), backed by store. This is the loopback/test path — the
+// production mesh uses ServeTLS (PQ X-Wing). Returns the running server.
 func Serve(network, addr string, store ObjectStore) (*transport.Server, error) {
 	return transport.Listen(network, addr, Dispatch(store))
 }
@@ -75,8 +86,20 @@ type Client struct {
 	rpc  *objectwire.HanzoS3ObjectClient
 }
 
-// Dial connects to the S3 ZAP service at addr (e.g. "s3.hanzo.svc:18901") over
-// plain TCP. For the PQ-secured mesh use DialTLS with transport.PQTLSConfig.
+// DialTLS connects to the S3 ZAP service at addr (e.g. "s3.hanzo.svc:18901")
+// over PQ-secured TLS — the default for the production mesh. conf carries the
+// client trust (RootCAs from KMS); it is wrapped with transport.PQTLSConfig so
+// the session key rides X25519MLKEM768 (PQ X-Wing) or the handshake fails.
+func DialTLS(network, addr string, conf *tls.Config) (*Client, error) {
+	conn, err := transport.DialTLS(network, addr, transport.PQTLSConfig(conf))
+	if err != nil {
+		return nil, err
+	}
+	return &Client{conn: conn, rpc: objectwire.NewHanzoS3ObjectClient(conn, nil)}, nil
+}
+
+// Dial connects to the S3 ZAP service over plaintext TCP — the loopback/test
+// path. The production mesh uses DialTLS (PQ X-Wing).
 func Dial(network, addr string) (*Client, error) {
 	conn, err := transport.Dial(network, addr)
 	if err != nil {
