@@ -47,6 +47,9 @@ func NewFilerDiscoveryService(masters []pb.ServerAddress, grpcDialOption pb.Dial
 
 // discoverFilersFromMaster discovers filers from a single master
 func (fds *FilerDiscoveryService) discoverFilersFromMaster(masterAddr pb.ServerAddress) ([]pb.ServerAddress, error) {
+	// The master service is served over the native ZAP transport;
+	// pb.WithMasterClient dials it (ToMasterZapAddress) and runs fn with a
+	// master_pb.HanzoClient backed by that connection.
 	var filers []pb.ServerAddress
 	err := pb.WithMasterClient(context.Background(), false, masterAddr, fds.grpcDialOption, false, func(client master_pb.HanzoClient) error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -69,7 +72,6 @@ func (fds *FilerDiscoveryService) discoverFilersFromMaster(masterAddr pb.ServerA
 	if err != nil {
 		return nil, err
 	}
-
 	return filers, nil
 }
 

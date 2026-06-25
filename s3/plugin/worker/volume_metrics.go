@@ -61,46 +61,62 @@ func CollectVolumeMetricsFromMasters(
 // fall back to even spread rather than failing detection.
 func FetchDefaultReplicaPlacement(ctx context.Context, masterAddresses []string, grpcDialOption pb.DialOption) string {
 	for _, address := range masterAddresses {
-		if ctx.Err() != nil {
-			return ""
-		}
-		var replication string
-		callErr := pb.WithMasterClient(ctx, false, pb.ServerAddress(address), grpcDialOption, false, func(client master_pb.HanzoClient) error {
-			callCtx, cancelCall := context.WithTimeout(ctx, 10*time.Second)
-			defer cancelCall()
-			resp, err := client.GetMasterConfiguration(callCtx, &master_pb.GetMasterConfigurationRequest{})
-			if err != nil {
-				return err
+		for _, candidate := range MasterAddressCandidates(address) {
+			if ctx.Err() != nil {
+				return ""
 			}
-			replication = resp.DefaultReplication
-			return nil
-		})
-		if callErr == nil {
-			return replication
+			// The master service is served over the native ZAP transport;
+			// WithMasterClient dials it (ToMasterZapAddress) over the masterPool.
+			var replication string
+			callErr := pb.WithMasterClient(ctx, false, pb.ServerAddress(candidate), grpcDialOption, false, func(client master_pb.HanzoClient) error {
+				callCtx, cancelCall := context.WithTimeout(ctx, 10*time.Second)
+				defer cancelCall()
+				resp, err := client.GetMasterConfiguration(callCtx, &master_pb.GetMasterConfigurationRequest{})
+				if err != nil {
+					return err
+				}
+				replication = resp.DefaultReplication
+				return nil
+			})
+			if callErr == nil {
+				return replication
+			}
 		}
 	}
 	return ""
 }
 
 func FetchVolumeList(ctx context.Context, address string, grpcDialOption pb.DialOption) (*master_pb.VolumeListResponse, error) {
-	if ctx.Err() != nil {
-		return nil, ctx.Err()
-	}
-	var response *master_pb.VolumeListResponse
-	err := pb.WithMasterClient(ctx, false, pb.ServerAddress(address), grpcDialOption, false, func(client master_pb.HanzoClient) error {
-		callCtx, cancelCall := context.WithTimeout(ctx, 10*time.Second)
-		defer cancelCall()
-		resp, callErr := client.VolumeList(callCtx, &master_pb.VolumeListRequest{})
-		if callErr != nil {
-			return callErr
+	var lastErr error
+	for _, candidate := range MasterAddressCandidates(address) {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
 		}
-		response = resp
-		return nil
-	})
-	if err != nil {
-		return nil, err
+
+		// The master service is served over the native ZAP transport;
+		// WithMasterClient dials it (ToMasterZapAddress) over the masterPool.
+		var response *master_pb.VolumeListResponse
+		callErr := pb.WithMasterClient(ctx, false, pb.ServerAddress(candidate), grpcDialOption, false, func(client master_pb.HanzoClient) error {
+			callCtx, cancelCall := context.WithTimeout(ctx, 10*time.Second)
+			defer cancelCall()
+			resp, err := client.VolumeList(callCtx, &master_pb.VolumeListRequest{})
+			if err != nil {
+				return err
+			}
+			response = resp
+			return nil
+		})
+
+		if callErr == nil {
+			return response, nil
+		}
+		lastErr = callErr
 	}
-	return response, nil
+
+	if lastErr == nil {
+		lastErr = fmt.Errorf("no valid master address candidate")
+	}
+	return nil, lastErr
 }
 
 func buildVolumeMetrics(

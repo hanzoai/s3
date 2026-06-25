@@ -3,6 +3,7 @@
 package volume_serverwire
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/zap-proto/go/rpc"
@@ -64,6 +65,9 @@ const (
 // VolumeServerChannel ships one Call envelope and awaits its correlated Response.
 type VolumeServerChannel interface {
 	Call(envelope []byte) (rpc.Response, error)
+	// CallContext is Call that also aborts when ctx is done (transport.Conn
+	// satisfies both).
+	CallContext(ctx context.Context, envelope []byte) (rpc.Response, error)
 }
 
 // VolumeServerClient is a typed RPC client for the VolumeServer service over a
@@ -82,20 +86,20 @@ func NewVolumeServerClient(ch VolumeServerChannel, capability []byte) *VolumeSer
 	return &VolumeServerClient{ch: ch, cap: capability, sess: rpc.NewSession()}
 }
 
-func (c *VolumeServerClient) BatchDelete(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeBatchDelete(rpc.NoTarget, req)
+func (c *VolumeServerClient) BatchDelete(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeBatchDelete(ctx, rpc.NoTarget, req)
 }
 
 // BatchDeleteOn issues BatchDelete as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) BatchDeleteOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeBatchDelete(on.ID, nil)
+func (c *VolumeServerClient) BatchDeleteOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeBatchDelete(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeBatchDelete(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeBatchDelete(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerBatchDeleteOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -116,20 +120,20 @@ func (c *VolumeServerClient) invokeBatchDelete(target uint32, payload []byte) (r
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VacuumVolumeCheck(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVacuumVolumeCheck(rpc.NoTarget, req)
+func (c *VolumeServerClient) VacuumVolumeCheck(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVacuumVolumeCheck(ctx, rpc.NoTarget, req)
 }
 
 // VacuumVolumeCheckOn issues VacuumVolumeCheck as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VacuumVolumeCheckOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVacuumVolumeCheck(on.ID, nil)
+func (c *VolumeServerClient) VacuumVolumeCheckOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVacuumVolumeCheck(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVacuumVolumeCheck(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVacuumVolumeCheck(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVacuumVolumeCheckOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -153,20 +157,20 @@ func (c *VolumeServerClient) invokeVacuumVolumeCheck(target uint32, payload []by
 // STREAMING: VacuumVolumeCompact is a server-streaming RPC (VolumeServer.VacuumVolumeCompact); its body lands
 // when the transport streaming primitive ships. The per-message response schema
 // is emitted; this stub issues the unary request envelope.
-func (c *VolumeServerClient) VacuumVolumeCompact(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVacuumVolumeCompact(rpc.NoTarget, req)
+func (c *VolumeServerClient) VacuumVolumeCompact(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVacuumVolumeCompact(ctx, rpc.NoTarget, req)
 }
 
 // VacuumVolumeCompactOn issues VacuumVolumeCompact as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VacuumVolumeCompactOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVacuumVolumeCompact(on.ID, nil)
+func (c *VolumeServerClient) VacuumVolumeCompactOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVacuumVolumeCompact(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVacuumVolumeCompact(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVacuumVolumeCompact(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVacuumVolumeCompactOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -187,20 +191,20 @@ func (c *VolumeServerClient) invokeVacuumVolumeCompact(target uint32, payload []
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VacuumVolumeCommit(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVacuumVolumeCommit(rpc.NoTarget, req)
+func (c *VolumeServerClient) VacuumVolumeCommit(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVacuumVolumeCommit(ctx, rpc.NoTarget, req)
 }
 
 // VacuumVolumeCommitOn issues VacuumVolumeCommit as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VacuumVolumeCommitOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVacuumVolumeCommit(on.ID, nil)
+func (c *VolumeServerClient) VacuumVolumeCommitOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVacuumVolumeCommit(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVacuumVolumeCommit(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVacuumVolumeCommit(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVacuumVolumeCommitOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -221,20 +225,20 @@ func (c *VolumeServerClient) invokeVacuumVolumeCommit(target uint32, payload []b
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VacuumVolumeCleanup(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVacuumVolumeCleanup(rpc.NoTarget, req)
+func (c *VolumeServerClient) VacuumVolumeCleanup(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVacuumVolumeCleanup(ctx, rpc.NoTarget, req)
 }
 
 // VacuumVolumeCleanupOn issues VacuumVolumeCleanup as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VacuumVolumeCleanupOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVacuumVolumeCleanup(on.ID, nil)
+func (c *VolumeServerClient) VacuumVolumeCleanupOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVacuumVolumeCleanup(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVacuumVolumeCleanup(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVacuumVolumeCleanup(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVacuumVolumeCleanupOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -255,20 +259,20 @@ func (c *VolumeServerClient) invokeVacuumVolumeCleanup(target uint32, payload []
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) DeleteCollection(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeDeleteCollection(rpc.NoTarget, req)
+func (c *VolumeServerClient) DeleteCollection(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeDeleteCollection(ctx, rpc.NoTarget, req)
 }
 
 // DeleteCollectionOn issues DeleteCollection as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) DeleteCollectionOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeDeleteCollection(on.ID, nil)
+func (c *VolumeServerClient) DeleteCollectionOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeDeleteCollection(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeDeleteCollection(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeDeleteCollection(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerDeleteCollectionOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -289,20 +293,20 @@ func (c *VolumeServerClient) invokeDeleteCollection(target uint32, payload []byt
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) AllocateVolume(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeAllocateVolume(rpc.NoTarget, req)
+func (c *VolumeServerClient) AllocateVolume(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeAllocateVolume(ctx, rpc.NoTarget, req)
 }
 
 // AllocateVolumeOn issues AllocateVolume as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) AllocateVolumeOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeAllocateVolume(on.ID, nil)
+func (c *VolumeServerClient) AllocateVolumeOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeAllocateVolume(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeAllocateVolume(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeAllocateVolume(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerAllocateVolumeOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -323,20 +327,20 @@ func (c *VolumeServerClient) invokeAllocateVolume(target uint32, payload []byte)
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeSyncStatus(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeSyncStatus(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeSyncStatus(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeSyncStatus(ctx, rpc.NoTarget, req)
 }
 
 // VolumeSyncStatusOn issues VolumeSyncStatus as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeSyncStatusOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeSyncStatus(on.ID, nil)
+func (c *VolumeServerClient) VolumeSyncStatusOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeSyncStatus(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeSyncStatus(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeSyncStatus(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeSyncStatusOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -360,20 +364,20 @@ func (c *VolumeServerClient) invokeVolumeSyncStatus(target uint32, payload []byt
 // STREAMING: VolumeIncrementalCopy is a server-streaming RPC (VolumeServer.VolumeIncrementalCopy); its body lands
 // when the transport streaming primitive ships. The per-message response schema
 // is emitted; this stub issues the unary request envelope.
-func (c *VolumeServerClient) VolumeIncrementalCopy(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeIncrementalCopy(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeIncrementalCopy(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeIncrementalCopy(ctx, rpc.NoTarget, req)
 }
 
 // VolumeIncrementalCopyOn issues VolumeIncrementalCopy as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeIncrementalCopyOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeIncrementalCopy(on.ID, nil)
+func (c *VolumeServerClient) VolumeIncrementalCopyOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeIncrementalCopy(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeIncrementalCopy(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeIncrementalCopy(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeIncrementalCopyOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -394,20 +398,20 @@ func (c *VolumeServerClient) invokeVolumeIncrementalCopy(target uint32, payload 
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeMount(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeMount(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeMount(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeMount(ctx, rpc.NoTarget, req)
 }
 
 // VolumeMountOn issues VolumeMount as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeMountOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeMount(on.ID, nil)
+func (c *VolumeServerClient) VolumeMountOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeMount(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeMount(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeMount(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeMountOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -428,20 +432,20 @@ func (c *VolumeServerClient) invokeVolumeMount(target uint32, payload []byte) (r
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeUnmount(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeUnmount(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeUnmount(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeUnmount(ctx, rpc.NoTarget, req)
 }
 
 // VolumeUnmountOn issues VolumeUnmount as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeUnmountOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeUnmount(on.ID, nil)
+func (c *VolumeServerClient) VolumeUnmountOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeUnmount(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeUnmount(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeUnmount(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeUnmountOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -462,20 +466,20 @@ func (c *VolumeServerClient) invokeVolumeUnmount(target uint32, payload []byte) 
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeDelete(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeDelete(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeDelete(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeDelete(ctx, rpc.NoTarget, req)
 }
 
 // VolumeDeleteOn issues VolumeDelete as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeDeleteOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeDelete(on.ID, nil)
+func (c *VolumeServerClient) VolumeDeleteOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeDelete(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeDelete(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeDelete(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeDeleteOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -496,20 +500,20 @@ func (c *VolumeServerClient) invokeVolumeDelete(target uint32, payload []byte) (
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeMarkReadonly(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeMarkReadonly(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeMarkReadonly(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeMarkReadonly(ctx, rpc.NoTarget, req)
 }
 
 // VolumeMarkReadonlyOn issues VolumeMarkReadonly as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeMarkReadonlyOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeMarkReadonly(on.ID, nil)
+func (c *VolumeServerClient) VolumeMarkReadonlyOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeMarkReadonly(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeMarkReadonly(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeMarkReadonly(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeMarkReadonlyOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -530,20 +534,20 @@ func (c *VolumeServerClient) invokeVolumeMarkReadonly(target uint32, payload []b
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeMarkWritable(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeMarkWritable(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeMarkWritable(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeMarkWritable(ctx, rpc.NoTarget, req)
 }
 
 // VolumeMarkWritableOn issues VolumeMarkWritable as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeMarkWritableOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeMarkWritable(on.ID, nil)
+func (c *VolumeServerClient) VolumeMarkWritableOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeMarkWritable(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeMarkWritable(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeMarkWritable(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeMarkWritableOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -564,20 +568,20 @@ func (c *VolumeServerClient) invokeVolumeMarkWritable(target uint32, payload []b
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeConfigure(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeConfigure(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeConfigure(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeConfigure(ctx, rpc.NoTarget, req)
 }
 
 // VolumeConfigureOn issues VolumeConfigure as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeConfigureOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeConfigure(on.ID, nil)
+func (c *VolumeServerClient) VolumeConfigureOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeConfigure(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeConfigure(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeConfigure(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeConfigureOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -598,20 +602,20 @@ func (c *VolumeServerClient) invokeVolumeConfigure(target uint32, payload []byte
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeStatus(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeStatus(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeStatus(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeStatus(ctx, rpc.NoTarget, req)
 }
 
 // VolumeStatusOn issues VolumeStatus as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeStatusOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeStatus(on.ID, nil)
+func (c *VolumeServerClient) VolumeStatusOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeStatus(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeStatus(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeStatus(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeStatusOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -632,20 +636,20 @@ func (c *VolumeServerClient) invokeVolumeStatus(target uint32, payload []byte) (
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) GetState(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeGetState(rpc.NoTarget, req)
+func (c *VolumeServerClient) GetState(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeGetState(ctx, rpc.NoTarget, req)
 }
 
 // GetStateOn issues GetState as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) GetStateOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeGetState(on.ID, nil)
+func (c *VolumeServerClient) GetStateOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeGetState(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeGetState(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeGetState(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerGetStateOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -666,20 +670,20 @@ func (c *VolumeServerClient) invokeGetState(target uint32, payload []byte) (rpc.
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) SetState(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeSetState(rpc.NoTarget, req)
+func (c *VolumeServerClient) SetState(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeSetState(ctx, rpc.NoTarget, req)
 }
 
 // SetStateOn issues SetState as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) SetStateOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeSetState(on.ID, nil)
+func (c *VolumeServerClient) SetStateOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeSetState(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeSetState(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeSetState(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerSetStateOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -703,20 +707,20 @@ func (c *VolumeServerClient) invokeSetState(target uint32, payload []byte) (rpc.
 // STREAMING: VolumeCopy is a server-streaming RPC (VolumeServer.VolumeCopy); its body lands
 // when the transport streaming primitive ships. The per-message response schema
 // is emitted; this stub issues the unary request envelope.
-func (c *VolumeServerClient) VolumeCopy(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeCopy(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeCopy(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeCopy(ctx, rpc.NoTarget, req)
 }
 
 // VolumeCopyOn issues VolumeCopy as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeCopyOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeCopy(on.ID, nil)
+func (c *VolumeServerClient) VolumeCopyOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeCopy(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeCopy(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeCopy(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeCopyOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -737,20 +741,20 @@ func (c *VolumeServerClient) invokeVolumeCopy(target uint32, payload []byte) (rp
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) ReadVolumeFileStatus(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeReadVolumeFileStatus(rpc.NoTarget, req)
+func (c *VolumeServerClient) ReadVolumeFileStatus(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeReadVolumeFileStatus(ctx, rpc.NoTarget, req)
 }
 
 // ReadVolumeFileStatusOn issues ReadVolumeFileStatus as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) ReadVolumeFileStatusOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeReadVolumeFileStatus(on.ID, nil)
+func (c *VolumeServerClient) ReadVolumeFileStatusOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeReadVolumeFileStatus(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeReadVolumeFileStatus(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeReadVolumeFileStatus(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerReadVolumeFileStatusOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -774,20 +778,20 @@ func (c *VolumeServerClient) invokeReadVolumeFileStatus(target uint32, payload [
 // STREAMING: CopyFile is a server-streaming RPC (VolumeServer.CopyFile); its body lands
 // when the transport streaming primitive ships. The per-message response schema
 // is emitted; this stub issues the unary request envelope.
-func (c *VolumeServerClient) CopyFile(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeCopyFile(rpc.NoTarget, req)
+func (c *VolumeServerClient) CopyFile(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeCopyFile(ctx, rpc.NoTarget, req)
 }
 
 // CopyFileOn issues CopyFile as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) CopyFileOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeCopyFile(on.ID, nil)
+func (c *VolumeServerClient) CopyFileOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeCopyFile(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeCopyFile(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeCopyFile(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerCopyFileOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -811,20 +815,20 @@ func (c *VolumeServerClient) invokeCopyFile(target uint32, payload []byte) (rpc.
 // STREAMING: ReceiveFile is a client-streaming RPC (VolumeServer.ReceiveFile); its body lands
 // when the transport streaming primitive ships. The request element schema is
 // emitted (ReceiveFileRequest) and the unary response is returned here.
-func (c *VolumeServerClient) ReceiveFile(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeReceiveFile(rpc.NoTarget, req)
+func (c *VolumeServerClient) ReceiveFile(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeReceiveFile(ctx, rpc.NoTarget, req)
 }
 
 // ReceiveFileOn issues ReceiveFile as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) ReceiveFileOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeReceiveFile(on.ID, nil)
+func (c *VolumeServerClient) ReceiveFileOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeReceiveFile(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeReceiveFile(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeReceiveFile(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerReceiveFileOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -845,20 +849,20 @@ func (c *VolumeServerClient) invokeReceiveFile(target uint32, payload []byte) (r
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) ReadNeedleBlob(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeReadNeedleBlob(rpc.NoTarget, req)
+func (c *VolumeServerClient) ReadNeedleBlob(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeReadNeedleBlob(ctx, rpc.NoTarget, req)
 }
 
 // ReadNeedleBlobOn issues ReadNeedleBlob as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) ReadNeedleBlobOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeReadNeedleBlob(on.ID, nil)
+func (c *VolumeServerClient) ReadNeedleBlobOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeReadNeedleBlob(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeReadNeedleBlob(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeReadNeedleBlob(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerReadNeedleBlobOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -879,20 +883,20 @@ func (c *VolumeServerClient) invokeReadNeedleBlob(target uint32, payload []byte)
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) ReadNeedleMeta(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeReadNeedleMeta(rpc.NoTarget, req)
+func (c *VolumeServerClient) ReadNeedleMeta(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeReadNeedleMeta(ctx, rpc.NoTarget, req)
 }
 
 // ReadNeedleMetaOn issues ReadNeedleMeta as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) ReadNeedleMetaOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeReadNeedleMeta(on.ID, nil)
+func (c *VolumeServerClient) ReadNeedleMetaOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeReadNeedleMeta(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeReadNeedleMeta(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeReadNeedleMeta(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerReadNeedleMetaOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -913,20 +917,20 @@ func (c *VolumeServerClient) invokeReadNeedleMeta(target uint32, payload []byte)
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) WriteNeedleBlob(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeWriteNeedleBlob(rpc.NoTarget, req)
+func (c *VolumeServerClient) WriteNeedleBlob(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeWriteNeedleBlob(ctx, rpc.NoTarget, req)
 }
 
 // WriteNeedleBlobOn issues WriteNeedleBlob as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) WriteNeedleBlobOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeWriteNeedleBlob(on.ID, nil)
+func (c *VolumeServerClient) WriteNeedleBlobOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeWriteNeedleBlob(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeWriteNeedleBlob(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeWriteNeedleBlob(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerWriteNeedleBlobOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -950,20 +954,20 @@ func (c *VolumeServerClient) invokeWriteNeedleBlob(target uint32, payload []byte
 // STREAMING: ReadAllNeedles is a server-streaming RPC (VolumeServer.ReadAllNeedles); its body lands
 // when the transport streaming primitive ships. The per-message response schema
 // is emitted; this stub issues the unary request envelope.
-func (c *VolumeServerClient) ReadAllNeedles(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeReadAllNeedles(rpc.NoTarget, req)
+func (c *VolumeServerClient) ReadAllNeedles(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeReadAllNeedles(ctx, rpc.NoTarget, req)
 }
 
 // ReadAllNeedlesOn issues ReadAllNeedles as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) ReadAllNeedlesOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeReadAllNeedles(on.ID, nil)
+func (c *VolumeServerClient) ReadAllNeedlesOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeReadAllNeedles(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeReadAllNeedles(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeReadAllNeedles(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerReadAllNeedlesOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -987,20 +991,20 @@ func (c *VolumeServerClient) invokeReadAllNeedles(target uint32, payload []byte)
 // STREAMING: VolumeTailSender is a server-streaming RPC (VolumeServer.VolumeTailSender); its body lands
 // when the transport streaming primitive ships. The per-message response schema
 // is emitted; this stub issues the unary request envelope.
-func (c *VolumeServerClient) VolumeTailSender(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeTailSender(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeTailSender(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeTailSender(ctx, rpc.NoTarget, req)
 }
 
 // VolumeTailSenderOn issues VolumeTailSender as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeTailSenderOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeTailSender(on.ID, nil)
+func (c *VolumeServerClient) VolumeTailSenderOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeTailSender(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeTailSender(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeTailSender(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeTailSenderOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1021,20 +1025,20 @@ func (c *VolumeServerClient) invokeVolumeTailSender(target uint32, payload []byt
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeTailReceiver(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeTailReceiver(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeTailReceiver(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeTailReceiver(ctx, rpc.NoTarget, req)
 }
 
 // VolumeTailReceiverOn issues VolumeTailReceiver as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeTailReceiverOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeTailReceiver(on.ID, nil)
+func (c *VolumeServerClient) VolumeTailReceiverOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeTailReceiver(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeTailReceiver(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeTailReceiver(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeTailReceiverOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1055,20 +1059,20 @@ func (c *VolumeServerClient) invokeVolumeTailReceiver(target uint32, payload []b
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeEcShardsGenerate(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsGenerate(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeEcShardsGenerate(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsGenerate(ctx, rpc.NoTarget, req)
 }
 
 // VolumeEcShardsGenerateOn issues VolumeEcShardsGenerate as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeEcShardsGenerateOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsGenerate(on.ID, nil)
+func (c *VolumeServerClient) VolumeEcShardsGenerateOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsGenerate(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeEcShardsGenerate(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeEcShardsGenerate(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsGenerateOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1089,20 +1093,20 @@ func (c *VolumeServerClient) invokeVolumeEcShardsGenerate(target uint32, payload
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeEcShardsRebuild(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsRebuild(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeEcShardsRebuild(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsRebuild(ctx, rpc.NoTarget, req)
 }
 
 // VolumeEcShardsRebuildOn issues VolumeEcShardsRebuild as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeEcShardsRebuildOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsRebuild(on.ID, nil)
+func (c *VolumeServerClient) VolumeEcShardsRebuildOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsRebuild(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeEcShardsRebuild(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeEcShardsRebuild(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsRebuildOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1123,20 +1127,20 @@ func (c *VolumeServerClient) invokeVolumeEcShardsRebuild(target uint32, payload 
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeEcShardsCopy(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsCopy(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeEcShardsCopy(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsCopy(ctx, rpc.NoTarget, req)
 }
 
 // VolumeEcShardsCopyOn issues VolumeEcShardsCopy as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeEcShardsCopyOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsCopy(on.ID, nil)
+func (c *VolumeServerClient) VolumeEcShardsCopyOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsCopy(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeEcShardsCopy(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeEcShardsCopy(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsCopyOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1157,20 +1161,20 @@ func (c *VolumeServerClient) invokeVolumeEcShardsCopy(target uint32, payload []b
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeEcShardsDelete(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsDelete(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeEcShardsDelete(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsDelete(ctx, rpc.NoTarget, req)
 }
 
 // VolumeEcShardsDeleteOn issues VolumeEcShardsDelete as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeEcShardsDeleteOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsDelete(on.ID, nil)
+func (c *VolumeServerClient) VolumeEcShardsDeleteOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsDelete(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeEcShardsDelete(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeEcShardsDelete(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsDeleteOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1191,20 +1195,20 @@ func (c *VolumeServerClient) invokeVolumeEcShardsDelete(target uint32, payload [
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeEcShardsMount(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsMount(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeEcShardsMount(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsMount(ctx, rpc.NoTarget, req)
 }
 
 // VolumeEcShardsMountOn issues VolumeEcShardsMount as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeEcShardsMountOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsMount(on.ID, nil)
+func (c *VolumeServerClient) VolumeEcShardsMountOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsMount(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeEcShardsMount(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeEcShardsMount(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsMountOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1225,20 +1229,20 @@ func (c *VolumeServerClient) invokeVolumeEcShardsMount(target uint32, payload []
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeEcShardsUnmount(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsUnmount(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeEcShardsUnmount(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsUnmount(ctx, rpc.NoTarget, req)
 }
 
 // VolumeEcShardsUnmountOn issues VolumeEcShardsUnmount as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeEcShardsUnmountOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsUnmount(on.ID, nil)
+func (c *VolumeServerClient) VolumeEcShardsUnmountOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsUnmount(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeEcShardsUnmount(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeEcShardsUnmount(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsUnmountOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1262,20 +1266,20 @@ func (c *VolumeServerClient) invokeVolumeEcShardsUnmount(target uint32, payload 
 // STREAMING: VolumeEcShardRead is a server-streaming RPC (VolumeServer.VolumeEcShardRead); its body lands
 // when the transport streaming primitive ships. The per-message response schema
 // is emitted; this stub issues the unary request envelope.
-func (c *VolumeServerClient) VolumeEcShardRead(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardRead(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeEcShardRead(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardRead(ctx, rpc.NoTarget, req)
 }
 
 // VolumeEcShardReadOn issues VolumeEcShardRead as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeEcShardReadOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardRead(on.ID, nil)
+func (c *VolumeServerClient) VolumeEcShardReadOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardRead(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeEcShardRead(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeEcShardRead(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardReadOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1296,20 +1300,20 @@ func (c *VolumeServerClient) invokeVolumeEcShardRead(target uint32, payload []by
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeEcBlobDelete(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcBlobDelete(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeEcBlobDelete(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcBlobDelete(ctx, rpc.NoTarget, req)
 }
 
 // VolumeEcBlobDeleteOn issues VolumeEcBlobDelete as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeEcBlobDeleteOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcBlobDelete(on.ID, nil)
+func (c *VolumeServerClient) VolumeEcBlobDeleteOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcBlobDelete(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeEcBlobDelete(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeEcBlobDelete(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcBlobDeleteOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1330,20 +1334,20 @@ func (c *VolumeServerClient) invokeVolumeEcBlobDelete(target uint32, payload []b
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeEcShardsToVolume(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsToVolume(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeEcShardsToVolume(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsToVolume(ctx, rpc.NoTarget, req)
 }
 
 // VolumeEcShardsToVolumeOn issues VolumeEcShardsToVolume as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeEcShardsToVolumeOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsToVolume(on.ID, nil)
+func (c *VolumeServerClient) VolumeEcShardsToVolumeOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsToVolume(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeEcShardsToVolume(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeEcShardsToVolume(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsToVolumeOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1364,20 +1368,20 @@ func (c *VolumeServerClient) invokeVolumeEcShardsToVolume(target uint32, payload
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeEcShardsInfo(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsInfo(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeEcShardsInfo(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsInfo(ctx, rpc.NoTarget, req)
 }
 
 // VolumeEcShardsInfoOn issues VolumeEcShardsInfo as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeEcShardsInfoOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeEcShardsInfo(on.ID, nil)
+func (c *VolumeServerClient) VolumeEcShardsInfoOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeEcShardsInfo(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeEcShardsInfo(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeEcShardsInfo(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsInfoOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1401,20 +1405,20 @@ func (c *VolumeServerClient) invokeVolumeEcShardsInfo(target uint32, payload []b
 // STREAMING: VolumeTierMoveDatToRemote is a server-streaming RPC (VolumeServer.VolumeTierMoveDatToRemote); its body lands
 // when the transport streaming primitive ships. The per-message response schema
 // is emitted; this stub issues the unary request envelope.
-func (c *VolumeServerClient) VolumeTierMoveDatToRemote(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeTierMoveDatToRemote(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeTierMoveDatToRemote(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeTierMoveDatToRemote(ctx, rpc.NoTarget, req)
 }
 
 // VolumeTierMoveDatToRemoteOn issues VolumeTierMoveDatToRemote as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeTierMoveDatToRemoteOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeTierMoveDatToRemote(on.ID, nil)
+func (c *VolumeServerClient) VolumeTierMoveDatToRemoteOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeTierMoveDatToRemote(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeTierMoveDatToRemote(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeTierMoveDatToRemote(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeTierMoveDatToRemoteOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1438,20 +1442,20 @@ func (c *VolumeServerClient) invokeVolumeTierMoveDatToRemote(target uint32, payl
 // STREAMING: VolumeTierMoveDatFromRemote is a server-streaming RPC (VolumeServer.VolumeTierMoveDatFromRemote); its body lands
 // when the transport streaming primitive ships. The per-message response schema
 // is emitted; this stub issues the unary request envelope.
-func (c *VolumeServerClient) VolumeTierMoveDatFromRemote(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeTierMoveDatFromRemote(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeTierMoveDatFromRemote(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeTierMoveDatFromRemote(ctx, rpc.NoTarget, req)
 }
 
 // VolumeTierMoveDatFromRemoteOn issues VolumeTierMoveDatFromRemote as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeTierMoveDatFromRemoteOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeTierMoveDatFromRemote(on.ID, nil)
+func (c *VolumeServerClient) VolumeTierMoveDatFromRemoteOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeTierMoveDatFromRemote(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeTierMoveDatFromRemote(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeTierMoveDatFromRemote(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeTierMoveDatFromRemoteOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1472,20 +1476,20 @@ func (c *VolumeServerClient) invokeVolumeTierMoveDatFromRemote(target uint32, pa
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeServerStatus(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeServerStatus(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeServerStatus(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeServerStatus(ctx, rpc.NoTarget, req)
 }
 
 // VolumeServerStatusOn issues VolumeServerStatus as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeServerStatusOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeServerStatus(on.ID, nil)
+func (c *VolumeServerClient) VolumeServerStatusOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeServerStatus(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeServerStatus(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeServerStatus(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeServerStatusOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1506,20 +1510,20 @@ func (c *VolumeServerClient) invokeVolumeServerStatus(target uint32, payload []b
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeServerLeave(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeServerLeave(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeServerLeave(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeServerLeave(ctx, rpc.NoTarget, req)
 }
 
 // VolumeServerLeaveOn issues VolumeServerLeave as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeServerLeaveOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeServerLeave(on.ID, nil)
+func (c *VolumeServerClient) VolumeServerLeaveOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeServerLeave(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeServerLeave(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeServerLeave(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeServerLeaveOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1540,20 +1544,20 @@ func (c *VolumeServerClient) invokeVolumeServerLeave(target uint32, payload []by
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) FetchAndWriteNeedle(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeFetchAndWriteNeedle(rpc.NoTarget, req)
+func (c *VolumeServerClient) FetchAndWriteNeedle(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeFetchAndWriteNeedle(ctx, rpc.NoTarget, req)
 }
 
 // FetchAndWriteNeedleOn issues FetchAndWriteNeedle as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) FetchAndWriteNeedleOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeFetchAndWriteNeedle(on.ID, nil)
+func (c *VolumeServerClient) FetchAndWriteNeedleOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeFetchAndWriteNeedle(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeFetchAndWriteNeedle(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeFetchAndWriteNeedle(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerFetchAndWriteNeedleOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1574,20 +1578,20 @@ func (c *VolumeServerClient) invokeFetchAndWriteNeedle(target uint32, payload []
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) ScrubVolume(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeScrubVolume(rpc.NoTarget, req)
+func (c *VolumeServerClient) ScrubVolume(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeScrubVolume(ctx, rpc.NoTarget, req)
 }
 
 // ScrubVolumeOn issues ScrubVolume as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) ScrubVolumeOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeScrubVolume(on.ID, nil)
+func (c *VolumeServerClient) ScrubVolumeOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeScrubVolume(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeScrubVolume(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeScrubVolume(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerScrubVolumeOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1608,20 +1612,20 @@ func (c *VolumeServerClient) invokeScrubVolume(target uint32, payload []byte) (r
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) ScrubEcVolume(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeScrubEcVolume(rpc.NoTarget, req)
+func (c *VolumeServerClient) ScrubEcVolume(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeScrubEcVolume(ctx, rpc.NoTarget, req)
 }
 
 // ScrubEcVolumeOn issues ScrubEcVolume as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) ScrubEcVolumeOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeScrubEcVolume(on.ID, nil)
+func (c *VolumeServerClient) ScrubEcVolumeOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeScrubEcVolume(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeScrubEcVolume(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeScrubEcVolume(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerScrubEcVolumeOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1645,20 +1649,20 @@ func (c *VolumeServerClient) invokeScrubEcVolume(target uint32, payload []byte) 
 // STREAMING: Query is a server-streaming RPC (VolumeServer.Query); its body lands
 // when the transport streaming primitive ships. The per-message response schema
 // is emitted; this stub issues the unary request envelope.
-func (c *VolumeServerClient) Query(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeQuery(rpc.NoTarget, req)
+func (c *VolumeServerClient) Query(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeQuery(ctx, rpc.NoTarget, req)
 }
 
 // QueryOn issues Query as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) QueryOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeQuery(on.ID, nil)
+func (c *VolumeServerClient) QueryOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeQuery(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeQuery(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeQuery(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerQueryOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1679,20 +1683,20 @@ func (c *VolumeServerClient) invokeQuery(target uint32, payload []byte) (rpc.Pro
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) VolumeNeedleStatus(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeNeedleStatus(rpc.NoTarget, req)
+func (c *VolumeServerClient) VolumeNeedleStatus(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeNeedleStatus(ctx, rpc.NoTarget, req)
 }
 
 // VolumeNeedleStatusOn issues VolumeNeedleStatus as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) VolumeNeedleStatusOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeVolumeNeedleStatus(on.ID, nil)
+func (c *VolumeServerClient) VolumeNeedleStatusOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeVolumeNeedleStatus(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokeVolumeNeedleStatus(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokeVolumeNeedleStatus(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeNeedleStatusOrdinal,
 		PromiseID: p.ID,
 		Target:    target,
@@ -1713,20 +1717,20 @@ func (c *VolumeServerClient) invokeVolumeNeedleStatus(target uint32, payload []b
 	return p, resp.Body, nil
 }
 
-func (c *VolumeServerClient) Ping(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokePing(rpc.NoTarget, req)
+func (c *VolumeServerClient) Ping(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokePing(ctx, rpc.NoTarget, req)
 }
 
 // PingOn issues Ping as a dependent call pipelined on the answer of on: the
 // server substitutes on's resolved result for this call's payload before
 // dispatch, so it ships without waiting for on to round-trip.
-func (c *VolumeServerClient) PingOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokePing(on.ID, nil)
+func (c *VolumeServerClient) PingOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokePing(ctx, on.ID, nil)
 }
 
-func (c *VolumeServerClient) invokePing(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *VolumeServerClient) invokePing(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerPingOrdinal,
 		PromiseID: p.ID,
 		Target:    target,

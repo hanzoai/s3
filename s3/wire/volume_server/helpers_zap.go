@@ -8,20 +8,46 @@ import (
 	zap "github.com/zap-proto/go"
 )
 
-// embedMessage copies a standalone sub-message buffer verbatim into b (8-byte
-// aligned) and returns the absolute offset of the embedded root object, suitable
-// for ObjectBuilder.SetObject. The sub-buffer's internal pointers are all
-// position-relative, so a contiguous block copy keeps them valid; the returned
-// offset is (copy base + the sub-buffer's declared root offset). This is the one
-// and only way a singular nested message is laid into a parent object. A
-// zero-length sub yields offset 0 (a null object pointer).
+// embedMessage copies a standalone sub-message's body into b (8-byte aligned)
+// and returns the absolute offset of the embedded root object, suitable for
+// ObjectBuilder.SetObject. Only the payload region (sub[HeaderSize:]) is copied —
+// the sub-buffer's 16-byte envelope header is not part of the object graph — and
+// the returned offset is base + (rootOff - HeaderSize). Every internal pointer
+// in the embedded object is field-relative and shifts by the same HeaderSize, so
+// the contiguous block copy keeps the whole graph (including deeper nested
+// objects/lists/strings) valid. This is the one and only way a singular nested
+// message is laid into a parent object, and it mirrors the filer wire's fixed
+// embedMessage (child[HeaderSize:] copy, not the verbatim header-included copy
+// that corrupted nested var-len fields).
+//
+// Presence semantics — the subtle part. The parent reads a nested field as
+// Object(off).IsNull(), i.e. (resolved offset == 0):
+//
+//   - nil sub (no message present): len(sub) < HeaderSize -> return 0, a null
+//     pointer == correct "field unset".
+//   - PRESENT but empty (a zero-field message such as ParquetInput{}, whose
+//     buffer is header-only: rootOff == HeaderSize == len, empty body): the body
+//     is empty and Builder.WriteBytes([]) returns 0, which would read back null
+//     and SILENTLY DROP the present variant. We instead write one aligned anchor
+//     byte so the size-0 object (which reads no fields) gets a non-null, in-bounds
+//     root. The old verbatim copy hit the same drop from the other side
+//     (base+rootOff landed one past the copied region -> out of bounds -> null).
 func embedMessage(b *zap.Builder, sub []byte) int {
 	if len(sub) < zap.HeaderSize {
 		return 0
 	}
-	base := b.WriteBytes(sub)
-	subRoot := int(binary.LittleEndian.Uint32(sub[8:12]))
-	return base + subRoot
+	rootOff := int(binary.LittleEndian.Uint32(sub[8:12]))
+	if rootOff < zap.HeaderSize || rootOff > len(sub) {
+		return 0
+	}
+	body := sub[zap.HeaderSize:]
+	if len(body) == 0 {
+		// Present-but-empty: anchor the size-0 object at a real in-bounds byte so
+		// presence survives (the object reads no fields; only its position matters).
+		return b.WriteBytes([]byte{0})
+	}
+	base := b.WriteBytes(body)
+	return base + (rootOff - zap.HeaderSize)
 }
 
 // addObjectList appends each pre-built sub-buffer in elems as an out-of-line
