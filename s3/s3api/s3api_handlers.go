@@ -1,7 +1,6 @@
 package s3api
 
 import (
-	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
@@ -25,10 +23,7 @@ func (s3a *S3ApiServer) WithFilerClient(streamingMode bool, fn func(filer_pb.Han
 
 	// Fallback to direct connection if filerClient not initialized
 	// This should only happen during initialization or testing
-	return pb.WithGrpcClient(context.Background(), streamingMode, s3a.randomClientId, func(grpcConnection *grpc.ClientConn) error {
-		client := filer_pb.NewHanzoFilerClient(grpcConnection)
-		return fn(client)
-	}, s3a.getFilerAddress().ToGrpcAddress(), false, s3a.option.GrpcDialOption)
+	return pb.WithFilerClient(streamingMode, s3a.randomClientId, s3a.getFilerAddress(), s3a.option.GrpcDialOption, fn)
 
 }
 
@@ -82,9 +77,7 @@ func (s3a *S3ApiServer) withFilerClientFailover(preferred pb.ServerAddress, stre
 
 	var lastErr error
 	for _, filer := range ordered {
-		err := pb.WithGrpcClient(context.Background(), streamingMode, s3a.randomClientId, func(grpcConnection *grpc.ClientConn) error {
-			return fn(filer_pb.NewHanzoFilerClient(grpcConnection))
-		}, filer.ToGrpcAddress(), false, s3a.option.GrpcDialOption)
+		err := pb.WithFilerClient(streamingMode, s3a.randomClientId, filer, s3a.option.GrpcDialOption, fn)
 
 		if err == nil {
 			s3a.filerClient.RecordFilerSuccess(filer)

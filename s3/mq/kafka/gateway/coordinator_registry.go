@@ -80,24 +80,23 @@ func NewCoordinatorRegistry(gatewayAddress string, masters []pb.ServerAddress, g
 	var seedFiler pb.ServerAddress
 	for _, master := range masters {
 		// Use the same discovery logic as filer_discovery.go
-		grpcAddr := master.ToGrpcAddress()
-		conn, err := grpc.NewClient(grpcAddr, grpcDialOption)
-		if err != nil {
-			continue
-		}
-
-		client := master_pb.NewHanzoClient(conn)
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		resp, err := client.ListClusterNodes(ctx, &master_pb.ListClusterNodesRequest{
-			ClientType: cluster.FilerType,
+		err := pb.WithMasterClient(context.Background(), false, master, grpcDialOption, false, func(client master_pb.HanzoClient) error {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			resp, err := client.ListClusterNodes(ctx, &master_pb.ListClusterNodesRequest{
+				ClientType: cluster.FilerType,
+			})
+			if err != nil {
+				return err
+			}
+			if len(resp.ClusterNodes) > 0 {
+				// Found a filer - use its HTTP address (WithFilerClient will convert to gRPC automatically)
+				seedFiler = pb.ServerAddress(resp.ClusterNodes[0].Address)
+				glog.V(1).Infof("Using filer %s as seed for distributed locking (discovered from master %s)", seedFiler, master)
+			}
+			return nil
 		})
-		cancel()
-		conn.Close()
-
-		if err == nil && len(resp.ClusterNodes) > 0 {
-			// Found a filer - use its HTTP address (WithFilerClient will convert to gRPC automatically)
-			seedFiler = pb.ServerAddress(resp.ClusterNodes[0].Address)
-			glog.V(1).Infof("Using filer %s as seed for distributed locking (discovered from master %s)", seedFiler, master)
+		if err == nil && seedFiler != "" {
 			break
 		}
 	}

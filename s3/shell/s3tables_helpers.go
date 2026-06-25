@@ -10,17 +10,13 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3tables"
-	"google.golang.org/grpc"
 )
 
 const s3TablesDefaultRegion = ""
 const timeFormat = "2006-01-02T15:04:05Z07:00"
 
 func withFilerClient(commandEnv *CommandEnv, fn func(client filer_pb.HanzoFilerClient) error) error {
-	return pb.WithGrpcClient(context.Background(), false, 0, func(conn *grpc.ClientConn) error {
-		client := filer_pb.NewHanzoFilerClient(conn)
-		return fn(client)
-	}, commandEnv.option.FilerAddress.ToGrpcAddress(), false, commandEnv.option.GrpcDialOption)
+	return pb.WithFilerClient(false, 0, commandEnv.option.FilerAddress, commandEnv.option.GrpcDialOption, fn)
 }
 
 func executeS3Tables(commandEnv *CommandEnv, operation string, req interface{}, resp interface{}, accountID string) error {

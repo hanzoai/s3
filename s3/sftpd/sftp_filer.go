@@ -22,7 +22,6 @@ import (
 	"github.com/hanzoai/s3/s3/sftpd/user"
 	"github.com/hanzoai/s3/s3/util"
 	util_http "github.com/hanzoai/s3/s3/util/http"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -88,10 +87,7 @@ func (fs *SftpServer) updateEntry(dir string, entry *filer_pb.Entry) error {
 func (fs *SftpServer) AdjustedUrl(location *filer_pb.Location) string { return location.Url }
 func (fs *SftpServer) GetDataCenter() string                          { return fs.dataCenter }
 func (fs *SftpServer) WithFilerClient(streamingMode bool, fn func(filer_pb.HanzoFilerClient) error) error {
-	addr := fs.filerAddr.ToGrpcAddress()
-	return pb.WithGrpcClient(context.Background(), streamingMode, util.RandomInt32(), func(conn *grpc.ClientConn) error {
-		return fn(filer_pb.NewHanzoFilerClient(conn))
-	}, addr, false, fs.grpcDialOption)
+	return pb.WithFilerClient(streamingMode, util.RandomInt32(), fs.filerAddr, fs.grpcDialOption, fn)
 }
 func (fs *SftpServer) withTimeoutContext(fn func(ctx context.Context) error) error {
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)

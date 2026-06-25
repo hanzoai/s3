@@ -19,8 +19,7 @@ import (
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/schema_pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/zap-proto/go/transport"
 )
 
 type UserEvent struct {
@@ -294,36 +293,31 @@ func convertToRecordValue(data interface{}) (*schema_pb.RecordValue, error) {
 
 // No need for convertHTTPToGRPC - pb.ServerAddress.ToGrpcAddress() already handles this
 
-// discoverFiler finds a filer from the master server
+// discoverFiler finds a filer from the master server over the native ZAP
+// transport.
 func discoverFiler(masterHTTPAddress string) (string, error) {
-	httpAddr := pb.ServerAddress(masterHTTPAddress)
-	masterGRPCAddress := httpAddr.ToGrpcAddress()
+	var filerGRPCAddress string
+	err := pb.WithMasterClient(context.Background(), false, pb.ServerAddress(masterHTTPAddress), nil, false, func(client master_pb.HanzoClient) error {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 
-	conn, err := grpc.NewClient(masterGRPCAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return "", fmt.Errorf("failed to connect to master at %s: %v", masterGRPCAddress, err)
-	}
-	defer conn.Close()
-
-	client := master_pb.NewHanzoClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	resp, err := client.ListClusterNodes(ctx, &master_pb.ListClusterNodesRequest{
-		ClientType: cluster.FilerType,
+		resp, err := client.ListClusterNodes(ctx, &master_pb.ListClusterNodesRequest{
+			ClientType: cluster.FilerType,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to list filers from master: %v", err)
+		}
+		if len(resp.ClusterNodes) == 0 {
+			return fmt.Errorf("no filers found in cluster")
+		}
+		// Use the first available filer and convert HTTP address to gRPC
+		filerGRPCAddress = pb.ServerAddress(resp.ClusterNodes[0].Address).ToGrpcAddress()
+		return nil
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to list filers from master: %v", err)
+		return "", err
 	}
-
-	if len(resp.ClusterNodes) == 0 {
-		return "", fmt.Errorf("no filers found in cluster")
-	}
-
-	// Use the first available filer and convert HTTP address to gRPC
-	filerHTTPAddress := resp.ClusterNodes[0].Address
-	httpAddr = pb.ServerAddress(filerHTTPAddress)
-	return httpAddr.ToGrpcAddress(), nil
+	return filerGRPCAddress, nil
 }
 
 // discoverBroker finds the broker balancer using filer lock mechanism
@@ -334,13 +328,13 @@ func discoverBroker(masterHTTPAddress string) (string, error) {
 		return "", fmt.Errorf("failed to discover filer: %v", err)
 	}
 
-	conn, err := grpc.NewClient(filerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := transport.Dial("tcp", filerAddress)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to filer at %s: %v", filerAddress, err)
 	}
 	defer conn.Close()
 
-	client := filer_pb.NewHanzoFilerClient(conn)
+	client := pb.NewZapFilerClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

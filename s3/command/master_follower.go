@@ -15,7 +15,12 @@ import (
 	"github.com/hanzoai/s3/s3/security"
 	s3server "github.com/hanzoai/s3/s3/server"
 	"github.com/hanzoai/s3/s3/util"
+	"github.com/hanzoai/s3/s3/util/grace"
 	"github.com/hanzoai/s3/s3/util/version"
+	masterwire "github.com/hanzoai/s3/s3/wire/master"
+	masterstream "github.com/hanzoai/s3/s3/wire/master/masterstream"
+
+	"github.com/zap-proto/go/transport"
 )
 
 var (
@@ -141,14 +146,36 @@ func startMasterFollower(masterOptions MasterOptions) {
 	if err != nil {
 		glog.Fatalf("master failed to listen on grpc port %d: %v", grpcPort, err)
 	}
+	// gRPC carries only reflection now — the Hanzo (master) service answers over
+	// the native ZAP transport on grpcPort+10000 (ToMasterZapAddress) below.
 	grpcS := pb.NewGrpcServer(security.LoadServerTLS(util.GetViper(), "grpc.master"))
-	master_pb.RegisterHanzoServer(grpcS, ms)
 	reflection.Register(grpcS)
 	glog.V(0).Infof("Start Hanzo S3 Master %s grpc server at %s:%d", version.Version(), *masterOptions.ip, grpcPort)
 	if grpcLocalL != nil {
 		go grpcS.Serve(grpcLocalL)
 	}
 	go grpcS.Serve(grpcL)
+
+	// Native ZAP transport for the whole Hanzo (master) service — unary RPCs via
+	// the masterwire Dispatch and the three bidi streams via the masterstream
+	// Handler — on one listener at grpcPort+10000. PQ-secured mTLS when
+	// grpc.master.cert/.key is configured, else plaintext (loopback / dev).
+	zapAddr := util.JoinHostPort(*masterOptions.ipBind, grpcPort+10000)
+	masterDispatch := masterwire.Dispatch(s3server.NewMasterZapBackend(ms))
+	masterStream := masterstream.Handler(s3server.NewMasterZapStreamServer(ms))
+	var masterZapSrv *transport.Server
+	var zapErr error
+	if tlsCfg := security.ServerTLSConfig(util.GetViper(), "grpc.master"); tlsCfg != nil {
+		masterZapSrv, zapErr = transport.ListenStreamTLS("tcp", zapAddr,
+			transport.PQTLSConfig(tlsCfg), masterDispatch, masterStream)
+	} else {
+		masterZapSrv, zapErr = transport.ListenStream("tcp", zapAddr, masterDispatch, masterStream)
+	}
+	if zapErr != nil {
+		glog.Fatalf("master follower failed to serve ZAP transport on %s: %v", zapAddr, zapErr)
+	}
+	glog.V(0).Infof("Start Hanzo S3 Master %s ZAP transport at %s", version.Version(), zapAddr)
+	grace.OnInterrupt(func() { masterZapSrv.Close() })
 
 	go ms.MasterClient.KeepConnectedToMaster(context.Background())
 

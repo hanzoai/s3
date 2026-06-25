@@ -145,10 +145,7 @@ var _ = filer_pb.FilerClient(&WebDavFileSystem{})
 
 func (fs *WebDavFileSystem) WithFilerClient(streamingMode bool, fn func(filer_pb.HanzoFilerClient) error) error {
 
-	return pb.WithGrpcClient(context.Background(), streamingMode, fs.signature, func(grpcConnection *grpc.ClientConn) error {
-		client := filer_pb.NewHanzoFilerClient(grpcConnection)
-		return fn(client)
-	}, fs.option.Filer.ToGrpcAddress(), false, fs.option.GrpcDialOption)
+	return pb.WithFilerClient(streamingMode, fs.signature, fs.option.Filer, fs.option.GrpcDialOption, fn)
 
 }
 func (fs *WebDavFileSystem) AdjustedUrl(location *filer_pb.Location) string {

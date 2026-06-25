@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 
+	"github.com/hanzoai/s3/s3/masterzap"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
@@ -532,16 +533,38 @@ func GrpcAddressToServerAddress(grpcAddress string) (serverAddress string) {
 	return util.JoinHostPort(host, port)
 }
 
-// WithMasterClient threads the caller's per-request context into the
-// connection-invalidation decision, so a Canceled/DeadlineExceeded from the
-// caller's own timeout does not invalidate the shared cached master connection.
-// Pass context.Background() when there is no per-request deadline to honor.
-func WithMasterClient(ctx context.Context, streamingMode bool, master ServerAddress, grpcDialOption grpc.DialOption, waitForReady bool, fn func(client master_pb.HanzoClient) error) error {
-	return WithGrpcClient(ctx, streamingMode, 0, func(grpcConnection *grpc.ClientConn) error {
-		client := master_pb.NewHanzoClient(grpcConnection)
-		return fn(client)
-	}, master.ToGrpcAddress(), waitForReady, grpcDialOption)
+// DialMasterZapAddr opens a ZAP connection to a master's native ZAP transport
+// (the grpcPort+10000 offset, ToMasterZapAddress). Used by masterPool and by the
+// volume-server heartbeat, which owns a dedicated long-lived conn rather than a
+// pooled one. When grpc.master.cert/.key is
+// configured it is PQ-secured TLS (transport.PQTLSConfig pins X25519MLKEM768, the
+// PQ X-Wing curve) presenting the client cert and trusting grpc.ca — the same mTLS
+// the legacy gRPC master client used. Otherwise plaintext (loopback / dev). The
+// returned *Conn drives both unary Call and OpenStream.
+func DialMasterZapAddr(addr string) (transport.Conn, error) {
+	if cfg := security.ClientTLSConfig(util.GetViper(), "grpc.master"); cfg != nil {
+		return transport.DialTLS("tcp", addr, transport.PQTLSConfig(cfg))
+	}
+	return transport.Dial("tcp", addr)
+}
 
+// masterPool reuses one ZAP connection per master address across calls — a Conn
+// is concurrency-safe, so this avoids a fresh TCP (and, under grpc.master mTLS, a
+// fresh X25519MLKEM768 handshake) on every master RPC. The master analogue of
+// filerPool.
+var masterPool = transport.NewPool(DialMasterZapAddr)
+
+// WithMasterClient runs fn with a master_pb.HanzoClient backed by a pooled ZAP
+// connection to master's native transport. The streamingMode/grpcDialOption/
+// waitForReady parameters are retained for caller compatibility; the ZAP path
+// needs neither a streaming flag (every stream is a transport stream) nor a dial
+// option, and the pool already (re)dials lazily. ctx is honored by the per-RPC
+// calls fn issues. This is the master analogue of WithGrpcFilerClient.
+func WithMasterClient(ctx context.Context, streamingMode bool, master ServerAddress, grpcDialOption grpc.DialOption, waitForReady bool, fn func(client master_pb.HanzoClient) error) error {
+	_, _, _, _ = ctx, streamingMode, grpcDialOption, waitForReady
+	return masterPool.With(master.ToMasterZapAddress(), func(conn transport.Conn) error {
+		return fn(masterzap.New(conn, nil))
+	})
 }
 
 func WithVolumeServerClient(streamingMode bool, volumeServer ServerAddress, grpcDialOption grpc.DialOption, fn func(client volume_server_pb.VolumeServerClient) error) error {
@@ -552,13 +575,14 @@ func WithVolumeServerClient(streamingMode bool, volumeServer ServerAddress, grpc
 
 }
 
+// WithOneOfGrpcMasterClients tries each master address in turn over the ZAP
+// transport, returning on the first that runs fn without error.
 func WithOneOfGrpcMasterClients(streamingMode bool, masterGrpcAddresses map[string]ServerAddress, grpcDialOption grpc.DialOption, fn func(client master_pb.HanzoClient) error) (err error) {
-
-	for _, masterGrpcAddress := range masterGrpcAddresses {
-		err = WithGrpcClient(context.Background(), streamingMode, 0, func(grpcConnection *grpc.ClientConn) error {
-			client := master_pb.NewHanzoClient(grpcConnection)
-			return fn(client)
-		}, masterGrpcAddress.ToGrpcAddress(), false, grpcDialOption)
+	_, _ = streamingMode, grpcDialOption
+	for _, masterAddress := range masterGrpcAddresses {
+		err = masterPool.With(masterAddress.ToMasterZapAddress(), func(conn transport.Conn) error {
+			return fn(masterzap.New(conn, nil))
+		})
 		if err == nil {
 			return nil
 		}

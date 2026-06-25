@@ -43,6 +43,14 @@ func (fs *FilerServer) LookupDirectoryEntry(ctx context.Context, req *filer_pb.L
 	}, nil
 }
 
+// TouchAccessTime is part of the HanzoFiler contract but has no engine-side
+// atime persistence: the filer does not track access time, so the RPC reports
+// "not updated". (Previously the grpc UnimplementedHanzoFilerServer embed
+// answered this; the embed is gone, so the method lives here explicitly.)
+func (fs *FilerServer) TouchAccessTime(ctx context.Context, req *filer_pb.TouchAccessTimeRequest) (*filer_pb.TouchAccessTimeResponse, error) {
+	return &filer_pb.TouchAccessTimeResponse{}, nil
+}
+
 func (fs *FilerServer) ListEntries(req *filer_pb.ListEntriesRequest, stream filer_pb.HanzoFiler_ListEntriesServer) (err error) {
 
 	glog.V(4).Infof("ListEntries %v", req)
