@@ -15,7 +15,7 @@ import (
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
-	"github.com/hanzoai/s3/s3/volumezap"
+	"github.com/hanzoai/s3/s3/svc/volume"
 	volume_serverwire "github.com/hanzoai/s3/s3/wire/volume_server"
 
 	"github.com/zap-proto/go/transport"
@@ -23,7 +23,7 @@ import (
 
 // VolumeServer provides a minimal volume server for erasure coding tests. It
 // serves over the native ZAP transport (gRPC is gone), exactly like production:
-// volumezap.NewServerBackend wraps it as a volume_serverwire.VolumeServerStore
+// volume.NewServerBackend wraps it as a volume_serverwire.VolumeServerStore
 // that transport.ListenStream dispatches. The embedded
 // UnimplementedVolumeServerServer fills the RPCs the tests do not exercise.
 type VolumeServer struct {
@@ -70,7 +70,7 @@ func NewVolumeServer(t *testing.T, baseDir string) *VolumeServer {
 		receivedFiles: make(map[string]uint64),
 	}
 
-	store := volumezap.NewServerBackend(vs)
+	store := volume.NewServerBackend(vs)
 	server, err := transport.ListenStream("tcp", "127.0.0.1:0",
 		volume_serverwire.Dispatch(store), volume_serverwire.StreamHandler(store))
 	if err != nil {
@@ -80,7 +80,7 @@ func NewVolumeServer(t *testing.T, baseDir string) *VolumeServer {
 	grpcPort := server.Addr().(*net.TCPAddr).Port
 	// ServerAddress "127.0.0.1:0.<grpcPort>": ToGrpcAddress() yields
 	// 127.0.0.1:<grpcPort>, the ZAP listener, so workers reach it via
-	// operation.WithVolumeServerClient (volumezap over ZAP).
+	// operation.WithVolumeServerClient (volume over ZAP).
 	vs.address = fmt.Sprintf("127.0.0.1:0.%d", grpcPort)
 
 	t.Cleanup(func() {

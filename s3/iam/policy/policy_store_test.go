@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/hanzoai/s3/s3/filerzap"
+	"github.com/hanzoai/s3/s3/svc/filer"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/filerstub"
@@ -147,8 +147,8 @@ func newTestFilerPolicyStore(t *testing.T) (*FilerPolicyStore, *policyStoreTestF
 	// ListEntries streaming via filerstream.Handler) — the wire the policy store's
 	// WithGrpcFilerClient now dials.
 	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
-		filerwire.Dispatch(filerzap.NewServerBackend(server)),
-		filerstream.Handler(filerzap.NewStreamServer(server)))
+		filerwire.Dispatch(filer.NewServerBackend(server)),
+		filerstream.Handler(filer.NewStreamServer(server)))
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = srv.Close() })
 

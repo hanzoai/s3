@@ -28,7 +28,7 @@ import (
 	"github.com/hanzoai/s3/s3/util/grace"
 	"github.com/hanzoai/s3/s3/util/httpdown"
 	"github.com/hanzoai/s3/s3/util/version"
-	"github.com/hanzoai/s3/s3/volumezap"
+	"github.com/hanzoai/s3/s3/svc/volume"
 	volume_serverwire "github.com/hanzoai/s3/s3/wire/volume_server"
 )
 
@@ -567,7 +567,7 @@ func (v VolumeServerOptions) isSeparatedPublicPort() bool {
 // startGrpcService serves the VolumeServer service over the native ZAP transport
 // on the gRPC port. Clients reach it via ServerAddress.ToGrpcAddress() over
 // transport.Dial (unary) and transport.OpenStream (streaming) — see
-// pb.WithVolumeServerClient and the volumezap backend. This replaces the legacy
+// pb.WithVolumeServerClient and the volume backend. This replaces the legacy
 // gRPC VolumeServer server: the whole volume server (37 unary + 11 streaming
 // RPCs) now answers over ZAP, no gRPC.
 //
@@ -579,7 +579,7 @@ func (v VolumeServerOptions) isSeparatedPublicPort() bool {
 func (v VolumeServerOptions) startGrpcService(vs volume_server_pb.VolumeServerServer) *transport.Server {
 	grpcPort := *v.portGrpc
 	volumeAddr := util.JoinHostPort(*v.bindIp, grpcPort)
-	store := volumezap.NewServerBackend(vs)
+	store := volume.NewServerBackend(vs)
 	dispatch := volume_serverwire.Dispatch(store)
 	stream := volume_serverwire.StreamHandler(store)
 	var srv *transport.Server

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
@@ -18,6 +17,7 @@ import (
 	"github.com/hanzoai/s3/s3/storage/erasure_coding"
 	"github.com/hanzoai/s3/test/volume_server/framework"
 	"github.com/hanzoai/s3/test/volume_server/matrix"
+	"github.com/zap-proto/go/transport"
 )
 
 // Reproduces the issue-9478 volume-13 layout end to end on a multi-server,
@@ -53,7 +53,7 @@ func TestEcEncodeJulorLayoutConverges(t *testing.T) {
 	)
 	addr := func(i int) string { return serverAddress(cluster, i) }
 
-	conns := make([]*grpc.ClientConn, 3)
+	conns := make([]transport.Conn, 3)
 	clients := make([]volume_server_pb.VolumeServerClient, 3)
 	for i := 0; i < 3; i++ {
 		conns[i], clients[i] = framework.DialVolumeServer(t, cluster.VolumeGRPCAddress(i))

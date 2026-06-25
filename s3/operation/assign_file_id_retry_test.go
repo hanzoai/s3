@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/s3/masterzap"
+	"github.com/hanzoai/s3/s3/svc/master"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
@@ -30,14 +30,14 @@ type fakeAssignBackend struct {
 }
 
 func (s *fakeAssignBackend) Assign(req []byte) ([]byte, error) {
-	if _, err := masterzap.AssignReqFromWire(req); err != nil {
+	if _, err := master.AssignReqFromWire(req); err != nil {
 		return nil, err
 	}
 	n := s.callCount.Add(1)
 	if n <= s.unavailableCount {
 		return nil, fmt.Errorf("Unavailable: master is warming up")
 	}
-	return masterzap.AssignRespToWire(&master_pb.AssignResponse{
+	return master.AssignRespToWire(&master_pb.AssignResponse{
 		Fid:   "1,abc",
 		Count: 1,
 		Location: &master_pb.Location{
