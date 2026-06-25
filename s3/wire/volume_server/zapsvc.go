@@ -40,6 +40,8 @@
 package volume_serverwire
 
 import (
+	"context"
+
 	"github.com/zap-proto/go/rpc"
 	"github.com/zap-proto/go/transport"
 )
@@ -259,6 +261,12 @@ func (z *serverStream) Recv() ([]byte, error) {
 // Send streams one outbound frame.
 func (z *serverStream) Send(body []byte) error { return z.s.Send(body) }
 
+// Context returns the per-stream context. It is cancelled when the stream ends OR
+// the peer drops the connection (zap-proto/go v1.6.2+ derives muxStream.ctx from
+// the conn ctx), so a backend handler that gates an idle wait on Context().Done()
+// is released on client disconnect — no goroutine leak. Mirrors filerstream.
+func (z *serverStream) Context() context.Context { return z.s.Context() }
+
 // Each server-streaming RPC's server view: Init() yields the (single) opening
 // request; Send streams one response item. The client half-closes immediately
 // after the open, so the server only ever Sends.
@@ -437,6 +445,24 @@ func (s ReceiveFileServerStream) Recv() (ReceiveFileRequest, error) {
 func (s ReceiveFileServerStream) Reply(in ReceiveFileResponseInput) error {
 	return s.z.Send(NewReceiveFileResponse(in))
 }
+
+// Context returns each server-stream's per-stream context (cancelled on stream
+// end OR peer conn-drop), so a backend handler that blocks on Context().Done()
+// is released on client disconnect — no goroutine leak. Delegates to the shared
+// serverStream.Context(); mirrors filerstream's per-type Context().
+func (s VacuumVolumeCompactServerStream) Context() context.Context     { return s.z.Context() }
+func (s VolumeIncrementalCopyServerStream) Context() context.Context   { return s.z.Context() }
+func (s VolumeCopyServerStream) Context() context.Context              { return s.z.Context() }
+func (s CopyFileServerStream) Context() context.Context                { return s.z.Context() }
+func (s ReadAllNeedlesServerStream) Context() context.Context          { return s.z.Context() }
+func (s VolumeTailSenderServerStream) Context() context.Context        { return s.z.Context() }
+func (s VolumeEcShardReadServerStream) Context() context.Context       { return s.z.Context() }
+func (s VolumeTierMoveDatToRemoteServerStream) Context() context.Context { return s.z.Context() }
+func (s VolumeTierMoveDatFromRemoteServerStream) Context() context.Context {
+	return s.z.Context()
+}
+func (s QueryServerStream) Context() context.Context       { return s.z.Context() }
+func (s ReceiveFileServerStream) Context() context.Context { return s.z.Context() }
 
 // StreamHandler is the transport.StreamHandler for VolumeServer's 11 streaming
 // ordinals: it adapts each accepted ZAP stream to the matching server-stream
