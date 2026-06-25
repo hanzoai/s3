@@ -56,6 +56,14 @@ func HeartbeatReqFromWire(b []byte) (*master_pb.Heartbeat, error) {
 	if err != nil {
 		return nil, err
 	}
+	return heartbeatReqFromView(v), nil
+}
+
+// heartbeatReqFromView decodes an already-wrapped Heartbeat view into proto. The
+// streaming server adapter (stream_server.go) holds the stream's open frame as a
+// view, so it reuses this directly with no re-serialization; HeartbeatReqFromWire
+// is the bytes entry point for the subsequent stream frames.
+func heartbeatReqFromView(v masterwire.Heartbeat) *master_pb.Heartbeat {
 	r := &master_pb.Heartbeat{
 		Ip:            v.Ip(),
 		Port:          v.Port(),
@@ -141,7 +149,7 @@ func HeartbeatReqFromWire(b []byte) (*master_pb.Heartbeat, error) {
 	if s, ok := v.State(); ok {
 		r.State = stateFromView(s)
 	}
-	return r, nil
+	return r
 }
 
 func HeartbeatRespToWire(r *master_pb.HeartbeatResponse) []byte {
@@ -196,10 +204,17 @@ func KeepConnectedReqFromWire(b []byte) (*master_pb.KeepConnectedRequest, error)
 	if err != nil {
 		return nil, err
 	}
+	return keepConnectedReqFromView(v), nil
+}
+
+// keepConnectedReqFromView decodes an already-wrapped KeepConnectedRequest view
+// into proto — the view-based counterpart the streaming server adapter reuses
+// for the stream's open frame.
+func keepConnectedReqFromView(v masterwire.KeepConnectedRequest) *master_pb.KeepConnectedRequest {
 	return &master_pb.KeepConnectedRequest{
 		ClientType: v.ClientType(), ClientAddress: v.ClientAddress(), Version: v.Version(),
 		FilerGroup: v.FilerGroup(), DataCenter: v.DataCenter(), Rack: v.Rack(),
-	}, nil
+	}
 }
 
 func KeepConnectedRespToWire(r *master_pb.KeepConnectedResponse) []byte {
