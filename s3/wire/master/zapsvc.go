@@ -3,7 +3,7 @@
 //
 // Native ZAP service adapter for the master (Hanzo) service — the hand-written
 // glue that binds the generated DispatchHanzo / HanzoClient (master_zap.go) to
-// the real master engine. This is the master analogue of s3/zapsvc/service.go:
+// the real master engine. This is the master analogue of s3/object/service.go:
 // the SAME Channel/Client/Handler/Dispatch shape, the SAME zero-copy doctrine
 // (the bytes ARE the message: masterwire.New* to build, masterwire.Wrap* to
 // read — no struct, no marshal, no protobuf), carried over the canonical

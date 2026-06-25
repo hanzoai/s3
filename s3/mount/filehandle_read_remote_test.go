@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/s3/filerzap"
+	"github.com/hanzoai/s3/s3/svc/filer"
 	"github.com/hanzoai/s3/s3/mount/meta_cache"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
@@ -54,8 +54,8 @@ func TestReadUncachedRemoteEntryDoesNotDeadlock(t *testing.T) {
 		invalidateStarted: make(chan struct{}, 1),
 	}
 	listener, err := transport.ListenStream("tcp", "127.0.0.1:0",
-		filerwire.Dispatch(filerzap.NewServerBackend(testServer)),
-		filerstream.Handler(filerzap.NewStreamServer(testServer)))
+		filerwire.Dispatch(filer.NewServerBackend(testServer)),
+		filerstream.Handler(filer.NewStreamServer(testServer)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}

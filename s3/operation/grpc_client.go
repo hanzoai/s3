@@ -10,7 +10,7 @@ import (
 
 // WithVolumeServerClient runs fn with a volume_server_pb.VolumeServerClient over
 // the native ZAP transport. It delegates to pb.WithVolumeServerClient (volumePool
-// + volumezap.New) — the volume analogue of WithMasterServerClient delegating to
+// + volume.New) — the volume analogue of WithMasterServerClient delegating to
 // pb.WithMasterClient. The grpcDialOption is retained for caller compatibility and
 // unused on the ZAP path.
 func WithVolumeServerClient(streamingMode bool, volumeServer pb.ServerAddress, grpcDialOption pb.DialOption, fn func(volume_server_pb.VolumeServerClient) error) error {

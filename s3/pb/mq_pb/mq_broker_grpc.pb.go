@@ -3,20 +3,21 @@
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             v7.35.0
 // source: mq_broker.proto
+//
+// gRPC ripped: this file holds only the grpc-free HanzoMessaging contracts. The
+// client interface returns the shared rpc.* stream seams; the server interface
+// is a plain method set (no mustEmbed). The transport is github.com/zap-proto/go
+// — the ZAP adapters in package mqzap satisfy these contracts and the wire
+// Dispatch serves them. No grpc client/server scaffolding remains.
 
 package mq_pb
 
 import (
 	context "context"
-	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
-)
+	errors "errors"
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.64.0 or later.
-const _ = grpc.SupportPackageIsVersion9
+	"github.com/hanzoai/s3/s3/pb/rpc"
+)
 
 const (
 	HanzoMessaging_FindBrokerLeader_FullMethodName           = "/messaging_pb.HanzoMessaging/FindBrokerLeader"
@@ -42,298 +43,129 @@ const (
 	HanzoMessaging_GetPartitionRangeInfo_FullMethodName      = "/messaging_pb.HanzoMessaging/GetPartitionRangeInfo"
 )
 
-// HanzoMessagingClient is the client API for HanzoMessaging service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+// HanzoMessagingClient is the client API for HanzoMessaging service. Unary RPCs
+// return the response; streaming RPCs return an rpc.* stream seam: bidi RPCs
+// read with Recv and write with Send, the server-streaming RPC reads with Recv,
+// the client-streaming RPC writes with Send then CloseAndRecv.
 type HanzoMessagingClient interface {
 	// control plane
-	FindBrokerLeader(ctx context.Context, in *FindBrokerLeaderRequest, opts ...grpc.CallOption) (*FindBrokerLeaderResponse, error)
+	FindBrokerLeader(ctx context.Context, in *FindBrokerLeaderRequest) (*FindBrokerLeaderResponse, error)
 	// control plane for balancer
-	PublisherToPubBalancer(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[PublisherToPubBalancerRequest, PublisherToPubBalancerResponse], error)
-	BalanceTopics(ctx context.Context, in *BalanceTopicsRequest, opts ...grpc.CallOption) (*BalanceTopicsResponse, error)
+	PublisherToPubBalancer(ctx context.Context) (rpc.BidiStream[PublisherToPubBalancerRequest, PublisherToPubBalancerResponse], error)
+	BalanceTopics(ctx context.Context, in *BalanceTopicsRequest) (*BalanceTopicsResponse, error)
 	// control plane for topic partitions
-	ListTopics(ctx context.Context, in *ListTopicsRequest, opts ...grpc.CallOption) (*ListTopicsResponse, error)
-	TopicExists(ctx context.Context, in *TopicExistsRequest, opts ...grpc.CallOption) (*TopicExistsResponse, error)
-	ConfigureTopic(ctx context.Context, in *ConfigureTopicRequest, opts ...grpc.CallOption) (*ConfigureTopicResponse, error)
-	LookupTopicBrokers(ctx context.Context, in *LookupTopicBrokersRequest, opts ...grpc.CallOption) (*LookupTopicBrokersResponse, error)
-	GetTopicConfiguration(ctx context.Context, in *GetTopicConfigurationRequest, opts ...grpc.CallOption) (*GetTopicConfigurationResponse, error)
-	GetTopicPublishers(ctx context.Context, in *GetTopicPublishersRequest, opts ...grpc.CallOption) (*GetTopicPublishersResponse, error)
-	GetTopicSubscribers(ctx context.Context, in *GetTopicSubscribersRequest, opts ...grpc.CallOption) (*GetTopicSubscribersResponse, error)
+	ListTopics(ctx context.Context, in *ListTopicsRequest) (*ListTopicsResponse, error)
+	TopicExists(ctx context.Context, in *TopicExistsRequest) (*TopicExistsResponse, error)
+	ConfigureTopic(ctx context.Context, in *ConfigureTopicRequest) (*ConfigureTopicResponse, error)
+	LookupTopicBrokers(ctx context.Context, in *LookupTopicBrokersRequest) (*LookupTopicBrokersResponse, error)
+	GetTopicConfiguration(ctx context.Context, in *GetTopicConfigurationRequest) (*GetTopicConfigurationResponse, error)
+	GetTopicPublishers(ctx context.Context, in *GetTopicPublishersRequest) (*GetTopicPublishersResponse, error)
+	GetTopicSubscribers(ctx context.Context, in *GetTopicSubscribersRequest) (*GetTopicSubscribersResponse, error)
 	// invoked by the balancer, running on each broker
-	AssignTopicPartitions(ctx context.Context, in *AssignTopicPartitionsRequest, opts ...grpc.CallOption) (*AssignTopicPartitionsResponse, error)
-	ClosePublishers(ctx context.Context, in *ClosePublishersRequest, opts ...grpc.CallOption) (*ClosePublishersResponse, error)
-	CloseSubscribers(ctx context.Context, in *CloseSubscribersRequest, opts ...grpc.CallOption) (*CloseSubscribersResponse, error)
+	AssignTopicPartitions(ctx context.Context, in *AssignTopicPartitionsRequest) (*AssignTopicPartitionsResponse, error)
+	ClosePublishers(ctx context.Context, in *ClosePublishersRequest) (*ClosePublishersResponse, error)
+	CloseSubscribers(ctx context.Context, in *CloseSubscribersRequest) (*CloseSubscribersResponse, error)
 	// subscriber connects to broker balancer, which coordinates with the subscribers
-	SubscriberToSubCoordinator(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[SubscriberToSubCoordinatorRequest, SubscriberToSubCoordinatorResponse], error)
+	SubscriberToSubCoordinator(ctx context.Context) (rpc.BidiStream[SubscriberToSubCoordinatorRequest, SubscriberToSubCoordinatorResponse], error)
 	// data plane for each topic partition
-	PublishMessage(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[PublishMessageRequest, PublishMessageResponse], error)
-	SubscribeMessage(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[SubscribeMessageRequest, SubscribeMessageResponse], error)
+	PublishMessage(ctx context.Context) (rpc.BidiStream[PublishMessageRequest, PublishMessageResponse], error)
+	SubscribeMessage(ctx context.Context) (rpc.BidiStream[SubscribeMessageRequest, SubscribeMessageResponse], error)
 	// The lead broker asks a follower broker to follow itself
-	PublishFollowMe(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[PublishFollowMeRequest, PublishFollowMeResponse], error)
-	SubscribeFollowMe(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[SubscribeFollowMeRequest, SubscribeFollowMeResponse], error)
+	PublishFollowMe(ctx context.Context) (rpc.BidiStream[PublishFollowMeRequest, PublishFollowMeResponse], error)
+	SubscribeFollowMe(ctx context.Context) (rpc.ClientStream[SubscribeFollowMeRequest, SubscribeFollowMeResponse], error)
 	// Stateless fetch API (Kafka-style) - request/response pattern
 	// This is the recommended API for Kafka gateway and other stateless clients
 	// No streaming, no session state - each request is completely independent
-	FetchMessage(ctx context.Context, in *FetchMessageRequest, opts ...grpc.CallOption) (*FetchMessageResponse, error)
+	FetchMessage(ctx context.Context, in *FetchMessageRequest) (*FetchMessageResponse, error)
 	// SQL query support - get unflushed messages from broker's in-memory buffer (streaming)
-	GetUnflushedMessages(ctx context.Context, in *GetUnflushedMessagesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GetUnflushedMessagesResponse], error)
+	GetUnflushedMessages(ctx context.Context, in *GetUnflushedMessagesRequest) (rpc.ServerStream[GetUnflushedMessagesResponse], error)
 	// Get comprehensive partition range information (offsets, timestamps, and other fields)
-	GetPartitionRangeInfo(ctx context.Context, in *GetPartitionRangeInfoRequest, opts ...grpc.CallOption) (*GetPartitionRangeInfoResponse, error)
+	GetPartitionRangeInfo(ctx context.Context, in *GetPartitionRangeInfoRequest) (*GetPartitionRangeInfoResponse, error)
 }
 
-type hanzoMessagingClient struct {
-	cc grpc.ClientConnInterface
+// Client-side stream seams — the grpc-free names existing callers reference.
+
+// HanzoMessaging_PublisherToPubBalancerClient is the client side of the PublisherToPubBalancer bidi-stream.
+type HanzoMessaging_PublisherToPubBalancerClient = rpc.BidiStream[PublisherToPubBalancerRequest, PublisherToPubBalancerResponse]
+
+// HanzoMessaging_SubscriberToSubCoordinatorClient is the client side of the SubscriberToSubCoordinator bidi-stream.
+type HanzoMessaging_SubscriberToSubCoordinatorClient = rpc.BidiStream[SubscriberToSubCoordinatorRequest, SubscriberToSubCoordinatorResponse]
+
+// HanzoMessaging_PublishMessageClient is the client side of the PublishMessage bidi-stream.
+type HanzoMessaging_PublishMessageClient = rpc.BidiStream[PublishMessageRequest, PublishMessageResponse]
+
+// HanzoMessaging_SubscribeMessageClient is the client side of the SubscribeMessage bidi-stream.
+type HanzoMessaging_SubscribeMessageClient = rpc.BidiStream[SubscribeMessageRequest, SubscribeMessageResponse]
+
+// HanzoMessaging_PublishFollowMeClient is the client side of the PublishFollowMe bidi-stream.
+type HanzoMessaging_PublishFollowMeClient = rpc.BidiStream[PublishFollowMeRequest, PublishFollowMeResponse]
+
+// HanzoMessaging_SubscribeFollowMeClient is the client side of the SubscribeFollowMe client-stream.
+type HanzoMessaging_SubscribeFollowMeClient = rpc.ClientStream[SubscribeFollowMeRequest, SubscribeFollowMeResponse]
+
+// HanzoMessaging_GetUnflushedMessagesClient is the client side of the GetUnflushedMessages server-stream.
+type HanzoMessaging_GetUnflushedMessagesClient = rpc.ServerStream[GetUnflushedMessagesResponse]
+
+// Server-side stream seams — the grpc-free halves the broker engine uses: a bidi
+// RPC reads requests with Recv and pushes responses with Send; the client-stream
+// RPC reads with Recv then replies once with SendAndClose; the server-stream RPC
+// pushes items with Send. Context ends with the stream (peer disconnect included).
+
+// HanzoMessaging_PublisherToPubBalancerServer is the server side of the PublisherToPubBalancer bidi-stream.
+type HanzoMessaging_PublisherToPubBalancerServer interface {
+	Send(*PublisherToPubBalancerResponse) error
+	Recv() (*PublisherToPubBalancerRequest, error)
+	Context() context.Context
 }
 
-func NewHanzoMessagingClient(cc grpc.ClientConnInterface) HanzoMessagingClient {
-	return &hanzoMessagingClient{cc}
+// HanzoMessaging_SubscriberToSubCoordinatorServer is the server side of the SubscriberToSubCoordinator bidi-stream.
+type HanzoMessaging_SubscriberToSubCoordinatorServer interface {
+	Send(*SubscriberToSubCoordinatorResponse) error
+	Recv() (*SubscriberToSubCoordinatorRequest, error)
+	Context() context.Context
 }
 
-func (c *hanzoMessagingClient) FindBrokerLeader(ctx context.Context, in *FindBrokerLeaderRequest, opts ...grpc.CallOption) (*FindBrokerLeaderResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(FindBrokerLeaderResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_FindBrokerLeader_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+// HanzoMessaging_PublishMessageServer is the server side of the PublishMessage bidi-stream.
+type HanzoMessaging_PublishMessageServer interface {
+	Send(*PublishMessageResponse) error
+	Recv() (*PublishMessageRequest, error)
+	Context() context.Context
 }
 
-func (c *hanzoMessagingClient) PublisherToPubBalancer(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[PublisherToPubBalancerRequest, PublisherToPubBalancerResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &HanzoMessaging_ServiceDesc.Streams[0], HanzoMessaging_PublisherToPubBalancer_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[PublisherToPubBalancerRequest, PublisherToPubBalancerResponse]{ClientStream: stream}
-	return x, nil
+// HanzoMessaging_SubscribeMessageServer is the server side of the SubscribeMessage bidi-stream.
+type HanzoMessaging_SubscribeMessageServer interface {
+	Send(*SubscribeMessageResponse) error
+	Recv() (*SubscribeMessageRequest, error)
+	Context() context.Context
 }
 
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_PublisherToPubBalancerClient = grpc.BidiStreamingClient[PublisherToPubBalancerRequest, PublisherToPubBalancerResponse]
-
-func (c *hanzoMessagingClient) BalanceTopics(ctx context.Context, in *BalanceTopicsRequest, opts ...grpc.CallOption) (*BalanceTopicsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BalanceTopicsResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_BalanceTopics_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+// HanzoMessaging_PublishFollowMeServer is the server side of the PublishFollowMe bidi-stream.
+type HanzoMessaging_PublishFollowMeServer interface {
+	Send(*PublishFollowMeResponse) error
+	Recv() (*PublishFollowMeRequest, error)
+	Context() context.Context
 }
 
-func (c *hanzoMessagingClient) ListTopics(ctx context.Context, in *ListTopicsRequest, opts ...grpc.CallOption) (*ListTopicsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListTopicsResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_ListTopics_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+// HanzoMessaging_SubscribeFollowMeServer is the server side of the SubscribeFollowMe client-stream.
+type HanzoMessaging_SubscribeFollowMeServer interface {
+	SendAndClose(*SubscribeFollowMeResponse) error
+	Recv() (*SubscribeFollowMeRequest, error)
+	Context() context.Context
 }
 
-func (c *hanzoMessagingClient) TopicExists(ctx context.Context, in *TopicExistsRequest, opts ...grpc.CallOption) (*TopicExistsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TopicExistsResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_TopicExists_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+// HanzoMessaging_GetUnflushedMessagesServer is the server side of the GetUnflushedMessages server-stream.
+type HanzoMessaging_GetUnflushedMessagesServer interface {
+	Send(*GetUnflushedMessagesResponse) error
+	Context() context.Context
 }
 
-func (c *hanzoMessagingClient) ConfigureTopic(ctx context.Context, in *ConfigureTopicRequest, opts ...grpc.CallOption) (*ConfigureTopicResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ConfigureTopicResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_ConfigureTopic_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *hanzoMessagingClient) LookupTopicBrokers(ctx context.Context, in *LookupTopicBrokersRequest, opts ...grpc.CallOption) (*LookupTopicBrokersResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LookupTopicBrokersResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_LookupTopicBrokers_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *hanzoMessagingClient) GetTopicConfiguration(ctx context.Context, in *GetTopicConfigurationRequest, opts ...grpc.CallOption) (*GetTopicConfigurationResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetTopicConfigurationResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_GetTopicConfiguration_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *hanzoMessagingClient) GetTopicPublishers(ctx context.Context, in *GetTopicPublishersRequest, opts ...grpc.CallOption) (*GetTopicPublishersResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetTopicPublishersResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_GetTopicPublishers_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *hanzoMessagingClient) GetTopicSubscribers(ctx context.Context, in *GetTopicSubscribersRequest, opts ...grpc.CallOption) (*GetTopicSubscribersResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetTopicSubscribersResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_GetTopicSubscribers_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *hanzoMessagingClient) AssignTopicPartitions(ctx context.Context, in *AssignTopicPartitionsRequest, opts ...grpc.CallOption) (*AssignTopicPartitionsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AssignTopicPartitionsResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_AssignTopicPartitions_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *hanzoMessagingClient) ClosePublishers(ctx context.Context, in *ClosePublishersRequest, opts ...grpc.CallOption) (*ClosePublishersResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ClosePublishersResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_ClosePublishers_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *hanzoMessagingClient) CloseSubscribers(ctx context.Context, in *CloseSubscribersRequest, opts ...grpc.CallOption) (*CloseSubscribersResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CloseSubscribersResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_CloseSubscribers_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *hanzoMessagingClient) SubscriberToSubCoordinator(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[SubscriberToSubCoordinatorRequest, SubscriberToSubCoordinatorResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &HanzoMessaging_ServiceDesc.Streams[1], HanzoMessaging_SubscriberToSubCoordinator_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[SubscriberToSubCoordinatorRequest, SubscriberToSubCoordinatorResponse]{ClientStream: stream}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_SubscriberToSubCoordinatorClient = grpc.BidiStreamingClient[SubscriberToSubCoordinatorRequest, SubscriberToSubCoordinatorResponse]
-
-func (c *hanzoMessagingClient) PublishMessage(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[PublishMessageRequest, PublishMessageResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &HanzoMessaging_ServiceDesc.Streams[2], HanzoMessaging_PublishMessage_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[PublishMessageRequest, PublishMessageResponse]{ClientStream: stream}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_PublishMessageClient = grpc.BidiStreamingClient[PublishMessageRequest, PublishMessageResponse]
-
-func (c *hanzoMessagingClient) SubscribeMessage(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[SubscribeMessageRequest, SubscribeMessageResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &HanzoMessaging_ServiceDesc.Streams[3], HanzoMessaging_SubscribeMessage_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[SubscribeMessageRequest, SubscribeMessageResponse]{ClientStream: stream}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_SubscribeMessageClient = grpc.BidiStreamingClient[SubscribeMessageRequest, SubscribeMessageResponse]
-
-func (c *hanzoMessagingClient) PublishFollowMe(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[PublishFollowMeRequest, PublishFollowMeResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &HanzoMessaging_ServiceDesc.Streams[4], HanzoMessaging_PublishFollowMe_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[PublishFollowMeRequest, PublishFollowMeResponse]{ClientStream: stream}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_PublishFollowMeClient = grpc.BidiStreamingClient[PublishFollowMeRequest, PublishFollowMeResponse]
-
-func (c *hanzoMessagingClient) SubscribeFollowMe(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[SubscribeFollowMeRequest, SubscribeFollowMeResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &HanzoMessaging_ServiceDesc.Streams[5], HanzoMessaging_SubscribeFollowMe_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[SubscribeFollowMeRequest, SubscribeFollowMeResponse]{ClientStream: stream}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_SubscribeFollowMeClient = grpc.ClientStreamingClient[SubscribeFollowMeRequest, SubscribeFollowMeResponse]
-
-func (c *hanzoMessagingClient) FetchMessage(ctx context.Context, in *FetchMessageRequest, opts ...grpc.CallOption) (*FetchMessageResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(FetchMessageResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_FetchMessage_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *hanzoMessagingClient) GetUnflushedMessages(ctx context.Context, in *GetUnflushedMessagesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GetUnflushedMessagesResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &HanzoMessaging_ServiceDesc.Streams[6], HanzoMessaging_GetUnflushedMessages_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[GetUnflushedMessagesRequest, GetUnflushedMessagesResponse]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_GetUnflushedMessagesClient = grpc.ServerStreamingClient[GetUnflushedMessagesResponse]
-
-func (c *hanzoMessagingClient) GetPartitionRangeInfo(ctx context.Context, in *GetPartitionRangeInfoRequest, opts ...grpc.CallOption) (*GetPartitionRangeInfoResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetPartitionRangeInfoResponse)
-	err := c.cc.Invoke(ctx, HanzoMessaging_GetPartitionRangeInfo_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// HanzoMessagingServer is the server API for HanzoMessaging service.
-// All implementations must embed UnimplementedHanzoMessagingServer
-// for forward compatibility.
+// HanzoMessagingServer is the server API for HanzoMessaging service: the plain
+// method set the broker engine implements and the ZAP server backend dispatches to.
 type HanzoMessagingServer interface {
 	// control plane
 	FindBrokerLeader(context.Context, *FindBrokerLeaderRequest) (*FindBrokerLeaderResponse, error)
 	// control plane for balancer
-	PublisherToPubBalancer(grpc.BidiStreamingServer[PublisherToPubBalancerRequest, PublisherToPubBalancerResponse]) error
+	PublisherToPubBalancer(HanzoMessaging_PublisherToPubBalancerServer) error
 	BalanceTopics(context.Context, *BalanceTopicsRequest) (*BalanceTopicsResponse, error)
 	// control plane for topic partitions
 	ListTopics(context.Context, *ListTopicsRequest) (*ListTopicsResponse, error)
@@ -348,525 +180,95 @@ type HanzoMessagingServer interface {
 	ClosePublishers(context.Context, *ClosePublishersRequest) (*ClosePublishersResponse, error)
 	CloseSubscribers(context.Context, *CloseSubscribersRequest) (*CloseSubscribersResponse, error)
 	// subscriber connects to broker balancer, which coordinates with the subscribers
-	SubscriberToSubCoordinator(grpc.BidiStreamingServer[SubscriberToSubCoordinatorRequest, SubscriberToSubCoordinatorResponse]) error
+	SubscriberToSubCoordinator(HanzoMessaging_SubscriberToSubCoordinatorServer) error
 	// data plane for each topic partition
-	PublishMessage(grpc.BidiStreamingServer[PublishMessageRequest, PublishMessageResponse]) error
-	SubscribeMessage(grpc.BidiStreamingServer[SubscribeMessageRequest, SubscribeMessageResponse]) error
+	PublishMessage(HanzoMessaging_PublishMessageServer) error
+	SubscribeMessage(HanzoMessaging_SubscribeMessageServer) error
 	// The lead broker asks a follower broker to follow itself
-	PublishFollowMe(grpc.BidiStreamingServer[PublishFollowMeRequest, PublishFollowMeResponse]) error
-	SubscribeFollowMe(grpc.ClientStreamingServer[SubscribeFollowMeRequest, SubscribeFollowMeResponse]) error
+	PublishFollowMe(HanzoMessaging_PublishFollowMeServer) error
+	SubscribeFollowMe(HanzoMessaging_SubscribeFollowMeServer) error
 	// Stateless fetch API (Kafka-style) - request/response pattern
 	// This is the recommended API for Kafka gateway and other stateless clients
 	// No streaming, no session state - each request is completely independent
 	FetchMessage(context.Context, *FetchMessageRequest) (*FetchMessageResponse, error)
 	// SQL query support - get unflushed messages from broker's in-memory buffer (streaming)
-	GetUnflushedMessages(*GetUnflushedMessagesRequest, grpc.ServerStreamingServer[GetUnflushedMessagesResponse]) error
+	GetUnflushedMessages(*GetUnflushedMessagesRequest, HanzoMessaging_GetUnflushedMessagesServer) error
 	// Get comprehensive partition range information (offsets, timestamps, and other fields)
 	GetPartitionRangeInfo(context.Context, *GetPartitionRangeInfoRequest) (*GetPartitionRangeInfoResponse, error)
-	mustEmbedUnimplementedHanzoMessagingServer()
 }
 
-// UnimplementedHanzoMessagingServer must be embedded to have
-// forward compatible implementations.
-//
-// NOTE: this should be embedded by value instead of pointer to avoid a nil
-// pointer dereference when methods are called.
+// errUnimplemented is returned by every UnimplementedHanzoMessagingServer method.
+// The de-grpc'd analogue of the generated mustEmbedUnimplemented machinery: a
+// plain error, not status.Errorf(codes.Unimplemented, ...).
+var errUnimplemented = errors.New("mq_pb: method not implemented")
+
+// UnimplementedHanzoMessagingServer is a no-op HanzoMessagingServer whose every
+// method returns errUnimplemented. Embed it in a partial implementation (e.g. a
+// test fake that exercises only a few RPCs) to stay a total HanzoMessagingServer
+// — the de-grpc'd analogue of the generated mustEmbedUnimplemented embed. The
+// live broker implements every method and does NOT embed it.
 type UnimplementedHanzoMessagingServer struct{}
 
 func (UnimplementedHanzoMessagingServer) FindBrokerLeader(context.Context, *FindBrokerLeaderRequest) (*FindBrokerLeaderResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method FindBrokerLeader not implemented")
+	return nil, errUnimplemented
 }
-func (UnimplementedHanzoMessagingServer) PublisherToPubBalancer(grpc.BidiStreamingServer[PublisherToPubBalancerRequest, PublisherToPubBalancerResponse]) error {
-	return status.Error(codes.Unimplemented, "method PublisherToPubBalancer not implemented")
+func (UnimplementedHanzoMessagingServer) PublisherToPubBalancer(HanzoMessaging_PublisherToPubBalancerServer) error {
+	return errUnimplemented
 }
 func (UnimplementedHanzoMessagingServer) BalanceTopics(context.Context, *BalanceTopicsRequest) (*BalanceTopicsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method BalanceTopics not implemented")
+	return nil, errUnimplemented
 }
 func (UnimplementedHanzoMessagingServer) ListTopics(context.Context, *ListTopicsRequest) (*ListTopicsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListTopics not implemented")
+	return nil, errUnimplemented
 }
 func (UnimplementedHanzoMessagingServer) TopicExists(context.Context, *TopicExistsRequest) (*TopicExistsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method TopicExists not implemented")
+	return nil, errUnimplemented
 }
 func (UnimplementedHanzoMessagingServer) ConfigureTopic(context.Context, *ConfigureTopicRequest) (*ConfigureTopicResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ConfigureTopic not implemented")
+	return nil, errUnimplemented
 }
 func (UnimplementedHanzoMessagingServer) LookupTopicBrokers(context.Context, *LookupTopicBrokersRequest) (*LookupTopicBrokersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method LookupTopicBrokers not implemented")
+	return nil, errUnimplemented
 }
 func (UnimplementedHanzoMessagingServer) GetTopicConfiguration(context.Context, *GetTopicConfigurationRequest) (*GetTopicConfigurationResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetTopicConfiguration not implemented")
+	return nil, errUnimplemented
 }
 func (UnimplementedHanzoMessagingServer) GetTopicPublishers(context.Context, *GetTopicPublishersRequest) (*GetTopicPublishersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetTopicPublishers not implemented")
+	return nil, errUnimplemented
 }
 func (UnimplementedHanzoMessagingServer) GetTopicSubscribers(context.Context, *GetTopicSubscribersRequest) (*GetTopicSubscribersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetTopicSubscribers not implemented")
+	return nil, errUnimplemented
 }
 func (UnimplementedHanzoMessagingServer) AssignTopicPartitions(context.Context, *AssignTopicPartitionsRequest) (*AssignTopicPartitionsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method AssignTopicPartitions not implemented")
+	return nil, errUnimplemented
 }
 func (UnimplementedHanzoMessagingServer) ClosePublishers(context.Context, *ClosePublishersRequest) (*ClosePublishersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ClosePublishers not implemented")
+	return nil, errUnimplemented
 }
 func (UnimplementedHanzoMessagingServer) CloseSubscribers(context.Context, *CloseSubscribersRequest) (*CloseSubscribersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method CloseSubscribers not implemented")
+	return nil, errUnimplemented
 }
-func (UnimplementedHanzoMessagingServer) SubscriberToSubCoordinator(grpc.BidiStreamingServer[SubscriberToSubCoordinatorRequest, SubscriberToSubCoordinatorResponse]) error {
-	return status.Error(codes.Unimplemented, "method SubscriberToSubCoordinator not implemented")
+func (UnimplementedHanzoMessagingServer) SubscriberToSubCoordinator(HanzoMessaging_SubscriberToSubCoordinatorServer) error {
+	return errUnimplemented
 }
-func (UnimplementedHanzoMessagingServer) PublishMessage(grpc.BidiStreamingServer[PublishMessageRequest, PublishMessageResponse]) error {
-	return status.Error(codes.Unimplemented, "method PublishMessage not implemented")
+func (UnimplementedHanzoMessagingServer) PublishMessage(HanzoMessaging_PublishMessageServer) error {
+	return errUnimplemented
 }
-func (UnimplementedHanzoMessagingServer) SubscribeMessage(grpc.BidiStreamingServer[SubscribeMessageRequest, SubscribeMessageResponse]) error {
-	return status.Error(codes.Unimplemented, "method SubscribeMessage not implemented")
+func (UnimplementedHanzoMessagingServer) SubscribeMessage(HanzoMessaging_SubscribeMessageServer) error {
+	return errUnimplemented
 }
-func (UnimplementedHanzoMessagingServer) PublishFollowMe(grpc.BidiStreamingServer[PublishFollowMeRequest, PublishFollowMeResponse]) error {
-	return status.Error(codes.Unimplemented, "method PublishFollowMe not implemented")
+func (UnimplementedHanzoMessagingServer) PublishFollowMe(HanzoMessaging_PublishFollowMeServer) error {
+	return errUnimplemented
 }
-func (UnimplementedHanzoMessagingServer) SubscribeFollowMe(grpc.ClientStreamingServer[SubscribeFollowMeRequest, SubscribeFollowMeResponse]) error {
-	return status.Error(codes.Unimplemented, "method SubscribeFollowMe not implemented")
+func (UnimplementedHanzoMessagingServer) SubscribeFollowMe(HanzoMessaging_SubscribeFollowMeServer) error {
+	return errUnimplemented
 }
 func (UnimplementedHanzoMessagingServer) FetchMessage(context.Context, *FetchMessageRequest) (*FetchMessageResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method FetchMessage not implemented")
+	return nil, errUnimplemented
 }
-func (UnimplementedHanzoMessagingServer) GetUnflushedMessages(*GetUnflushedMessagesRequest, grpc.ServerStreamingServer[GetUnflushedMessagesResponse]) error {
-	return status.Error(codes.Unimplemented, "method GetUnflushedMessages not implemented")
+func (UnimplementedHanzoMessagingServer) GetUnflushedMessages(*GetUnflushedMessagesRequest, HanzoMessaging_GetUnflushedMessagesServer) error {
+	return errUnimplemented
 }
 func (UnimplementedHanzoMessagingServer) GetPartitionRangeInfo(context.Context, *GetPartitionRangeInfoRequest) (*GetPartitionRangeInfoResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetPartitionRangeInfo not implemented")
-}
-func (UnimplementedHanzoMessagingServer) mustEmbedUnimplementedHanzoMessagingServer() {}
-func (UnimplementedHanzoMessagingServer) testEmbeddedByValue()                        {}
-
-// UnsafeHanzoMessagingServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to HanzoMessagingServer will
-// result in compilation errors.
-type UnsafeHanzoMessagingServer interface {
-	mustEmbedUnimplementedHanzoMessagingServer()
-}
-
-func RegisterHanzoMessagingServer(s grpc.ServiceRegistrar, srv HanzoMessagingServer) {
-	// If the following call panics, it indicates UnimplementedHanzoMessagingServer was
-	// embedded by pointer and is nil.  This will cause panics if an
-	// unimplemented method is ever invoked, so we test this at initialization
-	// time to prevent it from happening at runtime later due to I/O.
-	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
-		t.testEmbeddedByValue()
-	}
-	s.RegisterService(&HanzoMessaging_ServiceDesc, srv)
-}
-
-func _HanzoMessaging_FindBrokerLeader_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FindBrokerLeaderRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).FindBrokerLeader(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_FindBrokerLeader_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).FindBrokerLeader(ctx, req.(*FindBrokerLeaderRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HanzoMessaging_PublisherToPubBalancer_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(HanzoMessagingServer).PublisherToPubBalancer(&grpc.GenericServerStream[PublisherToPubBalancerRequest, PublisherToPubBalancerResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_PublisherToPubBalancerServer = grpc.BidiStreamingServer[PublisherToPubBalancerRequest, PublisherToPubBalancerResponse]
-
-func _HanzoMessaging_BalanceTopics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BalanceTopicsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).BalanceTopics(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_BalanceTopics_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).BalanceTopics(ctx, req.(*BalanceTopicsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HanzoMessaging_ListTopics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListTopicsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).ListTopics(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_ListTopics_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).ListTopics(ctx, req.(*ListTopicsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HanzoMessaging_TopicExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TopicExistsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).TopicExists(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_TopicExists_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).TopicExists(ctx, req.(*TopicExistsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HanzoMessaging_ConfigureTopic_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ConfigureTopicRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).ConfigureTopic(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_ConfigureTopic_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).ConfigureTopic(ctx, req.(*ConfigureTopicRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HanzoMessaging_LookupTopicBrokers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LookupTopicBrokersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).LookupTopicBrokers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_LookupTopicBrokers_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).LookupTopicBrokers(ctx, req.(*LookupTopicBrokersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HanzoMessaging_GetTopicConfiguration_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetTopicConfigurationRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).GetTopicConfiguration(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_GetTopicConfiguration_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).GetTopicConfiguration(ctx, req.(*GetTopicConfigurationRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HanzoMessaging_GetTopicPublishers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetTopicPublishersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).GetTopicPublishers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_GetTopicPublishers_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).GetTopicPublishers(ctx, req.(*GetTopicPublishersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HanzoMessaging_GetTopicSubscribers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetTopicSubscribersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).GetTopicSubscribers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_GetTopicSubscribers_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).GetTopicSubscribers(ctx, req.(*GetTopicSubscribersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HanzoMessaging_AssignTopicPartitions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AssignTopicPartitionsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).AssignTopicPartitions(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_AssignTopicPartitions_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).AssignTopicPartitions(ctx, req.(*AssignTopicPartitionsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HanzoMessaging_ClosePublishers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ClosePublishersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).ClosePublishers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_ClosePublishers_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).ClosePublishers(ctx, req.(*ClosePublishersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HanzoMessaging_CloseSubscribers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CloseSubscribersRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).CloseSubscribers(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_CloseSubscribers_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).CloseSubscribers(ctx, req.(*CloseSubscribersRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HanzoMessaging_SubscriberToSubCoordinator_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(HanzoMessagingServer).SubscriberToSubCoordinator(&grpc.GenericServerStream[SubscriberToSubCoordinatorRequest, SubscriberToSubCoordinatorResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_SubscriberToSubCoordinatorServer = grpc.BidiStreamingServer[SubscriberToSubCoordinatorRequest, SubscriberToSubCoordinatorResponse]
-
-func _HanzoMessaging_PublishMessage_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(HanzoMessagingServer).PublishMessage(&grpc.GenericServerStream[PublishMessageRequest, PublishMessageResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_PublishMessageServer = grpc.BidiStreamingServer[PublishMessageRequest, PublishMessageResponse]
-
-func _HanzoMessaging_SubscribeMessage_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(HanzoMessagingServer).SubscribeMessage(&grpc.GenericServerStream[SubscribeMessageRequest, SubscribeMessageResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_SubscribeMessageServer = grpc.BidiStreamingServer[SubscribeMessageRequest, SubscribeMessageResponse]
-
-func _HanzoMessaging_PublishFollowMe_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(HanzoMessagingServer).PublishFollowMe(&grpc.GenericServerStream[PublishFollowMeRequest, PublishFollowMeResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_PublishFollowMeServer = grpc.BidiStreamingServer[PublishFollowMeRequest, PublishFollowMeResponse]
-
-func _HanzoMessaging_SubscribeFollowMe_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(HanzoMessagingServer).SubscribeFollowMe(&grpc.GenericServerStream[SubscribeFollowMeRequest, SubscribeFollowMeResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_SubscribeFollowMeServer = grpc.ClientStreamingServer[SubscribeFollowMeRequest, SubscribeFollowMeResponse]
-
-func _HanzoMessaging_FetchMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FetchMessageRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).FetchMessage(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_FetchMessage_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).FetchMessage(ctx, req.(*FetchMessageRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HanzoMessaging_GetUnflushedMessages_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(GetUnflushedMessagesRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(HanzoMessagingServer).GetUnflushedMessages(m, &grpc.GenericServerStream[GetUnflushedMessagesRequest, GetUnflushedMessagesResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HanzoMessaging_GetUnflushedMessagesServer = grpc.ServerStreamingServer[GetUnflushedMessagesResponse]
-
-func _HanzoMessaging_GetPartitionRangeInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetPartitionRangeInfoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HanzoMessagingServer).GetPartitionRangeInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HanzoMessaging_GetPartitionRangeInfo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HanzoMessagingServer).GetPartitionRangeInfo(ctx, req.(*GetPartitionRangeInfoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// HanzoMessaging_ServiceDesc is the grpc.ServiceDesc for HanzoMessaging service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var HanzoMessaging_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "messaging_pb.HanzoMessaging",
-	HandlerType: (*HanzoMessagingServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "FindBrokerLeader",
-			Handler:    _HanzoMessaging_FindBrokerLeader_Handler,
-		},
-		{
-			MethodName: "BalanceTopics",
-			Handler:    _HanzoMessaging_BalanceTopics_Handler,
-		},
-		{
-			MethodName: "ListTopics",
-			Handler:    _HanzoMessaging_ListTopics_Handler,
-		},
-		{
-			MethodName: "TopicExists",
-			Handler:    _HanzoMessaging_TopicExists_Handler,
-		},
-		{
-			MethodName: "ConfigureTopic",
-			Handler:    _HanzoMessaging_ConfigureTopic_Handler,
-		},
-		{
-			MethodName: "LookupTopicBrokers",
-			Handler:    _HanzoMessaging_LookupTopicBrokers_Handler,
-		},
-		{
-			MethodName: "GetTopicConfiguration",
-			Handler:    _HanzoMessaging_GetTopicConfiguration_Handler,
-		},
-		{
-			MethodName: "GetTopicPublishers",
-			Handler:    _HanzoMessaging_GetTopicPublishers_Handler,
-		},
-		{
-			MethodName: "GetTopicSubscribers",
-			Handler:    _HanzoMessaging_GetTopicSubscribers_Handler,
-		},
-		{
-			MethodName: "AssignTopicPartitions",
-			Handler:    _HanzoMessaging_AssignTopicPartitions_Handler,
-		},
-		{
-			MethodName: "ClosePublishers",
-			Handler:    _HanzoMessaging_ClosePublishers_Handler,
-		},
-		{
-			MethodName: "CloseSubscribers",
-			Handler:    _HanzoMessaging_CloseSubscribers_Handler,
-		},
-		{
-			MethodName: "FetchMessage",
-			Handler:    _HanzoMessaging_FetchMessage_Handler,
-		},
-		{
-			MethodName: "GetPartitionRangeInfo",
-			Handler:    _HanzoMessaging_GetPartitionRangeInfo_Handler,
-		},
-	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "PublisherToPubBalancer",
-			Handler:       _HanzoMessaging_PublisherToPubBalancer_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "SubscriberToSubCoordinator",
-			Handler:       _HanzoMessaging_SubscriberToSubCoordinator_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "PublishMessage",
-			Handler:       _HanzoMessaging_PublishMessage_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "SubscribeMessage",
-			Handler:       _HanzoMessaging_SubscribeMessage_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "PublishFollowMe",
-			Handler:       _HanzoMessaging_PublishFollowMe_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "SubscribeFollowMe",
-			Handler:       _HanzoMessaging_SubscribeFollowMe_Handler,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "GetUnflushedMessages",
-			Handler:       _HanzoMessaging_GetUnflushedMessages_Handler,
-			ServerStreams: true,
-		},
-	},
-	Metadata: "mq_broker.proto",
+	return nil, errUnimplemented
 }

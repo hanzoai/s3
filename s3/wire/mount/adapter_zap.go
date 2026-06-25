@@ -3,7 +3,7 @@
 //
 // Native ZAP adapter for the HanzoMount service — the hand-written glue that
 // binds the generated DispatchHanzoMount/HanzoMountClient (mount_zap.go) to a
-// real mount backend. Mirrors s3/zapsvc/service.go exactly: a backend interface
+// real mount backend. Mirrors s3/object/service.go exactly: a backend interface
 // in engine terms, a handler that adapts it to the generated HanzoMountHandler,
 // Dispatch/Serve for the server side, and Dial/NewClient/Client for callers.
 //

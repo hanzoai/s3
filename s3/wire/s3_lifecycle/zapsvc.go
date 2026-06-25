@@ -3,7 +3,7 @@
 //
 // Native ZAP service adapter for HanzoS3LifecycleInternal — the hand-written
 // glue that binds the generated Dispatch/Client (s3_lifecycle_zap.go) to a real
-// engine backend. This is the lifecycle peer of s3/zapsvc/service.go for the
+// engine backend. This is the lifecycle peer of s3/svc/object/service.go for the
 // object service: requests/responses are the zero-copy s3_lifecyclewire message
 // buffers, carried over the canonical github.com/zap-proto/go transport and
 // dispatched by the generated HanzoS3LifecycleInternal service. No struct

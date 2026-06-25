@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/hanzoai/s3/s3/glog"
-	"github.com/hanzoai/s3/s3/masterzap"
+	"github.com/hanzoai/s3/s3/svc/master"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/security"
@@ -152,8 +152,8 @@ func startMasterFollower(masterOptions MasterOptions) {
 	// on interrupt.
 	grpcPort := *masterOptions.portGrpc
 	masterZapAddr := util.JoinHostPort(*masterOptions.ipBind, pb.ZapPort(grpcPort))
-	masterDispatch := masterwire.Dispatch(masterzap.NewServerBackend(ms))
-	masterStream := masterstream.Handler(masterzap.NewStreamServer(ms))
+	masterDispatch := masterwire.Dispatch(master.NewServerBackend(ms))
+	masterStream := masterstream.Handler(master.NewStreamServer(ms))
 	var masterZapSrv *transport.Server
 	var zapErr error
 	if tlsCfg := pb.ServerTLSConfig(util.GetViper(), "grpc.master"); tlsCfg != nil {

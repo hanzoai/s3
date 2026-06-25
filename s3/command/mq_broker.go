@@ -7,7 +7,7 @@ import (
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/mq/broker"
-	"github.com/hanzoai/s3/s3/mqzap"
+	"github.com/hanzoai/s3/s3/svc/mq"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/util"
@@ -107,8 +107,8 @@ func (mqBrokerOpt *MessageQueueBrokerOptions) startQueueServer() bool {
 	// cert/CA/allowed-CN gate the legacy gRPC broker enforced applies — no security
 	// downgrade. Otherwise it is plaintext (loopback / dev), exactly as the gRPC
 	// broker was plaintext when no cert was configured.
-	dispatch := mq_brokerwire.Dispatch(mqzap.NewServerBackend(qs))
-	streamHandler := mqzap.NewStreamServer(qs).ServeStream
+	dispatch := mq_brokerwire.Dispatch(mq.NewServerBackend(qs))
+	streamHandler := mq.NewStreamServer(qs).ServeStream
 	tlsCfg := pb.ServerTLSConfig(util.GetViper(), "grpc.msg_broker")
 
 	// zapServers collects every ZAP listener so shutdown can close them all.

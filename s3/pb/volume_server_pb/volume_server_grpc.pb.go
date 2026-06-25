@@ -7,7 +7,7 @@
 // gRPC ripped: this file holds only the grpc-free VolumeServer contracts. The
 // client interface returns the shared rpc.* stream seams; the server interface
 // is a plain method set (no mustEmbed). The transport is github.com/zap-proto/go
-// — the ZAP adapters in package volumezap satisfy these contracts and the wire
+// — the ZAP adapters in package volume satisfy these contracts and the wire
 // Dispatch serves them. No grpc client/server scaffolding remains.
 
 package volume_server_pb

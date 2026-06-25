@@ -223,7 +223,7 @@ func (ms *MasterServer) Ping(ctx context.Context, req *master_pb.PingRequest) (r
 	}
 	if req.TargetType == cluster.MasterType {
 		// Master-to-master liveness probe over the native ZAP transport: the whole
-		// master service is served over ZAP (see masterzap.NewServerBackend), so
+		// master service is served over ZAP (see master.NewServerBackend), so
 		// dial the target master's ZAP endpoint directly.
 		zapClient, dialErr := masterwire.Dial("tcp", pb.ServerAddress(req.Target).ToMasterZapAddress())
 		if dialErr != nil {

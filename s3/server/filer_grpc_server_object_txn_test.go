@@ -9,7 +9,7 @@ import (
 
 	"github.com/hanzoai/s3/s3/cluster/lock_manager"
 	"github.com/hanzoai/s3/s3/filer"
-	"github.com/hanzoai/s3/s3/filerzap"
+	filersvc "github.com/hanzoai/s3/s3/svc/filer"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
@@ -733,8 +733,8 @@ func TestObjectTransactionForwardsToOwner(t *testing.T) {
 	// the forwarding client now dials (transport.Dial), so the end-to-end
 	// forward hop exercises the real ZAP client+server path, not gRPC.
 	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
-		filerwire.Dispatch(filerzap.NewServerBackend(owner)),
-		filerstream.Handler(filerzap.NewStreamServer(owner)))
+		filerwire.Dispatch(filersvc.NewServerBackend(owner)),
+		filerstream.Handler(filersvc.NewStreamServer(owner)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}

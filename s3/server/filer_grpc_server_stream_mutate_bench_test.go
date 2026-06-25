@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/s3/filerzap"
+	"github.com/hanzoai/s3/s3/svc/filer"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/filerstub"
@@ -129,13 +129,13 @@ func (s *fakeConcurrentFilerServer) StreamMutateEntry(stream filer_pb.HanzoFiler
 
 // startFakeConcurrentFilerServer spins up the concurrent-handler variant over
 // the native ZAP transport — bidi StreamMutateEntry drives through
-// filerzap.NewStreamServer's streamMutateAdapter, the same path production uses.
+// filer.NewStreamServer's streamMutateAdapter, the same path production uses.
 func startFakeConcurrentFilerServer(t testing.TB, serviceDelay time.Duration, concurrency int) (string, *fakeConcurrentFilerServer, func()) {
 	t.Helper()
 	fake := &fakeConcurrentFilerServer{serviceDelay: serviceDelay, concurrency: concurrency}
 	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
-		filerwire.Dispatch(filerzap.NewServerBackend(fake)),
-		filerstream.Handler(filerzap.NewStreamServer(fake)))
+		filerwire.Dispatch(filer.NewServerBackend(fake)),
+		filerstream.Handler(filer.NewStreamServer(fake)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
@@ -214,8 +214,8 @@ func startFakeSchedulerFilerServer(t testing.TB, serviceDelay time.Duration, con
 	t.Helper()
 	fake := &fakeSchedulerFilerServer{serviceDelay: serviceDelay, concurrency: concurrency}
 	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
-		filerwire.Dispatch(filerzap.NewServerBackend(fake)),
-		filerstream.Handler(filerzap.NewStreamServer(fake)))
+		filerwire.Dispatch(filer.NewServerBackend(fake)),
+		filerstream.Handler(filer.NewStreamServer(fake)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
@@ -231,8 +231,8 @@ func startFakeFilerServer(t testing.TB, serviceDelay time.Duration) (string, *fa
 	t.Helper()
 	fake := &fakeFilerServer{serviceDelay: serviceDelay}
 	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
-		filerwire.Dispatch(filerzap.NewServerBackend(fake)),
-		filerstream.Handler(filerzap.NewStreamServer(fake)))
+		filerwire.Dispatch(filer.NewServerBackend(fake)),
+		filerstream.Handler(filer.NewStreamServer(fake)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}

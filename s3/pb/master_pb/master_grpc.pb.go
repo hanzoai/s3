@@ -8,7 +8,7 @@
 // client interface returns the shared rpc.* stream seams; the server interface
 // is a plain method set (no mustEmbed) whose streaming RPCs take grpc-free bidi
 // seams. The transport is github.com/zap-proto/go — the ZAP adapters in package
-// masterzap satisfy the client, and the master engine satisfies the server,
+// master satisfy the client, and the master engine satisfies the server,
 // dispatched by the wire (unary) and masterstream (streaming) servers. No grpc
 // client/server scaffolding remains.
 
