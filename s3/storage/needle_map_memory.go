@@ -8,7 +8,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/needle"
 	"github.com/hanzoai/s3/s3/storage/needle_map"
 	. "github.com/hanzoai/s3/s3/storage/types"
-	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
 type NeedleMap struct {
@@ -86,7 +85,7 @@ func (nm *NeedleMap) Destroy() error {
 	return os.Remove(nm.indexFile.Name())
 }
 
-func (nm *NeedleMap) UpdateNeedleMap(v *Volume, indexFile *os.File, opts *opt.Options, ldbTimeout int64) error {
+func (nm *NeedleMap) UpdateNeedleMap(v *Volume, indexFile *os.File, ldbTimeout int64) error {
 	if v.nm != nil {
 		v.nm.Close()
 		v.nm = nil

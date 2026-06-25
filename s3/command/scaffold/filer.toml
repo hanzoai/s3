@@ -21,11 +21,16 @@ recursive_delete = false
 # The following are filer store options
 ####################################################
 
-[zapdb]
-# local on disk, transactional LSM-tree key-value store.
-# default single-machine store, fast and scalable.
+[luxdb]
+# Filer metadata store over luxfi/database (the lux-canonical KV abstraction).
+# Local on disk, for single-machine setups; fairly scalable. Recommended.
+# backend selects the engine:
+#   zapdb   (default) ZAP-native, always available.
+#   pebble  requires building with -tags=pebbledb.
+#   leveldb requires building with -tags=leveldb.
 enabled = true
-dir = "./filerzdb"                     # directory to store zapdb files
+backend = "zapdb"
+dir = "./filerldb2"                    # directory to store the metadata db
 
 [sqlite]
 # local on disk, embedded SQL store. each bucket has its own table.
