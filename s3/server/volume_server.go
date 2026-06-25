@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/storage/types"
 
 	"github.com/hanzoai/s3/s3/stats"
@@ -19,7 +18,6 @@ import (
 )
 
 type VolumeServer struct {
-	volume_server_pb.UnimplementedVolumeServerServer
 	inFlightUploadDataSize        int64
 	inFlightDownloadDataSize      int64
 	concurrentUploadLimit         int64

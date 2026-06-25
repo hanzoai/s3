@@ -75,10 +75,13 @@ func NewCoordinatorRegistry(gatewayAddress string, masters []pb.ServerAddress, g
 	// Create filer discovery service that will periodically refresh filers from all masters
 	filerDiscoveryService := filer_client.NewFilerDiscoveryService(masters, grpcDialOption)
 
-	// Manually discover filers from each master until we find one
+	// Manually discover filers from each master until we find one. The master
+	// service is served over the native ZAP transport; WithMasterClient dials it
+	// (ToMasterZapAddress) over the masterPool — same discovery logic as
+	// filer_discovery.go.
 	var seedFiler pb.ServerAddress
 	for _, master := range masters {
-		// Use the same discovery logic as filer_discovery.go
+		master := master
 		err := pb.WithMasterClient(context.Background(), false, master, grpcDialOption, false, func(client master_pb.HanzoClient) error {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()

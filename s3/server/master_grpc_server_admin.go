@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/seaweedfs/raft"
 	"github.com/hanzoai/s3/s3/cluster"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
@@ -16,6 +15,8 @@ import (
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
+
+	"github.com/seaweedfs/raft"
 )
 
 /*
@@ -221,9 +222,9 @@ func (ms *MasterServer) Ping(ctx context.Context, req *master_pb.PingRequest) (r
 		})
 	}
 	if req.TargetType == cluster.MasterType {
-		// Master-to-master liveness probe over the native ZAP transport: Ping is
-		// bridged (see masterZapBridge.Ping), so dial the target master's ZAP
-		// endpoint directly instead of the legacy gRPC master client.
+		// Master-to-master liveness probe over the native ZAP transport: the whole
+		// master service is served over ZAP (see master.NewServerBackend), so
+		// dial the target master's ZAP endpoint directly.
 		zapClient, dialErr := masterwire.Dial("tcp", pb.ServerAddress(req.Target).ToMasterZapAddress())
 		if dialErr != nil {
 			pingErr = dialErr

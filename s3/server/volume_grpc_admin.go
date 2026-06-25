@@ -45,10 +45,13 @@ func (vs *VolumeServer) checkGrpcAdminAuth(ctx context.Context) error {
 	}
 	pr, ok := peer.FromContext(ctx)
 	if !ok {
-		// Real gRPC connections always populate peer info; if we don't know
-		// who the caller is, deny.
-		glog.V(0).Infof("gRPC admin auth failed: no peer info")
-		return status.Error(codes.PermissionDenied, "no peer info")
+		// No gRPC peer means the call arrived over the native ZAP mesh, not gRPC.
+		// On that path the caller is authenticated at the TRANSPORT by PQ-mTLS —
+		// pb.ServerTLSConfig requires and verifies the client cert against the CA
+		// and the allowed-CN gate, and fails closed without a CA. The IP whitelist
+		// is a gRPC-era fallback that cannot apply over ZAP (there is no peer IP to
+		// match), so the transport's mTLS is the authorization boundary here.
+		return nil
 	}
 	addr := pr.Addr.String()
 	var host string

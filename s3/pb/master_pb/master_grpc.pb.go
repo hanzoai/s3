@@ -8,7 +8,7 @@
 // client interface returns the shared rpc.* stream seams; the server interface
 // is a plain method set (no mustEmbed) whose streaming RPCs take grpc-free bidi
 // seams. The transport is github.com/zap-proto/go — the ZAP adapters in package
-// masterzap satisfy the client, and the master engine satisfies the server,
+// master satisfy the client, and the master engine satisfies the server,
 // dispatched by the wire (unary) and masterstream (streaming) servers. No grpc
 // client/server scaffolding remains.
 
@@ -16,6 +16,7 @@ package master_pb
 
 import (
 	context "context"
+	errors "errors"
 
 	"github.com/hanzoai/s3/s3/pb/rpc"
 )
@@ -131,4 +132,89 @@ type HanzoServer interface {
 	RaftRemoveServer(context.Context, *RaftRemoveServerRequest) (*RaftRemoveServerResponse, error)
 	RaftLeadershipTransfer(context.Context, *RaftLeadershipTransferRequest) (*RaftLeadershipTransferResponse, error)
 	VolumeGrow(context.Context, *VolumeGrowRequest) (*VolumeGrowResponse, error)
+}
+
+// errUnimplemented is returned by every UnimplementedHanzoServer method. The
+// de-grpc'd seam has no grpc/status, so this is a plain stdlib error rather than
+// status.Errorf(codes.Unimplemented, ...).
+var errUnimplemented = errors.New("master_pb: method not implemented")
+
+// UnimplementedHanzoServer is a no-op HanzoServer whose every method returns
+// errUnimplemented. Embed it in a partial implementation (e.g. a test fake or a
+// server that only answers a subset of RPCs) so only the methods that matter are
+// overridden — the de-grpc'd analogue of the generated mustEmbedUnimplemented
+// helper, but without the grpc dependency or the forced-embed contract.
+type UnimplementedHanzoServer struct{}
+
+func (UnimplementedHanzoServer) SendHeartbeat(Hanzo_SendHeartbeatServer) error {
+	return errUnimplemented
+}
+func (UnimplementedHanzoServer) KeepConnected(Hanzo_KeepConnectedServer) error {
+	return errUnimplemented
+}
+func (UnimplementedHanzoServer) StreamAssign(Hanzo_StreamAssignServer) error {
+	return errUnimplemented
+}
+func (UnimplementedHanzoServer) LookupVolume(context.Context, *LookupVolumeRequest) (*LookupVolumeResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) Assign(context.Context, *AssignRequest) (*AssignResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) Statistics(context.Context, *StatisticsRequest) (*StatisticsResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) CollectionList(context.Context, *CollectionListRequest) (*CollectionListResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) CollectionDelete(context.Context, *CollectionDeleteRequest) (*CollectionDeleteResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) VolumeList(context.Context, *VolumeListRequest) (*VolumeListResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) LookupEcVolume(context.Context, *LookupEcVolumeRequest) (*LookupEcVolumeResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) VacuumVolume(context.Context, *VacuumVolumeRequest) (*VacuumVolumeResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) DisableVacuum(context.Context, *DisableVacuumRequest) (*DisableVacuumResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) EnableVacuum(context.Context, *EnableVacuumRequest) (*EnableVacuumResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) VolumeMarkReadonly(context.Context, *VolumeMarkReadonlyRequest) (*VolumeMarkReadonlyResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) GetMasterConfiguration(context.Context, *GetMasterConfigurationRequest) (*GetMasterConfigurationResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) ListClusterNodes(context.Context, *ListClusterNodesRequest) (*ListClusterNodesResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) LeaseAdminToken(context.Context, *LeaseAdminTokenRequest) (*LeaseAdminTokenResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) ReleaseAdminToken(context.Context, *ReleaseAdminTokenRequest) (*ReleaseAdminTokenResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) RaftListClusterServers(context.Context, *RaftListClusterServersRequest) (*RaftListClusterServersResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) RaftAddServer(context.Context, *RaftAddServerRequest) (*RaftAddServerResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) RaftRemoveServer(context.Context, *RaftRemoveServerRequest) (*RaftRemoveServerResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) RaftLeadershipTransfer(context.Context, *RaftLeadershipTransferRequest) (*RaftLeadershipTransferResponse, error) {
+	return nil, errUnimplemented
+}
+func (UnimplementedHanzoServer) VolumeGrow(context.Context, *VolumeGrowRequest) (*VolumeGrowResponse, error) {
+	return nil, errUnimplemented
 }

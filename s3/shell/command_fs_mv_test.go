@@ -7,7 +7,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/hanzoai/s3/s3/filerzap"
+	"github.com/hanzoai/s3/s3/svc/filer"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/filerstub"
@@ -76,8 +76,8 @@ func newFsMvTestCommandEnv(t *testing.T, filerServer filer_pb.HanzoFilerServer) 
 	// via pb.WithGrpcFilerClient, which now opens a transport.Dial("tcp", ...) ZAP
 	// connection, so the command exercises the real ZAP client+server path.
 	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
-		filerwire.Dispatch(filerzap.NewServerBackend(filerServer)),
-		filerstream.Handler(filerzap.NewStreamServer(filerServer)))
+		filerwire.Dispatch(filer.NewServerBackend(filerServer)),
+		filerstream.Handler(filer.NewStreamServer(filerServer)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}

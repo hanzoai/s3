@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/filer"
-	"github.com/hanzoai/s3/s3/filerzap"
+	filersvc "github.com/hanzoai/s3/s3/svc/filer"
 	"github.com/hanzoai/s3/s3/mount/meta_cache"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
@@ -76,8 +76,8 @@ func newCreateTestWFS(t *testing.T) (*WFS, *createEntryTestServer) {
 
 	testServer := &createEntryTestServer{}
 	listener, err := transport.ListenStream("tcp", "127.0.0.1:0",
-		filerwire.Dispatch(filerzap.NewServerBackend(testServer)),
-		filerstream.Handler(filerzap.NewStreamServer(testServer)))
+		filerwire.Dispatch(filersvc.NewServerBackend(testServer)),
+		filerstream.Handler(filersvc.NewStreamServer(testServer)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}

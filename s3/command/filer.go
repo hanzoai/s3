@@ -21,7 +21,7 @@ import (
 	_ "github.com/hanzoai/s3/s3/credential/memory"
 	_ "github.com/hanzoai/s3/s3/credential/postgres"
 	"github.com/hanzoai/s3/s3/filer"
-	"github.com/hanzoai/s3/s3/filerzap"
+	filersvc "github.com/hanzoai/s3/s3/svc/filer"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/security"
@@ -475,8 +475,8 @@ func (fo *FilerOptions) startFiler() {
 	// security downgrade. Otherwise it is plaintext (loopback / dev), exactly as
 	// the gRPC filer was plaintext when no cert was configured.
 	filerAddr := util.JoinHostPort(*fo.bindIp, grpcPort)
-	filerDispatch := filerwire.Dispatch(filerzap.NewServerBackend(fs))
-	filerStream := filerstream.Handler(filerzap.NewStreamServer(fs))
+	filerDispatch := filerwire.Dispatch(filersvc.NewServerBackend(fs))
+	filerStream := filerstream.Handler(filersvc.NewStreamServer(fs))
 	var filerZapSrv *transport.Server
 	var zapErr error
 	if tlsCfg := pb.ServerTLSConfig(util.GetViper(), "grpc.filer"); tlsCfg != nil {

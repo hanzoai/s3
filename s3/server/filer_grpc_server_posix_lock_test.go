@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/filer/posixlock"
-	"github.com/hanzoai/s3/s3/filerzap"
+	"github.com/hanzoai/s3/s3/svc/filer"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
@@ -117,8 +117,8 @@ func TestPosixLockForwardsToOwner(t *testing.T) {
 	// the forwarding client now dials (transport.Dial), so the forwarded hop
 	// exercises the real ZAP client+server path, not gRPC.
 	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
-		filerwire.Dispatch(filerzap.NewServerBackend(owner)),
-		filerstream.Handler(filerzap.NewStreamServer(owner)))
+		filerwire.Dispatch(filer.NewServerBackend(owner)),
+		filerstream.Handler(filer.NewStreamServer(owner)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}

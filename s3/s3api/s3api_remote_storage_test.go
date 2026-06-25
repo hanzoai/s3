@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/filer"
-	"github.com/hanzoai/s3/s3/filerzap"
+	filersvc "github.com/hanzoai/s3/s3/svc/filer"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/filerstub"
@@ -518,8 +518,8 @@ func (f *fakeCacheFiler) CacheRemoteObjectToLocalCluster(ctx context.Context, re
 func startFakeCacheFiler(t *testing.T, impl *fakeCacheFiler) pb.ServerAddress {
 	t.Helper()
 	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
-		filerwire.Dispatch(filerzap.NewServerBackend(impl)),
-		filerstream.Handler(filerzap.NewStreamServer(impl)))
+		filerwire.Dispatch(filersvc.NewServerBackend(impl)),
+		filerstream.Handler(filersvc.NewStreamServer(impl)))
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = srv.Close() })
 	port := srv.Addr().(*net.TCPAddr).Port

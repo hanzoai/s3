@@ -15,19 +15,25 @@ import (
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
-	"google.golang.org/grpc"
+	"github.com/hanzoai/s3/s3/svc/volume"
+	volume_serverwire "github.com/hanzoai/s3/s3/wire/volume_server"
+
+	"github.com/zap-proto/go/transport"
 )
 
-// VolumeServer provides a minimal volume server for erasure coding tests.
+// VolumeServer provides a minimal volume server for erasure coding tests. It
+// serves over the native ZAP transport (gRPC is gone), exactly like production:
+// volume.NewServerBackend wraps it as a volume_serverwire.VolumeServerStore
+// that transport.ListenStream dispatches. The embedded
+// UnimplementedVolumeServerServer fills the RPCs the tests do not exercise.
 type VolumeServer struct {
 	volume_server_pb.UnimplementedVolumeServerServer
 
 	t *testing.T
 
-	server   *grpc.Server
-	listener net.Listener
-	address  string
-	baseDir  string
+	server  *transport.Server
+	address string
+	baseDir string
 
 	mu                   sync.Mutex
 	receivedFiles        map[string]uint64
@@ -58,26 +64,24 @@ func NewVolumeServer(t *testing.T, baseDir string) *VolumeServer {
 		t.Fatalf("create volume base dir: %v", err)
 	}
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("listen volume server: %v", err)
-	}
-
-	grpcPort := listener.Addr().(*net.TCPAddr).Port
-	server := pb.NewGrpcServer()
 	vs := &VolumeServer{
 		t:             t,
-		server:        server,
-		listener:      listener,
-		address:       fmt.Sprintf("127.0.0.1:0.%d", grpcPort),
 		baseDir:       baseDir,
 		receivedFiles: make(map[string]uint64),
 	}
 
-	volume_server_pb.RegisterVolumeServerServer(server, vs)
-	go func() {
-		_ = server.Serve(listener)
-	}()
+	store := volume.NewServerBackend(vs)
+	server, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		volume_serverwire.Dispatch(store), volume_serverwire.StreamHandler(store))
+	if err != nil {
+		t.Fatalf("listen volume ZAP: %v", err)
+	}
+	vs.server = server
+	grpcPort := server.Addr().(*net.TCPAddr).Port
+	// ServerAddress "127.0.0.1:0.<grpcPort>": ToGrpcAddress() yields
+	// 127.0.0.1:<grpcPort>, the ZAP listener, so workers reach it via
+	// operation.WithVolumeServerClient (volume over ZAP).
+	vs.address = fmt.Sprintf("127.0.0.1:0.%d", grpcPort)
 
 	t.Cleanup(func() {
 		vs.Shutdown()
@@ -180,10 +184,7 @@ func (v *VolumeServer) ReadFileStatusCount() int {
 // Shutdown stops the volume server.
 func (v *VolumeServer) Shutdown() {
 	if v.server != nil {
-		v.server.GracefulStop()
-	}
-	if v.listener != nil {
-		_ = v.listener.Close()
+		_ = v.server.Close()
 	}
 }
 

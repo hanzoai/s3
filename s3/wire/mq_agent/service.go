@@ -4,7 +4,7 @@
 // Native ZAP service adapter for HanzoMessagingAgent — the hand-written glue
 // that binds the generated mq_agent wire messages to a real message-queue
 // backend over the canonical github.com/zap-proto/go transport. This is the
-// mq_agent analogue of s3/zapsvc/service.go: it kills gRPC for the agent's
+// mq_agent analogue of s3/object/service.go: it kills gRPC for the agent's
 // four RPCs and replaces them with the SAME wire hanzo and lux share.
 //
 // Shape:
