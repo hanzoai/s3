@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc"
+	"github.com/zap-proto/go/transport"
 
 	"github.com/hanzoai/s3/s3/filer_client"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
@@ -172,7 +172,7 @@ type BrokerClient struct {
 	filerClientAccessor *filer_client.FilerClientAccessor
 
 	brokerAddress string
-	conn          *grpc.ClientConn
+	conn          transport.Conn
 	client        mq_pb.HanzoMessagingClient
 
 	// Publisher streams: topic-partition -> stream info

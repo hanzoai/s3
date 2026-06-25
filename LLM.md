@@ -40,6 +40,79 @@ import it aliased: `zapdb "github.com/luxfi/zapdb"`).
   ydb, gohbase, olivere/elastic*). *elastic stays (meta-tail CLI); mongo-driver stays
   as a pure transitive dep.
 
+## gRPC rip — transport status
+The filer, master, and **MQ broker** RPC services run **end to end over the native
+ZAP transport** (`zap-proto/go`); gRPC is gone from those paths. Error semantics cross the wire as
+the error STRING, not a gRPC status: each server tags a failure with its PascalCase
+code name (e.g. `fmt.Errorf("Unavailable: ...")`, `fmt.Errorf("NotFound: ...")`) and
+the ZAP dispatch ships `herr.Error()` verbatim, so the name survives to the client.
+**Classify errors by `strings.Contains(err.Error(), "<CodeName>")`** — the one way,
+already used in `s3/util/retry.go`. Do NOT reintroduce `google.golang.org/grpc/{codes,status}`
+for filer/master error mapping. The filer's not-found is normalized back to the
+`filer_pb.ErrNotFound` sentinel by `filer_pb.LookupEntry`, so `errors.Is(err, ErrNotFound)`
+also works there. A round-trip proof lives in `s3/masterzap/error_propagation_test.go`.
+
+The MQ broker rip mirrors filer/master exactly: `pb/mq_pb/mq_broker_grpc.pb.go` is
+grpc-free (client iface returns `pb/rpc` stream seams, no `grpc.CallOption`; server
+iface is a plain method set; all `Register*`/`ServiceDesc`/`_Handler`/`Unimplemented`-
+via-grpc scaffolding deleted, replaced by a de-grpc'd `UnimplementedHanzoMessagingServer`
+that returns a plain error). `mqzap/client.go` returns `rpc.{Bidi,Client,Server}Stream`;
+`mqzap/stream_server.go` drops the `grpc.ServerStream` embed. `command/mq_broker.go`
+serves ZAP (unary `Dispatch` + 7-stream `StreamHandler`); `pb.WithBrokerGrpcClient`
+dials ZAP via `brokerPool`. The last gRPC broker dial (`admin/dash/admin_server.go`
+`UpdateTopicRetention`) now uses `pb.WithBrokerGrpcClient` too. Broker engine methods
+(`mq/broker/broker_grpc_*.go`) keep their `mq_pb.HanzoMessaging_*Server` signatures —
+those names are now plain `Send/Recv/Context` interfaces, not grpc generic streams.
+
+gRPC is still **load-bearing** in (these legitimately import grpc — leave them):
+- **Volume server RPC** — still gRPC-served (`command/volume.go`, `server/volume_grpc_*.go`,
+  `pb/volume_server_pb/volume_server_grpc.pb.go`). Its `status.Errorf(codes.X)` producers
+  must stay so gRPC clients get real codes; `peer.FromContext` works over gRPC.
+- **Raft transport** — hashicorp/seaweedfs raft rides the master's gRPC listener
+  (`server/raft_hashicorp.go`, the `pb.NewGrpcServer` + `reflection.Register` in
+  `command/master.go` and `master_follower.go`). The master's own service is ZAP; the
+  gRPC listener carries raft only.
+- **Strangler client seam** `volumezap/client.go` — implements the
+  `volume_server_pb.*Client` interface, whose generated signatures use `grpc.{CallOption,
+  *StreamingClient}` and `metadata.MD`. Bound to grpc until that `*_pb` interface is
+  regenerated grpc-free. (`mqzap/client.go` is now grpc-free — see above.)
+- **Core dial/server + request-id** — `pb/grpc_client_server.go` (volume dials,
+  `NewGrpcServer`), `operation/grpc_client.go`, `server/common.go` (grpc metadata).
+- **TLS cert hot-reload** — `security/tls.go`, `security/certreload/certreload.go`,
+  `security/tls_reload.go`, `util/http/client/http_client.go` reuse grpc's
+  `credentials/tls/certprovider` + `pemfile` as a generic file-watching cert provider;
+  `tls.go` also returns `grpc.ServerOption` for the remaining gRPC servers.
+
+Full `go.mod` grpc removal is unreachable until volume RPC is ported to ZAP (regen its
+`*_pb` interface grpc-free, switch the server to ZAP dispatch) and cert hot-reload drops
+grpc's certprovider. (Filer, master, and MQ broker are already ported.)
+
+### ZAP listener ports — derive via `pb.ZapPort` (overflow-safe)
+The master and IAM services serve ZAP on a port offset from their gRPC port by
+`+10000` (i.e. httpPort+20000). That offset is `pb.ZapPort(grpcPort)`, the ONE
+place the convention lives — both the client (`ServerAddress.ToMasterZapAddress`/
+`ToIamZapAddress`) and the server listeners (`command/master.go`, `command/filer.go`
+IAM listener) call it, so they always agree. It is a **rotation of [1,65535]**, not a
+bare `grpcPort+10000`: an ephemeral high port (e.g. test ports from
+`testutil.AllocateMiniPorts`, up to ~55000 → grpcPort ~65000) would otherwise push
+`+10000` past 65535, yield an invalid port, and the master would Fatalf on its ZAP
+listener — hanging cluster bring-up. `ZapPort` stays a plain `+10000` for the common
+case (grpcPort ≤ 55535) and folds back into range above that, bijectively. Guard:
+`pb/server_address_test.go` (`TestZapPort`).
+
+### Test doubles for the deleted server scaffolding
+The grpc rip deleted `filer_pb.UnimplementedHanzoFilerServer` / `master_pb.UnimplementedHanzoServer`
+(no `mustEmbed`). Test doubles that need the full server method set embed
+`filerstub.FilerServer` / `filerstub.MasterServer` from `s3/pb/filerstub` (one shared
+base, every method stubbed to an unimplemented error) and override what they exercise —
+the same shape `Unimplemented*` had. Doubles that serve over the wire instead embed the
+`filerwire.Backend` / `masterwire.Backend` interface and implement the wire-level methods
+(decode bytes → encode bytes), e.g. `test/plugin_workers/fake_master.go`. Client fakes
+implement `filer_pb.HanzoFilerClient`/`master_pb.HanzoClient` directly: no
+`opts ...grpc.CallOption`; streaming methods return `rpc.ServerStream[...]`/`rpc.BidiStream[...]`
+(seam in `s3/pb/rpc`), and the fake stream type implements just `Recv`/`Send`/`CloseSend`.
+DialOption in tests is `pb.DialOption{}` (the zero value), never `grpc.WithTransportCredentials`.
+
 ## Rebrand notes (one way, don't re-litigate)
 - `s3` → `s3`: binary + program name in `s3/s3.go` help. Internal package dir `s3/` retained (invisible to users; renaming it would churn 1900+ import paths for no user benefit).
 - Display brand `Hanzo` → `Hanzo S3` in user-facing strings only (HTTP `Server` header, version banner, admin title).

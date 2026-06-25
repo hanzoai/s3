@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/filer"
-	"github.com/hanzoai/s3/s3/filerzap"
+	filersvc "github.com/hanzoai/s3/s3/svc/filer"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/filerstub"
@@ -156,8 +156,8 @@ func newPolicyTestStoreWithServer(t *testing.T) (*FilerEtcStore, *policyTestFile
 	// one listener. This is the wire WithGrpcFilerClient now dials (transport.Dial),
 	// so the test exercises the real ZAP client+server path, not gRPC.
 	srv, err := transport.ListenStream("tcp", "127.0.0.1:0",
-		filerwire.Dispatch(filerzap.NewServerBackend(server)),
-		filerstream.Handler(filerzap.NewStreamServer(server)))
+		filerwire.Dispatch(filersvc.NewServerBackend(server)),
+		filerstream.Handler(filersvc.NewStreamServer(server)))
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = srv.Close() })
 

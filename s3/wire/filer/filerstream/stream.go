@@ -3,7 +3,7 @@
 //
 // Package filerstream is the native ZAP streaming adapter for the 6 streaming
 // HanzoFiler RPCs. It is to the generated s3/wire/filer (filerwire) package what
-// s3/wire/plugin/zapstream is to s3/wire/plugin, and what s3/zapsvc is to
+// s3/wire/plugin/zapstream is to s3/wire/plugin, and what s3/object is to
 // s3/wire/object: the ONLY hand-written glue binding the zero-copy wire messages
 // to a real transport. No gRPC, no protobuf framing, no struct marshaling —
 // every frame that crosses the socket is a filerwire New*/Wrap* buffer framed as
