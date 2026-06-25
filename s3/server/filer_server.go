@@ -25,6 +25,7 @@ import (
 
 	"github.com/hanzoai/s3/s3/filer"
 	_ "github.com/hanzoai/s3/s3/filer/foundationdb"
+	_ "github.com/hanzoai/s3/s3/filer/luxdb"
 	"github.com/hanzoai/s3/s3/filer/posixlock"
 	_ "github.com/hanzoai/s3/s3/filer/sqlite"
 	"github.com/hanzoai/s3/s3/glog"
@@ -182,8 +183,9 @@ func NewFilerServer(defaultMux, readonlyMux *http.ServeMux, option *FilerOption)
 	}
 
 	if !util.LoadConfiguration("filer", false) {
-		v.SetDefault("zapdb.enabled", true)
-		v.SetDefault("zapdb.dir", option.DefaultLevelDbDir)
+		v.SetDefault("luxdb.enabled", true)
+		v.SetDefault("luxdb.backend", "zapdb")
+		v.SetDefault("luxdb.dir", option.DefaultLevelDbDir)
 		_, err := os.Stat(option.DefaultLevelDbDir)
 		if os.IsNotExist(err) {
 			os.MkdirAll(option.DefaultLevelDbDir, 0755)

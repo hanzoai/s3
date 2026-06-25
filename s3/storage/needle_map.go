@@ -8,7 +8,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/idx"
 	"github.com/hanzoai/s3/s3/storage/needle_map"
 	. "github.com/hanzoai/s3/s3/storage/types"
-	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
 type NeedleMapKind int
@@ -48,7 +47,7 @@ type baseNeedleMapper struct {
 type TempNeedleMapper interface {
 	NeedleMapper
 	DoOffsetLoading(v *Volume, indexFile *os.File, startFrom uint64) error
-	UpdateNeedleMap(v *Volume, indexFile *os.File, opts *opt.Options, ldbTimeout int64) error
+	UpdateNeedleMap(v *Volume, indexFile *os.File, ldbTimeout int64) error
 }
 
 func (nm *baseNeedleMapper) IndexFileSize() uint64 {
