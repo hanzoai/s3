@@ -69,7 +69,7 @@ func Dispatch(store ObjectStore) transport.Dispatch {
 // it is wrapped with transport.PQTLSConfig so the X25519MLKEM768 hybrid (PQ
 // X-Wing) is REQUIRED — a classical-only peer fails the handshake, no downgrade.
 func ServeTLS(network, addr string, store ObjectStore, conf *tls.Config) (*transport.Server, error) {
-	return transport.ListenTLS(network, addr, transport.PQTLSConfig(conf), Dispatch(store))
+	return transport.ListenTLS(network, addr, conf, Dispatch(store))
 }
 
 // Serve starts the native ZAP S3 service over plaintext on network/addr (e.g.
@@ -91,7 +91,7 @@ type Client struct {
 // client trust (RootCAs from KMS); it is wrapped with transport.PQTLSConfig so
 // the session key rides X25519MLKEM768 (PQ X-Wing) or the handshake fails.
 func DialTLS(network, addr string, conf *tls.Config) (*Client, error) {
-	conn, err := transport.DialTLS(network, addr, transport.PQTLSConfig(conf))
+	conn, err := transport.DialTLS(network, addr, conf)
 	if err != nil {
 		return nil, err
 	}
