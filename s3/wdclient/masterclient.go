@@ -250,6 +250,12 @@ func (mc *MasterClient) tryConnectToMaster(ctx context.Context, master pb.Server
 			stats.MasterClientConnectCounter.WithLabelValues(stats.FailedToKeepConnected).Inc()
 			return err
 		}
+		// The master conn is now a SHARED pooled conn (masterPool) that outlives
+		// this fn — unlike the old dedicated gRPC ClientConn that was torn down on
+		// return. So on every exit path (leader redirect, recv error) we must
+		// half-close the stream ourselves; otherwise the server's KeepConnected
+		// handler blocks on Recv forever and leaks a goroutine per redirect.
+		defer func() { _ = stream.CloseSend() }()
 		glog.V(1).Infof("%s.%s masterClient gRPC stream established to %s in %v", mc.FilerGroup, mc.clientType, master, time.Since(connectStartTime))
 
 		if err = stream.Send(&master_pb.KeepConnectedRequest{
