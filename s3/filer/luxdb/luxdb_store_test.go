@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:s3/filer/zapdb/zapdb_store_test.go
-package zapdb
-========
 package luxdb
->>>>>>>> feat/luxdb-store:s3/filer/luxdb/luxdb_store_test.go
 
 import (
 	"context"
@@ -19,15 +15,10 @@ import (
 func TestCreateAndFind(t *testing.T) {
 	testFiler := filer.NewFiler(pb.ServerDiscovery{}, pb.DialOption{}, "", "", "", "", "", 255, nil)
 	dir := t.TempDir()
-<<<<<<<< HEAD:s3/filer/zapdb/zapdb_store_test.go
-	store := &ZapDBStore{}
-	store.initialize(dir)
-========
 	store := &LuxDBStore{}
 	if err := store.initialize("zapdb", dir); err != nil {
 		t.Fatalf("init store: %v", err)
 	}
->>>>>>>> feat/luxdb-store:s3/filer/luxdb/luxdb_store_test.go
 	testFiler.SetStore(store)
 
 	fullpath := util.FullPath("/home/chris/this/is/one/file1.jpg")
@@ -79,15 +70,10 @@ func TestCreateAndFind(t *testing.T) {
 func TestEmptyRoot(t *testing.T) {
 	testFiler := filer.NewFiler(pb.ServerDiscovery{}, pb.DialOption{}, "", "", "", "", "", 255, nil)
 	dir := t.TempDir()
-<<<<<<<< HEAD:s3/filer/zapdb/zapdb_store_test.go
-	store := &ZapDBStore{}
-	store.initialize(dir)
-========
 	store := &LuxDBStore{}
 	if err := store.initialize("zapdb", dir); err != nil {
 		t.Fatalf("init store: %v", err)
 	}
->>>>>>>> feat/luxdb-store:s3/filer/luxdb/luxdb_store_test.go
 	testFiler.SetStore(store)
 
 	ctx := context.Background()
@@ -108,15 +94,10 @@ func TestEmptyRoot(t *testing.T) {
 func BenchmarkInsertEntry(b *testing.B) {
 	testFiler := filer.NewFiler(pb.ServerDiscovery{}, pb.DialOption{}, "", "", "", "", "", 255, nil)
 	dir := b.TempDir()
-<<<<<<<< HEAD:s3/filer/zapdb/zapdb_store_test.go
-	store := &ZapDBStore{}
-	store.initialize(dir)
-========
 	store := &LuxDBStore{}
 	if err := store.initialize("zapdb", dir); err != nil {
 		b.Fatalf("init store: %v", err)
 	}
->>>>>>>> feat/luxdb-store:s3/filer/luxdb/luxdb_store_test.go
 	testFiler.SetStore(store)
 
 	ctx := context.Background()
