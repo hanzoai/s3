@@ -154,6 +154,13 @@ func (vs *VolumeServer) runHeartbeatStream(ctx context.Context, client master_pb
 		glog.V(0).Infof("SendHeartbeat to %s: %v", masterAddress, err)
 		return "", err
 	}
+	// The master conn is a SHARED pooled conn (masterPool) that outlives this
+	// fn — the old dedicated gRPC ClientConn was torn down on return, releasing
+	// the server stream; the pooled conn is not. Half-close on every exit
+	// (new-leader, recv/send error) so the master's SendHeartbeat handler
+	// observes stream-end and releases instead of leaking a goroutine per
+	// leader-change.
+	defer func() { _ = stream.CloseSend() }()
 	glog.V(0).Infof("Heartbeat to: %v", masterAddress)
 	vs.setCurrentMaster(masterAddress)
 

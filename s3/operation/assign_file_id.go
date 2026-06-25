@@ -3,6 +3,7 @@ package operation
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb"
@@ -69,20 +70,30 @@ func Assign(ctx context.Context, masterFn GetMasterFn, grpcDialOption grpc.DialO
 
 		lastError = util.RetryWithBackoff(deadlineCtx, "assign", remaining,
 			func(err error) bool {
-				st, ok := status.FromError(err)
-				if !ok {
-					return false
+				// The master is reached over ZAP now: a gRPC status Code does
+				// NOT cross the wire — only the error STRING does (the wire
+				// error carries "rpc error: code = Unavailable desc = ..."). So
+				// classify on the text, with status.Code() as a fallback for any
+				// residual in-process gRPC error.
+				if st, ok := status.FromError(err); ok {
+					switch st.Code() {
+					case codes.Unavailable:
+						return true
+					case codes.Canceled, codes.DeadlineExceeded:
+						return deadlineCtx.Err() == nil
+					}
 				}
-				switch st.Code() {
-				case codes.Unavailable:
+				msg := err.Error()
+				if strings.Contains(msg, codes.Unavailable.String()) {
+					// master warming up / topology still loading — ride out the
+					// retry budget instead of failing the write fast.
 					return true
-				case codes.Canceled, codes.DeadlineExceeded:
-					// A stale cached gRPC channel (e.g., master restart behind
-					// a k8s Service VIP) can return Canceled/DeadlineExceeded
-					// immediately even though the caller's context is still
-					// live. The first failure invalidates the cached ClientConn
-					// via shouldInvalidateConnection; retry so the next attempt
-					// dials a fresh channel.
+				}
+				if strings.Contains(msg, codes.Canceled.String()) ||
+					strings.Contains(msg, codes.DeadlineExceeded.String()) {
+					// A stale pooled conn (e.g. master restart behind a k8s VIP)
+					// can surface Canceled/DeadlineExceeded while the caller ctx
+					// is still live; retry so the next attempt redials.
 					return deadlineCtx.Err() == nil
 				}
 				return false
