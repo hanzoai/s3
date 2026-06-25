@@ -313,35 +313,37 @@ func (c *BrokerClient) GetTopicSchema(ctx context.Context, namespace, topicName 
 	return flatSchema, keyColumns, schemaFormat, nil
 }
 
+// brokerPool reuses one ZAP connection per broker address across calls — a Conn
+// is concurrency-safe, so this avoids a fresh dial per broker RPC. Generic
+// pooling lives in the transport (transport.Pool), the same the filer client
+// uses; the broker is reached over plaintext ZAP.
+var brokerPool = transport.NewPool(func(addr string) (*transport.Conn, error) {
+	return transport.Dial("tcp", addr)
+})
+
 // ConfigureTopic creates or modifies a topic using flat schema format
 func (c *BrokerClient) ConfigureTopic(ctx context.Context, namespace, topicName string, partitionCount int32, flatSchema *schema_pb.RecordType, keyColumns []string) error {
 	if err := c.findBrokerBalancer(); err != nil {
 		return err
 	}
 
-	conn, err := transport.Dial("tcp", c.brokerAddress)
-	if err != nil {
-		return fmt.Errorf("failed to connect to broker at %s: %v", c.brokerAddress, err)
-	}
-	defer conn.Close()
-
-	client := mq_brokerwire.NewClient(conn)
-
-	// Create topic configuration using flat schema format
-	_, err = client.ConfigureTopic(mq_brokerwire.ConfigureTopicRequestInput{
-		Topic: mq_schemawire.NewTopic(mq_schemawire.TopicInput{
-			Namespace: namespace,
-			Name:      topicName,
-		}),
-		PartitionCount:    partitionCount,
-		MessageRecordType: agentconv.RecordTypeToWire(flatSchema),
-		KeyColumns:        keyColumns,
+	return brokerPool.With(c.brokerAddress, func(conn *transport.Conn) error {
+		client := mq_brokerwire.NewClient(conn)
+		// Create topic configuration using flat schema format
+		_, err := client.ConfigureTopic(mq_brokerwire.ConfigureTopicRequestInput{
+			Topic: mq_schemawire.NewTopic(mq_schemawire.TopicInput{
+				Namespace: namespace,
+				Name:      topicName,
+			}),
+			PartitionCount:    partitionCount,
+			MessageRecordType: agentconv.RecordTypeToWire(flatSchema),
+			KeyColumns:        keyColumns,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to configure topic %s.%s: %v", namespace, topicName, err)
+		}
+		return nil
 	})
-	if err != nil {
-		return fmt.Errorf("failed to configure topic %s.%s: %v", namespace, topicName, err)
-	}
-
-	return nil
 }
 
 // DeleteTopic removes a topic and all its data
