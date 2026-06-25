@@ -5,39 +5,31 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/s3/masterzap"
+	"github.com/hanzoai/s3/s3/svc/master"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
-
+	masterstream "github.com/hanzoai/s3/s3/wire/master/masterstream"
 	"github.com/zap-proto/go/transport"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-// fakeLookupBackend is a masterwire.Backend whose LookupVolume returns
-// Unavailable for the first unavailableCount calls, then succeeds — the warmup
-// behaviour the production master signals as a plain "Unavailable: ..." error
-// over ZAP (no gRPC status). The retry loop classifies it by
-// strings.Contains(err, "Unavailable"). Other methods are unimplemented via the
-// embedded interface.
-type fakeLookupBackend struct {
-	masterwire.Backend
+// fakeLookupServer returns Unavailable for the first N calls, then succeeds.
+type fakeLookupServer struct {
+	master_pb.UnimplementedHanzoServer
 	unavailableCount int32
 	callCount        atomic.Int32
 }
 
-func (s *fakeLookupBackend) LookupVolume(reqBytes []byte) ([]byte, error) {
-	req, err := masterzap.LookupVolumeReqFromWire(reqBytes)
-	if err != nil {
-		return nil, err
-	}
+func (s *fakeLookupServer) LookupVolume(_ context.Context, req *master_pb.LookupVolumeRequest) (*master_pb.LookupVolumeResponse, error) {
 	n := s.callCount.Add(1)
 	if n <= s.unavailableCount {
-		return nil, fmt.Errorf("Unavailable: master is warming up")
+		return nil, status.Errorf(codes.Unavailable, "master is warming up")
 	}
 	resp := &master_pb.LookupVolumeResponse{}
 	for _, vid := range req.VolumeOrFileIds {
@@ -48,35 +40,35 @@ func (s *fakeLookupBackend) LookupVolume(reqBytes []byte) ([]byte, error) {
 			},
 		})
 	}
-	return masterzap.LookupVolumeRespToWire(resp), nil
+	return resp, nil
 }
 
-// startFakeMasterServer serves backend over the native ZAP transport and returns
-// an HTTP-style master address whose ServerAddress.ToMasterZapAddress() (grpcPort
-// +10000, i.e. http+20000) resolves back to the listener, so the master client
-// reaches it via pb.WithMasterClient.
-func startFakeMasterServer(t *testing.T, backend masterwire.Backend) pb.ServerAddress {
+// startFakeMasterServer stands up the fake master over the native ZAP transport
+// (the master service is ZAP-only now — see command/master.go), then returns a
+// master ServerAddress whose ToMasterZapAddress resolves to the live listener.
+// The master client derives the ZAP port as grpcPort+10000, so the address
+// encodes grpcPort = (live ZAP port - 10000); ToMasterZapAddress adds 10000 back
+// to reach the listener.
+func startFakeMasterServer(t *testing.T, srv master_pb.HanzoServer) pb.ServerAddress {
 	t.Helper()
-	srv, err := transport.ListenStream("tcp", "127.0.0.1:0", masterwire.Dispatch(backend), nil)
+	zapSrv, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		masterwire.Dispatch(master.NewServerBackend(srv)),
+		masterstream.Handler(master.NewStreamServer(srv)))
 	if err != nil {
-		t.Fatalf("listen master ZAP: %v", err)
+		t.Fatalf("listen: %v", err)
 	}
-	t.Cleanup(func() { _ = srv.Close() })
+	t.Cleanup(func() { _ = zapSrv.Close() })
 
-	host, portStr, err := net.SplitHostPort(srv.Addr().String())
-	if err != nil {
-		t.Fatalf("split master addr: %v", err)
-	}
-	zapPort, err := strconv.Atoi(portStr)
-	if err != nil {
-		t.Fatalf("parse master port: %v", err)
-	}
-	return pb.ServerAddress(net.JoinHostPort(host, strconv.Itoa(zapPort-20000)))
+	_, zapPortStr, _ := net.SplitHostPort(zapSrv.Addr().String())
+	var zapPort int
+	fmt.Sscanf(zapPortStr, "%d", &zapPort)
+	grpcPort := zapPort - 10000
+	return pb.ServerAddress(fmt.Sprintf("127.0.0.1:0.%d", grpcPort))
 }
 
 func TestLookupVolumeIdsRetriesOnUnavailable(t *testing.T) {
-	backend := &fakeLookupBackend{unavailableCount: 3}
-	addr := startFakeMasterServer(t, backend)
+	srv := &fakeLookupServer{unavailableCount: 3}
+	addr := startFakeMasterServer(t, srv)
 
 	mc := NewMasterClient(
 		pb.DialOption{},
@@ -98,14 +90,14 @@ func TestLookupVolumeIdsRetriesOnUnavailable(t *testing.T) {
 	if _, ok := result["1"]; !ok {
 		t.Error("expected volume 1 in result")
 	}
-	if calls := backend.callCount.Load(); calls != 4 {
+	if calls := srv.callCount.Load(); calls != 4 {
 		t.Errorf("expected 4 calls (3 unavailable + 1 success), got %d", calls)
 	}
 }
 
 func TestLookupVolumeIdsStopsOnContextCancel(t *testing.T) {
-	backend := &fakeLookupBackend{unavailableCount: 1000}
-	addr := startFakeMasterServer(t, backend)
+	srv := &fakeLookupServer{unavailableCount: 1000}
+	addr := startFakeMasterServer(t, srv)
 
 	mc := NewMasterClient(
 		pb.DialOption{},
@@ -128,7 +120,7 @@ func TestLookupVolumeIdsStopsOnContextCancel(t *testing.T) {
 		t.Fatalf("expected context.DeadlineExceeded, got: %v", err)
 	}
 	// Verify the loop actually retried (not just an immediate failure)
-	if calls := backend.callCount.Load(); calls <= 1 {
+	if calls := srv.callCount.Load(); calls <= 1 {
 		t.Errorf("expected multiple retry attempts, got %d calls", calls)
 	}
 	if elapsed > 5*time.Second {

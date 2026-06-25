@@ -7,9 +7,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gorilla/mux"
-	"google.golang.org/grpc/reflection"
 
 	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/svc/master"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/security"
@@ -19,7 +19,6 @@ import (
 	"github.com/hanzoai/s3/s3/util/version"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
 	masterstream "github.com/hanzoai/s3/s3/wire/master/masterstream"
-
 	"github.com/zap-proto/go/transport"
 )
 
@@ -140,41 +139,34 @@ func startMasterFollower(masterOptions MasterOptions) {
 		glog.Fatalf("Master startup error: %v", e)
 	}
 
-	// starting grpc server
+	// Serve the WHOLE Hanzo master service (21 unary + 3 streaming RPCs) over the
+	// native ZAP transport on the deterministic grpcPort+10000 offset
+	// (ServerAddress.ToMasterZapAddress, derived via pb.ZapPort which is
+	// overflow-safe so server and client always agree). The follower carries no
+	// raft service, so — unlike the leader in command/master.go — it stands up NO
+	// gRPC server at all: the entire master API rides ZAP, exactly as
+	// command/filer.go serves the filer. Clients reach it via pb.WithMasterClient
+	// over the masterPool. PQ-mTLS gating mirrors the leader: grpc.master.cert/.key
+	// -> PQ-TLS (X25519MLKEM768), else plaintext (loopback / dev). The TLS config is
+	// the pb-local ServerTLSConfig. Fatal on bind error; the server handle is closed
+	// on interrupt.
 	grpcPort := *masterOptions.portGrpc
-	grpcL, grpcLocalL, err := util.NewIpAndLocalListeners(*masterOptions.ipBind, grpcPort, 0)
-	if err != nil {
-		glog.Fatalf("master failed to listen on grpc port %d: %v", grpcPort, err)
-	}
-	// gRPC carries only reflection now — the Hanzo (master) service answers over
-	// the native ZAP transport on grpcPort+10000 (ToMasterZapAddress) below.
-	grpcS := pb.NewGrpcServer(security.LoadServerTLS(util.GetViper(), "grpc.master"))
-	reflection.Register(grpcS)
-	glog.V(0).Infof("Start Hanzo S3 Master %s grpc server at %s:%d", version.Version(), *masterOptions.ip, grpcPort)
-	if grpcLocalL != nil {
-		go grpcS.Serve(grpcLocalL)
-	}
-	go grpcS.Serve(grpcL)
-
-	// Native ZAP transport for the whole Hanzo (master) service — unary RPCs via
-	// the masterwire Dispatch and the three bidi streams via the masterstream
-	// Handler — on one listener at grpcPort+10000. PQ-secured mTLS when
-	// grpc.master.cert/.key is configured, else plaintext (loopback / dev).
-	zapAddr := util.JoinHostPort(*masterOptions.ipBind, grpcPort+10000)
-	masterDispatch := masterwire.Dispatch(s3server.NewMasterZapBackend(ms))
-	masterStream := masterstream.Handler(s3server.NewMasterZapStreamServer(ms))
+	masterZapAddr := util.JoinHostPort(*masterOptions.ipBind, pb.ZapPort(grpcPort))
+	masterDispatch := masterwire.Dispatch(master.NewServerBackend(ms))
+	masterStream := masterstream.Handler(master.NewStreamServer(ms))
 	var masterZapSrv *transport.Server
 	var zapErr error
 	if tlsCfg := pb.ServerTLSConfig(util.GetViper(), "grpc.master"); tlsCfg != nil {
-		masterZapSrv, zapErr = transport.ListenStreamTLS("tcp", zapAddr,
+		masterZapSrv, zapErr = transport.ListenStreamTLS("tcp", masterZapAddr,
 			transport.PQTLSConfig(tlsCfg), masterDispatch, masterStream)
+		glog.V(0).Infof("Serving Hanzo S3 Master %s (follower) over PQ-TLS (X25519MLKEM768) ZAP transport at %s", version.Version(), masterZapAddr)
 	} else {
-		masterZapSrv, zapErr = transport.ListenStream("tcp", zapAddr, masterDispatch, masterStream)
+		masterZapSrv, zapErr = transport.ListenStream("tcp", masterZapAddr, masterDispatch, masterStream)
+		glog.V(0).Infof("Start Hanzo S3 Master %s (follower) ZAP transport (unary+streaming; plaintext, set grpc.master.cert/.key for PQ-TLS) at %s", version.Version(), masterZapAddr)
 	}
 	if zapErr != nil {
-		glog.Fatalf("master follower failed to serve ZAP transport on %s: %v", zapAddr, zapErr)
+		glog.Fatalf("master follower failed to serve over ZAP on %s: %v", masterZapAddr, zapErr)
 	}
-	glog.V(0).Infof("Start Hanzo S3 Master %s ZAP transport at %s", version.Version(), zapAddr)
 	grace.OnInterrupt(func() { masterZapSrv.Close() })
 
 	go ms.MasterClient.KeepConnectedToMaster(context.Background())

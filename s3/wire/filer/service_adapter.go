@@ -4,7 +4,7 @@
 // Native ZAP service adapter for the HanzoFiler service — the hand-written glue
 // that binds the generated zero-copy wire (filer_zap.go + the *_zap.go message
 // views/builders in this package) to a real github.com/zap-proto/go transport.
-// It is to s3/wire/filer what s3/zapsvc is to s3/wire/object: the ONLY
+// It is to s3/wire/filer what s3/object is to s3/wire/object: the ONLY
 // hand-written seam. No gRPC, no protobuf framing, no struct marshaling — every
 // frame that crosses the socket is a filerwire New*/Wrap* buffer carried as a
 // ZAP RPC envelope and correlated by PromiseID.

@@ -78,7 +78,7 @@ func (b *MessageQueueBroker) PublishMessage(stream mq_pb.HanzoMessaging_PublishM
 	}
 
 	// connect to follower brokers
-	if followerErr := localTopicPartition.MaybeConnectToFollowers(initMessage, b.grpcDialOption); followerErr != nil {
+	if followerErr := localTopicPartition.MaybeConnectToFollowers(initMessage); followerErr != nil {
 		response.ErrorCode, response.Error = CreateBrokerError(BrokerErrorFollowerConnectionFailed, followerErr.Error())
 		glog.Errorf("MaybeConnectToFollowers: %v", followerErr)
 		return stream.Send(response)

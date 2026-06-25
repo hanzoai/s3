@@ -4,7 +4,7 @@
 // Native ZAP adapter for the HanzoIdentityAccessManagement service — the
 // hand-written glue that binds the generated Dispatch/Client (iam_zap.go) to a
 // real IAM backend over the canonical github.com/zap-proto/go transport. This
-// is the IAM analogue of s3/zapsvc/service.go (object Get/Put): the SAME
+// is the IAM analogue of s3/object/service.go (object Get/Put): the SAME
 // Channel/Client/Handler/Dispatch shape, the SAME zero-copy doctrine — the
 // request/response payloads ARE the iamwire message buffers, shipped over a
 // ZAP socket correlated by PromiseID. No struct marshaling, no protobuf on the

@@ -4,7 +4,7 @@
 // Package pluginstream is the native ZAP streaming adapter for the
 // PluginControlService.WorkerStream bidirectional RPC — the duplex control
 // plane between an admin (server) and an external worker (client). It is to the
-// generated s3/wire/plugin (pluginwire) package what s3/zapsvc is to
+// generated s3/wire/plugin (pluginwire) package what s3/object is to
 // s3/wire/object: the ONLY hand-written glue binding the zero-copy wire
 // messages to a real transport. No gRPC, no protobuf framing, no struct
 // marshaling — every frame that crosses the socket is a pluginwire
