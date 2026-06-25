@@ -85,6 +85,46 @@ func HeartbeatReqFromWire(b []byte) (*master_pb.Heartbeat, error) {
 			}
 		}
 	}
+	if n := v.NewVolumesLen(); n > 0 {
+		r.NewVolumes = make([]*master_pb.VolumeShortInformationMessage, 0, n)
+		for i := 0; i < n; i++ {
+			if m, ok := v.NewVolumeAt(i); ok {
+				r.NewVolumes = append(r.NewVolumes, volumeShortInfoFromView(m))
+			}
+		}
+	}
+	if n := v.DeletedVolumesLen(); n > 0 {
+		r.DeletedVolumes = make([]*master_pb.VolumeShortInformationMessage, 0, n)
+		for i := 0; i < n; i++ {
+			if m, ok := v.DeletedVolumeAt(i); ok {
+				r.DeletedVolumes = append(r.DeletedVolumes, volumeShortInfoFromView(m))
+			}
+		}
+	}
+	if n := v.NewEcShardsLen(); n > 0 {
+		r.NewEcShards = make([]*master_pb.VolumeEcShardInformationMessage, 0, n)
+		for i := 0; i < n; i++ {
+			if m, ok := v.NewEcShardAt(i); ok {
+				r.NewEcShards = append(r.NewEcShards, ecShardInfoFromView(m))
+			}
+		}
+	}
+	if n := v.DeletedEcShardsLen(); n > 0 {
+		r.DeletedEcShards = make([]*master_pb.VolumeEcShardInformationMessage, 0, n)
+		for i := 0; i < n; i++ {
+			if m, ok := v.DeletedEcShardAt(i); ok {
+				r.DeletedEcShards = append(r.DeletedEcShards, ecShardInfoFromView(m))
+			}
+		}
+	}
+	if n := v.DiskTagsLen(); n > 0 {
+		r.DiskTags = make([]*master_pb.DiskTag, 0, n)
+		for i := 0; i < n; i++ {
+			if d, ok := v.DiskTagAt(i); ok {
+				r.DiskTags = append(r.DiskTags, diskTagFromView(d))
+			}
+		}
+	}
 	if n := v.LocationUuidsLen(); n > 0 {
 		r.LocationUuids = make([]string, n)
 		for i := 0; i < n; i++ {
