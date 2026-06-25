@@ -3760,9 +3760,9 @@ func (h *Handler) registerSchemasViaBrokerAPI(topicName string, valueRecordType 
 	// In single-gateway mode, coordinator registry may not be initialized - that's OK
 	if reg := h.GetCoordinatorRegistry(); reg != nil {
 		// Multi-gateway mode - check if we're the leader
-		isLeader := reg.IsLeader()
+		isPrimary := reg.IsPrimary()
 
-		if !isLeader {
+		if !isPrimary {
 			// Not leader - in production multi-gateway setups, skip to avoid conflicts
 			// In single-gateway setups where leader election fails, log warning but proceed
 			// This ensures schema registration works even if distributed locking has issues

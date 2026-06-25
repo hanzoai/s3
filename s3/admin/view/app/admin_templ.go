@@ -247,7 +247,7 @@ func Admin(data dash.AdminData) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if master.IsLeader {
+			if master.IsWriter {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<span class=\"badge bg-primary\">Leader</span>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

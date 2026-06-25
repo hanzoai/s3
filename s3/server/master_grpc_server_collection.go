@@ -3,7 +3,7 @@ package s3server
 import (
 	"context"
 
-	"github.com/seaweedfs/raft"
+	"github.com/hanzoai/s3/s3/topology"
 
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
@@ -12,8 +12,8 @@ import (
 
 func (ms *MasterServer) CollectionList(ctx context.Context, req *master_pb.CollectionListRequest) (*master_pb.CollectionListResponse, error) {
 
-	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+	if !ms.Topo.IsWriter() {
+		return nil, topology.ErrNotWriter
 	}
 
 	resp := &master_pb.CollectionListResponse{}
@@ -29,8 +29,8 @@ func (ms *MasterServer) CollectionList(ctx context.Context, req *master_pb.Colle
 
 func (ms *MasterServer) CollectionDelete(ctx context.Context, req *master_pb.CollectionDeleteRequest) (*master_pb.CollectionDeleteResponse, error) {
 
-	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+	if !ms.Topo.IsWriter() {
+		return nil, topology.ErrNotWriter
 	}
 
 	resp := &master_pb.CollectionDeleteResponse{}

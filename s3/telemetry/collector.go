@@ -47,12 +47,12 @@ func (c *Collector) SetMasterServer(masterServer interface{}) {
 	c.masterServer = masterServer
 }
 
-// isLeader checks if this master is the leader
-func (c *Collector) isLeader() bool {
+// isWriter checks if this master is the leader
+func (c *Collector) isWriter() bool {
 	if c.topo == nil {
 		return false
 	}
-	return c.topo.IsLeader()
+	return c.topo.IsWriter()
 }
 
 // CollectAndSendAsync collects telemetry data and sends it asynchronously
@@ -84,7 +84,7 @@ func (c *Collector) StartPeriodicCollection(interval time.Duration) {
 	// Send initial telemetry after a short delay
 	go func() {
 		time.Sleep(61 * time.Second) // Wait for cluster to stabilize
-		if c.isLeader() {
+		if c.isWriter() {
 			c.CollectAndSendAsync()
 		} else {
 			glog.V(2).Infof("Skipping initial telemetry collection - not the leader master")
@@ -97,7 +97,7 @@ func (c *Collector) StartPeriodicCollection(interval time.Duration) {
 		defer ticker.Stop()
 		for range ticker.C {
 			// Check leadership before each collection
-			if c.isLeader() {
+			if c.isWriter() {
 				c.CollectAndSendAsync()
 			} else {
 				glog.V(2).Infof("Skipping periodic telemetry collection - not the leader master")

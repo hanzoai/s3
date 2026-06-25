@@ -34,7 +34,7 @@ func TestCoordinatorRegistry_BasicOperations(t *testing.T) {
 		gatewayAddress:   "test-gateway:9092",
 		stopChan:         make(chan struct{}),
 		leadershipChange: make(chan string, 10),
-		isLeader:         true, // Simulate being leader for tests
+		isPrimary:         true, // Simulate being leader for tests
 	}
 
 	// Test gateway registration
@@ -72,7 +72,7 @@ func TestCoordinatorRegistry_AssignCoordinator(t *testing.T) {
 		gatewayAddress:   "test-gateway:9092",
 		stopChan:         make(chan struct{}),
 		leadershipChange: make(chan string, 10),
-		isLeader:         true,
+		isPrimary:         true,
 	}
 
 	// Register a gateway
@@ -80,7 +80,7 @@ func TestCoordinatorRegistry_AssignCoordinator(t *testing.T) {
 	registry.registerGateway(gatewayAddr)
 
 	// Test coordinator assignment when not leader
-	registry.isLeader = false
+	registry.isPrimary = false
 	_, err := registry.AssignCoordinator("test-group", gatewayAddr)
 	if err == nil {
 		t.Error("Should fail when not leader")
@@ -88,7 +88,7 @@ func TestCoordinatorRegistry_AssignCoordinator(t *testing.T) {
 
 	// Test coordinator assignment when leader
 	// Note: This will panic due to no filer client, but we expect this in unit tests
-	registry.isLeader = true
+	registry.isPrimary = true
 	func() {
 		defer func() {
 			if r := recover(); r == nil {
@@ -99,7 +99,7 @@ func TestCoordinatorRegistry_AssignCoordinator(t *testing.T) {
 	}()
 
 	// Test getting assignment when not leader
-	registry.isLeader = false
+	registry.isPrimary = false
 	_, err = registry.GetCoordinator("test-group")
 	if err == nil {
 		t.Error("Should fail when not leader")
@@ -112,7 +112,7 @@ func TestCoordinatorRegistry_HealthyGateways(t *testing.T) {
 		gatewayAddress:   "test-gateway:9092",
 		stopChan:         make(chan struct{}),
 		leadershipChange: make(chan string, 10),
-		isLeader:         true,
+		isPrimary:         true,
 	}
 
 	// Register multiple gateways
@@ -150,7 +150,7 @@ func TestCoordinatorRegistry_ConsistentHashing(t *testing.T) {
 		gatewayAddress:   "test-gateway:9092",
 		stopChan:         make(chan struct{}),
 		leadershipChange: make(chan string, 10),
-		isLeader:         true,
+		isPrimary:         true,
 	}
 
 	// Register multiple gateways
@@ -198,7 +198,7 @@ func TestCoordinatorRegistry_CleanupStaleEntries(t *testing.T) {
 		gatewayAddress:   "test-gateway:9092",
 		stopChan:         make(chan struct{}),
 		leadershipChange: make(chan string, 10),
-		isLeader:         true,
+		isPrimary:         true,
 	}
 
 	// Register gateways and create assignments
@@ -242,7 +242,7 @@ func TestCoordinatorRegistry_GetStats(t *testing.T) {
 		gatewayAddress:   "test-gateway:9092",
 		stopChan:         make(chan struct{}),
 		leadershipChange: make(chan string, 10),
-		isLeader:         true,
+		isPrimary:         true,
 	}
 
 	// Add some data
@@ -271,7 +271,7 @@ func TestCoordinatorRegistry_HeartbeatGateway(t *testing.T) {
 		gatewayAddress:   "test-gateway:9092",
 		stopChan:         make(chan struct{}),
 		leadershipChange: make(chan string, 10),
-		isLeader:         true,
+		isPrimary:         true,
 	}
 
 	gatewayAddr := "test-gateway:9092"
@@ -301,7 +301,7 @@ func TestCoordinatorRegistry_HeartbeatGateway(t *testing.T) {
 	}
 
 	// Test heartbeat when not leader
-	registry.isLeader = false
+	registry.isPrimary = false
 	err = registry.HeartbeatGateway(gatewayAddr)
 	if err == nil {
 		t.Error("Heartbeat should fail when not leader")

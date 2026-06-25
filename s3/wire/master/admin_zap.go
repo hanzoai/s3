@@ -850,7 +850,7 @@ const (
 	raftListClusterServersResponseClusterServersIdOff       = 0
 	raftListClusterServersResponseClusterServersAddressOff  = 8
 	raftListClusterServersResponseClusterServersSuffrageOff = 16
-	raftListClusterServersResponseClusterServersIsLeaderOff = 24
+	raftListClusterServersResponseClusterServersIsWriterOff = 24
 	raftListClusterServersResponseClusterServersSize        = 25
 )
 
@@ -883,9 +883,9 @@ func (t RaftListClusterServersResponseClusterServers) Suffrage() string {
 	return t.o.Text(raftListClusterServersResponseClusterServersSuffrageOff)
 }
 
-// IsLeader reads the isLeader field (proto field 4, bool).
-func (t RaftListClusterServersResponseClusterServers) IsLeader() bool {
-	return t.o.Bool(raftListClusterServersResponseClusterServersIsLeaderOff)
+// IsWriter reads the isWriter field (proto field 4, bool).
+func (t RaftListClusterServersResponseClusterServers) IsWriter() bool {
+	return t.o.Bool(raftListClusterServersResponseClusterServersIsWriterOff)
 }
 
 // RaftListClusterServersResponseClusterServersInput collects the field values
@@ -894,7 +894,7 @@ type RaftListClusterServersResponseClusterServersInput struct {
 	Id       string
 	Address  string
 	Suffrage string
-	IsLeader bool
+	IsWriter bool
 }
 
 // NewRaftListClusterServersResponseClusterServers builds a ZAP-encoded
@@ -906,7 +906,7 @@ func NewRaftListClusterServersResponseClusterServers(in RaftListClusterServersRe
 	ob.SetText(raftListClusterServersResponseClusterServersIdOff, in.Id)
 	ob.SetText(raftListClusterServersResponseClusterServersAddressOff, in.Address)
 	ob.SetText(raftListClusterServersResponseClusterServersSuffrageOff, in.Suffrage)
-	ob.SetBool(raftListClusterServersResponseClusterServersIsLeaderOff, in.IsLeader)
+	ob.SetBool(raftListClusterServersResponseClusterServersIsWriterOff, in.IsWriter)
 	ob.FinishAsRoot()
 	return b.Finish()
 }
