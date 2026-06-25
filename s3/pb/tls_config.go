@@ -90,15 +90,20 @@ func ServerTLSConfig(config *util.ViperProxy, component string) *tls.Config {
 		return nil
 	}
 	cfg := &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS13}
-	if caFile := config.GetString("grpc.ca"); caFile != "" {
-		pool, err := certPoolFromFile(caFile)
-		if err != nil {
-			glog.Warningf("ServerTLSConfig(%s): ca: %v", component, err)
-			return nil
-		}
-		cfg.ClientCAs = pool
-		cfg.ClientAuth = tls.RequireAndVerifyClientCert
+	caFile := config.GetString("grpc.ca")
+	if caFile == "" {
+		// Fail closed: a mesh component with a server cert but no client CA would
+		// present a cert and accept ANY client (one-way TLS, no mutual auth) — a
+		// silent mTLS downgrade. Internal ZAP services are mTLS-only; refuse to
+		// serve rather than silently drop client authentication.
+		glog.Fatalf("ServerTLSConfig(%s): %s.cert/.key set but grpc.ca is empty — refusing to serve one-way TLS on the internal mesh; set grpc.ca for mutual PQ-TLS", component, component)
 	}
+	pool, err := certPoolFromFile(caFile)
+	if err != nil {
+		glog.Fatalf("ServerTLSConfig(%s): grpc.ca %q unreadable: %v — refusing to serve without client-cert verification", component, caFile, err)
+	}
+	cfg.ClientCAs = pool
+	cfg.ClientAuth = tls.RequireAndVerifyClientCert
 	applyCommonNameVerification(cfg, config, component)
 	return cfg
 }
