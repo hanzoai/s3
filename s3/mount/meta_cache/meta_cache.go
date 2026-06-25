@@ -13,7 +13,7 @@ import (
 	"fmt"
 
 	"github.com/hanzoai/s3/s3/filer"
-	"github.com/hanzoai/s3/s3/filer/zapdb"
+	"github.com/hanzoai/s3/s3/filer/luxdb"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/util"
@@ -24,9 +24,9 @@ import (
 // e.g. fill fileId field for chunks
 
 type MetaCache struct {
-	root         util.FullPath
-	localStore   filer.VirtualFilerStore
-	zapdbStore   *zapdb.ZapDBStore // direct reference for batch operations
+	root       util.FullPath
+	localStore filer.VirtualFilerStore
+	luxdbStore *luxdb.LuxDBStore // direct reference for batch operations
 	sync.RWMutex
 	uidGidMapper         *UidGidMapper
 	markCachedFn         func(fullpath util.FullPath)
@@ -97,11 +97,11 @@ type metadataApplyRequest struct {
 
 func NewMetaCache(dbFolder string, uidGidMapper *UidGidMapper, root util.FullPath, includeSystemEntries bool,
 	markCachedFn func(path util.FullPath), isCachedFn func(path util.FullPath) bool, invalidateFunc func(util.FullPath, *filer_pb.Entry), onDirectoryUpdate func(dir util.FullPath)) *MetaCache {
-	zapdbStore, virtualStore := openMetaStore(dbFolder)
+	luxdbStore, virtualStore := openMetaStore(dbFolder)
 	mc := &MetaCache{
 		root:                 root,
 		localStore:           virtualStore,
-		zapdbStore:           zapdbStore,
+		luxdbStore:           luxdbStore,
 		markCachedFn:         markCachedFn,
 		isCachedFn:           isCachedFn,
 		uidGidMapper:         uidGidMapper,
@@ -124,14 +124,15 @@ func NewMetaCache(dbFolder string, uidGidMapper *UidGidMapper, root util.FullPat
 	return mc
 }
 
-func openMetaStore(dbFolder string) (*zapdb.ZapDBStore, filer.VirtualFilerStore) {
+func openMetaStore(dbFolder string) (*luxdb.LuxDBStore, filer.VirtualFilerStore) {
 
 	os.RemoveAll(dbFolder)
 	os.MkdirAll(dbFolder, 0755)
 
-	store := &zapdb.ZapDBStore{}
+	store := &luxdb.LuxDBStore{}
 	config := &cacheConfig{
-		dir: dbFolder,
+		dir:     dbFolder,
+		backend: "zapdb",
 	}
 
 	if err := store.Initialize(config, ""); err != nil {
@@ -152,10 +153,10 @@ func (mc *MetaCache) doInsertEntry(ctx context.Context, entry *filer.Entry) erro
 	return mc.localStore.InsertEntry(ctx, entry)
 }
 
-// doBatchInsertEntries inserts multiple entries using zapdb's batch write.
+// doBatchInsertEntries inserts multiple entries using the store's batch write.
 // This is more efficient than inserting entries one by one.
 func (mc *MetaCache) doBatchInsertEntries(ctx context.Context, entries []*filer.Entry) error {
-	return mc.zapdbStore.BatchInsertEntries(ctx, entries)
+	return mc.luxdbStore.BatchInsertEntries(ctx, entries)
 }
 
 func (mc *MetaCache) AtomicUpdateEntryFromFiler(ctx context.Context, oldPath util.FullPath, newEntry *filer.Entry) error {
