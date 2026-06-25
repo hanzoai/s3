@@ -2,7 +2,6 @@ package s3server
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -11,8 +10,6 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 // streamMutateConcurrency bounds the number of in-flight mutations processed
@@ -27,10 +24,10 @@ const streamMutateConcurrency = 64
 const streamMutatePendingLimit = 1024
 
 // syncStream wraps a bidi stream so that concurrent goroutines can Send
-// without interleaving frames. gRPC requires that Send not be called
+// without interleaving frames. The transport requires that Send not be called
 // concurrently; this mutex is the serialization point.
 type syncStream struct {
-	stream grpc.BidiStreamingServer[filer_pb.StreamMutateEntryRequest, filer_pb.StreamMutateEntryResponse]
+	stream filer_pb.HanzoFiler_StreamMutateEntryServer
 	mu     sync.Mutex
 }
 
@@ -40,7 +37,7 @@ func (s *syncStream) Send(r *filer_pb.StreamMutateEntryResponse) error {
 	return s.stream.Send(r)
 }
 
-func (fs *FilerServer) StreamMutateEntry(stream grpc.BidiStreamingServer[filer_pb.StreamMutateEntryRequest, filer_pb.StreamMutateEntryResponse]) error {
+func (fs *FilerServer) StreamMutateEntry(stream filer_pb.HanzoFiler_StreamMutateEntryServer) error {
 	ss := &syncStream{stream: stream}
 	// Path-keyed admission + subtree barriers, adapted from filer.sync's
 	// MetadataProcessor (s3/command/filer_sync_jobs.go). Admit blocks when
@@ -219,30 +216,6 @@ func (p *renameStreamProxy) Send(resp *filer_pb.StreamRenameEntryResponse) error
 func (p *renameStreamProxy) Context() context.Context {
 	return p.parent.stream.Context()
 }
-
-// SendMsg routes through Send so the payload is wrapped into a
-// StreamMutateEntryResponse and goes through the syncStream mutex. Calling
-// SendMsg with anything other than *filer_pb.StreamRenameEntryResponse would
-// emit the wrong protobuf type on this RPC, so reject other shapes.
-func (p *renameStreamProxy) SendMsg(m any) error {
-	resp, ok := m.(*filer_pb.StreamRenameEntryResponse)
-	if !ok {
-		return fmt.Errorf("renameStreamProxy.SendMsg: unexpected type %T", m)
-	}
-	return p.Send(resp)
-}
-
-// RecvMsg on the proxy would race with the outer StreamMutateEntry recv
-// loop and could steal unrelated mutation requests. The rename logic never
-// calls RecvMsg (it is strictly a server-push stream), so fail loudly if it
-// ever does.
-func (p *renameStreamProxy) RecvMsg(m any) error {
-	return fmt.Errorf("renameStreamProxy.RecvMsg is not supported")
-}
-
-func (p *renameStreamProxy) SetHeader(md metadata.MD) error  { return p.parent.stream.SetHeader(md) }
-func (p *renameStreamProxy) SendHeader(md metadata.MD) error { return p.parent.stream.SendHeader(md) }
-func (p *renameStreamProxy) SetTrailer(md metadata.MD)       { p.parent.stream.SetTrailer(md) }
 
 // renameErrno maps a rename error to a POSIX errno for the client.
 func renameErrno(err error) int32 {

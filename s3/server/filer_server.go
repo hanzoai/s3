@@ -20,7 +20,6 @@ import (
 
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/util"
 	util_http "github.com/hanzoai/s3/s3/util/http"
@@ -80,7 +79,6 @@ type FilerServer struct {
 
 	inFlightDataLimitCond *sync.Cond
 
-	filer_pb.UnimplementedHanzoFilerServer
 	option         *FilerOption
 	filer          *filer.Filer
 	filerGuard     *security.Guard
@@ -185,8 +183,8 @@ func NewFilerServer(defaultMux, readonlyMux *http.ServeMux, option *FilerOption)
 	}
 
 	if !util.LoadConfiguration("filer", false) {
-		v.SetDefault("leveldb2.enabled", true)
-		v.SetDefault("leveldb2.dir", option.DefaultLevelDbDir)
+		v.SetDefault("zapdb.enabled", true)
+		v.SetDefault("zapdb.dir", option.DefaultLevelDbDir)
 		_, err := os.Stat(option.DefaultLevelDbDir)
 		if os.IsNotExist(err) {
 			os.MkdirAll(option.DefaultLevelDbDir, 0755)

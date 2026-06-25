@@ -20,8 +20,6 @@ import (
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/util"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb"
@@ -533,10 +531,7 @@ var _ = filer_pb.FilerClient(&FilerSink{})
 
 func (fs *FilerSink) WithFilerClient(streamingMode bool, fn func(filer_pb.HanzoFilerClient) error) error {
 
-	return pb.WithGrpcClient(context.Background(), streamingMode, fs.signature, func(grpcConnection *grpc.ClientConn) error {
-		client := filer_pb.NewHanzoFilerClient(grpcConnection)
-		return fn(client)
-	}, fs.grpcAddress, false, fs.grpcDialOption)
+	return pb.WithFilerClient(streamingMode, fs.signature, pb.ServerAddress(fs.address), fs.grpcDialOption, fn)
 
 }
 

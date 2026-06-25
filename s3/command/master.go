@@ -30,12 +30,14 @@ import (
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/security"
 	s3server "github.com/hanzoai/s3/s3/server"
 	"github.com/hanzoai/s3/s3/storage/backend"
 	"github.com/hanzoai/s3/s3/util"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
+	masterstream "github.com/hanzoai/s3/s3/wire/master/masterstream"
+
+	"github.com/zap-proto/go/transport"
 )
 
 var (
@@ -258,8 +260,9 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	if err != nil {
 		glog.Fatalf("master failed to listen on grpc port %d: %v", grpcPort, err)
 	}
+	// gRPC now serves ONLY raft transport — the Hanzo (master) service answers
+	// over the native ZAP transport (unary + streaming) on grpcPort+10000 below.
 	grpcS := pb.NewGrpcServer(security.LoadServerTLS(util.GetViper(), "grpc.master"))
-	master_pb.RegisterHanzoServer(grpcS, ms)
 	if *masterOption.raftHashicorp {
 		raftServer.TransportManager.Register(grpcS)
 	} else {
@@ -273,17 +276,34 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	go grpcS.Serve(grpcL)
 	pb.ServeGrpcOnLocalSocket(grpcS, grpcPort)
 
-	// Native ZAP transport for the master's unary RPCs, on the deterministic
-	// grpcPort+10000 offset (same convention as ToIamZapAddress). The legacy
-	// gRPC listener above still serves raft + the streaming RPCs during the
-	// strangler. Non-fatal: a ZAP bind failure must never take down the master.
+	// Native ZAP transport for the WHOLE Hanzo (master) service — unary RPCs via
+	// the masterwire Dispatch and the three bidi streams (SendHeartbeat,
+	// KeepConnected, StreamAssign) via the masterstream Handler — on ONE listener
+	// at the deterministic grpcPort+10000 offset (ToMasterZapAddress, the same
+	// convention as ToIamZapAddress). This is the master's only transport now; the
+	// gRPC listener above carries raft only.
+	//
+	// When grpc.master.cert/.key is configured the listener is PQ-secured mTLS:
+	// transport.PQTLSConfig pins X25519MLKEM768 (PQ X-Wing) and the same
+	// cert/CA/allowed-CN gate the legacy gRPC master enforced applies — no
+	// security downgrade. Otherwise plaintext (loopback / dev).
 	zapAddr := util.JoinHostPort(*masterOption.ipBind, grpcPort+10000)
-	if zapServer, zapErr := masterwire.Serve("tcp", zapAddr, s3server.NewMasterZapBackend(ms)); zapErr != nil {
-		glog.Warningf("master ZAP transport failed to listen on %s: %v", zapAddr, zapErr)
+	masterDispatch := masterwire.Dispatch(s3server.NewMasterZapBackend(ms))
+	masterStream := masterstream.Handler(s3server.NewMasterZapStreamServer(ms))
+	var masterZapSrv *transport.Server
+	var zapErr error
+	if tlsCfg := security.ServerTLSConfig(util.GetViper(), "grpc.master"); tlsCfg != nil {
+		masterZapSrv, zapErr = transport.ListenStreamTLS("tcp", zapAddr,
+			transport.PQTLSConfig(tlsCfg), masterDispatch, masterStream)
+		glog.V(0).Infof("Start Hanzo S3 Master %s over PQ-TLS (X25519MLKEM768) ZAP transport at %s", version.Version(), zapAddr)
 	} else {
-		glog.V(0).Infof("Start Hanzo S3 Master %s ZAP transport at %s", version.Version(), zapAddr)
-		grace.OnInterrupt(func() { zapServer.Close() })
+		masterZapSrv, zapErr = transport.ListenStream("tcp", zapAddr, masterDispatch, masterStream)
+		glog.V(0).Infof("Start Hanzo S3 Master %s over native ZAP transport (plaintext; set grpc.master.cert/.key for PQ-TLS) at %s", version.Version(), zapAddr)
 	}
+	if zapErr != nil {
+		glog.Fatalf("master failed to serve ZAP transport on %s: %v", zapAddr, zapErr)
+	}
+	grace.OnInterrupt(func() { masterZapSrv.Close() })
 
 	// For multi-master mode with non-Hashicorp raft, wait and check if we should join
 	if !*masterOption.raftHashicorp && !isSingleMaster {

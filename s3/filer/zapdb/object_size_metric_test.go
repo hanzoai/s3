@@ -1,4 +1,4 @@
-package leveldb
+package zapdb
 
 import (
 	"context"
@@ -28,7 +28,7 @@ func histogramState(t *testing.T) (count uint64, perBucket map[float64]uint64) {
 
 func TestCreateEntryRecordsObjectSize(t *testing.T) {
 	testFiler := filer.NewFiler(pb.ServerDiscovery{}, nil, "", "", "", "", "", 255, nil)
-	store := &LevelDBStore{}
+	store := &ZapDBStore{}
 	if err := store.initialize(t.TempDir()); err != nil {
 		t.Fatalf("init store: %v", err)
 	}

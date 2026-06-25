@@ -594,14 +594,7 @@ func (worker *FileCopyWorker) saveDataAsChunk(reader io.Reader, name string, off
 var _ = filer_pb.FilerClient(&FileCopyWorker{})
 
 func (worker *FileCopyWorker) WithFilerClient(streamingMode bool, fn func(filer_pb.HanzoFilerClient) error) (err error) {
-
-	filerGrpcAddress := worker.filerAddress.ToGrpcAddress()
-	err = pb.WithGrpcClient(context.Background(), streamingMode, worker.signature, func(grpcConnection *grpc.ClientConn) error {
-		client := filer_pb.NewHanzoFilerClient(grpcConnection)
-		return fn(client)
-	}, filerGrpcAddress, false, worker.options.grpcDialOption)
-
-	return
+	return pb.WithFilerClient(streamingMode, worker.signature, worker.filerAddress, worker.options.grpcDialOption, fn)
 }
 
 func (worker *FileCopyWorker) AdjustedUrl(location *filer_pb.Location) string {
