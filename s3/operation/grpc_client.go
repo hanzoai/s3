@@ -3,20 +3,18 @@ package operation
 import (
 	"context"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 )
 
+// WithVolumeServerClient runs fn with a volume_server_pb.VolumeServerClient over
+// the native ZAP transport. It delegates to pb.WithVolumeServerClient (volumePool
+// + volumezap.New) — the volume analogue of WithMasterServerClient delegating to
+// pb.WithMasterClient. The grpcDialOption is retained for caller compatibility and
+// unused on the ZAP path.
 func WithVolumeServerClient(streamingMode bool, volumeServer pb.ServerAddress, grpcDialOption pb.DialOption, fn func(volume_server_pb.VolumeServerClient) error) error {
-
-	return pb.WithGrpcClient(context.Background(), streamingMode, 0, func(grpcConnection *grpc.ClientConn) error {
-		client := volume_server_pb.NewVolumeServerClient(grpcConnection)
-		return fn(client)
-	}, volumeServer.ToGrpcAddress(), false, grpcDialOption)
-
+	return pb.WithVolumeServerClient(streamingMode, volumeServer, grpcDialOption, fn)
 }
 
 // WithMasterServerClient threads the caller's per-request context into the

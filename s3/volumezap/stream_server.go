@@ -22,16 +22,14 @@
 // v1.6.2+). A backend handler that gates an idle wait on stream.Context().Done()
 // — or passes it to request-scoped auth (checkGrpcAdminAuth) — is therefore
 // released on client disconnect, no goroutine leak. This mirrors the filerzap
-// stream adapters exactly. The grpc.ServerStream embedded in each adapter
-// supplies the streaming interface's remaining methods (Header/Trailer/...),
-// which the volume engine does not call on these paths.
+// stream adapters exactly. Each adapter satisfies the grpc-free seam in
+// volume_server_pb (Send/Context for server-streams; Recv/SendAndClose/Context
+// for ReceiveFile) — no grpc plumbing.
 
 package volumezap
 
 import (
 	"context"
-
-	"google.golang.org/grpc"
 
 	volume_server_pb "github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	vsw "github.com/hanzoai/s3/s3/wire/volume_server"
@@ -131,7 +129,6 @@ func (b serverBackend) ReceiveFile(s vsw.ReceiveFileServerStream) error {
 // handlers see the real cancel-on-disconnect context, not context.Background().
 
 type vacuumVolumeCompactSend struct {
-	grpc.ServerStream
 	out vsw.VacuumVolumeCompactServerStream
 }
 
@@ -141,7 +138,6 @@ func (a *vacuumVolumeCompactSend) Send(resp *volume_server_pb.VacuumVolumeCompac
 func (a *vacuumVolumeCompactSend) Context() context.Context { return a.out.Context() }
 
 type volumeIncrementalCopySend struct {
-	grpc.ServerStream
 	out vsw.VolumeIncrementalCopyServerStream
 }
 
@@ -151,7 +147,6 @@ func (a *volumeIncrementalCopySend) Send(resp *volume_server_pb.VolumeIncrementa
 func (a *volumeIncrementalCopySend) Context() context.Context { return a.out.Context() }
 
 type volumeCopySend struct {
-	grpc.ServerStream
 	out vsw.VolumeCopyServerStream
 }
 
@@ -161,7 +156,6 @@ func (a *volumeCopySend) Send(resp *volume_server_pb.VolumeCopyResponse) error {
 func (a *volumeCopySend) Context() context.Context { return a.out.Context() }
 
 type copyFileSend struct {
-	grpc.ServerStream
 	out vsw.CopyFileServerStream
 }
 
@@ -171,7 +165,6 @@ func (a *copyFileSend) Send(resp *volume_server_pb.CopyFileResponse) error {
 func (a *copyFileSend) Context() context.Context { return a.out.Context() }
 
 type readAllNeedlesSend struct {
-	grpc.ServerStream
 	out vsw.ReadAllNeedlesServerStream
 }
 
@@ -181,7 +174,6 @@ func (a *readAllNeedlesSend) Send(resp *volume_server_pb.ReadAllNeedlesResponse)
 func (a *readAllNeedlesSend) Context() context.Context { return a.out.Context() }
 
 type volumeTailSenderSend struct {
-	grpc.ServerStream
 	out vsw.VolumeTailSenderServerStream
 }
 
@@ -191,7 +183,6 @@ func (a *volumeTailSenderSend) Send(resp *volume_server_pb.VolumeTailSenderRespo
 func (a *volumeTailSenderSend) Context() context.Context { return a.out.Context() }
 
 type volumeEcShardReadSend struct {
-	grpc.ServerStream
 	out vsw.VolumeEcShardReadServerStream
 }
 
@@ -201,7 +192,6 @@ func (a *volumeEcShardReadSend) Send(resp *volume_server_pb.VolumeEcShardReadRes
 func (a *volumeEcShardReadSend) Context() context.Context { return a.out.Context() }
 
 type volumeTierToRemoteSend struct {
-	grpc.ServerStream
 	out vsw.VolumeTierMoveDatToRemoteServerStream
 }
 
@@ -211,7 +201,6 @@ func (a *volumeTierToRemoteSend) Send(resp *volume_server_pb.VolumeTierMoveDatTo
 func (a *volumeTierToRemoteSend) Context() context.Context { return a.out.Context() }
 
 type volumeTierFromRemoteSend struct {
-	grpc.ServerStream
 	out vsw.VolumeTierMoveDatFromRemoteServerStream
 }
 
@@ -221,7 +210,6 @@ func (a *volumeTierFromRemoteSend) Send(resp *volume_server_pb.VolumeTierMoveDat
 func (a *volumeTierFromRemoteSend) Context() context.Context { return a.out.Context() }
 
 type querySend struct {
-	grpc.ServerStream
 	out vsw.QueryServerStream
 }
 
@@ -232,12 +220,10 @@ func (a *querySend) Context() context.Context { return a.out.Context() }
 
 // --- client-stream Recv adapter (wire frame -> pb oneof request; reply on close) ---
 
-// receiveFileRecv implements grpc.ClientStreamingServer[ReceiveFileRequest,
-// ReceiveFileResponse] (= volume_server_pb.VolumeServer_ReceiveFileServer): the
+// receiveFileRecv implements volume_server_pb.VolumeServer_ReceiveFileServer: the
 // engine loops Recv() until io.EOF (the wire stream's Recv returns it when the
 // client half-closes) then calls SendAndClose once with the terminal reply.
 type receiveFileRecv struct {
-	grpc.ServerStream
 	in vsw.ReceiveFileServerStream
 }
 
