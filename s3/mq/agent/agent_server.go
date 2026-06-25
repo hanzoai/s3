@@ -6,7 +6,6 @@ import (
 	"github.com/hanzoai/s3/s3/mq/client/pub_client"
 	"github.com/hanzoai/s3/s3/mq/client/sub_client"
 	"github.com/hanzoai/s3/s3/pb"
-	"google.golang.org/grpc"
 )
 
 type SessionId int64
@@ -21,14 +20,14 @@ type MessageQueueAgentOptions struct {
 type MessageQueueAgent struct {
 	option          *MessageQueueAgentOptions
 	brokers         []pb.ServerAddress
-	grpcDialOption  grpc.DialOption
+	grpcDialOption  pb.DialOption
 	publishers      map[SessionId]*SessionEntry[*pub_client.TopicPublisher]
 	publishersLock  sync.RWMutex
 	subscribers     map[SessionId]*SessionEntry[*sub_client.TopicSubscriber]
 	subscribersLock sync.RWMutex
 }
 
-func NewMessageQueueAgent(option *MessageQueueAgentOptions, grpcDialOption grpc.DialOption) *MessageQueueAgent {
+func NewMessageQueueAgent(option *MessageQueueAgentOptions, grpcDialOption pb.DialOption) *MessageQueueAgent {
 
 	// initialize brokers which may change later
 	var brokers []pb.ServerAddress

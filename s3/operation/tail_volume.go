@@ -7,13 +7,11 @@ import (
 
 	"github.com/hanzoai/s3/s3/pb"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/storage/needle"
 )
 
-func TailVolume(masterFn GetMasterFn, grpcDialOption grpc.DialOption, vid needle.VolumeId, sinceNs uint64, timeoutSeconds int, fn func(n *needle.Needle) error) error {
+func TailVolume(masterFn GetMasterFn, grpcDialOption pb.DialOption, vid needle.VolumeId, sinceNs uint64, timeoutSeconds int, fn func(n *needle.Needle) error) error {
 	// find volume location, replication, ttl info
 	lookup, err := LookupVolumeId(masterFn, grpcDialOption, vid.String())
 	if err != nil {
@@ -28,7 +26,7 @@ func TailVolume(masterFn GetMasterFn, grpcDialOption grpc.DialOption, vid needle
 	return TailVolumeFromSource(volumeServer, grpcDialOption, vid, sinceNs, timeoutSeconds, fn)
 }
 
-func TailVolumeFromSource(volumeServer pb.ServerAddress, grpcDialOption grpc.DialOption, vid needle.VolumeId, sinceNs uint64, idleTimeoutSeconds int, fn func(n *needle.Needle) error) error {
+func TailVolumeFromSource(volumeServer pb.ServerAddress, grpcDialOption pb.DialOption, vid needle.VolumeId, sinceNs uint64, idleTimeoutSeconds int, fn func(n *needle.Needle) error) error {
 	return WithVolumeServerClient(true, volumeServer, grpcDialOption, func(client volume_server_pb.VolumeServerClient) error {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()

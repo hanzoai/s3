@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage/needle"
@@ -32,7 +33,7 @@ func newTestStore(t *testing.T, numDirs int) *Store {
 		diskTypes = append(diskTypes, types.HardDriveType)
 	}
 	diskIOProbeConfig := stats.DefaultDiskIOProbeConfig()
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "",
 		dirs, maxCounts, minFreeSpaces, "", NeedleMapInMemory, diskTypes, nil, 3, diskIOProbeConfig)
 
 	// Consume channel messages to prevent blocking

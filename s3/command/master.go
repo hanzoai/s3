@@ -287,12 +287,12 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	// transport.PQTLSConfig pins X25519MLKEM768 (PQ X-Wing) and the same
 	// cert/CA/allowed-CN gate the legacy gRPC master enforced applies — no
 	// security downgrade. Otherwise plaintext (loopback / dev).
-	zapAddr := util.JoinHostPort(*masterOption.ipBind, grpcPort+10000)
+	zapAddr := util.JoinHostPort(*masterOption.ipBind, pb.ZapPort(grpcPort))
 	masterDispatch := masterwire.Dispatch(s3server.NewMasterZapBackend(ms))
 	masterStream := masterstream.Handler(s3server.NewMasterZapStreamServer(ms))
 	var masterZapSrv *transport.Server
 	var zapErr error
-	if tlsCfg := security.ServerTLSConfig(util.GetViper(), "grpc.master"); tlsCfg != nil {
+	if tlsCfg := pb.ServerTLSConfig(util.GetViper(), "grpc.master"); tlsCfg != nil {
 		masterZapSrv, zapErr = transport.ListenStreamTLS("tcp", zapAddr,
 			transport.PQTLSConfig(tlsCfg), masterDispatch, masterStream)
 		glog.V(0).Infof("Start Hanzo S3 Master %s over PQ-TLS (X25519MLKEM768) ZAP transport at %s", version.Version(), zapAddr)

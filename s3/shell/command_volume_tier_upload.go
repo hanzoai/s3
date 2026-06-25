@@ -11,8 +11,6 @@ import (
 
 	"github.com/hanzoai/s3/s3/pb"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
@@ -176,7 +174,7 @@ func doVolumeTierUpload(commandEnv *CommandEnv, writer io.Writer, collection str
 	return nil
 }
 
-func uploadDatToRemoteTier(grpcDialOption grpc.DialOption, writer io.Writer, volumeId needle.VolumeId, collection string, sourceVolumeServer pb.ServerAddress, dest string, keepLocalDatFile bool) error {
+func uploadDatToRemoteTier(grpcDialOption pb.DialOption, writer io.Writer, volumeId needle.VolumeId, collection string, sourceVolumeServer pb.ServerAddress, dest string, keepLocalDatFile bool) error {
 
 	err := operation.WithVolumeServerClient(true, sourceVolumeServer, grpcDialOption, func(volumeServerClient volume_server_pb.VolumeServerClient) error {
 		stream, copyErr := volumeServerClient.VolumeTierMoveDatToRemote(context.Background(), &volume_server_pb.VolumeTierMoveDatToRemoteRequest{

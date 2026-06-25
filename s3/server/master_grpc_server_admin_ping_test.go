@@ -9,7 +9,6 @@ import (
 	"github.com/hanzoai/s3/s3/sequence"
 	"github.com/hanzoai/s3/s3/topology"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"google.golang.org/grpc"
 )
 
 func TestMasterIsKnownPingTarget(t *testing.T) {
@@ -83,7 +82,7 @@ func TestMasterIsKnownPingTargetFollowerEmptyTopology(t *testing.T) {
 
 	// Empty topology plus a MasterClient that has not learned this volume
 	// server yet: still reject, but exercise the MasterClient fallback path.
-	mc := wdclient.NewMasterClient(grpc.EmptyDialOption{}, "", cluster.MasterType, "", "", "", pb.ServerDiscovery{})
+	mc := wdclient.NewMasterClient(pb.DialOption{}, "", cluster.MasterType, "", "", "", pb.ServerDiscovery{})
 	follower := &MasterServer{
 		option:       &MasterOption{Master: pb.ServerAddress("10.0.0.1:9333")},
 		Topo:         topology.NewTopology("test", sequence.NewMemorySequencer(), 32*1024, 5, false),

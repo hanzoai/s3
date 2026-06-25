@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc"
+	"github.com/hanzoai/s3/s3/pb"
 )
 
 // WorkerConfig represents the configuration for a worker
@@ -16,7 +16,7 @@ type WorkerConfig struct {
 	TaskRequestInterval time.Duration          `json:"task_request_interval"`
 	BaseWorkingDir      string                 `json:"base_working_dir,omitempty"`
 	CustomParameters    map[string]interface{} `json:"custom_parameters,omitempty"`
-	GrpcDialOption      grpc.DialOption        `json:"-"` // Not serializable, for runtime use only
+	GrpcDialOption      pb.DialOption          `json:"-"` // Not serializable, for runtime use only
 }
 
 // MaintenanceConfig represents the configuration for the maintenance system

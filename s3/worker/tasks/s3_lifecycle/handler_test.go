@@ -6,11 +6,11 @@ import (
 	"math"
 	"testing"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 )
 
 // Tests cover the worker-handler surface that runs without a live filer
@@ -108,7 +108,7 @@ func TestReadString_StringValueReturned(t *testing.T) {
 // ---------- Capability ----------
 
 func TestCapability_AdvertisesJobType(t *testing.T) {
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	cap := h.Capability()
 	require.NotNil(t, cap)
 	assert.Equal(t, jobType, cap.JobType)
@@ -123,7 +123,7 @@ func TestCapability_AdvertisesJobType(t *testing.T) {
 // ---------- Detect ----------
 
 func TestDetect_NilRequestErrors(t *testing.T) {
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	r := &recordingSender{}
 	err := h.Detect(context.Background(), nil, r)
 	require.Error(t, err)
@@ -132,7 +132,7 @@ func TestDetect_NilRequestErrors(t *testing.T) {
 }
 
 func TestDetect_NilSenderErrors(t *testing.T) {
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	err := h.Detect(context.Background(), &plugin_pb.RunDetectionRequest{}, nil)
 	require.Error(t, err)
 }
@@ -141,7 +141,7 @@ func TestDetect_WrongJobTypeErrors(t *testing.T) {
 	// A request routed to this handler with a foreign JobType is the
 	// admin's bug; surface as an error so it's visible rather than
 	// silently emitting a bogus proposal.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	r := &recordingSender{}
 	err := h.Detect(context.Background(), &plugin_pb.RunDetectionRequest{JobType: "different_job"}, r)
 	require.Error(t, err)
@@ -152,7 +152,7 @@ func TestDetect_NoS3EndpointsCompletesWithSkipActivity(t *testing.T) {
 	// A cluster with no S3 servers registered yet must not spawn the
 	// scheduler; emit a "skipped" activity for operator visibility and
 	// complete with success so the admin doesn't classify as a failure.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	r := &recordingSender{}
 	err := h.Detect(context.Background(), &plugin_pb.RunDetectionRequest{
 		JobType:        jobType,
@@ -169,7 +169,7 @@ func TestDetect_NoS3EndpointsCompletesWithSkipActivity(t *testing.T) {
 }
 
 func TestDetect_NoFilerAddressesCompletesWithSkipActivity(t *testing.T) {
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	r := &recordingSender{}
 	err := h.Detect(context.Background(), &plugin_pb.RunDetectionRequest{
 		JobType: jobType,
@@ -191,7 +191,7 @@ func TestDetect_HappyPathProposesOneJobWithFirstFilerAddress(t *testing.T) {
 	// Detect must propose exactly one job that targets the first filer
 	// address in the cluster context; the master refreshes the list so
 	// a stale entry self-heals on the next run.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	r := &recordingSender{}
 	err := h.Detect(context.Background(), &plugin_pb.RunDetectionRequest{
 		JobType: jobType,
@@ -222,7 +222,7 @@ func TestDetect_HappyPathProposesOneJobWithFirstFilerAddress(t *testing.T) {
 func TestDetect_EmptyJobTypeAccepted(t *testing.T) {
 	// Detect is sometimes invoked with an unset JobType (broadcast
 	// detect); the handler must accept and behave as if it matched.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	r := &recordingSender{}
 	err := h.Detect(context.Background(), &plugin_pb.RunDetectionRequest{
 		ClusterContext: &plugin_pb.ClusterContext{
@@ -237,7 +237,7 @@ func TestDetect_EmptyJobTypeAccepted(t *testing.T) {
 func TestDetect_PropagatesProposalsSendError(t *testing.T) {
 	// SendProposals failing must propagate; otherwise the worker would
 	// silently report success despite never delivering the proposal.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	want := errors.New("transport down")
 	r := &recordingSender{errOn: map[string]error{"proposals": want}}
 	err := h.Detect(context.Background(), &plugin_pb.RunDetectionRequest{
@@ -257,7 +257,7 @@ func TestDetect_PropagatesCompleteSendError(t *testing.T) {
 	// report success to the admin despite the completion signal never
 	// landing. Proposals went out before the failure, so they remain in
 	// the recorder.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	want := errors.New("transport down")
 	r := &recordingSender{errOn: map[string]error{"complete": want}}
 	err := h.Detect(context.Background(), &plugin_pb.RunDetectionRequest{
@@ -278,7 +278,7 @@ func TestDescriptor_BasicShape(t *testing.T) {
 	// Sanity-check the Descriptor's public-facing identifiers so a
 	// rename in handler.go doesn't silently break the admin UI without
 	// an admin-side change too.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	d := h.Descriptor()
 	require.NotNil(t, d)
 	assert.Equal(t, jobType, d.JobType)
@@ -292,7 +292,7 @@ func TestDescriptor_AdminConfigFormHasNoWorkersField(t *testing.T) {
 	// pipeline goroutines. It's per-worker tuning, not a cluster-wide
 	// scope concern, so it was removed from the form. ParseConfig hard-
 	// codes cfg.Workers from shardPipelineGoroutines instead.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	d := h.Descriptor()
 	require.NotNil(t, d.AdminConfigForm)
 	for _, sec := range d.AdminConfigForm.Sections {
@@ -311,7 +311,7 @@ func TestDescriptor_WorkerConfigFormIsAbsent(t *testing.T) {
 	// AdminRuntimeDefaults.ExecutionTimeoutSeconds — single source of
 	// truth. A WorkerConfigForm with no fields would render as an
 	// empty section in the admin UI; drop the form entirely.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	d := h.Descriptor()
 	assert.Nil(t, d.WorkerConfigForm,
 		"WorkerConfigForm should be nil now that max_runtime_minutes is gone; if you re-add a worker-side knob, restore the form and pin it here")
@@ -327,7 +327,7 @@ func TestDescriptor_AdminRuntimeDefaultsHaveNoTimeoutInPractice(t *testing.T) {
 	// practice" in a code-review-readable way. A future change that
 	// tightens the cap should fail this test so the choice is
 	// re-examined consciously.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	d := h.Descriptor()
 	require.NotNil(t, d.AdminRuntimeDefaults)
 	assert.Equal(t, int32(math.MaxInt32), d.AdminRuntimeDefaults.ExecutionTimeoutSeconds,
@@ -341,7 +341,7 @@ func TestDescriptor_AdminRuntimeDefaultsDailyCadence(t *testing.T) {
 	// detection interval so cron pressure doesn't escalate. Bound the
 	// detection timeout so a stuck detect can't pin a worker slot
 	// indefinitely. Max 1 job per detection = scheduler runs alone.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	d := h.Descriptor()
 	require.NotNil(t, d.AdminRuntimeDefaults)
 	assert.Equal(t, int32(24*60), d.AdminRuntimeDefaults.DetectionIntervalMinutes)
@@ -356,7 +356,7 @@ func TestDescriptor_AdminRuntimeDefaultsEnabledByDefault(t *testing.T) {
 	// until an operator notices and flips it on. Document the choice
 	// here so a future change to disabled-by-default fails the test
 	// and surfaces a conscious revisit.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	d := h.Descriptor()
 	require.NotNil(t, d.AdminRuntimeDefaults)
 	assert.True(t, d.AdminRuntimeDefaults.Enabled,
@@ -389,7 +389,7 @@ func (r *recordingExecSender) SendCompleted(c *plugin_pb.JobCompleted) error {
 }
 
 func TestExecute_NilRequestErrors(t *testing.T) {
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	err := h.Execute(context.Background(), nil, &recordingExecSender{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "nil")
@@ -398,14 +398,14 @@ func TestExecute_NilRequestErrors(t *testing.T) {
 func TestExecute_NilJobErrors(t *testing.T) {
 	// A non-nil request with nil Job is a writer-side bug; refuse it
 	// rather than panic dereferencing request.Job.JobType.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	err := h.Execute(context.Background(), &plugin_pb.ExecuteJobRequest{}, &recordingExecSender{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "nil")
 }
 
 func TestExecute_NilSenderErrors(t *testing.T) {
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	err := h.Execute(context.Background(), &plugin_pb.ExecuteJobRequest{
 		Job: &plugin_pb.JobSpec{JobType: jobType},
 	}, nil)
@@ -416,7 +416,7 @@ func TestExecute_NilSenderErrors(t *testing.T) {
 func TestExecute_WrongJobTypeErrors(t *testing.T) {
 	// A foreign job type routed to this handler is the admin's bug;
 	// surface as an error rather than running a bogus scheduler.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	err := h.Execute(context.Background(), &plugin_pb.ExecuteJobRequest{
 		Job: &plugin_pb.JobSpec{JobType: "different_job"},
 	}, &recordingExecSender{})
@@ -428,7 +428,7 @@ func TestExecute_NoS3EndpointsErrors(t *testing.T) {
 	// Detect emits a "skipped" activity for this case; Execute is
 	// stricter — the admin shouldn't have routed an Execute request
 	// without S3 endpoints, so error out instead of silently no-oping.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	err := h.Execute(context.Background(), &plugin_pb.ExecuteJobRequest{
 		Job:            &plugin_pb.JobSpec{JobType: jobType},
 		ClusterContext: &plugin_pb.ClusterContext{}, // no S3GrpcAddresses
@@ -441,7 +441,7 @@ func TestExecute_MissingFilerAddressErrors(t *testing.T) {
 	// filer_grpc_address is set by Detect when it builds the proposal;
 	// missing it means the proposal was tampered with or the admin
 	// dropped the parameter. Refuse rather than dial nothing.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	err := h.Execute(context.Background(), &plugin_pb.ExecuteJobRequest{
 		Job: &plugin_pb.JobSpec{
 			JobType:    jobType,
@@ -459,7 +459,7 @@ func TestExecute_EmptyJobTypeAccepted(t *testing.T) {
 	// Same convention as Detect: an empty JobType is broadcast routing
 	// and must be accepted. The handler then errors at the next
 	// validation step (no S3 endpoints) rather than at the type check.
-	h := NewHandler(nil)
+	h := NewHandler(pb.DialOption{})
 	err := h.Execute(context.Background(), &plugin_pb.ExecuteJobRequest{
 		Job:            &plugin_pb.JobSpec{}, // empty JobType
 		ClusterContext: &plugin_pb.ClusterContext{},
@@ -510,7 +510,7 @@ type stubFilerConfigClient struct {
 	err  error
 }
 
-func (c *stubFilerConfigClient) GetFilerConfiguration(_ context.Context, _ *filer_pb.GetFilerConfigurationRequest, _ ...grpc.CallOption) (*filer_pb.GetFilerConfigurationResponse, error) {
+func (c *stubFilerConfigClient) GetFilerConfiguration(_ context.Context, _ *filer_pb.GetFilerConfigurationRequest) (*filer_pb.GetFilerConfigurationResponse, error) {
 	if c.err != nil {
 		return nil, c.err
 	}

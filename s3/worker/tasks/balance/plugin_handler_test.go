@@ -7,11 +7,13 @@ import (
 	"sync"
 	"testing"
 
+	"google.golang.org/protobuf/proto"
+
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
 	workertypes "github.com/hanzoai/s3/s3/worker/types"
-	"google.golang.org/protobuf/proto"
 )
 
 func TestDecodeVolumeBalanceTaskParamsFromPayload(t *testing.T) {
@@ -259,7 +261,7 @@ func TestBuildBatchVolumeBalanceProposals_BatchSizeOne(t *testing.T) {
 }
 
 func TestVolumeBalanceDescriptorHasBatchFields(t *testing.T) {
-	descriptor := NewVolumeBalanceHandler(nil).Descriptor()
+	descriptor := NewVolumeBalanceHandler(pb.DialOption{}).Descriptor()
 	if !workerConfigFormHasField(descriptor.WorkerConfigForm, "max_concurrent_moves") {
 		t.Fatalf("expected max_concurrent_moves in worker config form")
 	}
@@ -324,7 +326,7 @@ func TestBuildVolumeBalanceProposal(t *testing.T) {
 }
 
 func TestVolumeBalanceHandlerRejectsUnsupportedJobType(t *testing.T) {
-	handler := NewVolumeBalanceHandler(nil)
+	handler := NewVolumeBalanceHandler(pb.DialOption{})
 	err := handler.Detect(context.Background(), &plugin_pb.RunDetectionRequest{
 		JobType: "vacuum",
 	}, noopDetectionSender{})
@@ -378,7 +380,7 @@ func TestEmitVolumeBalanceDetectionDecisionTraceNoTasks(t *testing.T) {
 }
 
 func TestVolumeBalanceDescriptorOmitsExecutionTuningFields(t *testing.T) {
-	descriptor := NewVolumeBalanceHandler(nil).Descriptor()
+	descriptor := NewVolumeBalanceHandler(pb.DialOption{}).Descriptor()
 	if descriptor == nil || descriptor.WorkerConfigForm == nil {
 		t.Fatalf("expected worker config form in descriptor")
 	}
@@ -495,7 +497,7 @@ func TestExecuteDispatchesBatchPath(t *testing.T) {
 		},
 	}
 
-	handler := NewVolumeBalanceHandler(nil)
+	handler := NewVolumeBalanceHandler(pb.DialOption{})
 	sender := &recordingExecutionSender{}
 
 	// Execute will enter the batch path. It will fail because there's no real gRPC server,
@@ -566,7 +568,7 @@ func TestExecuteSingleMovePathUnchanged(t *testing.T) {
 		},
 	}
 
-	handler := NewVolumeBalanceHandler(nil)
+	handler := NewVolumeBalanceHandler(pb.DialOption{})
 	sender := &recordingExecutionSender{}
 
 	// Execute single-move path. Will fail on gRPC but verify it takes the single-move path.
@@ -717,7 +719,7 @@ func TestFilterMetricsByVolumeState_EmptyInput(t *testing.T) {
 }
 
 func TestVolumeBalanceDescriptorHasVolumeStateField(t *testing.T) {
-	descriptor := NewVolumeBalanceHandler(nil).Descriptor()
+	descriptor := NewVolumeBalanceHandler(pb.DialOption{}).Descriptor()
 	if descriptor == nil || descriptor.AdminConfigForm == nil {
 		t.Fatalf("expected admin config form in descriptor")
 	}

@@ -4,6 +4,7 @@
 package masterwire
 
 import (
+	"context"
 	"errors"
 	"testing"
 )
@@ -245,7 +246,7 @@ func TestRoundTrip(t *testing.T) {
 	defer cli.Close()
 
 	// --- Ping: scalar round-trip across the socket ---
-	pr, err := cli.Ping(PingRequestInput{Target: "master2:9333", TargetType: "master"})
+	pr, err := cli.Ping(context.Background(), PingRequestInput{Target: "master2:9333", TargetType: "master"})
 	if err != nil {
 		t.Fatalf("Ping: %v", err)
 	}
@@ -257,7 +258,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	// --- LookupVolume: repeated message + repeated-message-in-element ---
-	lv, err := cli.LookupVolume(LookupVolumeRequestInput{
+	lv, err := cli.LookupVolume(context.Background(), LookupVolumeRequestInput{
 		VolumeOrFileIds: []string{"7,abc", "9,def"},
 		Collection:      "dc-west",
 	})
@@ -295,7 +296,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	// --- Statistics: numeric folding round-trip ---
-	st, err := cli.Statistics(StatisticsRequestInput{Replication: "001", Collection: "c", Ttl: "1h", DiskType: "ssd"})
+	st, err := cli.Statistics(context.Background(), StatisticsRequestInput{Replication: "001", Collection: "c", Ttl: "1h", DiskType: "ssd"})
 	if err != nil {
 		t.Fatalf("Statistics: %v", err)
 	}
@@ -307,7 +308,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	// --- VolumeList: nested message in response ---
-	vl, err := cli.VolumeList(VolumeListRequestInput{})
+	vl, err := cli.VolumeList(context.Background(), VolumeListRequestInput{})
 	if err != nil {
 		t.Fatalf("VolumeList: %v", err)
 	}
@@ -329,7 +330,7 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	// --- CollectionList: bool-driven repeated message ---
-	cl, err := cli.CollectionList(CollectionListRequestInput{IncludeEcVolumes: true})
+	cl, err := cli.CollectionList(context.Background(), CollectionListRequestInput{IncludeEcVolumes: true})
 	if err != nil {
 		t.Fatalf("CollectionList: %v", err)
 	}
@@ -338,12 +339,12 @@ func TestRoundTrip(t *testing.T) {
 	}
 
 	// --- VolumeMarkReadonly: void RPC with a bool field, just succeed ---
-	if _, err := cli.VolumeMarkReadonly(VolumeMarkReadonlyRequestInput{VolumeId: 7, IsReadonly: true}); err != nil {
+	if _, err := cli.VolumeMarkReadonly(context.Background(), VolumeMarkReadonlyRequestInput{VolumeId: 7, IsReadonly: true}); err != nil {
 		t.Fatalf("VolumeMarkReadonly: %v", err)
 	}
 
 	// --- RaftLeadershipTransfer: string echo ---
-	rl, err := cli.RaftLeadershipTransfer(RaftLeadershipTransferRequestInput{TargetId: "node3"})
+	rl, err := cli.RaftLeadershipTransfer(context.Background(), RaftLeadershipTransferRequestInput{TargetId: "node3"})
 	if err != nil {
 		t.Fatalf("RaftLeadershipTransfer: %v", err)
 	}
@@ -381,7 +382,7 @@ func TestStreamingRefused(t *testing.T) {
 	}
 	defer cli.Close()
 
-	if _, _, err := cli.RPC().SendHeartbeat(NewHeartbeat(HeartbeatInput{Ip: "10.0.0.1", Port: 8080})); err == nil {
+	if _, _, err := cli.RPC().SendHeartbeat(context.Background(), NewHeartbeat(HeartbeatInput{Ip: "10.0.0.1", Port: 8080})); err == nil {
 		t.Fatal("SendHeartbeat over unary path: expected error, got nil")
 	}
 }

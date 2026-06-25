@@ -3,13 +3,12 @@ package command
 import (
 	"testing"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/worker/tasks/vacuum"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func TestMiniDefaultPluginJobTypes(t *testing.T) {
-	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOption := pb.DialOption{}
 	// defaultMiniPluginJobTypes is "all", which includes every registered handler
 	handlers, err := buildPluginWorkerHandlers(defaultMiniPluginJobTypes, dialOption, int(vacuum.DefaultMaxExecutionConcurrency), "")
 	if err != nil {

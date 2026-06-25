@@ -8,9 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
-
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/storage"
@@ -119,7 +118,7 @@ func (vg *VolumeGrowth) findVolumeCount(copyCount int) (count uint32) {
 	return VolumeGrowthCountForCopies(copyCount)
 }
 
-func (vg *VolumeGrowth) AutomaticGrowByType(option *VolumeGrowOption, grpcDialOption grpc.DialOption, topo *Topology, targetCount uint32) (result []*master_pb.VolumeLocation, err error) {
+func (vg *VolumeGrowth) AutomaticGrowByType(option *VolumeGrowOption, grpcDialOption pb.DialOption, topo *Topology, targetCount uint32) (result []*master_pb.VolumeLocation, err error) {
 	if targetCount == 0 {
 		targetCount = vg.findVolumeCount(option.ReplicaPlacement.GetCopyCount())
 	}
@@ -129,7 +128,7 @@ func (vg *VolumeGrowth) AutomaticGrowByType(option *VolumeGrowOption, grpcDialOp
 	}
 	return result, err
 }
-func (vg *VolumeGrowth) GrowByCountAndType(grpcDialOption grpc.DialOption, targetCount uint32, option *VolumeGrowOption, topo *Topology) (result []*master_pb.VolumeLocation, err error) {
+func (vg *VolumeGrowth) GrowByCountAndType(grpcDialOption pb.DialOption, targetCount uint32, option *VolumeGrowOption, topo *Topology) (result []*master_pb.VolumeLocation, err error) {
 	vg.accessLock.Lock()
 	defer vg.accessLock.Unlock()
 
@@ -144,7 +143,7 @@ func (vg *VolumeGrowth) GrowByCountAndType(grpcDialOption grpc.DialOption, targe
 	return
 }
 
-func (vg *VolumeGrowth) findAndGrow(grpcDialOption grpc.DialOption, topo *Topology, option *VolumeGrowOption) (result []*master_pb.VolumeLocation, err error) {
+func (vg *VolumeGrowth) findAndGrow(grpcDialOption pb.DialOption, topo *Topology, option *VolumeGrowOption) (result []*master_pb.VolumeLocation, err error) {
 	// Wait for warmup to complete before searching for slots so the
 	// topology has all volume servers registered.
 	for topo.IsWarmingUp() {
@@ -364,7 +363,7 @@ func (vg *VolumeGrowth) findEmptySlotsForOneVolume(topo *Topology, option *Volum
 }
 
 // grow creates volumes on the provided servers, optionally managing capacity reservations
-func (vg *VolumeGrowth) grow(grpcDialOption grpc.DialOption, topo *Topology, vid needle.VolumeId, option *VolumeGrowOption, reservation *VolumeGrowReservation, servers ...*DataNode) (growErr error) {
+func (vg *VolumeGrowth) grow(grpcDialOption pb.DialOption, topo *Topology, vid needle.VolumeId, option *VolumeGrowOption, reservation *VolumeGrowReservation, servers ...*DataNode) (growErr error) {
 	var createdVolumes []storage.VolumeInfo
 	for _, server := range servers {
 		if err := AllocateVolume(server, grpcDialOption, vid, option); err == nil {

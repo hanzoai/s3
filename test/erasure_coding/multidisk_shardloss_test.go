@@ -10,12 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/shell"
 	"github.com/hanzoai/s3/s3/storage/needle"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 )
 
 // TestMultiDiskECBalanceNoShardLoss is the end-to-end regression for issue 9593.
@@ -50,7 +51,7 @@ func TestMultiDiskECBalanceNoShardLoss(t *testing.T) {
 
 	commandEnv := shell.NewCommandEnv(&shell.ShellOptions{
 		Masters:        stringPtr("127.0.0.1:9334"),
-		GrpcDialOption: grpc.WithInsecure(),
+		GrpcDialOption: pb.DialOption{},
 		FilerGroup:     stringPtr("default"),
 	})
 	connectToMasterAndSync(ctx, t, commandEnv)

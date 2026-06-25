@@ -12,8 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb"
@@ -38,7 +36,7 @@ type CopyOptions struct {
 	maxMB              *int
 	concurrentFiles    *int
 	concurrentChunks   *int
-	grpcDialOption     grpc.DialOption
+	grpcDialOption     pb.DialOption
 	masters            []string
 	cipher             bool
 	ttlSec             int32
@@ -179,7 +177,7 @@ func runCopy(cmd *Command, args []string) bool {
 	return true
 }
 
-func readFilerConfiguration(grpcDialOption grpc.DialOption, filerGrpcAddress pb.ServerAddress) (masters []string, collection, replication string, dirBuckets string, maxMB uint32, cipher bool, err error) {
+func readFilerConfiguration(grpcDialOption pb.DialOption, filerGrpcAddress pb.ServerAddress) (masters []string, collection, replication string, dirBuckets string, maxMB uint32, cipher bool, err error) {
 	err = pb.WithGrpcFilerClient(false, 0, filerGrpcAddress, grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
 		resp, err := client.GetFilerConfiguration(context.Background(), &filer_pb.GetFilerConfigurationRequest{})
 		if err != nil {

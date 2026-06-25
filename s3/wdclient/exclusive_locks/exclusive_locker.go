@@ -1,6 +1,7 @@
 package exclusive_locks
 
 import (
+	"context"
 	"sync/atomic"
 	"time"
 
@@ -54,7 +55,7 @@ func (l *ExclusiveLocker) RequestLock(clientName string) {
 	// retry to get the lease
 	for {
 		if err := l.masterClient.WithZapClient(func(client *masterwire.Client) error {
-			resp, err := client.LeaseAdminToken(masterwire.LeaseAdminTokenRequestInput{
+			resp, err := client.LeaseAdminToken(context.Background(), masterwire.LeaseAdminTokenRequestInput{
 				PreviousToken:    atomic.LoadInt64(&l.token),
 				PreviousLockTime: atomic.LoadInt64(&l.lockTsNs),
 				LockName:         l.lockName,
@@ -84,7 +85,7 @@ func (l *ExclusiveLocker) RequestLock(clientName string) {
 			for {
 				if l.isLocked.Load() {
 					if err := l.masterClient.WithZapClient(func(client *masterwire.Client) error {
-						resp, err := client.LeaseAdminToken(masterwire.LeaseAdminTokenRequestInput{
+						resp, err := client.LeaseAdminToken(context.Background(), masterwire.LeaseAdminTokenRequestInput{
 							PreviousToken:    atomic.LoadInt64(&l.token),
 							PreviousLockTime: atomic.LoadInt64(&l.lockTsNs),
 							LockName:         l.lockName,
@@ -118,7 +119,7 @@ func (l *ExclusiveLocker) ReleaseLock() {
 	l.clientName = ""
 
 	l.masterClient.WithZapClient(func(client *masterwire.Client) error {
-		client.ReleaseAdminToken(masterwire.ReleaseAdminTokenRequestInput{
+		client.ReleaseAdminToken(context.Background(), masterwire.ReleaseAdminTokenRequestInput{
 			PreviousToken:    atomic.LoadInt64(&l.token),
 			PreviousLockTime: atomic.LoadInt64(&l.lockTsNs),
 			LockName:         l.lockName,

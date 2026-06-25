@@ -3,20 +3,20 @@
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             v7.35.0
 // source: plugin.proto
+//
+// gRPC ripped: this file holds only the grpc-free PluginControlService
+// contracts. The client interface returns the shared rpc.* stream seams; the
+// server interface is the plain method set. The service rides the ZAP transport
+// (see s3/wire/plugin), whose Dispatch serves it. No grpc client/server
+// scaffolding remains.
 
 package plugin_pb
 
 import (
 	context "context"
-	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
-)
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.64.0 or later.
-const _ = grpc.SupportPackageIsVersion9
+	"github.com/hanzoai/s3/s3/pb/rpc"
+)
 
 const (
 	PluginControlService_WorkerStream_FullMethodName = "/plugin.PluginControlService/WorkerStream"
@@ -24,98 +24,23 @@ const (
 
 // PluginControlServiceClient is the client API for PluginControlService service.
 //
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
 // PluginControlService is the admin-facing stream API for external workers.
 // Workers initiate and keep this stream alive; all control plane traffic flows through it.
 type PluginControlServiceClient interface {
-	WorkerStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WorkerToAdminMessage, AdminToWorkerMessage], error)
+	WorkerStream(ctx context.Context) (rpc.BidiStream[WorkerToAdminMessage, AdminToWorkerMessage], error)
 }
 
-type pluginControlServiceClient struct {
-	cc grpc.ClientConnInterface
+// PluginControlService_WorkerStreamServer is the server side of the WorkerStream bidi-stream.
+type PluginControlService_WorkerStreamServer interface {
+	Send(*AdminToWorkerMessage) error
+	Recv() (*WorkerToAdminMessage, error)
 }
 
-func NewPluginControlServiceClient(cc grpc.ClientConnInterface) PluginControlServiceClient {
-	return &pluginControlServiceClient{cc}
-}
-
-func (c *pluginControlServiceClient) WorkerStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WorkerToAdminMessage, AdminToWorkerMessage], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &PluginControlService_ServiceDesc.Streams[0], PluginControlService_WorkerStream_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[WorkerToAdminMessage, AdminToWorkerMessage]{ClientStream: stream}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type PluginControlService_WorkerStreamClient = grpc.BidiStreamingClient[WorkerToAdminMessage, AdminToWorkerMessage]
-
-// PluginControlServiceServer is the server API for PluginControlService service.
-// All implementations must embed UnimplementedPluginControlServiceServer
-// for forward compatibility.
+// PluginControlServiceServer is the server API for PluginControlService service:
+// the plain method set, transport-free.
 //
 // PluginControlService is the admin-facing stream API for external workers.
 // Workers initiate and keep this stream alive; all control plane traffic flows through it.
 type PluginControlServiceServer interface {
-	WorkerStream(grpc.BidiStreamingServer[WorkerToAdminMessage, AdminToWorkerMessage]) error
-	mustEmbedUnimplementedPluginControlServiceServer()
-}
-
-// UnimplementedPluginControlServiceServer must be embedded to have
-// forward compatible implementations.
-//
-// NOTE: this should be embedded by value instead of pointer to avoid a nil
-// pointer dereference when methods are called.
-type UnimplementedPluginControlServiceServer struct{}
-
-func (UnimplementedPluginControlServiceServer) WorkerStream(grpc.BidiStreamingServer[WorkerToAdminMessage, AdminToWorkerMessage]) error {
-	return status.Error(codes.Unimplemented, "method WorkerStream not implemented")
-}
-func (UnimplementedPluginControlServiceServer) mustEmbedUnimplementedPluginControlServiceServer() {}
-func (UnimplementedPluginControlServiceServer) testEmbeddedByValue()                              {}
-
-// UnsafePluginControlServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to PluginControlServiceServer will
-// result in compilation errors.
-type UnsafePluginControlServiceServer interface {
-	mustEmbedUnimplementedPluginControlServiceServer()
-}
-
-func RegisterPluginControlServiceServer(s grpc.ServiceRegistrar, srv PluginControlServiceServer) {
-	// If the following call panics, it indicates UnimplementedPluginControlServiceServer was
-	// embedded by pointer and is nil.  This will cause panics if an
-	// unimplemented method is ever invoked, so we test this at initialization
-	// time to prevent it from happening at runtime later due to I/O.
-	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
-		t.testEmbeddedByValue()
-	}
-	s.RegisterService(&PluginControlService_ServiceDesc, srv)
-}
-
-func _PluginControlService_WorkerStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(PluginControlServiceServer).WorkerStream(&grpc.GenericServerStream[WorkerToAdminMessage, AdminToWorkerMessage]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type PluginControlService_WorkerStreamServer = grpc.BidiStreamingServer[WorkerToAdminMessage, AdminToWorkerMessage]
-
-// PluginControlService_ServiceDesc is the grpc.ServiceDesc for PluginControlService service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var PluginControlService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "plugin.PluginControlService",
-	HandlerType: (*PluginControlServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "WorkerStream",
-			Handler:       _PluginControlService_WorkerStream_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-	},
-	Metadata: "plugin.proto",
+	WorkerStream(PluginControlService_WorkerStreamServer) error
 }

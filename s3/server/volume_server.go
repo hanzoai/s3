@@ -10,8 +10,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/storage/types"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/util"
 
@@ -46,7 +44,7 @@ type VolumeServer struct {
 	rack              string
 	store             *storage.Store
 	guard             *security.Guard
-	grpcDialOption    grpc.DialOption
+	grpcDialOption    pb.DialOption
 
 	needleMapKind                 storage.NeedleMapKind
 	ldbTimout                     int64

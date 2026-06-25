@@ -2,6 +2,7 @@ package shell
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -69,7 +70,7 @@ func (c *commandS3Configure) Do(args []string, commandEnv *CommandEnv, writer io
 	err = commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
 
 		// Try to get existing user
-		_, body, getErr := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{
+		_, body, getErr := client.GetUser(context.Background(), iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{
 			Username: *user,
 		}))
 
@@ -114,15 +115,15 @@ func (c *commandS3Configure) Do(args []string, commandEnv *CommandEnv, writer io
 		// Apply changes
 		if *isDelete && *actions == "" && *accessKey == "" && *buckets == "" && *policies == "" {
 			// Delete User
-			_, _, err := client.DeleteUser(iamwire.NewDeleteUserRequest(iamwire.DeleteUserRequestInput{Username: *user}))
+			_, _, err := client.DeleteUser(context.Background(), iamwire.NewDeleteUserRequest(iamwire.DeleteUserRequestInput{Username: *user}))
 			return err
 		} else {
 			// Create or Update User
 			if isNewUser {
-				_, _, err := client.CreateUser(iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{Identity: iamwire.IdentityInputFromPB(identity)}))
+				_, _, err := client.CreateUser(context.Background(), iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{Identity: iamwire.IdentityInputFromPB(identity)}))
 				return err
 			} else {
-				_, _, err := client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{Username: *user, Identity: iamwire.IdentityInputFromPB(identity)}))
+				_, _, err := client.UpdateUser(context.Background(), iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{Username: *user, Identity: iamwire.IdentityInputFromPB(identity)}))
 				return err
 			}
 		}
@@ -133,7 +134,7 @@ func (c *commandS3Configure) Do(args []string, commandEnv *CommandEnv, writer io
 
 func (c *commandS3Configure) listConfiguration(commandEnv *CommandEnv, writer io.Writer) error {
 	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetConfiguration(iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
+		_, body, err := client.GetConfiguration(context.Background(), iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
 		if err != nil {
 			return err
 		}

@@ -12,10 +12,10 @@ import (
 	"github.com/hanzoai/s3/s3/filerzap"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/filerstub"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
 )
 
 // fakeFilerServer simulates a filer whose CreateEntry takes a fixed amount of
@@ -25,7 +25,7 @@ import (
 // The StreamMutateEntry handler mirrors the production handler's structure:
 // a single goroutine per stream, processing one request at a time.
 type fakeFilerServer struct {
-	filer_pb.UnimplementedHanzoFilerServer
+	filerstub.FilerServer
 	serviceDelay time.Duration
 	createCalls  atomic.Int64
 }
@@ -40,7 +40,7 @@ func (s *fakeFilerServer) CreateEntry(ctx context.Context, req *filer_pb.CreateE
 
 // StreamMutateEntry mirrors the OLD serial handler: one goroutine, strictly
 // one request at a time.
-func (s *fakeFilerServer) StreamMutateEntry(stream grpc.BidiStreamingServer[filer_pb.StreamMutateEntryRequest, filer_pb.StreamMutateEntryResponse]) error {
+func (s *fakeFilerServer) StreamMutateEntry(stream filer_pb.HanzoFiler_StreamMutateEntryServer) error {
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
@@ -76,7 +76,7 @@ func (s *fakeFilerServer) StreamMutateEntry(stream grpc.BidiStreamingServer[file
 // Structurally identical to s3/server/filer_grpc_server_stream_mutate.go
 // after the parallelization patch.
 type fakeConcurrentFilerServer struct {
-	filer_pb.UnimplementedHanzoFilerServer
+	filerstub.FilerServer
 	serviceDelay time.Duration
 	concurrency  int
 	createCalls  atomic.Int64
@@ -90,7 +90,7 @@ func (s *fakeConcurrentFilerServer) CreateEntry(ctx context.Context, req *filer_
 	return &filer_pb.CreateEntryResponse{}, nil
 }
 
-func (s *fakeConcurrentFilerServer) StreamMutateEntry(stream grpc.BidiStreamingServer[filer_pb.StreamMutateEntryRequest, filer_pb.StreamMutateEntryResponse]) error {
+func (s *fakeConcurrentFilerServer) StreamMutateEntry(stream filer_pb.HanzoFiler_StreamMutateEntryServer) error {
 	var sendMu sync.Mutex
 	send := func(r *filer_pb.StreamMutateEntryResponse) error {
 		sendMu.Lock()
@@ -148,7 +148,7 @@ func startFakeConcurrentFilerServer(t testing.TB, serviceDelay time.Duration, co
 // handler to admit requests by (path, kind). Per-path operations serialize;
 // cross-path operations run in parallel.
 type fakeSchedulerFilerServer struct {
-	filer_pb.UnimplementedHanzoFilerServer
+	filerstub.FilerServer
 	serviceDelay time.Duration
 	concurrency  int
 	createCalls  atomic.Int64
@@ -172,7 +172,7 @@ func (s *fakeSchedulerFilerServer) CreateEntry(ctx context.Context, req *filer_p
 	return &filer_pb.CreateEntryResponse{}, nil
 }
 
-func (s *fakeSchedulerFilerServer) StreamMutateEntry(stream grpc.BidiStreamingServer[filer_pb.StreamMutateEntryRequest, filer_pb.StreamMutateEntryResponse]) error {
+func (s *fakeSchedulerFilerServer) StreamMutateEntry(stream filer_pb.HanzoFiler_StreamMutateEntryServer) error {
 	var sendMu sync.Mutex
 	send := func(r *filer_pb.StreamMutateEntryResponse) error {
 		sendMu.Lock()

@@ -125,3 +125,57 @@ func TestIPv6ServerAddressFormatting(t *testing.T) {
 		})
 	}
 }
+
+// TestZapPort pins the overflow-safe ZAP-port derivation. The nominal offset is
+// +10000, but a high grpcPort (an ephemeral test port near 55535, as
+// AllocateMiniPorts can hand out) must not push the result past 65535 — that
+// produced an invalid port and the master Fatalf'd on its ZAP listener, hanging
+// cluster readiness. ZapPort folds the offset into [1,65535].
+func TestZapPort(t *testing.T) {
+	cases := []struct{ grpc, want int }{
+		{9333, 19333},  // common case: plain +10000
+		{19333, 29333}, // common case (filer grpc derived from http+10000)
+		{45535, 55535}, // still in range
+		{55535, 65535}, // exactly the top of the range
+		{55536, 1},     // first overflow: wraps to a low port instead of 65536
+		{60000, 4465},  // mid overflow
+		{65535, 10000}, // top grpc port wraps
+	}
+	for _, c := range cases {
+		if got := ZapPort(c.grpc); got != c.want {
+			t.Errorf("ZapPort(%d) = %d, want %d", c.grpc, got, c.want)
+		}
+	}
+
+	// Over the whole valid port space the result is always a legal port and the
+	// map is injective, so client and server always agree on the same port and no
+	// two grpc ports collide on one ZAP port.
+	seen := make(map[int]int, 65535)
+	for g := 1; g <= 65535; g++ {
+		z := ZapPort(g)
+		if z < 1 || z > 65535 {
+			t.Fatalf("ZapPort(%d) = %d out of [1,65535]", g, z)
+		}
+		if prev, dup := seen[z]; dup {
+			t.Fatalf("ZapPort not injective: %d and %d both map to %d", prev, g, z)
+		}
+		seen[z] = g
+	}
+}
+
+// TestToMasterZapAddress_OverflowSafe proves the master client derives a valid,
+// agreed ZAP address even when the grpc port is high enough that grpcPort+10000
+// would overflow — the exact condition that broke cluster bring-up.
+func TestToMasterZapAddress_OverflowSafe(t *testing.T) {
+	// httpPort 50000 -> grpcPort 60000 -> ZapPort(60000) = 4465.
+	sa := NewServerAddress("127.0.0.1", 50000, 60000)
+	got := sa.ToMasterZapAddress()
+	want := "127.0.0.1:4465"
+	if got != want {
+		t.Fatalf("ToMasterZapAddress() = %s, want %s", got, want)
+	}
+	// IAM rides the same offset, so it agrees.
+	if iam := sa.ToIamZapAddress(); iam != want {
+		t.Fatalf("ToIamZapAddress() = %s, want %s", iam, want)
+	}
+}

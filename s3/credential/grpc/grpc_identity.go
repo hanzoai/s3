@@ -11,7 +11,7 @@ import (
 func (store *IamGrpcStore) LoadConfiguration(ctx context.Context) (*iam_pb.S3ApiConfiguration, error) {
 	var config *iam_pb.S3ApiConfiguration
 	err := store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetConfiguration(iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
+		_, body, err := client.GetConfiguration(ctx, iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
 		if err != nil {
 			return err
 		}
@@ -23,7 +23,7 @@ func (store *IamGrpcStore) LoadConfiguration(ctx context.Context) (*iam_pb.S3Api
 
 func (store *IamGrpcStore) SaveConfiguration(ctx context.Context, config *iam_pb.S3ApiConfiguration) error {
 	return store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.PutConfiguration(iamwire.NewPutConfigurationRequest(iamwire.PutConfigurationRequestInput{
+		_, _, err := client.PutConfiguration(ctx, iamwire.NewPutConfigurationRequest(iamwire.PutConfigurationRequestInput{
 			Configuration: iamwire.ConfigurationInputFromPB(config),
 		}))
 		return err
@@ -32,7 +32,7 @@ func (store *IamGrpcStore) SaveConfiguration(ctx context.Context, config *iam_pb
 
 func (store *IamGrpcStore) CreateUser(ctx context.Context, identity *iam_pb.Identity) error {
 	return store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.CreateUser(iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{
+		_, _, err := client.CreateUser(ctx, iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{
 			Identity: iamwire.IdentityInputFromPB(identity),
 		}))
 		return err
@@ -42,7 +42,7 @@ func (store *IamGrpcStore) CreateUser(ctx context.Context, identity *iam_pb.Iden
 func (store *IamGrpcStore) GetUser(ctx context.Context, username string) (*iam_pb.Identity, error) {
 	var identity *iam_pb.Identity
 	err := store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{
+		_, body, err := client.GetUser(ctx, iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{
 			Username: username,
 		}))
 		if err != nil {
@@ -63,7 +63,7 @@ func (store *IamGrpcStore) GetUser(ctx context.Context, username string) (*iam_p
 
 func (store *IamGrpcStore) UpdateUser(ctx context.Context, username string, identity *iam_pb.Identity) error {
 	return store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
+		_, _, err := client.UpdateUser(ctx, iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
 			Username: username,
 			Identity: iamwire.IdentityInputFromPB(identity),
 		}))
@@ -73,7 +73,7 @@ func (store *IamGrpcStore) UpdateUser(ctx context.Context, username string, iden
 
 func (store *IamGrpcStore) DeleteUser(ctx context.Context, username string) error {
 	return store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.DeleteUser(iamwire.NewDeleteUserRequest(iamwire.DeleteUserRequestInput{
+		_, _, err := client.DeleteUser(ctx, iamwire.NewDeleteUserRequest(iamwire.DeleteUserRequestInput{
 			Username: username,
 		}))
 		return err
@@ -83,7 +83,7 @@ func (store *IamGrpcStore) DeleteUser(ctx context.Context, username string) erro
 func (store *IamGrpcStore) ListUsers(ctx context.Context) ([]string, error) {
 	var usernames []string
 	err := store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.ListUsers(iamwire.NewListUsersRequest(iamwire.ListUsersRequestInput{}))
+		_, body, err := client.ListUsers(ctx, iamwire.NewListUsersRequest(iamwire.ListUsersRequestInput{}))
 		if err != nil {
 			return err
 		}
@@ -104,7 +104,7 @@ func (store *IamGrpcStore) ListUsers(ctx context.Context) ([]string, error) {
 func (store *IamGrpcStore) GetUserByAccessKey(ctx context.Context, accessKey string) (*iam_pb.Identity, error) {
 	var identity *iam_pb.Identity
 	err := store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetUserByAccessKey(iamwire.NewGetUserByAccessKeyRequest(iamwire.GetUserByAccessKeyRequestInput{
+		_, body, err := client.GetUserByAccessKey(ctx, iamwire.NewGetUserByAccessKeyRequest(iamwire.GetUserByAccessKeyRequestInput{
 			AccessKey: accessKey,
 		}))
 		if err != nil {
@@ -118,7 +118,7 @@ func (store *IamGrpcStore) GetUserByAccessKey(ctx context.Context, accessKey str
 
 func (store *IamGrpcStore) CreateAccessKey(ctx context.Context, username string, cred *iam_pb.Credential) error {
 	return store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.CreateAccessKey(iamwire.NewCreateAccessKeyRequest(iamwire.CreateAccessKeyRequestInput{
+		_, _, err := client.CreateAccessKey(ctx, iamwire.NewCreateAccessKeyRequest(iamwire.CreateAccessKeyRequestInput{
 			Username:   username,
 			Credential: iamwire.CredentialInputFromPB(cred),
 		}))
@@ -128,7 +128,7 @@ func (store *IamGrpcStore) CreateAccessKey(ctx context.Context, username string,
 
 func (store *IamGrpcStore) DeleteAccessKey(ctx context.Context, username string, accessKey string) error {
 	return store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.DeleteAccessKey(iamwire.NewDeleteAccessKeyRequest(iamwire.DeleteAccessKeyRequestInput{
+		_, _, err := client.DeleteAccessKey(ctx, iamwire.NewDeleteAccessKeyRequest(iamwire.DeleteAccessKeyRequestInput{
 			Username:  username,
 			AccessKey: accessKey,
 		}))

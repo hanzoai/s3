@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/test/volume_server/framework"
-	"github.com/hanzoai/s3/test/volume_server/matrix"
+	"github.com/stretchr/testify/require"
+
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	"github.com/hanzoai/s3/s3/storage/erasure_coding"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/hanzoai/s3/test/volume_server/framework"
+	"github.com/hanzoai/s3/test/volume_server/matrix"
 )
 
 // Reproduces a stuck re-encode: partial EC shards mounted on a destination
@@ -81,7 +81,7 @@ func TestCleanupStaleEcShardsBeforeDistribute(t *testing.T) {
 		clusterHarness.VolumeServerAddress(),
 		volumeID,
 		collection,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		pb.DialOption{},
 	)
 	task.dataShards = erasure_coding.DataShardsCount
 	task.parityShards = erasure_coding.ParityShardsCount
@@ -158,7 +158,7 @@ func TestCleanupStaleEcShardsClearsShardsBeyondSources(t *testing.T) {
 		clusterHarness.VolumeServerAddress(),
 		volumeID,
 		collection,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		pb.DialOption{},
 	)
 	task.dataShards = erasure_coding.DataShardsCount
 	task.parityShards = erasure_coding.ParityShardsCount
@@ -227,7 +227,7 @@ func TestCleanupStaleEcShardsCoversTargetsWithoutSources(t *testing.T) {
 		clusterHarness.VolumeServerAddress(),
 		volumeID,
 		collection,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		pb.DialOption{},
 	)
 	task.dataShards = erasure_coding.DataShardsCount
 	task.parityShards = erasure_coding.ParityShardsCount
@@ -265,7 +265,7 @@ func TestCleanupStaleEcShardsSkipsRegularReplicas(t *testing.T) {
 		clusterHarness.VolumeServerAddress(),
 		volumeID,
 		"",
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		pb.DialOption{},
 	)
 	task.sources = []*worker_pb.TaskSource{
 		{Node: clusterHarness.VolumeServerAddress(), VolumeId: volumeID},

@@ -3,8 +3,8 @@ package types
 import (
 	"time"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
-	"google.golang.org/grpc"
 )
 
 // TaskType represents the type of maintenance task
@@ -74,7 +74,7 @@ type TaskParams struct {
 	Collection     string                `json:"collection,omitempty"`
 	WorkingDir     string                `json:"working_dir,omitempty"`
 	TypedParams    *worker_pb.TaskParams `json:"typed_params,omitempty"`
-	GrpcDialOption grpc.DialOption       `json:"-"` // Not serializable, for runtime use only
+	GrpcDialOption pb.DialOption         `json:"-"` // Not serializable, for runtime use only
 }
 
 // TaskDetectionResult represents the result of scanning for maintenance needs

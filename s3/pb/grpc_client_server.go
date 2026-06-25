@@ -20,11 +20,12 @@ import (
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
-	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/util"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 
@@ -207,7 +208,7 @@ func NewGrpcServer(opts ...grpc.ServerOption) *grpc.Server {
 //  1. Prefix the target with "passthrough:///" (e.g., "passthrough:///my-service:8080"). This is the recommended primary migration path.
 //  2. Call resolver.SetDefaultScheme("passthrough") exactly once during init().
 //     WARNING: This is NOT thread-safe, and mutates global resolver state affecting all grpc.NewClient calls in the process.
-func GrpcDial(ctx context.Context, address string, waitForReady bool, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+func GrpcDial(ctx context.Context, address string, waitForReady bool, opts ...DialOption) (*grpc.ClientConn, error) {
 	var options []grpc.DialOption
 
 	// Route through Unix socket if one is registered for this address's port
@@ -241,15 +242,33 @@ func GrpcDial(ctx context.Context, address string, waitForReady bool, opts ...gr
 			// server enforcement for too-frequent pings from idle clients.
 			PermitWithoutStream: false,
 		}))
-	for _, opt := range opts {
-		if opt != nil {
-			options = append(options, opt)
-		}
-	}
+	options = append(options, grpcCreds(opts))
 	return grpc.DialContext(ctx, address, options...)
 }
 
-func getOrCreateConnection(address string, waitForReady bool, opts ...grpc.DialOption) (*versionedGrpcClient, error) {
+// Grpc adapts the grpc-free DialOption to the single grpc credential the
+// remaining grpc dials (volume/broker fallback, hashicorp raft) need: TLS when
+// configured, plaintext otherwise. The ZAP filer/master path ignores DialOption
+// entirely — its TLS is configured in the transport layer (DialTLS + PQTLSConfig).
+func (o DialOption) Grpc() grpc.DialOption {
+	if o.TLS != nil {
+		return grpc.WithTransportCredentials(credentials.NewTLS(o.TLS))
+	}
+	return grpc.WithTransportCredentials(insecure.NewCredentials())
+}
+
+// grpcCreds picks the credential from the threaded DialOptions: the first with
+// non-nil TLS wins (callers thread exactly one, from LoadClientTLS).
+func grpcCreds(opts []DialOption) grpc.DialOption {
+	for _, opt := range opts {
+		if opt.TLS != nil {
+			return opt.Grpc()
+		}
+	}
+	return DialOption{}.Grpc()
+}
+
+func getOrCreateConnection(address string, waitForReady bool, opts ...DialOption) (*versionedGrpcClient, error) {
 
 	grpcClientsLock.Lock()
 	defer grpcClientsLock.Unlock()
@@ -426,7 +445,7 @@ func shouldInvalidateConnection(ctx context.Context, err error) bool {
 // because ctx itself expired will not tear down the shared cached ClientConn out
 // from under other concurrent callers. Pass context.Background() when there is no
 // per-request deadline to honor.
-func WithGrpcClient(ctx context.Context, streamingMode bool, signature int32, fn func(*grpc.ClientConn) error, address string, waitForReady bool, opts ...grpc.DialOption) error {
+func WithGrpcClient(ctx context.Context, streamingMode bool, signature int32, fn func(*grpc.ClientConn) error, address string, waitForReady bool, opts ...DialOption) error {
 
 	if !streamingMode {
 		vgc, err := getOrCreateConnection(address, waitForReady, opts...)
@@ -542,7 +561,7 @@ func GrpcAddressToServerAddress(grpcAddress string) (serverAddress string) {
 // the legacy gRPC master client used. Otherwise plaintext (loopback / dev). The
 // returned *Conn drives both unary Call and OpenStream.
 func DialMasterZapAddr(addr string) (transport.Conn, error) {
-	if cfg := security.ClientTLSConfig(util.GetViper(), "grpc.master"); cfg != nil {
+	if cfg := ClientTLSConfig(util.GetViper(), "grpc.master"); cfg != nil {
 		return transport.DialTLS("tcp", addr, transport.PQTLSConfig(cfg))
 	}
 	return transport.Dial("tcp", addr)
@@ -560,14 +579,14 @@ var masterPool = transport.NewPool(DialMasterZapAddr)
 // needs neither a streaming flag (every stream is a transport stream) nor a dial
 // option, and the pool already (re)dials lazily. ctx is honored by the per-RPC
 // calls fn issues. This is the master analogue of WithGrpcFilerClient.
-func WithMasterClient(ctx context.Context, streamingMode bool, master ServerAddress, grpcDialOption grpc.DialOption, waitForReady bool, fn func(client master_pb.HanzoClient) error) error {
+func WithMasterClient(ctx context.Context, streamingMode bool, master ServerAddress, grpcDialOption DialOption, waitForReady bool, fn func(client master_pb.HanzoClient) error) error {
 	_, _, _, _ = ctx, streamingMode, grpcDialOption, waitForReady
 	return masterPool.With(master.ToMasterZapAddress(), func(conn transport.Conn) error {
 		return fn(masterzap.New(conn, nil))
 	})
 }
 
-func WithVolumeServerClient(streamingMode bool, volumeServer ServerAddress, grpcDialOption grpc.DialOption, fn func(client volume_server_pb.VolumeServerClient) error) error {
+func WithVolumeServerClient(streamingMode bool, volumeServer ServerAddress, grpcDialOption DialOption, fn func(client volume_server_pb.VolumeServerClient) error) error {
 	return WithGrpcClient(context.Background(), streamingMode, 0, func(grpcConnection *grpc.ClientConn) error {
 		client := volume_server_pb.NewVolumeServerClient(grpcConnection)
 		return fn(client)
@@ -577,7 +596,7 @@ func WithVolumeServerClient(streamingMode bool, volumeServer ServerAddress, grpc
 
 // WithOneOfGrpcMasterClients tries each master address in turn over the ZAP
 // transport, returning on the first that runs fn without error.
-func WithOneOfGrpcMasterClients(streamingMode bool, masterGrpcAddresses map[string]ServerAddress, grpcDialOption grpc.DialOption, fn func(client master_pb.HanzoClient) error) (err error) {
+func WithOneOfGrpcMasterClients(streamingMode bool, masterGrpcAddresses map[string]ServerAddress, grpcDialOption DialOption, fn func(client master_pb.HanzoClient) error) (err error) {
 	_, _ = streamingMode, grpcDialOption
 	for _, masterAddress := range masterGrpcAddresses {
 		err = masterPool.With(masterAddress.ToMasterZapAddress(), func(conn transport.Conn) error {
@@ -591,7 +610,7 @@ func WithOneOfGrpcMasterClients(streamingMode bool, masterGrpcAddresses map[stri
 	return err
 }
 
-func WithBrokerGrpcClient(streamingMode bool, brokerGrpcAddress string, grpcDialOption grpc.DialOption, fn func(client mq_pb.HanzoMessagingClient) error) error {
+func WithBrokerGrpcClient(streamingMode bool, brokerGrpcAddress string, grpcDialOption DialOption, fn func(client mq_pb.HanzoMessagingClient) error) error {
 
 	return WithGrpcClient(context.Background(), streamingMode, 0, func(grpcConnection *grpc.ClientConn) error {
 		client := mq_pb.NewHanzoMessagingClient(grpcConnection)
@@ -600,7 +619,7 @@ func WithBrokerGrpcClient(streamingMode bool, brokerGrpcAddress string, grpcDial
 
 }
 
-func WithFilerClient(streamingMode bool, signature int32, filer ServerAddress, grpcDialOption grpc.DialOption, fn func(client filer_pb.HanzoFilerClient) error) error {
+func WithFilerClient(streamingMode bool, signature int32, filer ServerAddress, grpcDialOption DialOption, fn func(client filer_pb.HanzoFilerClient) error) error {
 
 	return WithGrpcFilerClient(streamingMode, signature, filer, grpcDialOption, fn)
 
@@ -618,7 +637,7 @@ func WithFilerClient(streamingMode bool, signature int32, filer ServerAddress, g
 // plaintext (loopback / dev), matching the filer server's gating in
 // command/filer.go. The returned *Conn drives both unary Call and OpenStream.
 func dialFilerZapAddr(addr string) (transport.Conn, error) {
-	if cfg := security.ClientTLSConfig(util.GetViper(), "grpc.filer"); cfg != nil {
+	if cfg := ClientTLSConfig(util.GetViper(), "grpc.filer"); cfg != nil {
 		return transport.DialTLS("tcp", addr, transport.PQTLSConfig(cfg))
 	}
 	return transport.Dial("tcp", addr)
@@ -630,7 +649,7 @@ func dialFilerZapAddr(addr string) (transport.Conn, error) {
 // the transport (transport.Pool); only the dial choice is ours.
 var filerPool = transport.NewPool(dialFilerZapAddr)
 
-func WithGrpcFilerClient(streamingMode bool, signature int32, filerAddress ServerAddress, grpcDialOption grpc.DialOption, fn func(client filer_pb.HanzoFilerClient) error) error {
+func WithGrpcFilerClient(streamingMode bool, signature int32, filerAddress ServerAddress, grpcDialOption DialOption, fn func(client filer_pb.HanzoFilerClient) error) error {
 	_, _, _ = streamingMode, signature, grpcDialOption
 	return filerPool.With(filerAddress.ToGrpcAddress(), func(conn transport.Conn) error {
 		return fn(NewZapFilerClient(conn))
@@ -639,7 +658,7 @@ func WithGrpcFilerClient(streamingMode bool, signature int32, filerAddress Serve
 
 // WithOneOfGrpcFilerClients tries each filer address in turn over the ZAP
 // transport, returning on the first that runs fn without error.
-func WithOneOfGrpcFilerClients(streamingMode bool, filerAddresses []ServerAddress, grpcDialOption grpc.DialOption, fn func(client filer_pb.HanzoFilerClient) error) (err error) {
+func WithOneOfGrpcFilerClients(streamingMode bool, filerAddresses []ServerAddress, grpcDialOption DialOption, fn func(client filer_pb.HanzoFilerClient) error) (err error) {
 	_, _ = streamingMode, grpcDialOption
 	for _, filerAddress := range filerAddresses {
 		err = filerPool.With(filerAddress.ToGrpcAddress(), func(conn transport.Conn) error {

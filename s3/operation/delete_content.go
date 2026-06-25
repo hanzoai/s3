@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/hanzoai/s3/s3/pb"
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 )
@@ -31,7 +30,7 @@ func ParseFileId(fid string) (vid string, key_cookie string, err error) {
 
 // DeleteFileIds batch deletes a list of fileIds
 // Returns individual results for each file ID. Check result.Error for per-file failures.
-func DeleteFileIds(masterFn GetMasterFn, usePublicUrl bool, grpcDialOption grpc.DialOption, fileIds []string) []*volume_server_pb.DeleteResult {
+func DeleteFileIds(masterFn GetMasterFn, usePublicUrl bool, grpcDialOption pb.DialOption, fileIds []string) []*volume_server_pb.DeleteResult {
 
 	lookupFunc := func(vids []string) (results map[string]*LookupResult, err error) {
 		results, err = LookupVolumeIds(masterFn, grpcDialOption, vids)
@@ -49,7 +48,7 @@ func DeleteFileIds(masterFn GetMasterFn, usePublicUrl bool, grpcDialOption grpc.
 
 }
 
-func DeleteFileIdsWithLookupVolumeId(grpcDialOption grpc.DialOption, fileIds []string, lookupFunc func(vid []string) (map[string]*LookupResult, error)) []*volume_server_pb.DeleteResult {
+func DeleteFileIdsWithLookupVolumeId(grpcDialOption pb.DialOption, fileIds []string, lookupFunc func(vid []string) (map[string]*LookupResult, error)) []*volume_server_pb.DeleteResult {
 
 	var ret []*volume_server_pb.DeleteResult
 
@@ -133,7 +132,7 @@ func DeleteFileIdsWithLookupVolumeId(grpcDialOption grpc.DialOption, fileIds []s
 
 // DeleteFileIdsAtOneVolumeServer deletes a list of files that is on one volume server via gRpc
 // Returns individual results for each file ID. Check result.Error for per-file failures.
-func DeleteFileIdsAtOneVolumeServer(volumeServer pb.ServerAddress, grpcDialOption grpc.DialOption, fileIds []string, includeCookie bool) []*volume_server_pb.DeleteResult {
+func DeleteFileIdsAtOneVolumeServer(volumeServer pb.ServerAddress, grpcDialOption pb.DialOption, fileIds []string, includeCookie bool) []*volume_server_pb.DeleteResult {
 
 	var ret []*volume_server_pb.DeleteResult
 

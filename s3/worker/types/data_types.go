@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/admin/topology"
-	"google.golang.org/grpc"
+	"github.com/hanzoai/s3/s3/pb"
 )
 
 // ReplicaLocation identifies where a volume replica lives.
@@ -31,7 +31,7 @@ type ClusterInfo struct {
 	// during detection (e.g., the EC detector auto-cleans up an orphaned
 	// regular replica that survived a previous encode; see #9448). Optional:
 	// detectors that don't need RPC access ignore this.
-	GrpcDialOption grpc.DialOption `json:"-"`
+	GrpcDialOption pb.DialOption `json:"-"`
 }
 
 // VolumeHealthMetrics contains health information about a volume (simplified)

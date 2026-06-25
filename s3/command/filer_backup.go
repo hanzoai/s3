@@ -22,7 +22,6 @@ import (
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/http"
 	"github.com/hanzoai/s3/s3/util/wildcard"
-	"google.golang.org/grpc"
 )
 
 type FilerBackupOptions struct {
@@ -119,7 +118,7 @@ const (
 	BackupKeyPrefix = "backup."
 )
 
-func doFilerBackup(grpcDialOption grpc.DialOption, backupOption *FilerBackupOptions, reExcludeFileName *regexp.Regexp, excludeFileNames []*wildcard.WildcardMatcher, excludePathPatterns []*wildcard.WildcardMatcher, clientId int32, clientEpoch int32) error {
+func doFilerBackup(grpcDialOption pb.DialOption, backupOption *FilerBackupOptions, reExcludeFileName *regexp.Regexp, excludeFileNames []*wildcard.WildcardMatcher, excludePathPatterns []*wildcard.WildcardMatcher, clientId int32, clientEpoch int32) error {
 
 	// find data sink
 	dataSink := findSink(util.GetViper())
@@ -292,7 +291,7 @@ func isIgnorable404(err error) bool {
 // errors. Losing this write forces a full re-walk on the next retry loop
 // iteration, so a small retry budget here is far cheaper than paying the
 // walk cost again on a large tree.
-func persistSnapshotOffset(grpcDialOption grpc.DialOption, sourceFiler pb.ServerAddress, sinkId int32, tsNs int64) error {
+func persistSnapshotOffset(grpcDialOption pb.DialOption, sourceFiler pb.ServerAddress, sinkId int32, tsNs int64) error {
 	const attempts = 4
 	backoff := 500 * time.Millisecond
 	var lastErr error

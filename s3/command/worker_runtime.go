@@ -13,7 +13,9 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/pb"
 	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
 	_ "github.com/hanzoai/s3/s3/plugin/worker/handlers" // register all handler subpackages
 	"github.com/hanzoai/s3/s3/security"
@@ -21,7 +23,6 @@ import (
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/version"
 	"github.com/hanzoai/s3/s3/worker"
-	"google.golang.org/grpc"
 )
 
 const defaultPluginWorkerJobTypes = "all"
@@ -141,7 +142,7 @@ func resolvePluginWorkerID(explicitID string, workingDir string) (string, error)
 // buildPluginWorkerHandlers resolves the comma-separated jobTypes string
 // (which may contain category names like "all", "default", "heavy" and/or
 // explicit job type names/aliases) into a deduplicated slice of JobHandlers.
-func buildPluginWorkerHandlers(jobTypes string, dialOption grpc.DialOption, maxExecute int, workingDir string) ([]pluginworker.JobHandler, error) {
+func buildPluginWorkerHandlers(jobTypes string, dialOption pb.DialOption, maxExecute int, workingDir string) ([]pluginworker.JobHandler, error) {
 	jobTypes = strings.TrimSpace(jobTypes)
 	if jobTypes == "" {
 		jobTypes = defaultPluginWorkerJobTypes

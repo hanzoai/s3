@@ -9,7 +9,6 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
 )
 
 type EventErrorType int
@@ -48,7 +47,7 @@ type MetadataFollowOption struct {
 
 type ProcessMetadataFunc func(resp *filer_pb.SubscribeMetadataResponse) error
 
-func FollowMetadata(filerAddress ServerAddress, grpcDialOption grpc.DialOption, option *MetadataFollowOption, processEventFn ProcessMetadataFunc) error {
+func FollowMetadata(filerAddress ServerAddress, grpcDialOption DialOption, option *MetadataFollowOption, processEventFn ProcessMetadataFunc) error {
 
 	err := WithFilerClient(true, option.SelfSignature, filerAddress, grpcDialOption, makeSubscribeMetadataFunc(option, processEventFn))
 	if err != nil {

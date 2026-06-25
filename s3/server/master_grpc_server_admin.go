@@ -16,8 +16,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 /*
@@ -202,7 +200,7 @@ func (ms *MasterServer) Ping(ctx context.Context, req *master_pb.PingRequest) (r
 	// Empty target is a self-liveness probe and stays unauthenticated.
 	if req.Target != "" && !ms.isKnownPingTarget(ctx, req.Target, req.TargetType) {
 		resp.StopTimeNs = time.Now().UnixNano()
-		return resp, status.Errorf(codes.InvalidArgument, "unknown ping target %s of type %s", req.Target, req.TargetType)
+		return resp, fmt.Errorf("InvalidArgument: unknown ping target %s of type %s", req.Target, req.TargetType)
 	}
 	if req.TargetType == cluster.FilerType {
 		pingErr = pb.WithFilerClient(false, 0, pb.ServerAddress(req.Target), ms.grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
@@ -230,7 +228,7 @@ func (ms *MasterServer) Ping(ctx context.Context, req *master_pb.PingRequest) (r
 		if dialErr != nil {
 			pingErr = dialErr
 		} else {
-			pingResp, pErr := zapClient.Ping(masterwire.PingRequestInput{})
+			pingResp, pErr := zapClient.Ping(ctx, masterwire.PingRequestInput{})
 			if pErr == nil {
 				resp.RemoteTimeNs = pingResp.StartTimeNs()
 			}

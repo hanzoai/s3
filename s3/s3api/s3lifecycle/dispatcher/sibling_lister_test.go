@@ -10,11 +10,10 @@ import (
 	"testing"
 
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/rpc"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 // Tests for filerSiblingLister cover the four routing-critical surfaces
@@ -52,18 +51,6 @@ func (s *fsListStream) Recv() (*filer_pb.ListEntriesResponse, error) {
 	return resp, nil
 }
 
-func (s *fsListStream) Header() (metadata.MD, error) { return metadata.MD{}, nil }
-func (s *fsListStream) Trailer() metadata.MD         { return metadata.MD{} }
-func (s *fsListStream) CloseSend() error             { return nil }
-func (s *fsListStream) Context() context.Context {
-	if s.ctx != nil {
-		return s.ctx
-	}
-	return context.Background()
-}
-func (s *fsListStream) SendMsg(any) error { return nil }
-func (s *fsListStream) RecvMsg(any) error { return nil }
-
 // fsFakeFiler implements just the HanzoFilerClient methods that
 // filerSiblingLister calls (ListEntries + LookupDirectoryEntry). Other
 // methods on the embedded interface remain nil; calling them panics,
@@ -95,7 +82,7 @@ func newFakeFiler() *fsFakeFiler {
 	}
 }
 
-func (c *fsFakeFiler) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.ListEntriesResponse], error) {
+func (c *fsFakeFiler) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest) (rpc.ServerStream[filer_pb.ListEntriesResponse], error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.listErr != nil {
@@ -138,7 +125,7 @@ func (c *fsFakeFiler) ListEntries(ctx context.Context, in *filer_pb.ListEntriesR
 	return &fsListStream{responses: resps, ctx: ctx}, nil
 }
 
-func (c *fsFakeFiler) LookupDirectoryEntry(ctx context.Context, in *filer_pb.LookupDirectoryEntryRequest, opts ...grpc.CallOption) (*filer_pb.LookupDirectoryEntryResponse, error) {
+func (c *fsFakeFiler) LookupDirectoryEntry(ctx context.Context, in *filer_pb.LookupDirectoryEntryRequest) (*filer_pb.LookupDirectoryEntryResponse, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.lookupErr != nil {

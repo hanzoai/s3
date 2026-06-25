@@ -9,6 +9,8 @@ import (
 
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
@@ -17,8 +19,6 @@ import (
 	"github.com/hanzoai/s3/s3/remote_storage"
 	"github.com/hanzoai/s3/s3/replication/source"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
 )
 
 func followUpdatesAndUploadToRemote(option *RemoteSyncOptions, filerSource *source.FilerSource, mountedDir string) error {
@@ -266,7 +266,7 @@ func retriedWriteFile(client remote_storage.RemoteStorageClient, filerSource *so
 	return
 }
 
-func collectLastSyncOffset(filerClient filer_pb.FilerClient, grpcDialOption grpc.DialOption, filerAddress pb.ServerAddress, mountedDir string, timeAgo time.Duration) time.Time {
+func collectLastSyncOffset(filerClient filer_pb.FilerClient, grpcDialOption pb.DialOption, filerAddress pb.ServerAddress, mountedDir string, timeAgo time.Duration) time.Time {
 	// 1. specified by timeAgo
 	// 2. last offset timestamp for this directory
 	// 3. directory creation time

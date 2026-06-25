@@ -9,7 +9,6 @@ import (
 
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/security"
@@ -144,7 +143,7 @@ func runUpload(cmd *Command, args []string) bool {
 	return true
 }
 
-func readMasterConfiguration(grpcDialOption grpc.DialOption, masterAddress pb.ServerAddress) (replication string, err error) {
+func readMasterConfiguration(grpcDialOption pb.DialOption, masterAddress pb.ServerAddress) (replication string, err error) {
 	err = pb.WithMasterClient(context.Background(), false, masterAddress, grpcDialOption, false, func(client master_pb.HanzoClient) error {
 		resp, err := client.GetMasterConfiguration(context.Background(), &master_pb.GetMasterConfigurationRequest{})
 		if err != nil {

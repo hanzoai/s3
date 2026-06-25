@@ -3,6 +3,7 @@
 package masterwire
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/zap-proto/go/rpc"
@@ -45,8 +46,11 @@ const (
 )
 
 // HanzoChannel ships one Call envelope and awaits its correlated Response.
+// CallContext is Call that also aborts when ctx is done (transport.Conn
+// satisfies both).
 type HanzoChannel interface {
 	Call(envelope []byte) (rpc.Response, error)
+	CallContext(ctx context.Context, envelope []byte) (rpc.Response, error)
 }
 
 // HanzoClient is a typed RPC client for the Hanzo service over a ZAP call
@@ -66,9 +70,9 @@ func NewHanzoClient(ch HanzoChannel, capability []byte) *HanzoClient {
 
 // invoke issues one request to method and returns the response body. Shared by
 // every method's public entry points.
-func (c *HanzoClient) invoke(method, target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *HanzoClient) invoke(ctx context.Context, method, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    method,
 		PromiseID: p.ID,
 		Target:    target,
@@ -92,250 +96,250 @@ func (c *HanzoClient) invoke(method, target uint32, payload []byte) (rpc.Promise
 // SendHeartbeat issues the SendHeartbeat RPC. STREAMING: until the transport
 // streaming primitive ships this sends one Heartbeat and returns one
 // HeartbeatResponse body.
-func (c *HanzoClient) SendHeartbeat(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoSendHeartbeatOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) SendHeartbeat(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoSendHeartbeatOrdinal, rpc.NoTarget, req)
 }
 
 // SendHeartbeatOn issues SendHeartbeat pipelined on the answer of on.
-func (c *HanzoClient) SendHeartbeatOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoSendHeartbeatOrdinal, on.ID, nil)
+func (c *HanzoClient) SendHeartbeatOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoSendHeartbeatOrdinal, on.ID, nil)
 }
 
 // KeepConnected issues the KeepConnected RPC. STREAMING: until the transport
 // streaming primitive ships this sends one KeepConnectedRequest and returns one
 // KeepConnectedResponse body.
-func (c *HanzoClient) KeepConnected(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoKeepConnectedOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) KeepConnected(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoKeepConnectedOrdinal, rpc.NoTarget, req)
 }
 
 // KeepConnectedOn issues KeepConnected pipelined on the answer of on.
-func (c *HanzoClient) KeepConnectedOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoKeepConnectedOrdinal, on.ID, nil)
+func (c *HanzoClient) KeepConnectedOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoKeepConnectedOrdinal, on.ID, nil)
 }
 
 // LookupVolume issues the LookupVolume RPC.
-func (c *HanzoClient) LookupVolume(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoLookupVolumeOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) LookupVolume(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoLookupVolumeOrdinal, rpc.NoTarget, req)
 }
 
 // LookupVolumeOn issues LookupVolume pipelined on the answer of on.
-func (c *HanzoClient) LookupVolumeOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoLookupVolumeOrdinal, on.ID, nil)
+func (c *HanzoClient) LookupVolumeOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoLookupVolumeOrdinal, on.ID, nil)
 }
 
 // Assign issues the Assign RPC.
-func (c *HanzoClient) Assign(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoAssignOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) Assign(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoAssignOrdinal, rpc.NoTarget, req)
 }
 
 // AssignOn issues Assign pipelined on the answer of on.
-func (c *HanzoClient) AssignOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoAssignOrdinal, on.ID, nil)
+func (c *HanzoClient) AssignOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoAssignOrdinal, on.ID, nil)
 }
 
 // StreamAssign issues the StreamAssign RPC. STREAMING: until the transport
 // streaming primitive ships this sends one AssignRequest and returns one
 // AssignResponse body.
-func (c *HanzoClient) StreamAssign(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoStreamAssignOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) StreamAssign(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoStreamAssignOrdinal, rpc.NoTarget, req)
 }
 
 // StreamAssignOn issues StreamAssign pipelined on the answer of on.
-func (c *HanzoClient) StreamAssignOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoStreamAssignOrdinal, on.ID, nil)
+func (c *HanzoClient) StreamAssignOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoStreamAssignOrdinal, on.ID, nil)
 }
 
 // Statistics issues the Statistics RPC.
-func (c *HanzoClient) Statistics(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoStatisticsOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) Statistics(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoStatisticsOrdinal, rpc.NoTarget, req)
 }
 
 // StatisticsOn issues Statistics pipelined on the answer of on.
-func (c *HanzoClient) StatisticsOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoStatisticsOrdinal, on.ID, nil)
+func (c *HanzoClient) StatisticsOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoStatisticsOrdinal, on.ID, nil)
 }
 
 // CollectionList issues the CollectionList RPC.
-func (c *HanzoClient) CollectionList(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoCollectionListOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) CollectionList(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoCollectionListOrdinal, rpc.NoTarget, req)
 }
 
 // CollectionListOn issues CollectionList pipelined on the answer of on.
-func (c *HanzoClient) CollectionListOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoCollectionListOrdinal, on.ID, nil)
+func (c *HanzoClient) CollectionListOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoCollectionListOrdinal, on.ID, nil)
 }
 
 // CollectionDelete issues the CollectionDelete RPC.
-func (c *HanzoClient) CollectionDelete(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoCollectionDeleteOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) CollectionDelete(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoCollectionDeleteOrdinal, rpc.NoTarget, req)
 }
 
 // CollectionDeleteOn issues CollectionDelete pipelined on the answer of on.
-func (c *HanzoClient) CollectionDeleteOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoCollectionDeleteOrdinal, on.ID, nil)
+func (c *HanzoClient) CollectionDeleteOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoCollectionDeleteOrdinal, on.ID, nil)
 }
 
 // VolumeList issues the VolumeList RPC.
-func (c *HanzoClient) VolumeList(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoVolumeListOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) VolumeList(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoVolumeListOrdinal, rpc.NoTarget, req)
 }
 
 // VolumeListOn issues VolumeList pipelined on the answer of on.
-func (c *HanzoClient) VolumeListOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoVolumeListOrdinal, on.ID, nil)
+func (c *HanzoClient) VolumeListOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoVolumeListOrdinal, on.ID, nil)
 }
 
 // LookupEcVolume issues the LookupEcVolume RPC.
-func (c *HanzoClient) LookupEcVolume(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoLookupEcVolumeOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) LookupEcVolume(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoLookupEcVolumeOrdinal, rpc.NoTarget, req)
 }
 
 // LookupEcVolumeOn issues LookupEcVolume pipelined on the answer of on.
-func (c *HanzoClient) LookupEcVolumeOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoLookupEcVolumeOrdinal, on.ID, nil)
+func (c *HanzoClient) LookupEcVolumeOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoLookupEcVolumeOrdinal, on.ID, nil)
 }
 
 // VacuumVolume issues the VacuumVolume RPC.
-func (c *HanzoClient) VacuumVolume(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoVacuumVolumeOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) VacuumVolume(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoVacuumVolumeOrdinal, rpc.NoTarget, req)
 }
 
 // VacuumVolumeOn issues VacuumVolume pipelined on the answer of on.
-func (c *HanzoClient) VacuumVolumeOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoVacuumVolumeOrdinal, on.ID, nil)
+func (c *HanzoClient) VacuumVolumeOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoVacuumVolumeOrdinal, on.ID, nil)
 }
 
 // DisableVacuum issues the DisableVacuum RPC.
-func (c *HanzoClient) DisableVacuum(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoDisableVacuumOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) DisableVacuum(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoDisableVacuumOrdinal, rpc.NoTarget, req)
 }
 
 // DisableVacuumOn issues DisableVacuum pipelined on the answer of on.
-func (c *HanzoClient) DisableVacuumOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoDisableVacuumOrdinal, on.ID, nil)
+func (c *HanzoClient) DisableVacuumOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoDisableVacuumOrdinal, on.ID, nil)
 }
 
 // EnableVacuum issues the EnableVacuum RPC.
-func (c *HanzoClient) EnableVacuum(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoEnableVacuumOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) EnableVacuum(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoEnableVacuumOrdinal, rpc.NoTarget, req)
 }
 
 // EnableVacuumOn issues EnableVacuum pipelined on the answer of on.
-func (c *HanzoClient) EnableVacuumOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoEnableVacuumOrdinal, on.ID, nil)
+func (c *HanzoClient) EnableVacuumOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoEnableVacuumOrdinal, on.ID, nil)
 }
 
 // VolumeMarkReadonly issues the VolumeMarkReadonly RPC.
-func (c *HanzoClient) VolumeMarkReadonly(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoVolumeMarkReadonlyOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) VolumeMarkReadonly(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoVolumeMarkReadonlyOrdinal, rpc.NoTarget, req)
 }
 
 // VolumeMarkReadonlyOn issues VolumeMarkReadonly pipelined on the answer of on.
-func (c *HanzoClient) VolumeMarkReadonlyOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoVolumeMarkReadonlyOrdinal, on.ID, nil)
+func (c *HanzoClient) VolumeMarkReadonlyOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoVolumeMarkReadonlyOrdinal, on.ID, nil)
 }
 
 // GetMasterConfiguration issues the GetMasterConfiguration RPC.
-func (c *HanzoClient) GetMasterConfiguration(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoGetMasterConfigurationOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) GetMasterConfiguration(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoGetMasterConfigurationOrdinal, rpc.NoTarget, req)
 }
 
 // GetMasterConfigurationOn issues GetMasterConfiguration pipelined on the answer
 // of on.
-func (c *HanzoClient) GetMasterConfigurationOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoGetMasterConfigurationOrdinal, on.ID, nil)
+func (c *HanzoClient) GetMasterConfigurationOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoGetMasterConfigurationOrdinal, on.ID, nil)
 }
 
 // ListClusterNodes issues the ListClusterNodes RPC.
-func (c *HanzoClient) ListClusterNodes(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoListClusterNodesOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) ListClusterNodes(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoListClusterNodesOrdinal, rpc.NoTarget, req)
 }
 
 // ListClusterNodesOn issues ListClusterNodes pipelined on the answer of on.
-func (c *HanzoClient) ListClusterNodesOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoListClusterNodesOrdinal, on.ID, nil)
+func (c *HanzoClient) ListClusterNodesOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoListClusterNodesOrdinal, on.ID, nil)
 }
 
 // LeaseAdminToken issues the LeaseAdminToken RPC.
-func (c *HanzoClient) LeaseAdminToken(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoLeaseAdminTokenOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) LeaseAdminToken(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoLeaseAdminTokenOrdinal, rpc.NoTarget, req)
 }
 
 // LeaseAdminTokenOn issues LeaseAdminToken pipelined on the answer of on.
-func (c *HanzoClient) LeaseAdminTokenOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoLeaseAdminTokenOrdinal, on.ID, nil)
+func (c *HanzoClient) LeaseAdminTokenOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoLeaseAdminTokenOrdinal, on.ID, nil)
 }
 
 // ReleaseAdminToken issues the ReleaseAdminToken RPC.
-func (c *HanzoClient) ReleaseAdminToken(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoReleaseAdminTokenOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) ReleaseAdminToken(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoReleaseAdminTokenOrdinal, rpc.NoTarget, req)
 }
 
 // ReleaseAdminTokenOn issues ReleaseAdminToken pipelined on the answer of on.
-func (c *HanzoClient) ReleaseAdminTokenOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoReleaseAdminTokenOrdinal, on.ID, nil)
+func (c *HanzoClient) ReleaseAdminTokenOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoReleaseAdminTokenOrdinal, on.ID, nil)
 }
 
 // Ping issues the Ping RPC.
-func (c *HanzoClient) Ping(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoPingOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) Ping(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoPingOrdinal, rpc.NoTarget, req)
 }
 
 // PingOn issues Ping pipelined on the answer of on.
-func (c *HanzoClient) PingOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoPingOrdinal, on.ID, nil)
+func (c *HanzoClient) PingOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoPingOrdinal, on.ID, nil)
 }
 
 // RaftListClusterServers issues the RaftListClusterServers RPC.
-func (c *HanzoClient) RaftListClusterServers(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoRaftListClusterServersOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) RaftListClusterServers(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoRaftListClusterServersOrdinal, rpc.NoTarget, req)
 }
 
 // RaftListClusterServersOn issues RaftListClusterServers pipelined on the answer
 // of on.
-func (c *HanzoClient) RaftListClusterServersOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoRaftListClusterServersOrdinal, on.ID, nil)
+func (c *HanzoClient) RaftListClusterServersOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoRaftListClusterServersOrdinal, on.ID, nil)
 }
 
 // RaftAddServer issues the RaftAddServer RPC.
-func (c *HanzoClient) RaftAddServer(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoRaftAddServerOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) RaftAddServer(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoRaftAddServerOrdinal, rpc.NoTarget, req)
 }
 
 // RaftAddServerOn issues RaftAddServer pipelined on the answer of on.
-func (c *HanzoClient) RaftAddServerOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoRaftAddServerOrdinal, on.ID, nil)
+func (c *HanzoClient) RaftAddServerOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoRaftAddServerOrdinal, on.ID, nil)
 }
 
 // RaftRemoveServer issues the RaftRemoveServer RPC.
-func (c *HanzoClient) RaftRemoveServer(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoRaftRemoveServerOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) RaftRemoveServer(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoRaftRemoveServerOrdinal, rpc.NoTarget, req)
 }
 
 // RaftRemoveServerOn issues RaftRemoveServer pipelined on the answer of on.
-func (c *HanzoClient) RaftRemoveServerOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoRaftRemoveServerOrdinal, on.ID, nil)
+func (c *HanzoClient) RaftRemoveServerOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoRaftRemoveServerOrdinal, on.ID, nil)
 }
 
 // RaftLeadershipTransfer issues the RaftLeadershipTransfer RPC.
-func (c *HanzoClient) RaftLeadershipTransfer(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoRaftLeadershipTransferOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) RaftLeadershipTransfer(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoRaftLeadershipTransferOrdinal, rpc.NoTarget, req)
 }
 
 // RaftLeadershipTransferOn issues RaftLeadershipTransfer pipelined on the answer
 // of on.
-func (c *HanzoClient) RaftLeadershipTransferOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoRaftLeadershipTransferOrdinal, on.ID, nil)
+func (c *HanzoClient) RaftLeadershipTransferOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoRaftLeadershipTransferOrdinal, on.ID, nil)
 }
 
 // VolumeGrow issues the VolumeGrow RPC.
-func (c *HanzoClient) VolumeGrow(req []byte) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoVolumeGrowOrdinal, rpc.NoTarget, req)
+func (c *HanzoClient) VolumeGrow(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoVolumeGrowOrdinal, rpc.NoTarget, req)
 }
 
 // VolumeGrowOn issues VolumeGrow pipelined on the answer of on.
-func (c *HanzoClient) VolumeGrowOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invoke(HanzoVolumeGrowOrdinal, on.ID, nil)
+func (c *HanzoClient) VolumeGrowOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invoke(ctx, HanzoVolumeGrowOrdinal, on.ID, nil)
 }
 
 // HanzoHandler is the server contract for the Hanzo service. Implement each

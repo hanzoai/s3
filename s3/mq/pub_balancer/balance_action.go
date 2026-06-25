@@ -3,16 +3,17 @@ package pub_balancer
 import (
 	"fmt"
 
+	"github.com/zap-proto/go/transport"
+
+	"github.com/hanzoai/s3/s3/pb"
 	mq_brokerwire "github.com/hanzoai/s3/s3/wire/mq_broker"
 	mq_schemawire "github.com/hanzoai/s3/s3/wire/mq_schema"
-	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
 )
 
 // PubBalancer <= PublisherToPubBalancer() <= Broker <=> Publish()
 // ExecuteBalanceActionMove from PubBalancer => AssignTopicPartitions() => Broker => Publish()
 
-func (balancer *PubBalancer) ExecuteBalanceActionMove(move *BalanceActionMove, _ grpc.DialOption) error {
+func (balancer *PubBalancer) ExecuteBalanceActionMove(move *BalanceActionMove, _ pb.DialOption) error {
 	if _, found := balancer.Brokers.Get(move.SourceBroker); !found {
 		return fmt.Errorf("source broker %s not found", move.SourceBroker)
 	}

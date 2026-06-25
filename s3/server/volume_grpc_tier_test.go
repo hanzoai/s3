@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage"
@@ -140,7 +141,7 @@ func TestVolumeTierMoveDatPreservesModifiedTime(t *testing.T) {
 	})
 
 	store := storage.NewStore(
-		nil,
+		pb.DialOption{},
 		"localhost",
 		8080,
 		18080,

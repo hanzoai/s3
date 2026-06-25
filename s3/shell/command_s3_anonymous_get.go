@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -44,7 +45,7 @@ func (c *commandS3AnonymousGet) Do(args []string, commandEnv *CommandEnv, writer
 	}
 
 	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: anonymousUserName}))
+		_, body, err := client.GetUser(context.Background(), iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: anonymousUserName}))
 		if err != nil {
 			// Over the ZAP transport a missing anonymous identity surfaces as a
 			// generic call error; treat it as "no anonymous access" as the gRPC

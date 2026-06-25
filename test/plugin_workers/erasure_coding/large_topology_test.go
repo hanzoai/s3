@@ -6,14 +6,15 @@ import (
 	"testing"
 	"time"
 
-	pluginworkers "github.com/hanzoai/s3/test/plugin_workers"
+	"github.com/stretchr/testify/require"
+
+	"github.com/hanzoai/s3/s3/pb"
+
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
 	"github.com/hanzoai/s3/s3/worker/tasks/erasure_coding"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	pluginworkers "github.com/hanzoai/s3/test/plugin_workers"
 )
 
 func TestErasureCodingDetectionLargeTopology(t *testing.T) {
@@ -96,7 +97,7 @@ func TestErasureCodingDetectionLargeTopology(t *testing.T) {
 
 	master := pluginworkers.NewMasterServer(t, response)
 
-	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOption := pb.DialOption{}
 	handler := erasure_coding.NewErasureCodingHandler(dialOption, t.TempDir())
 	harness := pluginworkers.NewHarness(t, pluginworkers.HarnessConfig{
 		WorkerOptions: pluginworker.WorkerOptions{

@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"github.com/hanzoai/s3/s3/shell"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -44,10 +44,10 @@ func init() {
 }
 
 type AdminScriptHandler struct {
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 }
 
-func NewAdminScriptHandler(grpcDialOption grpc.DialOption) *AdminScriptHandler {
+func NewAdminScriptHandler(grpcDialOption pb.DialOption) *AdminScriptHandler {
 	return &AdminScriptHandler{grpcDialOption: grpcDialOption}
 }
 

@@ -10,9 +10,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"strings"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
@@ -38,13 +36,11 @@ func isTransientFilerError(err error) bool {
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 		return true
 	}
-	if s, ok := status.FromError(err); ok {
-		switch s.Code() {
-		case codes.Unavailable, codes.DeadlineExceeded, codes.ResourceExhausted, codes.Aborted:
-			return true
-		}
-	}
-	return false
+	s := err.Error()
+	return strings.Contains(s, "Unavailable") ||
+		strings.Contains(s, "DeadlineExceeded") ||
+		strings.Contains(s, "ResourceExhausted") ||
+		strings.Contains(s, "Aborted")
 }
 
 // uploadEntryHasSSE reports whether the multipart upload entry was created

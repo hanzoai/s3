@@ -10,14 +10,15 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/hanzoai/s3/s3/admin/topology"
 	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
 	workertypes "github.com/hanzoai/s3/s3/worker/types"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -44,10 +45,10 @@ type volumeBalanceWorkerConfig struct {
 
 // VolumeBalanceHandler is the plugin job handler for volume balancing.
 type VolumeBalanceHandler struct {
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 }
 
-func NewVolumeBalanceHandler(grpcDialOption grpc.DialOption) *VolumeBalanceHandler {
+func NewVolumeBalanceHandler(grpcDialOption pb.DialOption) *VolumeBalanceHandler {
 	return &VolumeBalanceHandler{grpcDialOption: grpcDialOption}
 }
 

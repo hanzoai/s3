@@ -12,6 +12,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/hanzoai/s3/s3/cluster"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
@@ -20,10 +23,6 @@ import (
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/log_buffer"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // --- minimal FilerStore stub ---
@@ -264,7 +263,7 @@ func (m *stubClientMaker) HasBucket() bool { return true }
 
 func newTestFiler(t *testing.T, store *stubFilerStore, rs *FilerRemoteStorage) *Filer {
 	t.Helper()
-	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOption := pb.DialOption{}
 	mc := wdclient.NewMasterClient(
 		dialOption, "test", cluster.FilerType,
 		pb.ServerAddress("localhost:0"), "", "",

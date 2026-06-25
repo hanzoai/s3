@@ -3,19 +3,19 @@ package agent
 import (
 	"context"
 
+	"github.com/zap-proto/go/transport"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/mq/agent/agentconv"
 	"github.com/hanzoai/s3/s3/mq/client/sub_client"
 	"github.com/hanzoai/s3/s3/mq/topic"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/pb/schema_pb"
 	"github.com/hanzoai/s3/s3/util"
 	mq_agentwire "github.com/hanzoai/s3/s3/wire/mq_agent"
 	mq_schemawire "github.com/hanzoai/s3/s3/wire/mq_schema"
-	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/proto"
 )
 
 // SubscribeRecord serves the HanzoMessagingAgent SubscribeRecord bidirectional
@@ -98,7 +98,7 @@ func (a *MessageQueueAgent) handleInitSubscribeRecordRequest(ctx context.Context
 	subscriberConfig := &sub_client.SubscriberConfiguration{
 		ConsumerGroup:           req.ConsumerGroup(),
 		ConsumerGroupInstanceId: req.ConsumerGroupInstanceId(),
-		GrpcDialOption:          grpc.WithTransportCredentials(insecure.NewCredentials()),
+		GrpcDialOption:          pb.DialOption{},
 		MaxPartitionCount:       req.MaxSubscribedPartitions(),
 		SlidingWindowSize:       req.SlidingWindowSize(),
 	}

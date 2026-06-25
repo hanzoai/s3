@@ -5,15 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/test/volume_server/framework"
-	"github.com/hanzoai/s3/test/volume_server/matrix"
+	"github.com/stretchr/testify/require"
+
 	"github.com/hanzoai/s3/s3/admin/topology"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/worker/types"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/hanzoai/s3/test/volume_server/framework"
+	"github.com/hanzoai/s3/test/volume_server/matrix"
 )
 
 // cleanupOrphanSourceReplicas must not delete a source replica that has come
@@ -33,7 +33,7 @@ func TestCleanupOrphanSkipsWritableSourceReplica(t *testing.T) {
 
 	clusterInfo := &types.ClusterInfo{
 		ActiveTopology: buildSingleNodeTopology(t, clusterHarness.VolumeServerAddress(), volumeID),
-		GrpcDialOption: grpc.WithTransportCredentials(insecure.NewCredentials()),
+		GrpcDialOption: pb.DialOption{},
 	}
 	metric := &types.VolumeHealthMetrics{VolumeID: volumeID, Collection: ""}
 

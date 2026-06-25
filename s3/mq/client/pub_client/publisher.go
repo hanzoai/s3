@@ -5,14 +5,14 @@ import (
 	"sync"
 
 	"github.com/rdleal/intervalst/interval"
+	"github.com/zap-proto/go/transport"
+
 	"github.com/hanzoai/s3/s3/mq/pub_balancer"
 	"github.com/hanzoai/s3/s3/mq/topic"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/pb/schema_pb"
 	"github.com/hanzoai/s3/s3/util/buffered_queue"
-	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type PublisherConfiguration struct {
@@ -37,9 +37,10 @@ func (c *PublishClient) Recv() ([]byte, error) { return c.stream.Recv() }
 
 // CloseSend half-closes the send side of the ZAP stream.
 func (c *PublishClient) CloseSend() error { return c.stream.CloseSend() }
+
 type TopicPublisher struct {
 	partition2Buffer *interval.SearchTree[*buffered_queue.BufferedQueue[*mq_pb.DataMessage], int32]
-	grpcDialOption   grpc.DialOption
+	grpcDialOption   pb.DialOption
 	sync.Mutex       // protects grpc
 	config           *PublisherConfiguration
 	jobs             []*EachPartitionPublishJob
@@ -50,7 +51,7 @@ func NewTopicPublisher(config *PublisherConfiguration) (tp *TopicPublisher, err 
 		partition2Buffer: interval.NewSearchTree[*buffered_queue.BufferedQueue[*mq_pb.DataMessage]](func(a, b int32) int {
 			return int(a - b)
 		}),
-		grpcDialOption: grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpcDialOption: pb.DialOption{},
 		config:         config,
 	}
 

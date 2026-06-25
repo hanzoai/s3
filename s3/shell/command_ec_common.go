@@ -19,7 +19,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/needle"
 	"github.com/hanzoai/s3/s3/storage/super_block"
 	"github.com/hanzoai/s3/s3/storage/types"
-	"google.golang.org/grpc"
 )
 
 type DataCenterId string
@@ -379,7 +378,7 @@ func moveMountedShardToEcNode(commandEnv *CommandEnv, existingLocation *EcNode, 
 
 }
 
-func oneServerCopyAndMountEcShardsFromSource(grpcDialOption grpc.DialOption,
+func oneServerCopyAndMountEcShardsFromSource(grpcDialOption pb.DialOption,
 	targetServer *EcNode, shardIdsToCopy []erasure_coding.ShardId,
 	volumeId needle.VolumeId, collection string, existingLocation pb.ServerAddress, destDiskId uint32) (copiedShardIds []erasure_coding.ShardId, err error) {
 
@@ -568,7 +567,7 @@ func collectEcVolumeServersByDc(topo *master_pb.TopologyInfo, selectedDataCenter
 	return
 }
 
-func sourceServerDeleteEcShards(grpcDialOption grpc.DialOption, collection string, volumeId needle.VolumeId, sourceLocation pb.ServerAddress, toBeDeletedShardIds []erasure_coding.ShardId) error {
+func sourceServerDeleteEcShards(grpcDialOption pb.DialOption, collection string, volumeId needle.VolumeId, sourceLocation pb.ServerAddress, toBeDeletedShardIds []erasure_coding.ShardId) error {
 
 	fmt.Printf("delete %d.%v from %s\n", volumeId, toBeDeletedShardIds, sourceLocation)
 
@@ -599,7 +598,7 @@ var errFullTeardownNotAcked = errors.New("delete did not perform full teardown (
 // only a Ping that itself transport-failed (codes.Unavailable) confirms the node
 // is down; a nil error (reachable) or any other Ping error (inconclusive — e.g. a
 // pre-Ping server returning Unimplemented, which means the node is up) is fatal.
-func pingVolumeServer(grpcDialOption grpc.DialOption, location pb.ServerAddress) error {
+func pingVolumeServer(grpcDialOption pb.DialOption, location pb.ServerAddress) error {
 	return operation.WithVolumeServerClient(false, location, grpcDialOption, func(client volume_server_pb.VolumeServerClient) error {
 		_, pingErr := client.Ping(context.Background(), &volume_server_pb.PingRequest{})
 		return pingErr
@@ -610,7 +609,7 @@ func pingVolumeServer(grpcDialOption grpc.DialOption, location pb.ServerAddress)
 // single connection, without the per-call logging the interactive helpers emit.
 // Used by the orphan sweep, which fans out to every node x volume and would
 // otherwise flood the shell with no-op lines.
-func unmountAndDeleteEcShardsQuiet(grpcDialOption grpc.DialOption, collection string, volumeId needle.VolumeId, location pb.ServerAddress, shardIds []erasure_coding.ShardId) error {
+func unmountAndDeleteEcShardsQuiet(grpcDialOption pb.DialOption, collection string, volumeId needle.VolumeId, location pb.ServerAddress, shardIds []erasure_coding.ShardId) error {
 	ids := erasure_coding.ShardIdsToUint32(shardIds)
 	return operation.WithVolumeServerClient(false, location, grpcDialOption, func(volumeServerClient volume_server_pb.VolumeServerClient) error {
 		if _, err := volumeServerClient.VolumeEcShardsUnmount(context.Background(), &volume_server_pb.VolumeEcShardsUnmountRequest{
@@ -635,7 +634,7 @@ func unmountAndDeleteEcShardsQuiet(grpcDialOption grpc.DialOption, collection st
 	})
 }
 
-func unmountEcShards(grpcDialOption grpc.DialOption, volumeId needle.VolumeId, sourceLocation pb.ServerAddress, toBeUnmountedShardIds []erasure_coding.ShardId) error {
+func unmountEcShards(grpcDialOption pb.DialOption, volumeId needle.VolumeId, sourceLocation pb.ServerAddress, toBeUnmountedShardIds []erasure_coding.ShardId) error {
 
 	fmt.Printf("unmount %d.%v from %s\n", volumeId, toBeUnmountedShardIds, sourceLocation)
 
@@ -648,7 +647,7 @@ func unmountEcShards(grpcDialOption grpc.DialOption, volumeId needle.VolumeId, s
 	})
 }
 
-func mountEcShards(grpcDialOption grpc.DialOption, collection string, volumeId needle.VolumeId, sourceLocation pb.ServerAddress, toBeMountedShardIds []erasure_coding.ShardId) error {
+func mountEcShards(grpcDialOption pb.DialOption, collection string, volumeId needle.VolumeId, sourceLocation pb.ServerAddress, toBeMountedShardIds []erasure_coding.ShardId) error {
 
 	fmt.Printf("mount %d.%v on %s\n", volumeId, toBeMountedShardIds, sourceLocation)
 

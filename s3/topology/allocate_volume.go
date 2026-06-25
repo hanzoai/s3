@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/operation"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/storage/needle"
-	"google.golang.org/grpc"
 )
 
 // Cap the RPC so a hung volume server can't strand the layout's
@@ -18,7 +18,7 @@ type AllocateVolumeResult struct {
 	Error string
 }
 
-func AllocateVolume(dn *DataNode, grpcDialOption grpc.DialOption, vid needle.VolumeId, option *VolumeGrowOption) error {
+func AllocateVolume(dn *DataNode, grpcDialOption pb.DialOption, vid needle.VolumeId, option *VolumeGrowOption) error {
 
 	return operation.WithVolumeServerClient(false, dn.ServerAddress(), grpcDialOption, func(client volume_server_pb.VolumeServerClient) error {
 
@@ -40,7 +40,7 @@ func AllocateVolume(dn *DataNode, grpcDialOption grpc.DialOption, vid needle.Vol
 
 }
 
-func DeleteVolume(dn *DataNode, grpcDialOption grpc.DialOption, vid needle.VolumeId) error {
+func DeleteVolume(dn *DataNode, grpcDialOption pb.DialOption, vid needle.VolumeId) error {
 
 	return operation.WithVolumeServerClient(false, dn.ServerAddress(), grpcDialOption, func(client volume_server_pb.VolumeServerClient) error {
 

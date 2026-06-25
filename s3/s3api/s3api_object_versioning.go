@@ -22,8 +22,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	s3_constants "github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // ErrDeleteMarker is returned when the latest version is a delete marker (expected condition)
@@ -1277,7 +1275,7 @@ func (s3a *S3ApiServer) repointLatestBeforeDeletion(ctx context.Context, bucket,
 		versionsEntry, gerr = s3a.getEntry(bucketDir, versionsObjectPath)
 		return gerr
 	}); getErr != nil {
-		if errors.Is(getErr, filer_pb.ErrNotFound) || status.Code(getErr) == codes.NotFound {
+		if errors.Is(getErr, filer_pb.ErrNotFound) || strings.Contains(getErr.Error(), filer_pb.ErrNotFound.Error()) {
 			// Directory already gone. Pointer is vacuously consistent.
 			return true, false, nil
 		}
@@ -1352,7 +1350,7 @@ func isRetryableFilerErr(err error) bool {
 	if err == nil {
 		return false
 	}
-	if errors.Is(err, filer_pb.ErrNotFound) || status.Code(err) == codes.NotFound {
+	if errors.Is(err, filer_pb.ErrNotFound) || strings.Contains(err.Error(), filer_pb.ErrNotFound.Error()) {
 		return false
 	}
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
@@ -1374,7 +1372,7 @@ func retryFilerOp(ctx context.Context, name string, fn func() error) error {
 		}
 		if !isRetryableFilerErr(err) {
 			// Terminal — return raw so callers can errors.Is /
-			// status.Code on the unwrapped error and avoid the
+			// match the code name on the unwrapped error and avoid the
 			// retry-budget delay.
 			return err
 		}
@@ -1813,7 +1811,7 @@ func (s3a *S3ApiServer) doGetLatestObjectVersion(bucket, object string, maxRetri
 		// The pointer refers to a version file that no longer exists. Rather than
 		// surfacing a hard error that requires manual repair, rescan the .versions
 		// directory and self-heal the pointer to whatever remains.
-		if errors.Is(err, filer_pb.ErrNotFound) || status.Code(err) == codes.NotFound {
+		if errors.Is(err, filer_pb.ErrNotFound) || strings.Contains(err.Error(), filer_pb.ErrNotFound.Error()) {
 			healed, healErr := s3a.healStaleLatestVersionPointer(bucket, normalizedObject, versionsEntry, latestVersionFile)
 			if healErr == nil {
 				return healed, nil
@@ -1845,7 +1843,7 @@ func (s3a *S3ApiServer) recoverLatestVersionWithoutPointer(bucket, normalizedObj
 	if healErr == nil {
 		return healed, nil
 	}
-	if !errors.Is(healErr, filer_pb.ErrNotFound) && status.Code(healErr) != codes.NotFound {
+	if !errors.Is(healErr, filer_pb.ErrNotFound) && !strings.Contains(healErr.Error(), filer_pb.ErrNotFound.Error()) {
 		return nil, healErr
 	}
 

@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/karlseguin/ccache/v2"
+
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/iam/policy"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"google.golang.org/grpc"
 )
 
 // RoleStore defines the interface for storing IAM role definitions
@@ -137,7 +137,7 @@ func copyRoleDefinition(original *RoleDefinition) *RoleDefinition {
 
 // FilerRoleStore implements RoleStore using Hanzo filer
 type FilerRoleStore struct {
-	grpcDialOption       grpc.DialOption
+	grpcDialOption       pb.DialOption
 	basePath             string
 	filerAddressProvider func() string
 }

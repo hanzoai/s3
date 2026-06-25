@@ -15,7 +15,6 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"google.golang.org/grpc"
 )
 
 // RevocationEntry is one row in the revocation list. ExpiresAt is set to the
@@ -89,7 +88,7 @@ func (m *MemorySessionRevocationStore) Purge(ctx context.Context, _ string, befo
 // call — O(1) on a name-indexed filer. Purge enumerates the directory; that
 // cost is operator-controlled (cron-driven) so the hot path stays cheap.
 type FilerSessionRevocationStore struct {
-	grpcDialOption       grpc.DialOption
+	grpcDialOption       pb.DialOption
 	basePath             string
 	filerAddressProvider func() string
 }

@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -90,7 +91,7 @@ func (c *commandS3Policy) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 				return fmt.Errorf("invalid policy json: %v", err)
 			}
 
-			_, _, err = client.PutPolicy(iamwire.NewPutPolicyRequest(iamwire.PutPolicyRequestInput{
+			_, _, err = client.PutPolicy(context.Background(), iamwire.NewPutPolicyRequest(iamwire.PutPolicyRequestInput{
 				Name:    *name,
 				Content: string(data),
 			}))
@@ -101,7 +102,7 @@ func (c *commandS3Policy) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 			if *name == "" {
 				return fmt.Errorf("-name is required")
 			}
-			_, body, err := client.GetPolicy(iamwire.NewGetPolicyRequest(iamwire.GetPolicyRequestInput{
+			_, body, err := client.GetPolicy(context.Background(), iamwire.NewGetPolicyRequest(iamwire.GetPolicyRequestInput{
 				Name: *name,
 			}))
 			if err != nil {
@@ -119,7 +120,7 @@ func (c *commandS3Policy) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 		}
 
 		if *list {
-			_, body, err := client.ListPolicies(iamwire.NewListPoliciesRequest(iamwire.ListPoliciesRequestInput{}))
+			_, body, err := client.ListPolicies(context.Background(), iamwire.NewListPoliciesRequest(iamwire.ListPoliciesRequestInput{}))
 			if err != nil {
 				return err
 			}
@@ -139,7 +140,7 @@ func (c *commandS3Policy) Do(args []string, commandEnv *CommandEnv, writer io.Wr
 			if *name == "" {
 				return fmt.Errorf("-name is required")
 			}
-			_, _, err := client.DeletePolicy(iamwire.NewDeletePolicyRequest(iamwire.DeletePolicyRequestInput{
+			_, _, err := client.DeletePolicy(context.Background(), iamwire.NewDeletePolicyRequest(iamwire.DeletePolicyRequestInput{
 				Name: *name,
 			}))
 			return err

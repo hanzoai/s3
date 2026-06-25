@@ -20,14 +20,14 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/crypto/hkdf"
+
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"golang.org/x/crypto/hkdf"
-	"google.golang.org/grpc"
 )
 
 // SSE-S3 uses AES-256 encryption with server-managed keys
@@ -271,11 +271,11 @@ func DeserializeSSES3Metadata(data []byte, keyManager *SSES3KeyManager) (*SSES3K
 // SSES3KeyManager manages SSE-S3 encryption keys using envelope encryption
 // Instead of storing keys in memory, it uses a super key (KEK) to encrypt/decrypt DEKs
 type SSES3KeyManager struct {
-	mu             sync.RWMutex
-	superKey       []byte               // 256-bit master key (KEK - Key Encryption Key)
-	filerClient    filer_pb.FilerClient // Filer client for KEK persistence
-	kekPath        string               // Path in filer where KEK is stored (e.g., /etc/s3/sse_kek)
-	kekPassphrase  string               // If set, KEK is encrypted at rest using a key derived from this passphrase
+	mu            sync.RWMutex
+	superKey      []byte               // 256-bit master key (KEK - Key Encryption Key)
+	filerClient   filer_pb.FilerClient // Filer client for KEK persistence
+	kekPath       string               // Path in filer where KEK is stored (e.g., /etc/s3/sse_kek)
+	kekPassphrase string               // If set, KEK is encrypted at rest using a key derived from this passphrase
 }
 
 const (
@@ -320,7 +320,6 @@ var kekWrappedV2Magic = []byte{0x53, 0x57, 0x76, 0x32} // "SWv2"
 // kekRandomSaltSize is the per-installation salt length in bytes for HKDF.
 // 32 bytes matches the SHA-256 output and is the standard recommendation.
 const kekRandomSaltSize = 32
-
 
 // NewSSES3KeyManager creates a new SSE-S3 key manager with envelope encryption.
 // If kekPassphrase is non-empty, the KEK is encrypted at rest using a key derived from it.
@@ -828,7 +827,7 @@ func GetSSES3KeyManager() *SSES3KeyManager {
 // KeyManagerFilerClient wraps wdclient.FilerClient to satisfy filer_pb.FilerClient interface
 type KeyManagerFilerClient struct {
 	*wdclient.FilerClient
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 }
 
 func (k *KeyManagerFilerClient) AdjustedUrl(location *filer_pb.Location) string {
@@ -851,7 +850,7 @@ func (k *KeyManagerFilerClient) WithFilerClient(streamingMode bool, fn func(file
 // SSES3KEKPassphraseEnv lookup for deployments wired before the Viper key
 // existed. If neither is set the KEK falls back to plaintext at-rest
 // storage (with a startup warning).
-func InitializeGlobalSSES3KeyManager(filerClient *wdclient.FilerClient, grpcDialOption grpc.DialOption) error {
+func InitializeGlobalSSES3KeyManager(filerClient *wdclient.FilerClient, grpcDialOption pb.DialOption) error {
 	passphrase := util.GetViper().GetString(sseS3KEKPassphraseConfigKey)
 	if passphrase == "" {
 		passphrase = os.Getenv(SSES3KEKPassphraseEnv)

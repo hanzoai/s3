@@ -12,8 +12,6 @@ import (
 	pluginwire "github.com/hanzoai/s3/s3/wire/plugin"
 	"github.com/stretchr/testify/require"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // HarnessConfig configures the shared plugin worker test harness.
@@ -72,11 +70,8 @@ func NewHarness(t *testing.T, cfg HarnessConfig) *Harness {
 	if workerOpts.AdminServer == "" {
 		workerOpts.AdminServer = adminAddr
 	}
-	// GrpcDialOption only satisfies NewWorker's config gate; the WorkerStream
-	// itself runs on the ZAP transport (transport.Dial), carrying no gRPC.
-	if workerOpts.GrpcDialOption == nil {
-		workerOpts.GrpcDialOption = grpc.WithTransportCredentials(insecure.NewCredentials())
-	}
+	// The WorkerStream runs on the ZAP transport (transport.Dial), carrying no
+	// gRPC; the zero GrpcDialOption (plaintext) is all NewWorker needs.
 	if workerOpts.WorkerID == "" {
 		workerOpts.WorkerID = "plugin-worker-test"
 	}

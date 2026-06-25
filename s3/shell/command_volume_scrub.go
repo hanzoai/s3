@@ -12,7 +12,6 @@ import (
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
-	"google.golang.org/grpc"
 )
 
 func init() {
@@ -24,7 +23,7 @@ type commandVolumeScrub struct {
 	volumeServerAddrs []pb.ServerAddress
 	volumeIDs         []uint32
 	mode              volume_server_pb.VolumeScrubMode
-	grpcDialOption    grpc.DialOption
+	grpcDialOption    pb.DialOption
 }
 
 func (c *commandVolumeScrub) Name() string {

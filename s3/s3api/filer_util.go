@@ -11,8 +11,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func (s3a *S3ApiServer) mkdir(parentDirectoryPath string, dirName string, fn func(entry *filer_pb.Entry)) error {
@@ -120,7 +118,7 @@ func demoteDirectoryMarkerToImplicitDirectory(client filer_pb.HanzoFilerClient, 
 		Directory: parentDirectoryPath,
 		Entry:     resp.Entry,
 	}); err != nil {
-		if errors.Is(err, filer_pb.ErrNotFound) || status.Code(err) == codes.NotFound {
+		if errors.Is(err, filer_pb.ErrNotFound) || strings.Contains(err.Error(), filer_pb.ErrNotFound.Error()) {
 			return nil
 		}
 		return fmt.Errorf("update entry %s/%s: %w", parentDirectoryPath, entryName, err)

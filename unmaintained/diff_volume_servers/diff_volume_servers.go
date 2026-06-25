@@ -20,14 +20,13 @@ import (
 	"github.com/hanzoai/s3/s3/storage/types"
 	"github.com/hanzoai/s3/s3/util"
 	util_http "github.com/hanzoai/s3/s3/util/http"
-	"google.golang.org/grpc"
 )
 
 var (
 	serversStr       = flag.String("volumeServers", "", "comma-delimited list of volume servers to diff the volume against")
 	volumeId         = flag.Int("volumeId", -1, "a volume id to diff from servers")
 	volumeCollection = flag.String("collection", "", "the volume collection name")
-	grpcDialOption   grpc.DialOption
+	grpcDialOption   pb.DialOption
 )
 
 /*

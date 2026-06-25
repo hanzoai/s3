@@ -10,11 +10,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/hanzoai/s3/s3/credential"
-	"github.com/hanzoai/s3/s3/stats"
 	"golang.org/x/sync/singleflight"
 
-	"google.golang.org/grpc"
+	"github.com/hanzoai/s3/s3/credential"
+	"github.com/hanzoai/s3/s3/stats"
 
 	"github.com/hanzoai/s3/s3/util/grace"
 
@@ -83,7 +82,7 @@ type FilerServer struct {
 	filer          *filer.Filer
 	filerGuard     *security.Guard
 	volumeGuard    *security.Guard
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 
 	// metrics read from the master
 	metricsAddress     string

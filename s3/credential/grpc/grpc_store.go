@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/zap-proto/go/transport"
+
 	"github.com/hanzoai/s3/s3/credential"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/util"
 	iamwire "github.com/hanzoai/s3/s3/wire/iam"
-	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
 )
 
 func init() {
@@ -24,7 +24,7 @@ func init() {
 // from security.toml, or every call will fail with Unauthenticated.
 type IamGrpcStore struct {
 	filerAddressFunc func() pb.ServerAddress // Function to get current active filer
-	grpcDialOption   grpc.DialOption
+	grpcDialOption   pb.DialOption
 	// adminSigningKey is the HS256 secret used to mint Bearer tokens that the
 	// filer's IAM gRPC service validates. Must match jwt.filer_signing.key on
 	// the filer side. Empty means no token is sent (the filer will reject).
@@ -51,7 +51,7 @@ func (store *IamGrpcStore) Initialize(configuration util.Configuration, prefix s
 	return nil
 }
 
-func (store *IamGrpcStore) SetFilerAddressFunc(getFiler func() pb.ServerAddress, grpcDialOption grpc.DialOption) {
+func (store *IamGrpcStore) SetFilerAddressFunc(getFiler func() pb.ServerAddress, grpcDialOption pb.DialOption) {
 	store.mu.Lock()
 	defer store.mu.Unlock()
 	store.filerAddressFunc = getFiler

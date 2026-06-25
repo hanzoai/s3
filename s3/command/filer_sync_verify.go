@@ -16,7 +16,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
 )
 
 type SyncVerifyOptions struct {
@@ -173,7 +172,7 @@ type summaryRecord struct {
 // simpleFilerClient implements filer_pb.FilerClient for gRPC connections
 type simpleFilerClient struct {
 	grpcAddress    pb.ServerAddress
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 }
 
 func (c *simpleFilerClient) WithFilerClient(streamingMode bool, fn func(filer_pb.HanzoFilerClient) error) error {
@@ -191,7 +190,7 @@ func (c *simpleFilerClient) GetDataCenter() string {
 func runVerifySync(filerA, filerB pb.ServerAddress, aPath, bPath string,
 	isActivePassive bool, modifiedTimeAgo time.Duration,
 	jsonOutput bool,
-	grpcDialOptionA, grpcDialOptionB grpc.DialOption) error {
+	grpcDialOptionA, grpcDialOptionB pb.DialOption) error {
 
 	clientA := &simpleFilerClient{grpcAddress: filerA, grpcDialOption: grpcDialOptionA}
 	clientB := &simpleFilerClient{grpcAddress: filerB, grpcDialOption: grpcDialOptionB}
@@ -461,7 +460,6 @@ func compareDirectory(ctx context.Context,
 
 	return nil
 }
-
 
 func compareEntries(dir string, entryA, entryB *filer_pb.Entry, result *VerifyResult) {
 	result.fileCount.Add(1)

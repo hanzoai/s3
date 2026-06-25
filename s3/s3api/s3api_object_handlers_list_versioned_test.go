@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/rpc"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/stretchr/testify/assert"
-	grpc "google.golang.org/grpc"
 )
 
 // TestListObjectsWithVersionedObjects tests that versioned objects are properly listed
@@ -428,9 +428,9 @@ type customTestFilerClient struct {
 	traversedDirs *map[string]bool
 }
 
-func (c *customTestFilerClient) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.ListEntriesResponse], error) {
+func (c *customTestFilerClient) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest) (rpc.ServerStream[filer_pb.ListEntriesResponse], error) {
 	(*c.traversedDirs)[in.Directory] = true
-	return c.testFilerClient.ListEntries(ctx, in, opts...)
+	return c.testFilerClient.ListEntries(ctx, in)
 }
 
 // TestListObjectVersionsResult_XMLInterleaving validates that Version and DeleteMarker elements

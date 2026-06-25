@@ -13,7 +13,6 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"google.golang.org/grpc"
 )
 
 // OIDCProviderAuditEventType enumerates the lifecycle events emitted when an
@@ -35,11 +34,11 @@ const (
 
 // OIDCProviderAuditEvent is the payload emitted for each lifecycle event.
 type OIDCProviderAuditEvent struct {
-	Type      OIDCProviderAuditEventType `json:"type"`
-	ARN       string                     `json:"arn"`
-	URL       string                     `json:"url,omitempty"`
-	Detail    map[string]string          `json:"detail,omitempty"`
-	OccurredAt time.Time                 `json:"occurredAt"`
+	Type       OIDCProviderAuditEventType `json:"type"`
+	ARN        string                     `json:"arn"`
+	URL        string                     `json:"url,omitempty"`
+	Detail     map[string]string          `json:"detail,omitempty"`
+	OccurredAt time.Time                  `json:"occurredAt"`
 }
 
 // OIDCProviderAuditSink consumes lifecycle events. Implementations must be
@@ -101,7 +100,7 @@ func (m *MemoryAuditSink) Events() []*OIDCProviderAuditEvent {
 // the filename is `<unixnano>-<type>-<arnhash>.json`. For higher volumes,
 // switch to an append-only journal — the contract is just `Emit`.
 type FilerAuditSink struct {
-	grpcDialOption       grpc.DialOption
+	grpcDialOption       pb.DialOption
 	basePath             string
 	filerAddressProvider func() string
 }

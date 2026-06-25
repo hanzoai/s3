@@ -7,15 +7,16 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/hanzoai/s3/s3/admin/topology"
 	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
 	"github.com/hanzoai/s3/s3/util"
 	workertypes "github.com/hanzoai/s3/s3/worker/types"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -41,10 +42,10 @@ type ecBalanceWorkerConfig struct {
 
 // ECBalanceHandler is the plugin job handler for EC shard balancing.
 type ECBalanceHandler struct {
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 }
 
-func NewECBalanceHandler(grpcDialOption grpc.DialOption) *ECBalanceHandler {
+func NewECBalanceHandler(grpcDialOption pb.DialOption) *ECBalanceHandler {
 	return &ECBalanceHandler{grpcDialOption: grpcDialOption}
 }
 

@@ -10,19 +10,19 @@ import (
 	"time"
 
 	filer_pb "github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/filerstub"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
 )
 
 // subFakeFiler streams a fixed set of metadata events for SubscribeMetadata.
 type subFakeFiler struct {
-	filer_pb.UnimplementedHanzoFilerServer
+	filerstub.FilerServer
 	dirs []string
 }
 
-func (f *subFakeFiler) SubscribeMetadata(req *filer_pb.SubscribeMetadataRequest, stream grpc.ServerStreamingServer[filer_pb.SubscribeMetadataResponse]) error {
+func (f *subFakeFiler) SubscribeMetadata(req *filer_pb.SubscribeMetadataRequest, stream filer_pb.HanzoFiler_SubscribeMetadataServer) error {
 	for i, d := range f.dirs {
 		if err := stream.Send(&filer_pb.SubscribeMetadataResponse{
 			Directory: d,
@@ -86,11 +86,11 @@ func TestStreamServerSubscribeMetadata(t *testing.T) {
 // subLeakFiler blocks SubscribeMetadata on the stream context — modelling the
 // real engine, which gates its idle wait on stream.Context().Done().
 type subLeakFiler struct {
-	filer_pb.UnimplementedHanzoFilerServer
+	filerstub.FilerServer
 	released chan struct{}
 }
 
-func (f *subLeakFiler) SubscribeMetadata(_ *filer_pb.SubscribeMetadataRequest, stream grpc.ServerStreamingServer[filer_pb.SubscribeMetadataResponse]) error {
+func (f *subLeakFiler) SubscribeMetadata(_ *filer_pb.SubscribeMetadataRequest, stream filer_pb.HanzoFiler_SubscribeMetadataServer) error {
 	<-stream.Context().Done() // idle: only cancellation frees us
 	close(f.released)
 	return stream.Context().Err()

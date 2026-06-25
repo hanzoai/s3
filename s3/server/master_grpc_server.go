@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"sort"
 	"time"
 
@@ -18,9 +17,6 @@ import (
 	"github.com/hanzoai/s3/s3/util"
 
 	"github.com/seaweedfs/raft"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/status"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
@@ -103,7 +99,7 @@ func (ms *MasterServer) SendHeartbeat(stream master_pb.Hanzo_SendHeartbeatServer
 		heartbeat, err := stream.Recv()
 		if err != nil {
 			// Graceful shutdown on either side cancels the stream; don't warn.
-			canceled := errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled
+			canceled := errors.Is(err, context.Canceled)
 			switch {
 			case canceled && dn != nil:
 				glog.V(1).Infof("SendHeartbeat.Recv server %s:%d canceled: %v", dn.Ip, dn.Port, err)
@@ -478,24 +474,11 @@ func (ms *MasterServer) deleteClient(clientName string) {
 }
 
 func findClientAddress(ctx context.Context, grpcPort uint32) string {
-	// fmt.Printf("FromContext %+v\n", ctx)
-	pr, ok := peer.FromContext(ctx)
-	if !ok {
-		glog.Error("failed to get peer from ctx")
-		return ""
-	}
-	if pr.Addr == net.Addr(nil) {
-		glog.Error("failed to get peer address")
-		return ""
-	}
-	if grpcPort == 0 {
-		return pr.Addr.String()
-	}
-	if tcpAddr, ok := pr.Addr.(*net.TCPAddr); ok {
-		externalIP := tcpAddr.IP
-		return util.JoinHostPort(externalIP.String(), int(grpcPort))
-	}
-	return pr.Addr.String()
+	// The ZAP transport exposes no peer address at the stream seam; every caller
+	// (heartbeat, KeepConnected, SubscribeMetadata) carries the client's address
+	// in its request payload instead. Nothing to derive from ctx here.
+	_, _ = ctx, grpcPort
+	return ""
 
 }
 

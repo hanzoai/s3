@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
@@ -249,7 +247,7 @@ func doVolumeTierCompact(commandEnv *CommandEnv, writer io.Writer, rv remoteVolu
 	return nil
 }
 
-func checkVolumeGarbage(grpcDialOption grpc.DialOption, vid needle.VolumeId, server pb.ServerAddress) (float64, error) {
+func checkVolumeGarbage(grpcDialOption pb.DialOption, vid needle.VolumeId, server pb.ServerAddress) (float64, error) {
 	var garbageRatio float64
 	err := operation.WithVolumeServerClient(false, server, grpcDialOption, func(client volume_server_pb.VolumeServerClient) error {
 		resp, err := client.VacuumVolumeCheck(context.Background(), &volume_server_pb.VacuumVolumeCheckRequest{
@@ -264,7 +262,7 @@ func checkVolumeGarbage(grpcDialOption grpc.DialOption, vid needle.VolumeId, ser
 	return garbageRatio, err
 }
 
-func compactVolumeOnServer(grpcDialOption grpc.DialOption, writer io.Writer, vid needle.VolumeId, server pb.ServerAddress) error {
+func compactVolumeOnServer(grpcDialOption pb.DialOption, writer io.Writer, vid needle.VolumeId, server pb.ServerAddress) error {
 	// compact
 	err := operation.WithVolumeServerClient(true, server, grpcDialOption, func(client volume_server_pb.VolumeServerClient) error {
 		stream, err := client.VacuumVolumeCompact(context.Background(), &volume_server_pb.VacuumVolumeCompactRequest{
@@ -309,7 +307,7 @@ func compactVolumeOnServer(grpcDialOption grpc.DialOption, writer io.Writer, vid
 	return nil
 }
 
-func vacuumVolumeCleanup(grpcDialOption grpc.DialOption, vid needle.VolumeId, server pb.ServerAddress) error {
+func vacuumVolumeCleanup(grpcDialOption pb.DialOption, vid needle.VolumeId, server pb.ServerAddress) error {
 	return operation.WithVolumeServerClient(false, server, grpcDialOption, func(client volume_server_pb.VolumeServerClient) error {
 		_, err := client.VacuumVolumeCleanup(context.Background(), &volume_server_pb.VacuumVolumeCleanupRequest{
 			VolumeId: uint32(vid),

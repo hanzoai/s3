@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
@@ -44,7 +45,7 @@ func setupECStoreWithMixedDisks(t *testing.T) (store *Store, drainedShardMsgs *[
 	expectedShardSize := calculateExpectedShardSize(datSize, dataShards)
 	diskIOProbeConfig := stats.DefaultDiskIOProbeConfig()
 
-	store = NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store = NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{hddDir, ssdDir},
 		[]int32{100, 100},
 		[]util.MinFreeSpace{{}, {}},

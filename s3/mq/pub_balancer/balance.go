@@ -2,7 +2,7 @@ package pub_balancer
 
 import (
 	"github.com/hanzoai/s3/s3/mq/topic"
-	"google.golang.org/grpc"
+	"github.com/hanzoai/s3/s3/pb"
 )
 
 /*
@@ -59,7 +59,7 @@ func (balancer *PubBalancer) BalancePublishers() []BalanceAction {
 	return []BalanceAction{action}
 }
 
-func (balancer *PubBalancer) ExecuteBalanceAction(actions []BalanceAction, grpcDialOption grpc.DialOption) (err error) {
+func (balancer *PubBalancer) ExecuteBalanceAction(actions []BalanceAction, grpcDialOption pb.DialOption) (err error) {
 	for _, action := range actions {
 		switch action.(type) {
 		case *BalanceActionMove:

@@ -6,17 +6,18 @@ import (
 	"testing"
 	"time"
 
-	pluginworkers "github.com/hanzoai/s3/test/plugin_workers"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/hanzoai/s3/s3/pb"
+
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
 	ecstorage "github.com/hanzoai/s3/s3/storage/erasure_coding"
 	"github.com/hanzoai/s3/s3/worker/tasks/erasure_coding"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/proto"
+	pluginworkers "github.com/hanzoai/s3/test/plugin_workers"
 )
 
 type topologySpec struct {
@@ -153,7 +154,7 @@ func TestErasureCodingDetectionAcrossTopologies(t *testing.T) {
 			response := buildVolumeListResponse(t, tc.topology, volumeID)
 			master := pluginworkers.NewMasterServer(t, response)
 
-			dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+			dialOption := pb.DialOption{}
 			handler := erasure_coding.NewErasureCodingHandler(dialOption, t.TempDir())
 			harness := pluginworkers.NewHarness(t, pluginworkers.HarnessConfig{
 				WorkerOptions: pluginworker.WorkerOptions{

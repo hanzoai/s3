@@ -6,9 +6,8 @@ import (
 	"io"
 	"testing"
 
+	"github.com/hanzoai/s3/s3/pb/rpc"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -26,13 +25,6 @@ func (s *snapshotListStream) Recv() (*ListEntriesResponse, error) {
 	return resp, nil
 }
 
-func (s *snapshotListStream) Header() (metadata.MD, error) { return metadata.MD{}, nil }
-func (s *snapshotListStream) Trailer() metadata.MD         { return metadata.MD{} }
-func (s *snapshotListStream) CloseSend() error             { return nil }
-func (s *snapshotListStream) Context() context.Context     { return context.Background() }
-func (s *snapshotListStream) SendMsg(any) error            { return nil }
-func (s *snapshotListStream) RecvMsg(any) error            { return nil }
-
 type snapshotListClient struct {
 	HanzoFilerClient
 	entries    []*Entry
@@ -41,7 +33,7 @@ type snapshotListClient struct {
 	listCalled bool
 }
 
-func (c *snapshotListClient) ListEntries(ctx context.Context, in *ListEntriesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ListEntriesResponse], error) {
+func (c *snapshotListClient) ListEntries(ctx context.Context, in *ListEntriesRequest) (rpc.ServerStream[ListEntriesResponse], error) {
 	c.listCalled = true
 	c.requests = append(c.requests, proto.Clone(in).(*ListEntriesRequest))
 

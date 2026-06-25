@@ -13,9 +13,6 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // MemoryPolicyStore implements PolicyStore using in-memory storage
@@ -179,7 +176,7 @@ func copyPolicyConditionValue(value interface{}) interface{} {
 
 // FilerPolicyStore implements PolicyStore using Hanzo filer
 type FilerPolicyStore struct {
-	grpcDialOption       grpc.DialOption
+	grpcDialOption       pb.DialOption
 	basePath             string
 	filerAddressProvider func() string
 }
@@ -520,10 +517,9 @@ func isNotFoundPolicyStoreError(err error) bool {
 	if err == nil {
 		return false
 	}
-	// Transport-agnostic: gRPC carries codes.NotFound; the native ZAP filer
-	// transport carries the error string, which includes the filer's ErrNotFound
-	// message verbatim (the server reply ships herr.Error()).
-	return errors.Is(err, filer_pb.ErrNotFound) || status.Code(err) == codes.NotFound ||
+	// The filer speaks ZAP: the error arrives as a string carrying the filer's
+	// ErrNotFound message verbatim (the server reply ships herr.Error()).
+	return errors.Is(err, filer_pb.ErrNotFound) ||
 		strings.Contains(err.Error(), filer_pb.ErrNotFound.Error())
 }
 
@@ -531,12 +527,8 @@ func isAlreadyExistsPolicyStoreError(err error) bool {
 	if err == nil {
 		return false
 	}
-	// Transport-agnostic: the gRPC path carries a codes.AlreadyExists status; the
-	// native ZAP filer transport carries only the error string, which includes the
-	// PascalCase code name ("...code = AlreadyExists desc = ..."). Matching the
-	// code name (not a free-form "already exists") avoids false positives.
-	if status.Code(err) == codes.AlreadyExists {
-		return true
-	}
-	return strings.Contains(err.Error(), codes.AlreadyExists.String())
+	// The filer speaks ZAP: the error string carries the PascalCase code name
+	// ("AlreadyExists: ..."). Matching the code name (not a free-form "already
+	// exists") avoids false positives.
+	return strings.Contains(err.Error(), "AlreadyExists")
 }

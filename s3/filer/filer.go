@@ -18,7 +18,7 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 
-	"google.golang.org/grpc"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
@@ -26,7 +26,6 @@ import (
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/log_buffer"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"golang.org/x/sync/singleflight"
 )
 
 const (
@@ -46,7 +45,7 @@ type Filer struct {
 	Store                   VirtualFilerStore
 	MasterClient            *wdclient.MasterClient
 	fileIdDeletionQueue     *util.UnboundedQueue
-	GrpcDialOption          grpc.DialOption
+	GrpcDialOption          pb.DialOption
 	DirBucketsPath          string
 	Cipher                  bool
 	LocalMetaLogBuffer      *log_buffer.LogBuffer
@@ -67,7 +66,7 @@ type Filer struct {
 	persistedLogCache       *persistedLogCache
 }
 
-func NewFiler(masters pb.ServerDiscovery, grpcDialOption grpc.DialOption, filerHost pb.ServerAddress, filerGroup string, collection string, replication string, dataCenter string, maxFilenameLength uint32, notifyFn func()) *Filer {
+func NewFiler(masters pb.ServerDiscovery, grpcDialOption pb.DialOption, filerHost pb.ServerAddress, filerGroup string, collection string, replication string, dataCenter string, maxFilenameLength uint32, notifyFn func()) *Filer {
 	f := &Filer{
 		MasterClient:        wdclient.NewMasterClient(grpcDialOption, filerGroup, cluster.FilerType, filerHost, dataCenter, "", masters),
 		fileIdDeletionQueue: util.NewUnboundedQueue(),

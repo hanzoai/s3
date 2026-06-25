@@ -11,6 +11,8 @@ import (
 	"reflect"
 
 	"github.com/gorilla/mux"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/hanzoai/s3/s3/credential"
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/glog"
@@ -24,8 +26,6 @@ import (
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/request_id"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
 )
 
 type IamS3ApiConfig interface {
@@ -45,7 +45,7 @@ type IamServerOption struct {
 	Masters        map[string]pb.ServerAddress
 	Filers         []pb.ServerAddress
 	Port           int
-	GrpcDialOption grpc.DialOption
+	GrpcDialOption pb.DialOption
 }
 
 type IamApiServer struct {

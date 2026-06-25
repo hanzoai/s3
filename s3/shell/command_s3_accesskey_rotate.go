@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -61,7 +62,7 @@ func (c *commandS3AccessKeyRotate) Do(args []string, commandEnv *CommandEnv, wri
 
 	err = commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
 		// Create new key first so there's no gap without credentials
-		_, _, err := client.CreateAccessKey(iamwire.NewCreateAccessKeyRequest(iamwire.CreateAccessKeyRequestInput{
+		_, _, err := client.CreateAccessKey(context.Background(), iamwire.NewCreateAccessKeyRequest(iamwire.CreateAccessKeyRequestInput{
 			Username: *user,
 			Credential: iamwire.CredentialInputFromPB(&iam_pb.Credential{
 				AccessKey: newAK,
@@ -74,7 +75,7 @@ func (c *commandS3AccessKeyRotate) Do(args []string, commandEnv *CommandEnv, wri
 		}
 
 		// Delete old key
-		_, _, err = client.DeleteAccessKey(iamwire.NewDeleteAccessKeyRequest(iamwire.DeleteAccessKeyRequestInput{
+		_, _, err = client.DeleteAccessKey(context.Background(), iamwire.NewDeleteAccessKeyRequest(iamwire.DeleteAccessKeyRequestInput{
 			Username:  *user,
 			AccessKey: *oldKey,
 		}))

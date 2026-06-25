@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/s3/pb"
-	"github.com/hanzoai/s3/s3/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/util"
 )
 
 func TestEnsureEntryInodeMatchesFuseDerivation(t *testing.T) {
@@ -55,7 +56,7 @@ func TestEnsureEntryInodeSharesAcrossHardLinks(t *testing.T) {
 
 func newTestFilerWithStubStore() (*Filer, *stubFilerStore) {
 	store := newStubFilerStore()
-	f := NewFiler(pb.ServerDiscovery{}, nil, "", "", "", "", "", 255, nil)
+	f := NewFiler(pb.ServerDiscovery{}, pb.DialOption{}, "", "", "", "", "", 255, nil)
 	f.Store = NewFilerStoreWrapper(store)
 	return f, store
 }

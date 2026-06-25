@@ -18,7 +18,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/needle"
 	"github.com/hanzoai/s3/s3/storage/super_block"
 	"github.com/hanzoai/s3/s3/storage/types"
-	"google.golang.org/grpc"
 )
 
 // mergeIdleTimeoutSeconds is the timeout for idle streams during needle tailing.
@@ -228,7 +227,7 @@ func (s *tailNeedleStream) setErr(err error) {
 	s.errMu.Unlock()
 }
 
-func startTailNeedleStream(grpcDialOption grpc.DialOption, volumeId needle.VolumeId, server pb.ServerAddress, done <-chan struct{}) *tailNeedleStream {
+func startTailNeedleStream(grpcDialOption pb.DialOption, volumeId needle.VolumeId, server pb.ServerAddress, done <-chan struct{}) *tailNeedleStream {
 	ch := make(chan *needle.Needle, 32)
 	stream := &tailNeedleStream{ch: ch}
 	go func() {
@@ -436,7 +435,7 @@ func needleBlobFromNeedle(n *needle.Needle, version needle.Version) ([]byte, typ
 	return buf[:read], size, nil
 }
 
-func allocateMergeVolumeOnThirdLocation(grpcDialOption grpc.DialOption, allLocations []location, replicas []*VolumeReplica, info *master_pb.VolumeInformationMessage, replicaPlacement *super_block.ReplicaPlacement) (pb.ServerAddress, error) {
+func allocateMergeVolumeOnThirdLocation(grpcDialOption pb.DialOption, allLocations []location, replicas []*VolumeReplica, info *master_pb.VolumeInformationMessage, replicaPlacement *super_block.ReplicaPlacement) (pb.ServerAddress, error) {
 	replicaNodes := map[string]struct{}{}
 	for _, replica := range replicas {
 		replicaNodes[replica.location.dataNode.Id] = struct{}{}
@@ -460,7 +459,7 @@ func allocateMergeVolumeOnThirdLocation(grpcDialOption grpc.DialOption, allLocat
 	return "", fmt.Errorf("no third location available to merge volume %d", info.Id)
 }
 
-func allocateMergeVolume(grpcDialOption grpc.DialOption, server pb.ServerAddress, info *master_pb.VolumeInformationMessage, replicaPlacement *super_block.ReplicaPlacement) error {
+func allocateMergeVolume(grpcDialOption pb.DialOption, server pb.ServerAddress, info *master_pb.VolumeInformationMessage, replicaPlacement *super_block.ReplicaPlacement) error {
 	return operation.WithVolumeServerClient(false, server, grpcDialOption, func(client volume_server_pb.VolumeServerClient) error {
 		_, err := client.AllocateVolume(context.Background(), &volume_server_pb.AllocateVolumeRequest{
 			VolumeId:    info.Id,
@@ -498,7 +497,7 @@ func ensureVolumeReadonly(commandEnv *CommandEnv, replicas []*VolumeReplica) ([]
 
 // verifyMergedVolume checks the freshly merged copy is at least as complete as the
 // most complete source replica before the originals are overwritten.
-func verifyMergedVolume(grpcDialOption grpc.DialOption, volumeId needle.VolumeId, targetServer pb.ServerAddress, replicas []*VolumeReplica) error {
+func verifyMergedVolume(grpcDialOption pb.DialOption, volumeId needle.VolumeId, targetServer pb.ServerAddress, replicas []*VolumeReplica) error {
 	merged, err := readVolumeStatus(grpcDialOption, targetServer, volumeId)
 	if err != nil {
 		return fmt.Errorf("read merged volume %d on %s: %w", volumeId, targetServer, err)
@@ -543,7 +542,7 @@ func liveNeedleCount(status *volume_server_pb.VolumeStatusResponse) uint64 {
 	return status.FileCount - status.FileDeletedCount
 }
 
-func readVolumeStatus(grpcDialOption grpc.DialOption, server pb.ServerAddress, volumeId needle.VolumeId) (*volume_server_pb.VolumeStatusResponse, error) {
+func readVolumeStatus(grpcDialOption pb.DialOption, server pb.ServerAddress, volumeId needle.VolumeId) (*volume_server_pb.VolumeStatusResponse, error) {
 	var resp *volume_server_pb.VolumeStatusResponse
 	err := operation.WithVolumeServerClient(false, server, grpcDialOption, func(client volume_server_pb.VolumeServerClient) error {
 		r, statusErr := client.VolumeStatus(context.Background(), &volume_server_pb.VolumeStatusRequest{VolumeId: uint32(volumeId)})
@@ -577,7 +576,7 @@ func locationHasDiskType(loc location, diskType string) bool {
 	return false
 }
 
-func markReplicasWritable(grpcDialOption grpc.DialOption, replicas []*VolumeReplica, writable bool, persist bool) error {
+func markReplicasWritable(grpcDialOption pb.DialOption, replicas []*VolumeReplica, writable bool, persist bool) error {
 	for _, replica := range replicas {
 		server := pb.NewServerAddressFromDataNode(replica.location.dataNode)
 		err := operation.WithVolumeServerClient(false, server, grpcDialOption, func(client volume_server_pb.VolumeServerClient) error {

@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/storage/needle_map"
 	"github.com/hanzoai/s3/s3/storage/types"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // TestDoVolumeCheckDiskDoesNotResurrectAbsentNeedle verifies that a needle
@@ -31,7 +30,7 @@ func TestDoVolumeCheckDiskDoesNotResurrectAbsentNeedle(t *testing.T) {
 	vcd := &volumeCheckDisk{
 		commandEnv: &CommandEnv{
 			option: &ShellOptions{
-				GrpcDialOption: grpc.WithTransportCredentials(insecure.NewCredentials()),
+				GrpcDialOption: pb.DialOption{},
 			},
 		},
 		writer:             &buf,

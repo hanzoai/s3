@@ -6,14 +6,15 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/hanzoai/s3/s3/admin/topology"
 	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
 	workertypes "github.com/hanzoai/s3/s3/worker/types"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -34,14 +35,14 @@ func init() {
 
 // VacuumHandler is the plugin job handler for vacuum job type.
 type VacuumHandler struct {
-	grpcDialOption          grpc.DialOption
+	grpcDialOption          pb.DialOption
 	maxExecutionConcurrency int32
 }
 
 // NewVacuumHandler creates a VacuumHandler with the given gRPC dial option and
 // maximum execution concurrency. When maxExecutionConcurrency is zero or
 // negative, DefaultMaxExecutionConcurrency is used as the fallback.
-func NewVacuumHandler(grpcDialOption grpc.DialOption, maxExecutionConcurrency int32) *VacuumHandler {
+func NewVacuumHandler(grpcDialOption pb.DialOption, maxExecutionConcurrency int32) *VacuumHandler {
 	return &VacuumHandler{grpcDialOption: grpcDialOption, maxExecutionConcurrency: maxExecutionConcurrency}
 }
 

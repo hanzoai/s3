@@ -14,8 +14,6 @@ import (
 
 	transport "github.com/Jille/raft-grpc-transport"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/pb"
 
 	hashicorpRaft "github.com/hashicorp/raft"
@@ -26,7 +24,7 @@ import (
 )
 
 type RaftServerOption struct {
-	GrpcDialOption    grpc.DialOption
+	GrpcDialOption    pb.DialOption
 	Peers             map[string]pb.ServerAddress
 	ServerAddr        pb.ServerAddress
 	DataDir           string
@@ -142,7 +140,7 @@ func NewRaftServer(option *RaftServerOption) (*RaftServer, error) {
 	registerMaxVolumeIdCommand()
 
 	var err error
-	transporter := raft.NewGrpcTransporter(option.GrpcDialOption)
+	transporter := raft.NewGrpcTransporter(option.GrpcDialOption.Grpc())
 	glog.V(0).Infof("Starting RaftServer with %v", option.ServerAddr)
 
 	if !option.RaftResumeState {

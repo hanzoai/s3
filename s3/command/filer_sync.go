@@ -24,7 +24,6 @@ import (
 	"github.com/hanzoai/s3/s3/util/grace"
 	util_http_client "github.com/hanzoai/s3/s3/util/http/client"
 	"github.com/hanzoai/s3/s3/util/wildcard"
-	"google.golang.org/grpc"
 )
 
 type SyncOptions struct {
@@ -71,7 +70,7 @@ const (
 // syncState tracks the current sync state for graceful shutdown checkpoint saving
 type syncState struct {
 	processor            *MetadataProcessor
-	grpcDialOption       grpc.DialOption
+	grpcDialOption       pb.DialOption
 	targetFiler          pb.ServerAddress
 	sourcePath           string
 	sourceFilerSignature int32
@@ -318,7 +317,7 @@ func runFilerSynchronize(cmd *Command, args []string) bool {
 }
 
 // initOffsetFromTsMs Initialize offset
-func initOffsetFromTsMs(grpcDialOption grpc.DialOption, targetFiler pb.ServerAddress, sourceFilerSignature int32, fromTsMs int64, signaturePrefix string) error {
+func initOffsetFromTsMs(grpcDialOption pb.DialOption, targetFiler pb.ServerAddress, sourceFilerSignature int32, fromTsMs int64, signaturePrefix string) error {
 	if fromTsMs <= 0 {
 		return nil
 	}
@@ -333,7 +332,7 @@ func initOffsetFromTsMs(grpcDialOption grpc.DialOption, targetFiler pb.ServerAdd
 	return nil
 }
 
-func doSubscribeFilerMetaChanges(clientId int32, clientEpoch int32, sourceGrpcDialOption grpc.DialOption, sourceFiler pb.ServerAddress, sourcePath string, sourceExcludePaths []string, sourceReadChunkFromFiler bool, targetGrpcDialOption grpc.DialOption, targetFiler pb.ServerAddress, targetPath string,
+func doSubscribeFilerMetaChanges(clientId int32, clientEpoch int32, sourceGrpcDialOption pb.DialOption, sourceFiler pb.ServerAddress, sourcePath string, sourceExcludePaths []string, sourceReadChunkFromFiler bool, targetGrpcDialOption pb.DialOption, targetFiler pb.ServerAddress, targetPath string,
 	replicationStr, collection string, ttlSec int, sinkWriteChunkByFiler bool, diskType string, debug bool, concurrency int, chunkConcurrency int, doDeleteFiles bool, sourceFilerSignature int32, targetFilerSignature int32, statePtr *atomic.Pointer[syncState],
 	sourceHttpClient *util_http_client.HTTPClient, sinkHttpClient *util_http_client.HTTPClient) error {
 
@@ -462,7 +461,7 @@ func getSignaturePrefixByPath(path string) string {
 	}
 }
 
-func getOffset(grpcDialOption grpc.DialOption, filer pb.ServerAddress, signaturePrefix string, signature int32) (lastOffsetTsNs int64, readErr error) {
+func getOffset(grpcDialOption pb.DialOption, filer pb.ServerAddress, signaturePrefix string, signature int32) (lastOffsetTsNs int64, readErr error) {
 
 	readErr = pb.WithFilerClient(false, signature, filer, grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
 		syncKey := []byte(signaturePrefix + "____")
@@ -489,7 +488,7 @@ func getOffset(grpcDialOption grpc.DialOption, filer pb.ServerAddress, signature
 
 }
 
-func setOffset(grpcDialOption grpc.DialOption, filer pb.ServerAddress, signaturePrefix string, signature int32, offsetTsNs int64) error {
+func setOffset(grpcDialOption pb.DialOption, filer pb.ServerAddress, signaturePrefix string, signature int32, offsetTsNs int64) error {
 	return pb.WithFilerClient(false, signature, filer, grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
 
 		syncKey := []byte(signaturePrefix + "____")

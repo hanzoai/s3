@@ -13,7 +13,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/util"
 
-	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/hanzoai/s3/s3/glog"
@@ -26,7 +25,7 @@ type MetaAggregator struct {
 	filer          *Filer
 	self           pb.ServerAddress
 	isLeader       bool
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 	MetaLogBuffer  *log_buffer.LogBuffer
 	peerChans      map[pb.ServerAddress]chan struct{}
 	peerChansLock  sync.Mutex
@@ -38,7 +37,7 @@ type MetaAggregator struct {
 
 // MetaAggregator only aggregates data "on the fly". The logs are not re-persisted to disk.
 // The old data comes from what each LocalMetadata persisted on disk.
-func NewMetaAggregator(filer *Filer, self pb.ServerAddress, grpcDialOption grpc.DialOption) *MetaAggregator {
+func NewMetaAggregator(filer *Filer, self pb.ServerAddress, grpcDialOption pb.DialOption) *MetaAggregator {
 	t := &MetaAggregator{
 		filer:          filer,
 		self:           self,

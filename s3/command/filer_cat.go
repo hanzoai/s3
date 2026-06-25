@@ -11,7 +11,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/util"
@@ -22,7 +21,7 @@ var (
 )
 
 type FilerCatOptions struct {
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 	filerAddress   pb.ServerAddress
 	filerClient    filer_pb.HanzoFilerClient
 	output         *string

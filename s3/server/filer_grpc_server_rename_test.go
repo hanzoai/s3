@@ -18,8 +18,6 @@ import (
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/log_buffer"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -224,7 +222,7 @@ func swapNotificationQueue(t *testing.T, q notification.MessageQueue) {
 }
 
 func newRenameTestFiler(store *renameTestStore) *filer.Filer {
-	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOption := pb.DialOption{}
 	masterClient := wdclient.NewMasterClient(
 		dialOption,
 		"test",

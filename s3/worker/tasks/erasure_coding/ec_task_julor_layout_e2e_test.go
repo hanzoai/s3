@@ -9,14 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/test/volume_server/framework"
-	"github.com/hanzoai/s3/test/volume_server/matrix"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	"github.com/hanzoai/s3/s3/storage/erasure_coding"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/hanzoai/s3/test/volume_server/framework"
+	"github.com/hanzoai/s3/test/volume_server/matrix"
 )
 
 // Reproduces the issue-9478 volume-13 layout end to end on a multi-server,
@@ -39,7 +40,7 @@ func TestEcEncodeJulorLayoutConverges(t *testing.T) {
 
 	const disksPerServer = 2
 	cluster := framework.StartMultiVolumeClusterWithDisks(t, matrix.P1(), 3, disksPerServer)
-	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOption := pb.DialOption{}
 
 	const (
 		volumeID   = uint32(9500)
@@ -108,9 +109,9 @@ func TestEcEncodeJulorLayoutConverges(t *testing.T) {
 		VolumeId:   volumeID,
 		Collection: collection,
 		Sources: []*worker_pb.TaskSource{
-			{Node: addr(srcServer), VolumeId: volumeID},                         // real source
-			{Node: addr(stubServer), VolumeId: volumeID},                        // 0-byte stub
-			{Node: addr(srcServer), VolumeId: volumeID, ShardIds: staleShards},  // stale EC shards to clear
+			{Node: addr(srcServer), VolumeId: volumeID},                        // real source
+			{Node: addr(stubServer), VolumeId: volumeID},                       // 0-byte stub
+			{Node: addr(srcServer), VolumeId: volumeID, ShardIds: staleShards}, // stale EC shards to clear
 		},
 		Targets: targets,
 		TaskParams: &worker_pb.TaskParams_ErasureCodingParams{

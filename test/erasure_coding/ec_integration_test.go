@@ -58,7 +58,7 @@ func TestECEncodingVolumeLocationTimingBug(t *testing.T) {
 	// Create command environment
 	options := &shell.ShellOptions{
 		Masters:        stringPtr("127.0.0.1:9333"),
-		GrpcDialOption: grpc.WithInsecure(),
+		GrpcDialOption: pb.DialOption{},
 		FilerGroup:     stringPtr("default"),
 	}
 	commandEnv := shell.NewCommandEnv(options)
@@ -263,7 +263,7 @@ func TestECEncodingMasterTimingRaceCondition(t *testing.T) {
 	// Create command environment
 	options := &shell.ShellOptions{
 		Masters:        stringPtr("127.0.0.1:9333"),
-		GrpcDialOption: grpc.WithInsecure(),
+		GrpcDialOption: pb.DialOption{},
 		FilerGroup:     stringPtr("default"),
 	}
 	commandEnv := shell.NewCommandEnv(options)
@@ -510,7 +510,7 @@ func uploadTestData(data []byte, masterAddress string) (needle.VolumeId, error) 
 	// Upload data to get a file ID
 	assignResult, err := operation.Assign(context.Background(), func(ctx context.Context) pb.ServerAddress {
 		return pb.ServerAddress(masterAddress)
-	}, grpc.WithInsecure(), &operation.VolumeAssignRequest{
+	}, pb.DialOption{}, &operation.VolumeAssignRequest{
 		Count:       1,
 		Collection:  "test",
 		Replication: "000",
@@ -807,7 +807,7 @@ func TestDiskAwareECRebalancing(t *testing.T) {
 	// Create command environment
 	options := &shell.ShellOptions{
 		Masters:        stringPtr("127.0.0.1:9334"),
-		GrpcDialOption: grpc.WithInsecure(),
+		GrpcDialOption: pb.DialOption{},
 		FilerGroup:     stringPtr("default"),
 	}
 	commandEnv := shell.NewCommandEnv(options)
@@ -1117,7 +1117,7 @@ func startMultiDiskCluster(ctx context.Context, dataDir string) (*MultiDiskClust
 func uploadTestDataToMaster(data []byte, masterAddress string) (needle.VolumeId, error) {
 	assignResult, err := operation.Assign(context.Background(), func(ctx context.Context) pb.ServerAddress {
 		return pb.ServerAddress(masterAddress)
-	}, grpc.WithInsecure(), &operation.VolumeAssignRequest{
+	}, pb.DialOption{}, &operation.VolumeAssignRequest{
 		Count:       1,
 		Collection:  "test",
 		Replication: "000",
@@ -1240,7 +1240,7 @@ func TestECDiskTypeSupport(t *testing.T) {
 	// Create command environment
 	options := &shell.ShellOptions{
 		Masters:        stringPtr("127.0.0.1:9335"),
-		GrpcDialOption: grpc.WithInsecure(),
+		GrpcDialOption: pb.DialOption{},
 		FilerGroup:     stringPtr("default"),
 	}
 	commandEnv := shell.NewCommandEnv(options)
@@ -1513,7 +1513,7 @@ func startClusterWithDiskType(ctx context.Context, dataDir string, diskType stri
 func uploadTestDataWithDiskType(data []byte, masterAddress string, diskType string, collection string) (needle.VolumeId, error) {
 	assignResult, err := operation.Assign(context.Background(), func(ctx context.Context) pb.ServerAddress {
 		return pb.ServerAddress(masterAddress)
-	}, grpc.WithInsecure(), &operation.VolumeAssignRequest{
+	}, pb.DialOption{}, &operation.VolumeAssignRequest{
 		Count:       1,
 		Collection:  collection,
 		Replication: "000",
@@ -1580,7 +1580,7 @@ func TestECDiskTypeMixedCluster(t *testing.T) {
 	// Create command environment
 	options := &shell.ShellOptions{
 		Masters:        stringPtr("127.0.0.1:9336"),
-		GrpcDialOption: grpc.WithInsecure(),
+		GrpcDialOption: pb.DialOption{},
 		FilerGroup:     stringPtr("default"),
 	}
 	commandEnv := shell.NewCommandEnv(options)
@@ -1767,7 +1767,7 @@ func TestEvacuationFallbackBehavior(t *testing.T) {
 	// Create command environment
 	options := &shell.ShellOptions{
 		Masters:        stringPtr("127.0.0.1:9337"),
-		GrpcDialOption: grpc.WithInsecure(),
+		GrpcDialOption: pb.DialOption{},
 		FilerGroup:     stringPtr("default"),
 	}
 	commandEnv := shell.NewCommandEnv(options)
@@ -1860,7 +1860,7 @@ func TestCrossRackECPlacement(t *testing.T) {
 	// Create command environment
 	options := &shell.ShellOptions{
 		Masters:        stringPtr("127.0.0.1:9338"),
-		GrpcDialOption: grpc.WithInsecure(),
+		GrpcDialOption: pb.DialOption{},
 		FilerGroup:     stringPtr("default"),
 	}
 	commandEnv := shell.NewCommandEnv(options)
@@ -2211,7 +2211,7 @@ func TestECEncodeReplicatedVolumeSync(t *testing.T) {
 	// Create command environment
 	options := &shell.ShellOptions{
 		Masters:        stringPtr("127.0.0.1:9333"),
-		GrpcDialOption: grpc.WithInsecure(),
+		GrpcDialOption: pb.DialOption{},
 		FilerGroup:     stringPtr("default"),
 	}
 	commandEnv := shell.NewCommandEnv(options)
@@ -2310,7 +2310,7 @@ func TestECEncodeReplicatedVolumeSync(t *testing.T) {
 		extraNeedleId := uint64(999999) // Use a high needle ID unlikely to conflict
 		extraData := []byte("extra data written to only one replica to create divergence")
 
-		err := injectNeedleToOneReplica(grpc.WithInsecure(), volumeId, locations[0], extraNeedleId, extraData)
+		err := injectNeedleToOneReplica(pb.DialOption{}, volumeId, locations[0], extraNeedleId, extraData)
 		if err != nil {
 			t.Logf("Could not inject divergent needle (may not be supported): %v", err)
 			// Fall back to testing consistent path
@@ -2363,7 +2363,7 @@ func TestECEncodeReplicatedVolumeSync(t *testing.T) {
 }
 
 // injectNeedleToOneReplica writes a needle directly to one replica to create divergence
-func injectNeedleToOneReplica(grpcDialOption grpc.DialOption, vid needle.VolumeId, location wdclient.Location, needleId uint64, data []byte) error {
+func injectNeedleToOneReplica(grpcDialOption pb.DialOption, vid needle.VolumeId, location wdclient.Location, needleId uint64, data []byte) error {
 	return operation.WithVolumeServerClient(false, location.ServerAddress(), grpcDialOption, func(client volume_server_pb.VolumeServerClient) error {
 		blob, size := generateNeedleBlobV3(needleId, data)
 		_, err := client.WriteNeedleBlob(context.Background(), &volume_server_pb.WriteNeedleBlobRequest{
@@ -2414,7 +2414,7 @@ func uploadTestDataWithReplication(t *testing.T, masterAddr string, collection s
 	// Assign multiple file IDs from the same volume
 	assignResult, err := operation.Assign(context.Background(), func(ctx context.Context) pb.ServerAddress {
 		return pb.ServerAddress(masterAddr)
-	}, grpc.WithInsecure(), &operation.VolumeAssignRequest{
+	}, pb.DialOption{}, &operation.VolumeAssignRequest{
 		Count:       uint64(numFiles),
 		Collection:  collection,
 		Replication: replication,

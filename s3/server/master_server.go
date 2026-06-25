@@ -24,7 +24,6 @@ import (
 	"github.com/gorilla/mux"
 	hashicorpRaft "github.com/hashicorp/raft"
 	"github.com/seaweedfs/raft"
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
@@ -78,7 +77,7 @@ type MasterServer struct {
 	clientChansLock sync.RWMutex
 	clientChans     map[string]chan *master_pb.KeepConnectedResponse
 
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 
 	topologyIdGenLock sync.Mutex
 
@@ -534,7 +533,7 @@ func (ms *MasterServer) OnPeerUpdate(update *master_pb.ClusterNodeUpdate, startF
 		if zapClient, dialErr := masterwire.Dial("tcp", peerAddress.ToMasterZapAddress()); dialErr != nil {
 			pingFailed = true
 		} else {
-			_, pErr := zapClient.Ping(masterwire.PingRequestInput{Target: string(peerAddress), TargetType: cluster.MasterType})
+			_, pErr := zapClient.Ping(context.Background(), masterwire.PingRequestInput{Target: string(peerAddress), TargetType: cluster.MasterType})
 			zapClient.Close()
 			pingFailed = pErr != nil
 		}

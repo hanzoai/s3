@@ -161,7 +161,7 @@ func (f *Filer) doDeleteEntryMetaAndData(ctx context.Context, entry *Entry, shou
 func (f *Filer) DoDeleteCollection(collectionName string) (err error) {
 
 	return f.MasterClient.WithZapClient(func(client *masterwire.Client) error {
-		_, err := client.CollectionDelete(masterwire.CollectionDeleteRequestInput{
+		_, err := client.CollectionDelete(context.Background(), masterwire.CollectionDeleteRequestInput{
 			Name: collectionName,
 		})
 		if err != nil {

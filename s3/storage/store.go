@@ -13,8 +13,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/volume_info"
 	"github.com/hanzoai/s3/s3/util"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
@@ -59,7 +57,7 @@ type ReadOption struct {
  */
 type Store struct {
 	MasterAddress       pb.ServerAddress
-	grpcDialOption      grpc.DialOption
+	grpcDialOption      pb.DialOption
 	volumeSizeLimit     uint64      // read from the master
 	preallocate         atomic.Bool // read from the master
 	Ip                  string
@@ -87,7 +85,7 @@ func (s *Store) String() (str string) {
 }
 
 func NewStore(
-	grpcDialOption grpc.DialOption,
+	grpcDialOption pb.DialOption,
 	ip string, port int, grpcPort int, publicUrl string, id string,
 	dirnames []string, maxVolumeCounts []int32, minFreeSpaces []util.MinFreeSpace,
 	idxFolder string,

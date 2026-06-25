@@ -9,12 +9,11 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/rpc"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/s3api/s3lifecycle/bootstrap"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 // fakeFilerStream implements the ListEntries server-streaming client.
@@ -37,17 +36,6 @@ func (s *fakeFilerStream) Recv() (*filer_pb.ListEntriesResponse, error) {
 	s.idx++
 	return r, nil
 }
-func (s *fakeFilerStream) Header() (metadata.MD, error) { return metadata.MD{}, nil }
-func (s *fakeFilerStream) Trailer() metadata.MD         { return metadata.MD{} }
-func (s *fakeFilerStream) CloseSend() error             { return nil }
-func (s *fakeFilerStream) Context() context.Context {
-	if s.ctx != nil {
-		return s.ctx
-	}
-	return context.Background()
-}
-func (s *fakeFilerStream) SendMsg(any) error { return nil }
-func (s *fakeFilerStream) RecvMsg(any) error { return nil }
 
 // fakeFiler maps directory paths to their immediate children. Only
 // ListEntries is implemented; other methods of HanzoFilerClient are
@@ -59,7 +47,7 @@ type fakeFiler struct {
 	tree map[string][]*filer_pb.Entry
 }
 
-func (c *fakeFiler) LookupDirectoryEntry(_ context.Context, in *filer_pb.LookupDirectoryEntryRequest, _ ...grpc.CallOption) (*filer_pb.LookupDirectoryEntryResponse, error) {
+func (c *fakeFiler) LookupDirectoryEntry(_ context.Context, in *filer_pb.LookupDirectoryEntryRequest) (*filer_pb.LookupDirectoryEntryResponse, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for _, e := range c.tree[in.Directory] {
@@ -70,7 +58,7 @@ func (c *fakeFiler) LookupDirectoryEntry(_ context.Context, in *filer_pb.LookupD
 	return nil, filer_pb.ErrNotFound
 }
 
-func (c *fakeFiler) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest, _ ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.ListEntriesResponse], error) {
+func (c *fakeFiler) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest) (rpc.ServerStream[filer_pb.ListEntriesResponse], error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	src := c.tree[in.Directory]
@@ -148,8 +136,8 @@ func TestFilerListFunc_PropagatesTagsOnFlatFiles(t *testing.T) {
 func TestFilerListFunc_RecursesIntoSubdirs(t *testing.T) {
 	mtime := time.Now()
 	client := &fakeFiler{tree: map[string][]*filer_pb.Entry{
-		"/buckets/bkt":         {dir("logs"), file("root.txt", mtime, 1)},
-		"/buckets/bkt/logs":    {dir("2026"), file("a.log", mtime, 5)},
+		"/buckets/bkt":           {dir("logs"), file("root.txt", mtime, 1)},
+		"/buckets/bkt/logs":      {dir("2026"), file("a.log", mtime, 5)},
 		"/buckets/bkt/logs/2026": {file("b.log", mtime, 7)},
 	}}
 	listFn := FilerListFunc(client, "/buckets")
