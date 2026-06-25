@@ -71,7 +71,7 @@ func Serve(network, addr string, store ObjectStore) (*transport.Server, error) {
 // Client is the typed S3 ZAP service client internal services hold. It owns the
 // transport connection to one S3 endpoint.
 type Client struct {
-	conn *transport.Conn
+	conn transport.Conn
 	rpc  *objectwire.HanzoS3ObjectClient
 }
 
@@ -86,7 +86,7 @@ func Dial(network, addr string) (*Client, error) {
 }
 
 // NewClient wraps an already-established transport.Conn (TCP, Unix, or PQ-TLS).
-func NewClient(conn *transport.Conn) *Client {
+func NewClient(conn transport.Conn) *Client {
 	return &Client{conn: conn, rpc: objectwire.NewHanzoS3ObjectClient(conn, nil)}
 }
 

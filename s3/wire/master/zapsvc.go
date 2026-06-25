@@ -157,7 +157,7 @@ func Serve(network, addr string, b Backend) (*transport.Server, error) {
 // master client. Each method builds its request with masterwire.New* and decodes
 // the reply with masterwire.Wrap*.
 type Client struct {
-	conn *transport.Conn
+	conn transport.Conn
 	rpc  *HanzoClient
 }
 
@@ -172,7 +172,7 @@ func Dial(network, addr string) (*Client, error) {
 }
 
 // NewClient wraps an already-established transport.Conn (TCP, Unix, or PQ-TLS).
-func NewClient(conn *transport.Conn) *Client {
+func NewClient(conn transport.Conn) *Client {
 	return &Client{conn: conn, rpc: NewHanzoClient(conn, nil)}
 }
 

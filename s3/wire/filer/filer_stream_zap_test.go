@@ -14,7 +14,7 @@ import (
 // tests) with a TCP listener and returns a client Conn dialled to it. Mirrors
 // the transport package's own stream tests: real sockets, real frames, no
 // in-memory shortcut.
-func streamSrv(t *testing.T, h HanzoFilerStreamHandler) *transport.Conn {
+func streamSrv(t *testing.T, h HanzoFilerStreamHandler) transport.Conn {
 	t.Helper()
 	srv, err := transport.ListenStream("tcp", "127.0.0.1:0", nil, DispatchHanzoFilerStream(h))
 	if err != nil {
@@ -37,13 +37,13 @@ func streamSrv(t *testing.T, h HanzoFilerStreamHandler) *transport.Conn {
 // unused here.
 type listEntriesHandler struct{}
 
-func (listEntriesHandler) StreamRenameEntry([]byte, *transport.Stream) error      { return nil }
-func (listEntriesHandler) TraverseBfsMetadata([]byte, *transport.Stream) error    { return nil }
-func (listEntriesHandler) SubscribeMetadata([]byte, *transport.Stream) error      { return nil }
-func (listEntriesHandler) SubscribeLocalMetadata([]byte, *transport.Stream) error { return nil }
-func (listEntriesHandler) StreamMutateEntry(*transport.Stream) error              { return nil }
+func (listEntriesHandler) StreamRenameEntry([]byte, transport.Stream) error      { return nil }
+func (listEntriesHandler) TraverseBfsMetadata([]byte, transport.Stream) error    { return nil }
+func (listEntriesHandler) SubscribeMetadata([]byte, transport.Stream) error      { return nil }
+func (listEntriesHandler) SubscribeLocalMetadata([]byte, transport.Stream) error { return nil }
+func (listEntriesHandler) StreamMutateEntry(transport.Stream) error              { return nil }
 
-func (listEntriesHandler) ListEntries(req []byte, s *transport.Stream) error {
+func (listEntriesHandler) ListEntries(req []byte, s transport.Stream) error {
 	// The request is a real ListEntriesRequest wire buffer — read it zero-copy.
 	r, err := WrapListEntriesRequest(req)
 	if err != nil {
@@ -120,13 +120,13 @@ func TestStreamClient_ListEntries(t *testing.T) {
 // IsLast when the client half-closes.
 type echoMutateHandler struct{}
 
-func (echoMutateHandler) ListEntries([]byte, *transport.Stream) error             { return nil }
-func (echoMutateHandler) StreamRenameEntry([]byte, *transport.Stream) error       { return nil }
-func (echoMutateHandler) TraverseBfsMetadata([]byte, *transport.Stream) error     { return nil }
-func (echoMutateHandler) SubscribeMetadata([]byte, *transport.Stream) error       { return nil }
-func (echoMutateHandler) SubscribeLocalMetadata([]byte, *transport.Stream) error  { return nil }
+func (echoMutateHandler) ListEntries([]byte, transport.Stream) error             { return nil }
+func (echoMutateHandler) StreamRenameEntry([]byte, transport.Stream) error       { return nil }
+func (echoMutateHandler) TraverseBfsMetadata([]byte, transport.Stream) error     { return nil }
+func (echoMutateHandler) SubscribeMetadata([]byte, transport.Stream) error       { return nil }
+func (echoMutateHandler) SubscribeLocalMetadata([]byte, transport.Stream) error  { return nil }
 
-func (echoMutateHandler) StreamMutateEntry(s *transport.Stream) error {
+func (echoMutateHandler) StreamMutateEntry(s transport.Stream) error {
 	for {
 		frame, err := s.Recv()
 		if err == io.EOF {

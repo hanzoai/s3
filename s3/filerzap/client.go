@@ -42,7 +42,7 @@ import (
 // contract. unary issues calls over the filerwire client; stream opens streams
 // over the filerstream client on the SAME connection.
 type zapFilerClient struct {
-	conn   *transport.Conn
+	conn   transport.Conn
 	unary  *filerwire.HanzoFilerClient
 	stream *filerstream.Client
 }
@@ -51,7 +51,7 @@ type zapFilerClient struct {
 // filer_pb.HanzoFilerClient that routes over ZAP. cap is the optional capability
 // token attached to every unary request (nil for none). The caller owns conn's
 // lifecycle (Close when done); the adapter pools nothing.
-func NewZapFilerClient(conn *transport.Conn, capability []byte) filer_pb.HanzoFilerClient {
+func NewZapFilerClient(conn transport.Conn, capability []byte) filer_pb.HanzoFilerClient {
 	return &zapFilerClient{
 		conn:   conn,
 		unary:  filerwire.NewHanzoFilerClient(conn, capability),

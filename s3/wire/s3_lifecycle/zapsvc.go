@@ -99,13 +99,13 @@ func Serve(network, addr string, deleter LifecycleDeleter) (*transport.Server, e
 // lifecycle worker / dailyrun pipeline) hold. It owns the transport connection
 // to one S3 endpoint.
 type Client struct {
-	conn *transport.Conn
+	conn transport.Conn
 	rpc  *HanzoS3LifecycleInternalClient
 }
 
 // Dial connects to the S3 lifecycle ZAP service at addr (e.g.
 // "s3.hanzo.svc:18902") over plain TCP. For the PQ-secured mesh, establish a
-// *transport.Conn via transport.DialTLS with a transport.PQTLSConfig and use
+// transport.Conn via transport.DialTLS with a transport.PQTLSConfig and use
 // NewClient.
 func Dial(network, addr string) (*Client, error) {
 	conn, err := transport.Dial(network, addr)
@@ -116,7 +116,7 @@ func Dial(network, addr string) (*Client, error) {
 }
 
 // NewClient wraps an already-established transport.Conn (TCP, Unix, or PQ-TLS).
-func NewClient(conn *transport.Conn) *Client {
+func NewClient(conn transport.Conn) *Client {
 	return &Client{conn: conn, rpc: NewHanzoS3LifecycleInternalClient(conn, nil)}
 }
 

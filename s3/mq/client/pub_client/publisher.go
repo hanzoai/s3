@@ -24,7 +24,7 @@ type PublisherConfiguration struct {
 }
 
 type PublishClient struct {
-	stream *transport.Stream
+	stream transport.Stream
 	Broker string
 	Err    error
 }

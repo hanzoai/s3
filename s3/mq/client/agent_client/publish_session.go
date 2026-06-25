@@ -15,8 +15,8 @@ type PublishSession struct {
 	schema         *schema.Schema
 	partitionCount int
 	publisherName  string
-	conn           *transport.Conn
-	stream         *transport.Stream
+	conn           transport.Conn
+	stream         transport.Stream
 }
 
 func NewPublishSession(agentAddress string, topicSchema *schema.Schema, partitionCount int, publisherName string) (*PublishSession, error) {

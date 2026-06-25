@@ -76,7 +76,7 @@ type Broker interface {
 // Every Send/Recv body is a zero-copy mq_brokerwire buffer (New<Msg> / Wrap<Msg>),
 // same doctrine as the unary path, just framed as a stream message.
 type StreamBroker interface {
-	ServeStream(method uint32, init []byte, s *transport.Stream)
+	ServeStream(method uint32, init []byte, s transport.Stream)
 }
 
 // handler adapts a Broker to the generated HanzoMessagingHandler: it Wraps each
@@ -318,15 +318,15 @@ func Serve(network, addr string, b Broker, stream StreamBroker) (*transport.Serv
 // Client is the typed HanzoMessaging ZAP service client internal callers (the
 // publisher / subscriber / balancer / Kafka gateway) hold. It owns the transport
 // connection to one broker endpoint. Unary RPCs return decoded views; streaming
-// RPCs return a live *transport.Stream to drive.
+// RPCs return a live transport.Stream to drive.
 type Client struct {
-	conn *transport.Conn
+	conn transport.Conn
 	rpc  *HanzoMessagingClient
 }
 
 // Dial connects to the HanzoMessaging ZAP service at addr (e.g.
 // "broker.hanzo.svc:17777") over plain TCP. For the PQ-secured mesh, establish a
-// *transport.Conn via transport.DialTLS with a transport.PQTLSConfig and use
+// transport.Conn via transport.DialTLS with a transport.PQTLSConfig and use
 // NewClient.
 func Dial(network, addr string) (*Client, error) {
 	conn, err := transport.Dial(network, addr)
@@ -337,13 +337,13 @@ func Dial(network, addr string) (*Client, error) {
 }
 
 // NewClient wraps an already-established transport.Conn (TCP, Unix, or PQ-TLS).
-func NewClient(conn *transport.Conn) *Client {
+func NewClient(conn transport.Conn) *Client {
 	return &Client{conn: conn, rpc: NewHanzoMessagingClient(conn, nil)}
 }
 
 // Conn exposes the underlying transport connection so callers can open streams
 // for the seven streaming RPCs (see the Open* helpers below) or share it.
-func (c *Client) Conn() *transport.Conn { return c.conn }
+func (c *Client) Conn() transport.Conn { return c.conn }
 
 // Close releases the underlying connection.
 func (c *Client) Close() error { return c.conn.Close() }
@@ -478,43 +478,43 @@ func (c *Client) GetPartitionRangeInfo(in GetPartitionRangeInfoRequestInput) (Ge
 
 // --- streaming client opens (one per streaming RPC) ---
 //
-// Each returns a live *transport.Stream the caller drives with Send/Recv/
+// Each returns a live transport.Stream the caller drives with Send/Recv/
 // CloseSend. init is the opening payload (a New<Req> buffer carrying the
 // InitMessage variant); subsequent frames are New<Msg> buffers, read back with
 // Wrap<Msg>. The server's StreamBroker.ServeStream is invoked with the matching
 // ordinal.
 
 // OpenPublisherToPubBalancer opens the PublisherToPubBalancer bidi stream.
-func (c *Client) OpenPublisherToPubBalancer(init []byte) (*transport.Stream, error) {
+func (c *Client) OpenPublisherToPubBalancer(init []byte) (transport.Stream, error) {
 	return c.conn.OpenStream(HanzoMessagingPublisherToPubBalancerOrdinal, init)
 }
 
 // OpenSubscriberToSubCoordinator opens the SubscriberToSubCoordinator bidi stream.
-func (c *Client) OpenSubscriberToSubCoordinator(init []byte) (*transport.Stream, error) {
+func (c *Client) OpenSubscriberToSubCoordinator(init []byte) (transport.Stream, error) {
 	return c.conn.OpenStream(HanzoMessagingSubscriberToSubCoordinatorOrdinal, init)
 }
 
 // OpenPublishMessage opens the PublishMessage bidi stream (data plane).
-func (c *Client) OpenPublishMessage(init []byte) (*transport.Stream, error) {
+func (c *Client) OpenPublishMessage(init []byte) (transport.Stream, error) {
 	return c.conn.OpenStream(HanzoMessagingPublishMessageOrdinal, init)
 }
 
 // OpenSubscribeMessage opens the SubscribeMessage bidi stream (data plane).
-func (c *Client) OpenSubscribeMessage(init []byte) (*transport.Stream, error) {
+func (c *Client) OpenSubscribeMessage(init []byte) (transport.Stream, error) {
 	return c.conn.OpenStream(HanzoMessagingSubscribeMessageOrdinal, init)
 }
 
 // OpenPublishFollowMe opens the PublishFollowMe bidi stream (lead -> follower).
-func (c *Client) OpenPublishFollowMe(init []byte) (*transport.Stream, error) {
+func (c *Client) OpenPublishFollowMe(init []byte) (transport.Stream, error) {
 	return c.conn.OpenStream(HanzoMessagingPublishFollowMeOrdinal, init)
 }
 
 // OpenSubscribeFollowMe opens the SubscribeFollowMe client-stream.
-func (c *Client) OpenSubscribeFollowMe(init []byte) (*transport.Stream, error) {
+func (c *Client) OpenSubscribeFollowMe(init []byte) (transport.Stream, error) {
 	return c.conn.OpenStream(HanzoMessagingSubscribeFollowMeOrdinal, init)
 }
 
 // OpenGetUnflushedMessages opens the GetUnflushedMessages server-stream (SQL).
-func (c *Client) OpenGetUnflushedMessages(init []byte) (*transport.Stream, error) {
+func (c *Client) OpenGetUnflushedMessages(init []byte) (transport.Stream, error) {
 	return c.conn.OpenStream(HanzoMessagingGetUnflushedMessagesOrdinal, init)
 }

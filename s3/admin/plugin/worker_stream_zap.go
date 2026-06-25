@@ -25,7 +25,7 @@ type WorkerStreamServer interface {
 // WorkerStreamServer (decoding/encoding frames through pluginzapbridge) and
 // runs the existing WorkerStream handler against it. The first worker frame
 // arrives as the stream's init payload, so it is replayed as the first Recv.
-func (r *Plugin) ServeWorkerStream(init []byte, s *transport.Stream) {
+func (r *Plugin) ServeWorkerStream(init []byte, s transport.Stream) {
 	_ = r.WorkerStream(&zapWorkerStream{
 		stream: s,
 		init:   init,
@@ -37,7 +37,7 @@ func (r *Plugin) ServeWorkerStream(init []byte, s *transport.Stream) {
 // zapWorkerStream adapts a transport.Stream to WorkerStreamServer, translating
 // each frame between ZAP bytes and *plugin_pb.* via pluginzapbridge.
 type zapWorkerStream struct {
-	stream *transport.Stream
+	stream transport.Stream
 	init   []byte
 	hasIn  bool
 	ctx    context.Context

@@ -14,11 +14,11 @@ import (
 // transport.Conn (for the FetchChunk server-stream, opened via the transport's
 // stream primitive on the MountPeerFetchChunkOrdinal).
 type mountPeerConn struct {
-	conn   *transport.Conn
+	conn   transport.Conn
 	client *mount_peerwire.MountPeerClient
 }
 
-func newMountPeerConn(conn *transport.Conn) *mountPeerConn {
+func newMountPeerConn(conn transport.Conn) *mountPeerConn {
 	return &mountPeerConn{conn: conn, client: mount_peerwire.NewMountPeerClient(conn, nil)}
 }
 
@@ -42,7 +42,7 @@ func (c *mountPeerConn) ChunkLookup(in mount_peerwire.ChunkLookupRequestInput) (
 
 // FetchChunk opens the FetchChunk server-stream on the connection and returns
 // the stream to iterate (Recv yields FetchChunkResponse frames until io.EOF).
-func (c *mountPeerConn) FetchChunk(in mount_peerwire.FetchChunkRequestInput) (*transport.Stream, error) {
+func (c *mountPeerConn) FetchChunk(in mount_peerwire.FetchChunkRequestInput) (transport.Stream, error) {
 	return c.conn.OpenStream(mount_peerwire.MountPeerFetchChunkOrdinal, mount_peerwire.NewFetchChunkRequest(in))
 }
 
@@ -53,7 +53,7 @@ func (c *mountPeerConn) FetchChunk(in mount_peerwire.FetchChunkRequestInput) (*t
 type MountPeerClient interface {
 	ChunkAnnounce(in mount_peerwire.ChunkAnnounceRequestInput) (mount_peerwire.ChunkAnnounceResponse, error)
 	ChunkLookup(in mount_peerwire.ChunkLookupRequestInput) (mount_peerwire.ChunkLookupResponse, error)
-	FetchChunk(in mount_peerwire.FetchChunkRequestInput) (*transport.Stream, error)
+	FetchChunk(in mount_peerwire.FetchChunkRequestInput) (transport.Stream, error)
 }
 
 // MountPeerDialer opens a MountPeerClient to a given peer over the ZAP

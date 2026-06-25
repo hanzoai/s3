@@ -32,10 +32,10 @@ import (
 	"github.com/zap-proto/go/transport"
 )
 
-// streamChannel is the subset of *transport.Conn this stream needs to open a
-// client stream. *transport.Conn satisfies it; tests may substitute a fake.
+// streamChannel is the subset of transport.Conn this stream needs to open a
+// client stream. transport.Conn satisfies it; tests may substitute a fake.
 type streamChannel interface {
-	OpenStream(method uint32, init []byte) (*transport.Stream, error)
+	OpenStream(method uint32, init []byte) (transport.Stream, error)
 }
 
 // ---------------------------------------------------------------------------
@@ -48,10 +48,10 @@ type streamChannel interface {
 // usage). Payloads are opaque ZAP buffers — build a WorkerMessage to Send with
 // NewWorkerMessage, and Wrap a received frame with WrapAdminMessage.
 type WorkerStream struct {
-	s *transport.Stream
+	s transport.Stream
 }
 
-// OpenWorkerStream opens the bidi WorkerStream over ch (a *transport.Conn). The
+// OpenWorkerStream opens the bidi WorkerStream over ch (a transport.Conn). The
 // optional init frame is the first WorkerMessage (build it with
 // NewWorkerMessage); pass nil to open with no initial message. The peer's
 // stream handler is invoked with the WorkerStream ordinal and init.
@@ -86,7 +86,7 @@ func (w *WorkerStream) CloseSend() error { return w.s.CloseSend() }
 // a reply with NewAdminMessage.
 type AdminStream struct {
 	init []byte
-	s    *transport.Stream
+	s    transport.Stream
 }
 
 // Init returns the opening WorkerMessage frame the worker sent with OpenStream
@@ -122,7 +122,7 @@ type WorkerStreamServer interface {
 // WorkerStream ordinal to srv.ServeWorkerStream and ignores any other ordinal
 // (the service declares no other streaming method).
 func WorkerStreamHandler(srv WorkerStreamServer) transport.StreamHandler {
-	return func(method uint32, init []byte, s *transport.Stream) {
+	return func(method uint32, init []byte, s transport.Stream) {
 		switch method {
 		case WorkerServiceWorkerStreamOrdinal:
 			srv.ServeWorkerStream(&AdminStream{init: init, s: s})

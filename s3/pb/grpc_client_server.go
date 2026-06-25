@@ -593,7 +593,7 @@ func WithFilerClient(streamingMode bool, signature int32, filer ServerAddress, g
 // trusting grpc.ca — the same mTLS the legacy gRPC filer client used. Otherwise
 // plaintext (loopback / dev), matching the filer server's gating in
 // command/filer.go. The returned *Conn drives both unary Call and OpenStream.
-func dialFilerZapAddr(addr string) (*transport.Conn, error) {
+func dialFilerZapAddr(addr string) (transport.Conn, error) {
 	if cfg := security.ClientTLSConfig(util.GetViper(), "grpc.filer"); cfg != nil {
 		return transport.DialTLS("tcp", addr, transport.PQTLSConfig(cfg))
 	}
@@ -608,7 +608,7 @@ var filerPool = transport.NewPool(dialFilerZapAddr)
 
 func WithGrpcFilerClient(streamingMode bool, signature int32, filerAddress ServerAddress, grpcDialOption grpc.DialOption, fn func(client filer_pb.HanzoFilerClient) error) error {
 	_, _, _ = streamingMode, signature, grpcDialOption
-	return filerPool.With(filerAddress.ToGrpcAddress(), func(conn *transport.Conn) error {
+	return filerPool.With(filerAddress.ToGrpcAddress(), func(conn transport.Conn) error {
 		return fn(NewZapFilerClient(conn))
 	})
 }
@@ -618,7 +618,7 @@ func WithGrpcFilerClient(streamingMode bool, signature int32, filerAddress Serve
 func WithOneOfGrpcFilerClients(streamingMode bool, filerAddresses []ServerAddress, grpcDialOption grpc.DialOption, fn func(client filer_pb.HanzoFilerClient) error) (err error) {
 	_, _ = streamingMode, grpcDialOption
 	for _, filerAddress := range filerAddresses {
-		err = filerPool.With(filerAddress.ToGrpcAddress(), func(conn *transport.Conn) error {
+		err = filerPool.With(filerAddress.ToGrpcAddress(), func(conn transport.Conn) error {
 			return fn(NewZapFilerClient(conn))
 		})
 		if err == nil {

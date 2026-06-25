@@ -13,7 +13,7 @@ import (
 // subsequent frame a key/value record to publish. It mirrors the prior gRPC
 // stream loop, reading PublishRecordRequest envelopes off s until the peer
 // half-closes (io.EOF).
-func (a *MessageQueueAgent) PublishRecord(init []byte, s *transport.Stream) error {
+func (a *MessageQueueAgent) PublishRecord(init []byte, s transport.Stream) error {
 	m, err := mq_agentwire.WrapPublishRecordRequest(init)
 	if err != nil {
 		return err

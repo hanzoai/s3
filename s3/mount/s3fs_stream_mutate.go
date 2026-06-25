@@ -41,7 +41,7 @@ type streamMutateMux struct {
 	mu         sync.Mutex // protects stream, cancel, conn, closed, stopSend, generation
 	stream     filer_pb.HanzoFiler_StreamMutateEntryClient
 	cancel     context.CancelFunc
-	conn       *transport.Conn // dedicated ZAP connection, closed on stream teardown
+	conn       transport.Conn // dedicated ZAP connection, closed on stream teardown
 	closed     bool
 	disabled   bool          // permanently disabled if filer doesn't support the RPC
 	stopSend   chan struct{} // closed to signal the current sendLoop to exit

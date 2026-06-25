@@ -96,7 +96,7 @@ type Server interface {
 
 // ListEntriesStream is the server's half of a ListEntries server-stream: Send
 // ships one ListEntriesResponse (a filerwire NewListEntriesResponse buffer).
-type ListEntriesStream struct{ s *transport.Stream }
+type ListEntriesStream struct{ s transport.Stream }
 
 // Context is cancelled when this stream ends or the connection drops.
 func (x *ListEntriesStream) Context() context.Context { return x.s.Context() }
@@ -108,7 +108,7 @@ func (s *ListEntriesStream) Send(frame []byte) error { return s.s.Send(frame) }
 func (s *ListEntriesStream) CloseSend() error { return s.s.CloseSend() }
 
 // StreamRenameEntryStream is the server's half of a StreamRenameEntry stream.
-type StreamRenameEntryStream struct{ s *transport.Stream }
+type StreamRenameEntryStream struct{ s transport.Stream }
 
 // Context is cancelled when this stream ends or the connection drops.
 func (x *StreamRenameEntryStream) Context() context.Context { return x.s.Context() }
@@ -120,7 +120,7 @@ func (s *StreamRenameEntryStream) Send(frame []byte) error { return s.s.Send(fra
 func (s *StreamRenameEntryStream) CloseSend() error { return s.s.CloseSend() }
 
 // TraverseBfsMetadataStream is the server's half of a TraverseBfsMetadata stream.
-type TraverseBfsMetadataStream struct{ s *transport.Stream }
+type TraverseBfsMetadataStream struct{ s transport.Stream }
 
 // Context is cancelled when this stream ends or the connection drops.
 func (x *TraverseBfsMetadataStream) Context() context.Context { return x.s.Context() }
@@ -133,7 +133,7 @@ func (s *TraverseBfsMetadataStream) CloseSend() error { return s.s.CloseSend() }
 
 // SubscribeMetadataStream is the server's half of a (local or cluster-wide)
 // SubscribeMetadata stream.
-type SubscribeMetadataStream struct{ s *transport.Stream }
+type SubscribeMetadataStream struct{ s transport.Stream }
 
 // Context is cancelled when this stream ends or the connection drops.
 func (x *SubscribeMetadataStream) Context() context.Context { return x.s.Context() }
@@ -147,7 +147,7 @@ func (s *SubscribeMetadataStream) CloseSend() error { return s.s.CloseSend() }
 // StreamMutateEntryStream is the server's half of the bidirectional
 // StreamMutateEntry stream: Recv yields successive StreamMutateEntryRequest
 // frames (request_id-correlated), Send ships StreamMutateEntryResponse frames.
-type StreamMutateEntryStream struct{ s *transport.Stream }
+type StreamMutateEntryStream struct{ s transport.Stream }
 
 // Context is cancelled when this stream ends or the connection drops.
 func (x *StreamMutateEntryStream) Context() context.Context { return x.s.Context() }
@@ -177,7 +177,7 @@ func (s *StreamMutateEntryStream) CloseSend() error { return s.s.CloseSend() }
 // 6 streaming RPCs is ignored (the stream half-closes immediately). A malformed
 // init buffer ends the stream without invoking the backend.
 func Handler(srv Server) transport.StreamHandler {
-	return func(method uint32, init []byte, s *transport.Stream) {
+	return func(method uint32, init []byte, s transport.Stream) {
 		switch method {
 		case ListEntriesOrdinal:
 			v, err := filerwire.WrapListEntriesRequest(init)
@@ -256,7 +256,7 @@ func (s *StreamServer) Close() error { return s.srv.Close() }
 // Client is the caller's typed connection to one filer streaming endpoint. It
 // owns the transport connection; it may open multiple concurrent streams (one
 // per outstanding streaming RPC) over the single connection.
-type Client struct{ conn *transport.Conn }
+type Client struct{ conn transport.Conn }
 
 // Dial connects to the filer streaming endpoint at addr (e.g.
 // "filer.hanzo.svc:18889") over plain TCP. For the PQ-secured mesh use
@@ -273,7 +273,7 @@ func Dial(network, addr string) (*Client, error) {
 // The conn's read loop routes stream frames, so a plain call-only Dial conn is
 // sufficient. This also lets a caller open streams over the SAME connection a
 // filerwire.Client uses for unary calls (pass filerwire.Client.Conn()).
-func NewClient(conn *transport.Conn) *Client { return &Client{conn: conn} }
+func NewClient(conn transport.Conn) *Client { return &Client{conn: conn} }
 
 // Close releases the underlying connection.
 func (c *Client) Close() error { return c.conn.Close() }
@@ -337,7 +337,7 @@ func (c *Client) StreamMutateEntry(first []byte) (*ClientStreamMutateEntryStream
 }
 
 // ClientListEntriesStream is the caller's half of a ListEntries server-stream.
-type ClientListEntriesStream struct{ s *transport.Stream }
+type ClientListEntriesStream struct{ s transport.Stream }
 
 // Recv returns the next ListEntriesResponse as a zero-copy view, or io.EOF once
 // the server ends the stream.
@@ -357,7 +357,7 @@ func (s *ClientListEntriesStream) RecvBytes() ([]byte, error) { return s.s.Recv(
 func (s *ClientListEntriesStream) Close() error { return s.s.CloseSend() }
 
 // ClientStreamRenameEntryStream is the caller's half of a StreamRenameEntry stream.
-type ClientStreamRenameEntryStream struct{ s *transport.Stream }
+type ClientStreamRenameEntryStream struct{ s transport.Stream }
 
 // Recv returns the next StreamRenameEntryResponse as a zero-copy view.
 func (s *ClientStreamRenameEntryStream) Recv() (filerwire.StreamRenameEntryResponse, error) {
@@ -375,7 +375,7 @@ func (s *ClientStreamRenameEntryStream) RecvBytes() ([]byte, error) { return s.s
 func (s *ClientStreamRenameEntryStream) Close() error { return s.s.CloseSend() }
 
 // ClientTraverseBfsMetadataStream is the caller's half of a TraverseBfsMetadata stream.
-type ClientTraverseBfsMetadataStream struct{ s *transport.Stream }
+type ClientTraverseBfsMetadataStream struct{ s transport.Stream }
 
 // Recv returns the next TraverseBfsMetadataResponse as a zero-copy view.
 func (s *ClientTraverseBfsMetadataStream) Recv() (filerwire.TraverseBfsMetadataResponse, error) {
@@ -394,7 +394,7 @@ func (s *ClientTraverseBfsMetadataStream) Close() error { return s.s.CloseSend()
 
 // ClientSubscribeMetadataStream is the caller's half of a (local or cluster-wide)
 // SubscribeMetadata server-stream.
-type ClientSubscribeMetadataStream struct{ s *transport.Stream }
+type ClientSubscribeMetadataStream struct{ s transport.Stream }
 
 // Recv returns the next SubscribeMetadataResponse as a zero-copy view.
 func (s *ClientSubscribeMetadataStream) Recv() (filerwire.SubscribeMetadataResponse, error) {
@@ -413,7 +413,7 @@ func (s *ClientSubscribeMetadataStream) Close() error { return s.s.CloseSend() }
 
 // ClientStreamMutateEntryStream is the caller's half of the bidirectional
 // StreamMutateEntry stream: Send ships request frames, Recv yields responses.
-type ClientStreamMutateEntryStream struct{ s *transport.Stream }
+type ClientStreamMutateEntryStream struct{ s transport.Stream }
 
 // Send ships one StreamMutateEntryRequest frame (a filerwire
 // NewStreamMutateEntryRequest buffer).

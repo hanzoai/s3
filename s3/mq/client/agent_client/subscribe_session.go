@@ -24,8 +24,8 @@ type SubscribeOption struct {
 
 type SubscribeSession struct {
 	Option *SubscribeOption
-	conn   *transport.Conn
-	stream *transport.Stream
+	conn   transport.Conn
+	stream transport.Stream
 }
 
 func NewSubscribeSession(agentAddress string, option *SubscribeOption) (*SubscribeSession, error) {
