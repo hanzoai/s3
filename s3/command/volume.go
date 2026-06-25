@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
+
+	"github.com/zap-proto/go/transport"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
@@ -28,6 +28,8 @@ import (
 	"github.com/hanzoai/s3/s3/util/grace"
 	"github.com/hanzoai/s3/s3/util/httpdown"
 	"github.com/hanzoai/s3/s3/util/version"
+	"github.com/hanzoai/s3/s3/volumezap"
+	volume_serverwire "github.com/hanzoai/s3/s3/wire/volume_server"
 )
 
 var (
@@ -533,7 +535,7 @@ func parseVolumeTags(tagsArg string, folderCount int) [][]string {
 	return folderTags
 }
 
-func shutdown(publicHttpDown httpdown.Server, clusterHttpServer httpdown.Server, grpcS *grpc.Server, volumeServer *s3server.VolumeServer) {
+func shutdown(publicHttpDown httpdown.Server, clusterHttpServer httpdown.Server, grpcS *transport.Server, volumeServer *s3server.VolumeServer) {
 
 	// firstly, stop the public http service to prevent from receiving new user request
 	if nil != publicHttpDown {
@@ -548,8 +550,8 @@ func shutdown(publicHttpDown httpdown.Server, clusterHttpServer httpdown.Server,
 		glog.Warningf("stop the cluster http server failed, %v", err)
 	}
 
-	glog.V(0).Infof("graceful stop gRPC ...")
-	grpcS.GracefulStop()
+	glog.V(0).Infof("stop volume ZAP transport server ...")
+	_ = grpcS.Close()
 
 	volumeServer.Shutdown()
 
@@ -562,22 +564,37 @@ func (v VolumeServerOptions) isSeparatedPublicPort() bool {
 	return *v.publicPort != *v.port
 }
 
-func (v VolumeServerOptions) startGrpcService(vs volume_server_pb.VolumeServerServer) *grpc.Server {
+// startGrpcService serves the VolumeServer service over the native ZAP transport
+// on the gRPC port. Clients reach it via ServerAddress.ToGrpcAddress() over
+// transport.Dial (unary) and transport.OpenStream (streaming) — see
+// pb.WithVolumeServerClient and the volumezap backend. This replaces the legacy
+// gRPC VolumeServer server: the whole volume server (37 unary + 11 streaming
+// RPCs) now answers over ZAP, no gRPC.
+//
+// When grpc.volume.cert/.key is configured the listener is PQ-secured mTLS:
+// transport.PQTLSConfig pins the X25519MLKEM768 hybrid (PQ X-Wing) and the same
+// cert/CA/allowed-CN gate the legacy gRPC volume server enforced applies — no
+// security downgrade. Otherwise it is plaintext (loopback / dev), exactly as the
+// gRPC volume server was plaintext when no cert was configured.
+func (v VolumeServerOptions) startGrpcService(vs volume_server_pb.VolumeServerServer) *transport.Server {
 	grpcPort := *v.portGrpc
-	grpcL, err := util.NewListener(util.JoinHostPort(*v.bindIp, grpcPort), 0)
-	if err != nil {
-		glog.Fatalf("failed to listen on grpc port %d: %v", grpcPort, err)
+	volumeAddr := util.JoinHostPort(*v.bindIp, grpcPort)
+	store := volumezap.NewServerBackend(vs)
+	dispatch := volume_serverwire.Dispatch(store)
+	stream := volume_serverwire.StreamHandler(store)
+	var srv *transport.Server
+	var err error
+	if tlsCfg := pb.ServerTLSConfig(util.GetViper(), "grpc.volume"); tlsCfg != nil {
+		srv, err = transport.ListenStreamTLS("tcp", volumeAddr, transport.PQTLSConfig(tlsCfg), dispatch, stream)
+		glog.V(0).Infof("Serving VolumeServer over PQ-TLS (X25519MLKEM768) ZAP transport on port %d", grpcPort)
+	} else {
+		srv, err = transport.ListenStream("tcp", volumeAddr, dispatch, stream)
+		glog.V(0).Infof("Serving VolumeServer over native ZAP transport (plaintext; set grpc.volume.cert/.key for PQ-TLS) on port %d", grpcPort)
 	}
-	grpcS := pb.NewGrpcServer(security.LoadServerTLS(util.GetViper(), "grpc.volume"))
-	volume_server_pb.RegisterVolumeServerServer(grpcS, vs)
-	reflection.Register(grpcS)
-	go func() {
-		if err := grpcS.Serve(grpcL); err != nil {
-			glog.Fatalf("start gRPC service failed, %s", err)
-		}
-	}()
-	pb.ServeGrpcOnLocalSocket(grpcS, grpcPort)
-	return grpcS
+	if err != nil {
+		glog.Fatalf("failed to serve volume over ZAP on port %d: %v", grpcPort, err)
+	}
+	return srv
 }
 
 func (v VolumeServerOptions) startPublicHttpService(handler http.Handler) httpdown.Server {
