@@ -109,6 +109,18 @@ func volumeShortInfoToWire(m *master_pb.VolumeShortInformationMessage) []byte {
 	})
 }
 
+func volumeShortInfoFromView(v masterwire.VolumeShortInformationMessage) *master_pb.VolumeShortInformationMessage {
+	return &master_pb.VolumeShortInformationMessage{
+		Id:               v.Id(),
+		Collection:       v.Collection(),
+		ReplicaPlacement: v.ReplicaPlacement(),
+		Version:          v.Version(),
+		Ttl:              v.Ttl(),
+		DiskType:         v.DiskType(),
+		DiskId:           v.DiskId(),
+	}
+}
+
 func ecShardInfoToWire(m *master_pb.VolumeEcShardInformationMessage) []byte {
 	if m == nil {
 		return nil
@@ -397,6 +409,14 @@ func diskTagToWire(d *master_pb.DiskTag) []byte {
 		return nil
 	}
 	return masterwire.NewDiskTag(masterwire.DiskTagInput{DiskId: d.DiskId, Tags: d.Tags})
+}
+
+func diskTagFromView(v masterwire.DiskTag) *master_pb.DiskTag {
+	tags := make([]string, v.TagsLen())
+	for i := range tags {
+		tags[i] = v.TagAt(i)
+	}
+	return &master_pb.DiskTag{DiskId: v.DiskId(), Tags: tags}
 }
 
 // --- VolumeServerState (Heartbeat.state) ---
