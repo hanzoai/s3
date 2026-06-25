@@ -2,6 +2,7 @@ package s3server
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/luxfi/consensus"
 	"github.com/luxfi/consensus/replog"
+	"github.com/luxfi/ids"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
@@ -23,12 +25,30 @@ import (
 // of a Raft log. Versus Raft this is ZAP-native (block/vote gossip rides the
 // zap-proto transport, no gRPC), post-quantum-final (Quasar BLS + ML-DSA),
 // and needs no separate leader-election FSM.
+//
+// FINALITY MODEL: consensus.Chain finalizes a block when it has collected
+// Config.Alpha votes (RecordVote). The accept quorum is sized to the membership
+// in NewConsensusServer:
+//   - SINGLE MASTER (the production default, -peers=none): quorum is 1, so the
+//     node's own vote (cast in Do) finalizes every command immediately. Fully
+//     functional — this is legitimate single-validator consensus.
+//   - MULTI-MASTER (N>1): quorum is the BFT supermajority of N. Do casts this
+//     node's one vote; the remaining votes must arrive from peer masters via
+//     RecordPeerVote. GAP: the gossip that exchanges these votes over the ZAP
+//     master transport is NOT yet wired here, so a multi-master set cannot
+//     finalize cross-node commands until that lands. This is the live
+//     consensus-engine swap's remaining multi-node work; the single-master path
+//     (and all unit/integration coverage of it) is complete.
 type ConsensusServer struct {
 	serverAddr pb.ServerAddress
 	topo       *topology.Topology
 
 	chain *consensus.Chain
 	log   *replog.Log
+
+	// selfVoter is this node's stable consensus voter identity (derived from its
+	// address), used to cast its own vote on blocks it proposes.
+	selfVoter consensus.NodeID
 
 	peersMu sync.RWMutex
 	peers   map[string]pb.ServerAddress
@@ -44,16 +64,28 @@ type ConsensusServer struct {
 }
 
 // NewConsensusServer starts the master coordination on Lux consensus. peers is
-// the initial validator set (master peer name -> address).
+// the initial validator set (master peer name -> address) — INCLUDING self.
+//
+// The engine's accept quorum (Config.Alpha) is sized to the membership so the
+// log finalizes correctly: for a single master the quorum is 1, so this node's
+// own vote finalizes its proposals immediately (legitimate single-validator
+// consensus); for N masters the quorum is the BFT supermajority of N.
 func NewConsensusServer(serverAddr pb.ServerAddress, peers map[string]pb.ServerAddress, topo *topology.Topology) (*ConsensusServer, error) {
 	if peers == nil {
 		peers = make(map[string]pb.ServerAddress)
 	}
-	chain := consensus.NewChain(consensus.DefaultConfig())
+	cfg := consensus.DefaultConfig()
+	cfg.Alpha = acceptQuorum(len(peers))
+	cfg.K = len(peers)
+	if cfg.K < 1 {
+		cfg.K = 1
+	}
+	chain := consensus.NewChain(cfg)
 	cs := &ConsensusServer{
 		serverAddr: serverAddr,
 		topo:       topo,
 		chain:      chain,
+		selfVoter:  voterID(serverAddr),
 		peers:      peers,
 	}
 	cs.log = replog.New(chain, cs.applyMaxVolumeId)
@@ -63,8 +95,30 @@ func NewConsensusServer(serverAddr pb.ServerAddress, peers map[string]pb.ServerA
 	}
 	// Drive the apply loop: finalized commands are applied to the topology.
 	go cs.log.Run(cs.ctx, 20*time.Millisecond)
-	glog.V(0).Infof("master %s coordinating on Lux consensus (Raft retired)", serverAddr)
+	glog.V(0).Infof("master %s coordinating on Lux consensus (Raft retired), accept quorum=%d of %d", serverAddr, cfg.Alpha, cfg.K)
 	return cs, nil
+}
+
+// acceptQuorum is the number of votes needed to finalize a block for a
+// membership of n voting masters: 1 for a single master (it finalizes its own
+// proposals), otherwise the BFT supermajority ceil(2n/3)+1 capped at n.
+func acceptQuorum(n int) int {
+	if n <= 1 {
+		return 1
+	}
+	q := (2*n)/3 + 1
+	if q > n {
+		q = n
+	}
+	return q
+}
+
+// voterID derives a stable consensus voter identity from a master's address, so
+// the same master always casts votes under the same NodeID.
+func voterID(addr pb.ServerAddress) consensus.NodeID {
+	sum := sha256.Sum256([]byte(addr))
+	id, _ := ids.ToNodeID(sum[:ids.NodeIDLen])
+	return id
 }
 
 // applyMaxVolumeId is the master's entire replicated FSM: apply a finalized
@@ -84,12 +138,73 @@ func (cs *ConsensusServer) applyMaxVolumeId(payload []byte) error {
 
 // Do replicates a MaxVolumeIdCommand through consensus and blocks until it is
 // finalized and applied on this replica. The drop-in for raft Server.Do.
+//
+// Flow: propose the command (replog.Submit), cast THIS node's vote on it, then
+// drain the applied prefix (replog.Advance). For a single master (accept
+// quorum 1) the self-vote finalizes the block immediately and Advance applies
+// it before Do returns. For a multi-master set the self-vote is one of the
+// supermajority needed; the rest arrive as peer votes — see RecordPeerVote and
+// the gap note on the type. The shared background Run loop also drains, so a
+// command finalized by later peer votes still applies; Do additionally drains
+// synchronously so the single-master path is immediate and deterministic.
 func (cs *ConsensusServer) Do(cmd *topology.MaxVolumeIdCommand) error {
 	payload, err := json.Marshal(cmd)
 	if err != nil {
 		return err
 	}
-	return cs.log.Commit(cs.ctx, payload)
+	id, err := cs.log.Submit(cs.ctx, payload)
+	if err != nil {
+		return fmt.Errorf("submit consensus command: %w", err)
+	}
+	// Cast this node's vote on the block it just proposed.
+	if err := cs.chain.RecordVote(cs.ctx, consensus.NewVote(id, consensus.VoteCommit, cs.selfVoter)); err != nil {
+		return fmt.Errorf("self-vote consensus command: %w", err)
+	}
+	// Block until this command is finalized AND applied. Advance applies the
+	// contiguous accepted prefix in order; commands are voted in submit order, so
+	// once THIS block is StatusAccepted the prefix up to and including it has been
+	// drained by an Advance — its payload is in the FSM. We gate on this block's
+	// own status (not the aggregate Pending) so concurrent Do calls on this node
+	// don't block each other. Both this loop and the background Run loop call
+	// Advance; Advance is mutex-guarded, so the double drive is safe.
+	ticker := time.NewTicker(5 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		if _, err := cs.log.Advance(cs.ctx); err != nil {
+			return fmt.Errorf("apply consensus command: %w", err)
+		}
+		if cs.chain.GetStatus(id) == consensus.StatusAccepted {
+			return nil
+		}
+		select {
+		case <-cs.ctx.Done():
+			return cs.ctx.Err()
+		case <-ticker.C:
+		}
+	}
+}
+
+// RecordPeerVote records a vote cast by another master on a proposed block,
+// contributing toward the accept quorum. In multi-master mode these votes ride
+// the ZAP transport (the master service); the gossip wiring that delivers them
+// is the documented remaining work for multi-master finality (see the type
+// doc). Single-master never needs this — its own vote is the quorum.
+//
+// MULTI-MASTER GAP — two things the gossip wiring MUST add before N>1 is safe
+// (neither is reachable on the shipped single-master path, where Do casts
+// exactly one self-vote into an Alpha=1 chain):
+//  1. Dedup by voter. consensus.Chain.RecordVote appends to the block's vote
+//     slice and finalizes at len(votes) >= Alpha with NO dedup, so a
+//     retransmitted peer vote would inflate the count and could finalize below
+//     true quorum. The gossip layer (or this method) must drop duplicate
+//     (blockID, voter) pairs.
+//  2. BFT-floor-valid (K, Alpha). acceptQuorum(n) returns ceil(2n/3)+1, but the
+//     consensus config's own validity floor (2*Alpha - K >= floor((K-1)/3)+1)
+//     must hold for the chosen (K=n, Alpha) before the engine is trusted for
+//     Byzantine safety — assert cfg.Valid() (or the BFT floor directly) when the
+//     real validator set is wired, especially for small n in {2,3}.
+func (cs *ConsensusServer) RecordPeerVote(blockID consensus.ID, voter consensus.NodeID) error {
+	return cs.chain.RecordVote(cs.ctx, consensus.NewVote(blockID, consensus.VoteCommit, voter))
 }
 
 // Peers returns the known peer masters, for observability only. Lux

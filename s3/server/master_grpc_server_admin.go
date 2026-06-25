@@ -16,7 +16,7 @@ import (
 	"github.com/hanzoai/s3/s3/stats"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
 
-	"github.com/seaweedfs/raft"
+	"github.com/hanzoai/s3/s3/topology"
 )
 
 /*
@@ -132,7 +132,7 @@ func (ms *MasterServer) LeaseAdminToken(ctx context.Context, req *master_pb.Leas
 	resp := &master_pb.LeaseAdminTokenResponse{}
 
 	if !ms.Topo.IsLeader() {
-		return resp, raft.NotLeaderError
+		return resp, topology.ErrNotLeader
 	}
 
 	if lastClient, lastMessage, isLocked := ms.adminLocks.isLocked(req.LockName); isLocked {

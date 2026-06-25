@@ -4,57 +4,31 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/raft"
-
 	"github.com/hanzoai/s3/s3/cluster"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 )
 
+// These four RPCs are the master service's cluster-membership surface
+// (master_pb.HanzoServer). They were Raft management calls; they now operate on
+// the Lux consensus engine (ConsensusServer). Membership is advisory in
+// permissionless consensus — it changes the writer-pin set and observability, not
+// a voted quorum — so add/remove never block on a configuration round.
+
 func (ms *MasterServer) RaftListClusterServers(ctx context.Context, req *master_pb.RaftListClusterServersRequest) (*master_pb.RaftListClusterServersResponse, error) {
 	resp := &master_pb.RaftListClusterServersResponse{}
 
-	ms.Topo.RaftServerAccessLock.RLock()
-	if ms.Topo.HashicorpRaft == nil && ms.Topo.RaftServer == nil {
-		ms.Topo.RaftServerAccessLock.RUnlock()
+	if ms.consensus == nil {
 		return resp, nil
 	}
 
-	if ms.Topo.HashicorpRaft != nil {
-		servers := ms.Topo.HashicorpRaft.GetConfiguration().Configuration().Servers
-		_, leaderId := ms.Topo.HashicorpRaft.LeaderWithID()
-		ms.Topo.RaftServerAccessLock.RUnlock()
-
-		for _, server := range servers {
-			resp.ClusterServers = append(resp.ClusterServers, &master_pb.RaftListClusterServersResponse_ClusterServers{
-				Id:       string(server.ID),
-				Address:  string(server.Address),
-				Suffrage: server.Suffrage.String(),
-				IsLeader: server.ID == leaderId,
-			})
-		}
-	} else if ms.Topo.RaftServer != nil {
-		peers := ms.Topo.RaftServer.Peers()
-		leader := ms.Topo.RaftServer.Leader()
-		currentServerName := ms.Topo.RaftServer.Name()
-		ms.Topo.RaftServerAccessLock.RUnlock()
-
-		// Add the current server itself (Peers() only returns other peers)
+	leader := ms.consensus.Leader()
+	for name, addr := range ms.consensus.PeerAddresses() {
 		resp.ClusterServers = append(resp.ClusterServers, &master_pb.RaftListClusterServersResponse_ClusterServers{
-			Id:       currentServerName,
-			Address:  ms.option.Master.ToGrpcAddress(),
+			Id:       name,
+			Address:  addr.ToGrpcAddress(),
 			Suffrage: "Voter",
-			IsLeader: currentServerName == leader,
+			IsLeader: name == leader,
 		})
-
-		// Add all other peers
-		for _, peer := range peers {
-			resp.ClusterServers = append(resp.ClusterServers, &master_pb.RaftListClusterServersResponse_ClusterServers{
-				Id:       peer.Name,
-				Address:  peer.ConnectionString,
-				Suffrage: "Voter",
-				IsLeader: peer.Name == leader,
-			})
-		}
 	}
 	return resp, nil
 }
@@ -62,42 +36,24 @@ func (ms *MasterServer) RaftListClusterServers(ctx context.Context, req *master_
 func (ms *MasterServer) RaftAddServer(ctx context.Context, req *master_pb.RaftAddServerRequest) (*master_pb.RaftAddServerResponse, error) {
 	resp := &master_pb.RaftAddServerResponse{}
 
-	ms.Topo.RaftServerAccessLock.RLock()
-	defer ms.Topo.RaftServerAccessLock.RUnlock()
-
-	if ms.Topo.HashicorpRaft == nil {
+	if ms.consensus == nil {
 		return resp, nil
 	}
-
-	if ms.Topo.HashicorpRaft.State() != raft.Leader {
-		return nil, fmt.Errorf("raft add server %s failed: %s is no current leader", req.Id, ms.Topo.HashicorpRaft.String())
+	if !ms.Topo.IsLeader() {
+		return nil, fmt.Errorf("consensus add server %s failed: %s is not the pinned writer", req.Id, ms.consensus.Name())
 	}
-
-	var idxFuture raft.IndexFuture
-	if req.Voter {
-		idxFuture = ms.Topo.HashicorpRaft.AddVoter(raft.ServerID(req.Id), raft.ServerAddress(req.Address), 0, 0)
-	} else {
-		idxFuture = ms.Topo.HashicorpRaft.AddNonvoter(raft.ServerID(req.Id), raft.ServerAddress(req.Address), 0, 0)
-	}
-
-	if err := idxFuture.Error(); err != nil {
-		return nil, err
-	}
+	ms.consensus.AddPeerByGrpcAddress(req.Id, req.Address)
 	return resp, nil
 }
 
 func (ms *MasterServer) RaftRemoveServer(ctx context.Context, req *master_pb.RaftRemoveServerRequest) (*master_pb.RaftRemoveServerResponse, error) {
 	resp := &master_pb.RaftRemoveServerResponse{}
 
-	ms.Topo.RaftServerAccessLock.RLock()
-	defer ms.Topo.RaftServerAccessLock.RUnlock()
-
-	if ms.Topo.HashicorpRaft == nil {
+	if ms.consensus == nil {
 		return resp, nil
 	}
-
-	if ms.Topo.HashicorpRaft.State() != raft.Leader {
-		return nil, fmt.Errorf("raft remove server %s failed: %s is no current leader", req.Id, ms.Topo.HashicorpRaft.String())
+	if !ms.Topo.IsLeader() {
+		return nil, fmt.Errorf("consensus remove server %s failed: %s is not the pinned writer", req.Id, ms.consensus.Name())
 	}
 
 	if !req.Force {
@@ -105,60 +61,23 @@ func (ms *MasterServer) RaftRemoveServer(ctx context.Context, req *master_pb.Raf
 		_, ok := ms.clientChans[fmt.Sprintf("%s@%s", cluster.MasterType, req.Id)]
 		ms.clientChansLock.RUnlock()
 		if ok {
-			return resp, fmt.Errorf("raft remove server %s failed: client connection to master exists", req.Id)
+			return resp, fmt.Errorf("consensus remove server %s failed: client connection to master exists", req.Id)
 		}
 	}
 
-	idxFuture := ms.Topo.HashicorpRaft.RemoveServer(raft.ServerID(req.Id), 0, 0)
-	if err := idxFuture.Error(); err != nil {
-		return nil, err
-	}
+	ms.consensus.RemovePeerByName(req.Id)
 	return resp, nil
 }
 
 func (ms *MasterServer) RaftLeadershipTransfer(ctx context.Context, req *master_pb.RaftLeadershipTransferRequest) (*master_pb.RaftLeadershipTransferResponse, error) {
 	resp := &master_pb.RaftLeadershipTransferResponse{}
 
-	ms.Topo.RaftServerAccessLock.RLock()
-	defer ms.Topo.RaftServerAccessLock.RUnlock()
-
-	// Leadership transfer is only supported with hashicorp raft (-raftHashicorp=true)
-	// The default hanzo/raft (goraft) implementation does not support this feature
-	if ms.Topo.HashicorpRaft == nil {
-		if ms.Topo.RaftServer != nil {
-			return nil, fmt.Errorf("leadership transfer requires -raftHashicorp=true; the default raft implementation does not support this feature")
-		}
-		return nil, fmt.Errorf("raft not initialized (single master mode)")
+	// Lux consensus is leaderless with a DETERMINISTIC writer pin (lowest member
+	// address): the writer cannot be hand-transferred — it moves only when the
+	// current writer leaves the membership, at which point the next-lowest takes
+	// over automatically. There is no manual leadership-transfer operation.
+	if ms.consensus == nil {
+		return nil, fmt.Errorf("consensus not initialized (single master mode)")
 	}
-
-	if ms.Topo.HashicorpRaft.State() != raft.Leader {
-		leaderAddr, _ := ms.Topo.HashicorpRaft.LeaderWithID()
-		return nil, fmt.Errorf("this server is not the leader; current leader is %s", leaderAddr)
-	}
-
-	// Record previous leader
-	_, previousLeaderId := ms.Topo.HashicorpRaft.LeaderWithID()
-	resp.PreviousLeader = string(previousLeaderId)
-
-	var future raft.Future
-	if req.TargetId != "" && req.TargetAddress != "" {
-		// Transfer to specific server
-		future = ms.Topo.HashicorpRaft.LeadershipTransferToServer(
-			raft.ServerID(req.TargetId),
-			raft.ServerAddress(req.TargetAddress),
-		)
-	} else {
-		// Transfer to any eligible follower
-		future = ms.Topo.HashicorpRaft.LeadershipTransfer()
-	}
-
-	if err := future.Error(); err != nil {
-		return nil, fmt.Errorf("leadership transfer failed: %v", err)
-	}
-
-	// Get new leader info
-	_, newLeaderId := ms.Topo.HashicorpRaft.LeaderWithID()
-	resp.NewLeader = string(newLeaderId)
-
-	return resp, nil
+	return resp, fmt.Errorf("leadership transfer is not supported: the Lux consensus writer is pinned deterministically and fails over automatically when the writer departs")
 }
