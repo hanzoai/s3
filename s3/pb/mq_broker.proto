@@ -221,7 +221,7 @@ message TopicSubscriber {
 message AssignTopicPartitionsRequest {
     schema_pb.Topic topic = 1;
     repeated BrokerPartitionAssignment broker_partition_assignments = 2;
-    bool is_leader = 3;
+    bool is_primary = 3;
     bool is_draining = 4;
 }
 message AssignTopicPartitionsResponse {

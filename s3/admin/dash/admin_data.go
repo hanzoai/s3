@@ -270,7 +270,7 @@ func (s *AdminServer) getMasterNodesStatus() []MasterNode {
 			httpAddress := pb.GrpcAddressToServerAddress(server.Address)
 			masterMap[httpAddress] = MasterNode{
 				Address:  httpAddress,
-				IsLeader: server.IsLeader,
+				IsWriter: server.IsWriter,
 			}
 		}
 		return nil
@@ -290,7 +290,7 @@ func (s *AdminServer) getMasterNodesStatus() []MasterNode {
 			// A failed RPC means connectivity issue; do not claim leadership.
 			masterMap[addr] = MasterNode{
 				Address:  addr,
-				IsLeader: raftCallSucceeded,
+				IsWriter: raftCallSucceeded,
 			}
 		}
 	}

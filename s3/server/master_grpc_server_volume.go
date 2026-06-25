@@ -12,7 +12,6 @@ import (
 
 	"github.com/hanzoai/s3/s3/topology"
 
-	"github.com/seaweedfs/raft"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
@@ -52,7 +51,7 @@ func (ms *MasterServer) ProcessGrowRequest() {
 			} else {
 				time.Sleep(5*time.Minute + time.Duration(30*rand.Float32())*time.Second)
 			}
-			if !ms.Topo.IsLeader() {
+			if !ms.Topo.IsWriter() {
 				continue
 			}
 			dcs := ms.Topo.ListDCAndRacks()
@@ -110,7 +109,7 @@ func (ms *MasterServer) ProcessGrowRequest() {
 			option := req.Option
 			vl := ms.Topo.GetVolumeLayout(option.Collection, option.ReplicaPlacement, option.Ttl, option.DiskType)
 
-			if !ms.Topo.IsLeader() {
+			if !ms.Topo.IsWriter() {
 				//discard buffered requests
 				time.Sleep(time.Second * 1)
 				vl.DoneGrowRequest()
@@ -187,7 +186,7 @@ func (ms *MasterServer) LookupVolume(ctx context.Context, req *master_pb.LookupV
 	}
 
 	// Only return Unavailable during warmup when every requested ID was a transient not-found
-	if len(req.VolumeOrFileIds) > 0 && notFoundCount == len(req.VolumeOrFileIds) && ms.Topo.IsLeader() && ms.Topo.IsWarmingUp() {
+	if len(req.VolumeOrFileIds) > 0 && notFoundCount == len(req.VolumeOrFileIds) && ms.Topo.IsWriter() && ms.Topo.IsWarmingUp() {
 		glog.V(0).Infof("lookup volume warming up: topology is still loading (%d not found)", notFoundCount)
 		return nil, fmt.Errorf("Unavailable: master is warming up, topology is still loading")
 	}
@@ -197,8 +196,8 @@ func (ms *MasterServer) LookupVolume(ctx context.Context, req *master_pb.LookupV
 
 func (ms *MasterServer) Statistics(ctx context.Context, req *master_pb.StatisticsRequest) (*master_pb.StatisticsResponse, error) {
 
-	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+	if !ms.Topo.IsWriter() {
+		return nil, topology.ErrNotWriter
 	}
 
 	if req.Replication == "" {
@@ -227,8 +226,8 @@ func (ms *MasterServer) Statistics(ctx context.Context, req *master_pb.Statistic
 
 func (ms *MasterServer) VolumeList(ctx context.Context, req *master_pb.VolumeListRequest) (*master_pb.VolumeListResponse, error) {
 
-	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+	if !ms.Topo.IsWriter() {
+		return nil, topology.ErrNotWriter
 	}
 
 	resp := &master_pb.VolumeListResponse{
@@ -241,8 +240,8 @@ func (ms *MasterServer) VolumeList(ctx context.Context, req *master_pb.VolumeLis
 
 func (ms *MasterServer) LookupEcVolume(ctx context.Context, req *master_pb.LookupEcVolumeRequest) (*master_pb.LookupEcVolumeResponse, error) {
 
-	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+	if !ms.Topo.IsWriter() {
+		return nil, topology.ErrNotWriter
 	}
 
 	resp := &master_pb.LookupEcVolumeResponse{}
@@ -277,8 +276,8 @@ func (ms *MasterServer) LookupEcVolume(ctx context.Context, req *master_pb.Looku
 
 func (ms *MasterServer) VacuumVolume(ctx context.Context, req *master_pb.VacuumVolumeRequest) (*master_pb.VacuumVolumeResponse, error) {
 
-	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+	if !ms.Topo.IsWriter() {
+		return nil, topology.ErrNotWriter
 	}
 
 	resp := &master_pb.VacuumVolumeResponse{}
@@ -313,8 +312,8 @@ func (ms *MasterServer) EnableVacuum(ctx context.Context, req *master_pb.EnableV
 
 func (ms *MasterServer) VolumeMarkReadonly(ctx context.Context, req *master_pb.VolumeMarkReadonlyRequest) (*master_pb.VolumeMarkReadonlyResponse, error) {
 
-	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+	if !ms.Topo.IsWriter() {
+		return nil, topology.ErrNotWriter
 	}
 
 	resp := &master_pb.VolumeMarkReadonlyResponse{}
@@ -341,8 +340,8 @@ func (ms *MasterServer) VolumeMarkReadonly(ctx context.Context, req *master_pb.V
 }
 
 func (ms *MasterServer) VolumeGrow(ctx context.Context, req *master_pb.VolumeGrowRequest) (*master_pb.VolumeGrowResponse, error) {
-	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+	if !ms.Topo.IsWriter() {
+		return nil, topology.ErrNotWriter
 	}
 	if req.Replication == "" {
 		req.Replication = ms.option.DefaultReplicaPlacement

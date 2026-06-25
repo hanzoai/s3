@@ -804,7 +804,7 @@ func NewGetTopicConfigurationResponse(in GetTopicConfigurationResponseInput) []b
 const (
 	assignTopicPartitionsRequestTopicOff                      = 0  // message schema_pb.Topic
 	assignTopicPartitionsRequestBrokerPartitionAssignmentsOff = 8  // repeated BrokerPartitionAssignment
-	assignTopicPartitionsRequestIsLeaderOff                   = 16 // bool
+	assignTopicPartitionsRequestIsPrimaryOff                   = 16 // bool
 	assignTopicPartitionsRequestIsDrainingOff                 = 17 // bool
 	assignTopicPartitionsRequestSize                          = 24
 )
@@ -846,9 +846,9 @@ func (t AssignTopicPartitionsRequest) BrokerPartitionAssignmentAt(i int) (Broker
 	return BrokerPartitionAssignment{o: o}, true
 }
 
-// IsLeader reads the is_leader field (proto field 3, bool).
-func (t AssignTopicPartitionsRequest) IsLeader() bool {
-	return t.o.Bool(assignTopicPartitionsRequestIsLeaderOff)
+// IsPrimary reads the is_primary field (proto field 3, bool).
+func (t AssignTopicPartitionsRequest) IsPrimary() bool {
+	return t.o.Bool(assignTopicPartitionsRequestIsPrimaryOff)
 }
 
 // IsDraining reads the is_draining field (proto field 4, bool).
@@ -863,7 +863,7 @@ func (t AssignTopicPartitionsRequest) IsDraining() bool {
 type AssignTopicPartitionsRequestInput struct {
 	Topic                      []byte
 	BrokerPartitionAssignments [][]byte
-	IsLeader                   bool
+	IsPrimary                   bool
 	IsDraining                 bool
 }
 
@@ -879,7 +879,7 @@ func NewAssignTopicPartitionsRequest(in AssignTopicPartitionsRequestInput) []byt
 	ob := b.StartObject(assignTopicPartitionsRequestSize)
 	ob.SetBytes(assignTopicPartitionsRequestTopicOff, in.Topic)
 	ob.SetList(assignTopicPartitionsRequestBrokerPartitionAssignmentsOff, listOff, listLen)
-	ob.SetBool(assignTopicPartitionsRequestIsLeaderOff, in.IsLeader)
+	ob.SetBool(assignTopicPartitionsRequestIsPrimaryOff, in.IsPrimary)
 	ob.SetBool(assignTopicPartitionsRequestIsDrainingOff, in.IsDraining)
 	ob.FinishAsRoot()
 	return b.Finish()

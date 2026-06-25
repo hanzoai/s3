@@ -2,7 +2,6 @@ package s3server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
@@ -22,8 +21,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 
 	"github.com/gorilla/mux"
-	hashicorpRaft "github.com/hashicorp/raft"
-	"github.com/seaweedfs/raft"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
@@ -41,7 +38,6 @@ import (
 const (
 	SequencerType        = "master.sequencer.type"
 	SequencerSnowflakeId = "master.sequencer.sequencer_snowflake_id"
-	raftApplyTimeout     = 1 * time.Second
 )
 
 type MasterOption struct {
@@ -80,6 +76,11 @@ type MasterServer struct {
 	grpcDialOption pb.DialOption
 
 	topologyIdGenLock sync.Mutex
+
+	// coordinatorPeers is the writer-eligible master set the Coordinator pins the
+	// writer over. Seeded from -peers and kept live by OnPeerUpdate.
+	coordinatorPeersLock sync.Mutex
+	coordinatorPeers     map[string]pb.ServerAddress
 
 	MasterClient *wdclient.MasterClient
 
@@ -134,9 +135,13 @@ func NewMasterServer(r *mux.Router, option *MasterOption, peers map[string]pb.Se
 		volumeGrowthRequestChan: make(chan *topology.VolumeGrowRequest, 1<<6),
 		clientChans:             make(map[string]chan *master_pb.KeepConnectedResponse),
 		grpcDialOption:          grpcDialOption,
+		coordinatorPeers:        make(map[string]pb.ServerAddress, len(peers)),
 		MasterClient:            wdclient.NewMasterClient(grpcDialOption, "", cluster.MasterType, option.Master, "", "", *pb.NewServiceDiscoveryFromMap(peers)),
 		adminLocks:              NewAdminLocks(),
 		Cluster:                 cluster.NewCluster(),
+	}
+	for name, addr := range peers {
+		ms.coordinatorPeers[name] = addr
 	}
 
 	ms.LockRingManager = cluster.NewLockRingManager(ms.broadcastToClients)
@@ -216,7 +221,7 @@ func (ms *MasterServer) healthzHandler(w http.ResponseWriter, r *http.Request) {
 
 func (ms *MasterServer) readyzHandler(w http.ResponseWriter, r *http.Request) {
 	// Readiness: check we can serve traffic.
-	leader, err := ms.Topo.Leader()
+	leader, err := ms.Topo.Writer()
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
@@ -234,135 +239,51 @@ func (ms *MasterServer) readyzHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (ms *MasterServer) SetRaftServer(raftServer *RaftServer) {
-	var raftServerName string
-
-	ms.Topo.RaftServerAccessLock.Lock()
-	if raftServer.raftServer != nil {
-		ms.Topo.RaftServer = raftServer.raftServer
-		ms.Topo.RaftServer.AddEventListener(raft.LeaderChangeEventType, func(e raft.Event) {
-			glog.V(0).Infof("leader change event: %+v => %+v", e.PrevValue(), e.Value())
-			stats.MasterLeaderChangeCounter.WithLabelValues(fmt.Sprintf("%+v", e.Value())).Inc()
-			if ms.Topo.RaftServer.Leader() != "" {
-				glog.V(0).Infof("[%s] %s becomes leader.", ms.Topo.RaftServer.Name(), ms.Topo.RaftServer.Leader())
-				ms.Topo.SetLastLeaderChangeTime(time.Now())
-				if pb.ServerAddress(ms.Topo.RaftServer.Leader()).Equals(pb.ServerAddress(ms.Topo.RaftServer.Name())) {
-					go ms.ensureTopologyId()
-				}
-			}
-		})
-		raftServerName = fmt.Sprintf("[%s]", ms.Topo.RaftServer.Name())
-	} else if raftServer.RaftHashicorp != nil {
-		ms.Topo.HashicorpRaft = raftServer.RaftHashicorp
-		raftServerName = ms.Topo.HashicorpRaft.String()
+// ConfigureCoordinator installs the cluster membership on the Coordinator so the
+// pinned writer is computed over the real peer set, and ensures the cluster
+// TopologyId exists. It replaces the raft SetRaftServer wiring: there is no
+// raft server, no leader-change listener and no election — the writer is a pure
+// function of membership.
+func (ms *MasterServer) ConfigureCoordinator(self pb.ServerAddress, peers map[string]pb.ServerAddress) {
+	members := make([]pb.ServerAddress, 0, len(peers))
+	for _, p := range peers {
+		members = append(members, p)
 	}
-	ms.Topo.RaftServerAccessLock.Unlock()
-
-	if ms.Topo.IsLeader() {
-		// Seed the warmup timestamp so IsWarmingUp() is active even if the
-		// leader change event hasn't fired yet (e.g. node is already leader
-		// on startup). Followers don't need warmup state.
+	ms.Topo.Coordinator.SetMembers(self, members)
+	if ms.Topo.IsWriter() {
+		// Seed the warmup timestamp so IsWarmingUp() is active immediately for
+		// the writer on startup; non-writers don't need warmup state.
 		ms.Topo.SetLastLeaderChangeTime(time.Now())
-		glog.V(0).Infof("%s I am the leader!", raftServerName)
-		go ms.ensureTopologyId()
+		glog.V(0).Infof("master %s is the pinned writer", self)
 	} else {
-		var raftServerLeader string
-		ms.Topo.RaftServerAccessLock.RLock()
-		if ms.Topo.RaftServer != nil {
-			raftServerLeader = ms.Topo.RaftServer.Leader()
-		} else if ms.Topo.HashicorpRaft != nil {
-			raftServerName = ms.Topo.HashicorpRaft.String()
-			raftServerLeaderAddr, _ := ms.Topo.HashicorpRaft.LeaderWithID()
-			raftServerLeader = string(raftServerLeaderAddr)
-		}
-		ms.Topo.RaftServerAccessLock.RUnlock()
-		glog.V(0).Infof("%s %s - is the leader.", raftServerName, raftServerLeader)
+		glog.V(0).Infof("master %s defers to pinned writer %s", self, ms.Topo.Coordinator.Writer())
 	}
+	go ms.ensureTopologyId()
 }
 
-func (ms *MasterServer) syncRaftForTopologyId(topologyId string) error {
-	ms.Topo.RaftServerAccessLock.RLock()
-	defer ms.Topo.RaftServerAccessLock.RUnlock()
-
-	if ms.Topo.RaftServer != nil {
-		_, err := ms.Topo.RaftServer.Do(topology.NewMaxVolumeIdCommand(ms.Topo.GetMaxVolumeId(), topologyId))
-		return err
-	} else if ms.Topo.HashicorpRaft != nil {
-		b, err := json.Marshal(topology.NewMaxVolumeIdCommand(ms.Topo.GetMaxVolumeId(), topologyId))
-		if err != nil {
-			return fmt.Errorf("failed marshal NewMaxVolumeIdCommand: %v", err)
-		}
-		if future := ms.Topo.HashicorpRaft.Apply(b, raftApplyTimeout); future.Error() != nil {
-			return future.Error()
-		}
-		return nil
-	}
-	return fmt.Errorf("no raft server configured")
-}
-
+// ensureTopologyId mints the cluster identity through the Coordinator. Only the
+// pinned writer generates it; others adopt it once observed. Idempotent.
 func (ms *MasterServer) ensureTopologyId() {
 	ms.topologyIdGenLock.Lock()
 	defer ms.topologyIdGenLock.Unlock()
-
-	// Send a no-op command to ensure all previous logs are applied (barrier)
-	// This handles the case where log replay is still in progress
-	glog.V(1).Infof("ensureTopologyId: sending barrier command")
-	for {
-		if !ms.Topo.IsLeader() {
-			glog.V(1).Infof("lost leadership while sending barrier command for topologyId")
-			return
-		}
-		if err := ms.syncRaftForTopologyId(ms.Topo.GetTopologyId()); err != nil {
-			glog.Errorf("failed to sync raft for topologyId: %v, retrying in 1s", err)
-			time.Sleep(time.Second)
-			continue
-		}
-		break
-	}
-	glog.V(1).Infof("ensureTopologyId: barrier command completed")
-
-	if !ms.Topo.IsLeader() {
-		return
-	}
-
-	currentId := ms.Topo.GetTopologyId()
-	glog.V(1).Infof("ensureTopologyId: current TopologyId after barrier: %s", currentId)
-
-	prevId := ms.Topo.GetTopologyId()
-
-	EnsureTopologyId(ms.Topo, func() bool {
-		return ms.Topo.IsLeader()
-	}, func(topologyId string) error {
-		return ms.syncRaftForTopologyId(topologyId)
-	})
-
-	// If a new TopologyId was generated, take a snapshot so it survives
-	// raft state cleanup on future non-resume restarts.
-	if prevId == "" && ms.Topo.GetTopologyId() != "" {
-		ms.Topo.RaftServerAccessLock.RLock()
-		if ms.Topo.RaftServer != nil {
-			if err := ms.Topo.RaftServer.TakeSnapshot(); err != nil {
-				glog.Warningf("snapshot after TopologyId generation: %v", err)
-			} else {
-				glog.V(0).Infof("snapshot taken to persist TopologyId %s", ms.Topo.GetTopologyId())
-			}
-		}
-		// Hashicorp raft snapshots are handled automatically.
-		ms.Topo.RaftServerAccessLock.RUnlock()
+	if id, err := ms.Topo.Coordinator.EnsureTopologyId(); err != nil {
+		glog.Errorf("ensureTopologyId: %v", err)
+	} else if id != "" {
+		glog.V(1).Infof("ensureTopologyId: %s", id)
 	}
 }
 
 func (ms *MasterServer) proxyToLeader(f http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if ms.Topo.IsLeader() {
+		if ms.Topo.IsWriter() {
 			f(w, r)
 			return
 		}
 
-		// get the current raft leader
-		leaderAddr, _ := ms.Topo.MaybeLeader()
-		raftServerLeader := leaderAddr.ToHttpAddress()
-		if raftServerLeader == "" {
+		// proxy to the pinned writer
+		writerAddr, _ := ms.Topo.MaybeWriter()
+		writerLeaderAddr := writerAddr.ToHttpAddress()
+		if writerLeaderAddr == "" {
 			f(w, r)
 			return
 		}
@@ -370,15 +291,15 @@ func (ms *MasterServer) proxyToLeader(f http.HandlerFunc) http.HandlerFunc {
 		// determine the scheme based on HTTPS client configuration
 		scheme := util_http.GetGlobalHttpClient().GetHttpScheme()
 
-		targetUrl, err := url.Parse(scheme + "://" + raftServerLeader)
+		targetUrl, err := url.Parse(scheme + "://" + writerLeaderAddr)
 		if err != nil {
 			writeJsonError(w, r, http.StatusInternalServerError,
-				fmt.Errorf("Leader URL %s://%s Parse Error: %v", scheme, raftServerLeader, err))
+				fmt.Errorf("Leader URL %s://%s Parse Error: %v", scheme, writerLeaderAddr, err))
 			return
 		}
 
 		// proxy to leader
-		glog.V(4).Infoln("proxying to leader", raftServerLeader, "using", scheme)
+		glog.V(4).Infoln("proxying to leader", writerLeaderAddr, "using", scheme)
 		proxy := httputil.NewSingleHostReverseProxy(targetUrl)
 		proxy.Transport = util_http.GetGlobalHttpClient().GetClientTransport()
 		proxy.ServeHTTP(w, r)
@@ -431,7 +352,7 @@ func (ms *MasterServer) startAdminScripts() {
 	go func() {
 		for {
 			time.Sleep(time.Duration(sleepMinutes) * time.Minute)
-			if ms.Topo.IsLeader() && ms.MasterClient.GetMaster(context.Background()) != "" {
+			if ms.Topo.IsWriter() && ms.MasterClient.GetMaster(context.Background()) != "" {
 				if ms.isAdminServerConnectedFunc() {
 					glog.V(1).Infof("Skipping master maintenance scripts because admin server is connected")
 					continue
@@ -497,39 +418,24 @@ func (ms *MasterServer) createSequencer(option *MasterOption) sequence.Sequencer
 	return seq
 }
 
+// OnPeerUpdate keeps the Coordinator's writer-eligible membership in sync with
+// the live master set. A joining master is added; a departing one is dropped
+// only after it fails a ZAP liveness probe, so a transient blip does not re-pin
+// the writer. The pinned writer is recomputed (lowest live address) on every
+// change — this is the leaderless failover that replaces raft re-election.
 func (ms *MasterServer) OnPeerUpdate(update *master_pb.ClusterNodeUpdate, startFrom time.Time) {
-	ms.Topo.RaftServerAccessLock.RLock()
-	defer ms.Topo.RaftServerAccessLock.RUnlock()
-
-	if update.NodeType != cluster.MasterType || ms.Topo.HashicorpRaft == nil {
+	if update.NodeType != cluster.MasterType {
 		return
 	}
 	glog.V(4).Infof("OnPeerUpdate: %+v", update)
 
 	peerAddress := pb.ServerAddress(update.Address)
-	peerName := raftServerID(peerAddress)
-	if ms.Topo.HashicorpRaft.State() != hashicorpRaft.Leader {
-		return
-	}
+	ms.coordinatorPeersLock.Lock()
 	if update.IsAdd {
-		raftServerFound := false
-		for _, server := range ms.Topo.HashicorpRaft.GetConfiguration().Configuration().Servers {
-			if string(server.ID) == peerName {
-				raftServerFound = true
-			}
-		}
-		if !raftServerFound {
-			glog.V(0).Infof("adding new raft server: %s", peerName)
-			ms.Topo.HashicorpRaft.AddVoter(
-				hashicorpRaft.ServerID(peerName),
-				hashicorpRaft.ServerAddress(peerAddress.ToGrpcAddress()), 0, 0)
-		}
+		ms.coordinatorPeers[string(peerAddress)] = peerAddress
 	} else {
-		// Liveness probe of the departing peer over the native ZAP transport: the
-		// whole master service is served over ZAP (see master.NewServerBackend),
-		// so dial the master ZAP endpoint directly. The raft membership removal
-		// below stays on the gRPC raft client: it is part of the consensus path and
-		// is migrated separately.
+		// Probe the departing peer over the native ZAP transport (the whole master
+		// service is served over ZAP); only drop it when it is truly unreachable.
 		pingFailed := false
 		if zapClient, dialErr := masterwire.Dial("tcp", peerAddress.ToMasterZapAddress()); dialErr != nil {
 			pingFailed = true
@@ -539,31 +445,24 @@ func (ms *MasterServer) OnPeerUpdate(update *master_pb.ClusterNodeUpdate, startF
 			pingFailed = pErr != nil
 		}
 		if pingFailed {
-			glog.V(0).Infof("master %s didn't respond to pings. remove raft server", peerName)
-			if err := ms.MasterClient.WithClient(false, func(client master_pb.HanzoClient) error {
-				_, err := client.RaftRemoveServer(context.Background(), &master_pb.RaftRemoveServerRequest{
-					Id:    peerName,
-					Force: false,
-				})
-				return err
-			}); err != nil {
-				glog.Warningf("failed removing old raft server: %v", err)
-			}
+			delete(ms.coordinatorPeers, string(peerAddress))
+			glog.V(0).Infof("master %s unreachable; dropped from writer-eligible set", peerAddress)
 		} else {
-			glog.V(0).Infof("master %s successfully responded to ping", peerName)
+			glog.V(0).Infof("master %s responded to ping; keeping in writer-eligible set", peerAddress)
 		}
 	}
+	members := make([]pb.ServerAddress, 0, len(ms.coordinatorPeers))
+	for _, p := range ms.coordinatorPeers {
+		members = append(members, p)
+	}
+	ms.coordinatorPeersLock.Unlock()
+	ms.Topo.Coordinator.SetMembers(ms.option.Master, members)
 }
 
-func (ms *MasterServer) Shutdown() {
-	if ms.Topo == nil || ms.Topo.HashicorpRaft == nil {
-		return
-	}
-	if ms.Topo.HashicorpRaft.State() == hashicorpRaft.Leader {
-		ms.Topo.HashicorpRaft.LeadershipTransfer()
-	}
-	ms.Topo.HashicorpRaft.Shutdown()
-}
+// Shutdown is a no-op: the leaderless Coordinator holds no durable raft state to
+// flush and there is no leadership to transfer. Kept for the grace.OnInterrupt
+// call site.
+func (ms *MasterServer) Shutdown() {}
 
 func (ms *MasterServer) Reload() {
 	glog.V(0).Infoln("Reload master server...")

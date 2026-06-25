@@ -16,7 +16,7 @@ import (
 	"github.com/hanzoai/s3/s3/stats"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
 
-	"github.com/seaweedfs/raft"
+	"github.com/hanzoai/s3/s3/topology"
 )
 
 /*
@@ -131,8 +131,8 @@ func (locks *AdminLocks) deleteLock(lockName string) {
 func (ms *MasterServer) LeaseAdminToken(ctx context.Context, req *master_pb.LeaseAdminTokenRequest) (*master_pb.LeaseAdminTokenResponse, error) {
 	resp := &master_pb.LeaseAdminTokenResponse{}
 
-	if !ms.Topo.IsLeader() {
-		return resp, raft.NotLeaderError
+	if !ms.Topo.IsWriter() {
+		return resp, topology.ErrNotWriter
 	}
 
 	if lastClient, lastMessage, isLocked := ms.adminLocks.isLocked(req.LockName); isLocked {

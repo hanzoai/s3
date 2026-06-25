@@ -322,7 +322,7 @@ func RaftListClusterServersRespToWire(r *master_pb.RaftListClusterServersRespons
 	servers := make([][]byte, len(r.ClusterServers))
 	for i, s := range r.ClusterServers {
 		servers[i] = masterwire.NewRaftListClusterServersResponseClusterServers(masterwire.RaftListClusterServersResponseClusterServersInput{
-			Id: s.Id, Address: s.Address, Suffrage: s.Suffrage, IsLeader: s.IsLeader,
+			Id: s.Id, Address: s.Address, Suffrage: s.Suffrage, IsWriter: s.IsWriter,
 		})
 	}
 	return masterwire.NewRaftListClusterServersResponse(masterwire.RaftListClusterServersResponseInput{ClusterServers: servers})
