@@ -6,14 +6,17 @@ import (
 	"io"
 	"time"
 
+	"github.com/zap-proto/go/transport"
+
 	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/mq/agent/agentconv"
 	"github.com/hanzoai/s3/s3/mq/sub_coordinator"
 	"github.com/hanzoai/s3/s3/mq/topic"
-	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/pb/schema_pb"
 	"github.com/hanzoai/s3/s3/util/log_buffer"
+	mq_brokerwire "github.com/hanzoai/s3/s3/wire/mq_broker"
 )
 
 func (b *MessageQueueBroker) SubscribeMessage(stream mq_pb.HanzoMessaging_SubscribeMessageServer) error {
@@ -72,37 +75,36 @@ func (b *MessageQueueBroker) SubscribeMessage(stream mq_pb.HanzoMessaging_Subscr
 		}
 	}()
 
-	// connect to the follower
-	var subscribeFollowMeStream mq_pb.HanzoMessaging_SubscribeFollowMeClient
+	// connect to the follower over the native ZAP transport. The follower broker
+	// fully cut over to ZAP (no gRPC), so its address IS the ZAP endpoint: dial it,
+	// open the SubscribeFollowMe client-stream with the Init frame, then forward Ack
+	// and Close as zero-copy wire frames — same doctrine as the PublishFollowMe
+	// follower path in local_partition.go.
+	var subscribeFollowMeStream transport.Stream
+	var followerConn transport.Conn
 	glog.V(0).Infof("follower broker: %v", req.GetInit().FollowerBroker)
 	if req.GetInit().FollowerBroker != "" {
 		follower := req.GetInit().FollowerBroker
-		if followerGrpcConnection, err := pb.GrpcDial(ctx, follower, true, b.grpcDialOption); err != nil {
+		if followerConn, err = transport.Dial("tcp", follower); err != nil {
 			return fmt.Errorf("fail to dial %s: %v", follower, err)
-		} else {
-			defer func() {
-				println("closing SubscribeFollowMe connection", follower)
-				if subscribeFollowMeStream != nil {
-					subscribeFollowMeStream.CloseSend()
-				}
-				// followerGrpcConnection.Close()
-			}()
-			followerClient := mq_pb.NewHanzoMessagingClient(followerGrpcConnection)
-			if subscribeFollowMeStream, err = followerClient.SubscribeFollowMe(ctx); err != nil {
-				return fmt.Errorf("fail to subscribe to %s: %v", follower, err)
-			} else {
-				if err := subscribeFollowMeStream.Send(&mq_pb.SubscribeFollowMeRequest{
-					Message: &mq_pb.SubscribeFollowMeRequest_Init{
-						Init: &mq_pb.SubscribeFollowMeRequest_InitMessage{
-							Topic:         req.GetInit().Topic,
-							Partition:     req.GetInit().GetPartitionOffset().Partition,
-							ConsumerGroup: req.GetInit().ConsumerGroup,
-						},
-					},
-				}); err != nil {
-					return fmt.Errorf("fail to send init to %s: %v", follower, err)
-				}
+		}
+		defer func() {
+			println("closing SubscribeFollowMe connection", follower)
+			if subscribeFollowMeStream != nil {
+				_ = subscribeFollowMeStream.CloseSend()
 			}
+			_ = followerConn.Close()
+		}()
+		initBuf := mq_brokerwire.NewSubscribeFollowMeRequest(mq_brokerwire.SubscribeFollowMeRequestInput{
+			MessageWhich: mq_brokerwire.SubscribeFollowMeRequestMessageInit,
+			MessageValue: mq_brokerwire.NewSubscribeFollowMeRequestInitMessage(mq_brokerwire.SubscribeFollowMeRequestInitMessageInput{
+				Topic:         agentconv.TopicToWire(req.GetInit().Topic),
+				Partition:     agentconv.PartitionToWire(req.GetInit().GetPartitionOffset().Partition),
+				ConsumerGroup: req.GetInit().ConsumerGroup,
+			}),
+		})
+		if subscribeFollowMeStream, err = followerConn.OpenStream(mq_brokerwire.HanzoMessagingSubscribeFollowMeOrdinal, initBuf); err != nil {
+			return fmt.Errorf("fail to subscribe to %s: %v", follower, err)
 		}
 		glog.V(0).Infof("follower %s connected", follower)
 	}
@@ -163,13 +165,12 @@ func (b *MessageQueueBroker) SubscribeMessage(stream mq_pb.HanzoMessaging_Subscr
 			subscriber.UpdateAckedOffset(currentLastOffset)
 			// fmt.Printf("%+v recv (%s,%d), oldest %d\n", partition, string(ack.GetAck().Key), ack.GetAck().TsNs, currentLastOffset)
 			if subscribeFollowMeStream != nil && currentLastOffset > lastOffset {
-				if err := subscribeFollowMeStream.Send(&mq_pb.SubscribeFollowMeRequest{
-					Message: &mq_pb.SubscribeFollowMeRequest_Ack{
-						Ack: &mq_pb.SubscribeFollowMeRequest_AckMessage{
-							TsNs: currentLastOffset,
-						},
-					},
-				}); err != nil {
+				if err := subscribeFollowMeStream.Send(mq_brokerwire.NewSubscribeFollowMeRequest(mq_brokerwire.SubscribeFollowMeRequestInput{
+					MessageWhich: mq_brokerwire.SubscribeFollowMeRequestMessageAck,
+					MessageValue: mq_brokerwire.NewSubscribeFollowMeRequestAckMessage(mq_brokerwire.SubscribeFollowMeRequestAckMessageInput{
+						TsNs: currentLastOffset,
+					}),
+				})); err != nil {
 					glog.Errorf("Error sending ack to follower: %v", err)
 					break
 				}
@@ -184,11 +185,10 @@ func (b *MessageQueueBroker) SubscribeMessage(stream mq_pb.HanzoMessaging_Subscr
 			}
 		}
 		if subscribeFollowMeStream != nil {
-			if err := subscribeFollowMeStream.Send(&mq_pb.SubscribeFollowMeRequest{
-				Message: &mq_pb.SubscribeFollowMeRequest_Close{
-					Close: &mq_pb.SubscribeFollowMeRequest_CloseMessage{},
-				},
-			}); err != nil {
+			if err := subscribeFollowMeStream.Send(mq_brokerwire.NewSubscribeFollowMeRequest(mq_brokerwire.SubscribeFollowMeRequestInput{
+				MessageWhich: mq_brokerwire.SubscribeFollowMeRequestMessageClose,
+				MessageValue: mq_brokerwire.NewSubscribeFollowMeRequestCloseMessage(mq_brokerwire.SubscribeFollowMeRequestCloseMessageInput{}),
+			})); err != nil {
 				if err != io.EOF {
 					glog.Errorf("Error sending close to follower: %v", err)
 				}
