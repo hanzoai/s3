@@ -587,28 +587,37 @@ func WithFilerClient(streamingMode bool, signature int32, filer ServerAddress, g
 // The streamingMode/signature/grpcDialOption parameters are retained for caller
 // compatibility; the ZAP path needs neither a streaming flag (every stream is a
 // transport stream) nor a dial option. The connection is closed when fn returns.
-// dialFilerZap opens a ZAP connection to the filer. When grpc.filer.cert/.key is
-// configured it is PQ-secured TLS (transport.PQTLSConfig pins X25519MLKEM768, the
-// PQ X-Wing curve) presenting the client cert and trusting grpc.ca — the same
-// mTLS the legacy gRPC filer client used. Otherwise plaintext (loopback / dev),
-// matching the filer server's gating in command/filer.go. The returned *Conn
-// drives both unary Call and client-initiated OpenStream (streaming).
-func dialFilerZap(filerAddress ServerAddress) (*transport.Conn, error) {
-	addr := filerAddress.ToGrpcAddress()
+// dialFilerZapAddr opens a ZAP connection to a filer grpc address. When
+// grpc.filer.cert/.key is configured it is PQ-secured TLS (transport.PQTLSConfig
+// pins X25519MLKEM768, the PQ X-Wing curve) presenting the client cert and
+// trusting grpc.ca — the same mTLS the legacy gRPC filer client used. Otherwise
+// plaintext (loopback / dev), matching the filer server's gating in
+// command/filer.go. The returned *Conn drives both unary Call and OpenStream.
+func dialFilerZapAddr(addr string) (*transport.Conn, error) {
 	if cfg := security.ClientTLSConfig(util.GetViper(), "grpc.filer"); cfg != nil {
 		return transport.DialTLS("tcp", addr, transport.PQTLSConfig(cfg))
 	}
 	return transport.Dial("tcp", addr)
 }
 
+// filerPool reuses one ZAP connection per filer address across calls — a Conn is
+// concurrency-safe, so this avoids a fresh TCP (and, under grpc.filer mTLS, a
+// fresh X25519MLKEM768 handshake) on every filer RPC. Generic pooling lives in
+// the transport (transport.Pool); only the dial choice is ours.
+var filerPool = transport.NewPool(dialFilerZapAddr)
+
 func WithGrpcFilerClient(streamingMode bool, signature int32, filerAddress ServerAddress, grpcDialOption grpc.DialOption, fn func(client filer_pb.HanzoFilerClient) error) error {
 	_, _, _ = streamingMode, signature, grpcDialOption
-	conn, err := dialFilerZap(filerAddress)
+	addr := filerAddress.ToGrpcAddress()
+	conn, err := filerPool.Get(addr)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
-	return fn(NewZapFilerClient(conn))
+	err = fn(NewZapFilerClient(conn))
+	if conn.IsClosed() { // the conn died during the call — drop it so the next redials
+		filerPool.Evict(addr, conn)
+	}
+	return err
 }
 
 // WithOneOfGrpcFilerClients tries each filer address in turn over the ZAP
@@ -616,13 +625,16 @@ func WithGrpcFilerClient(streamingMode bool, signature int32, filerAddress Serve
 func WithOneOfGrpcFilerClients(streamingMode bool, filerAddresses []ServerAddress, grpcDialOption grpc.DialOption, fn func(client filer_pb.HanzoFilerClient) error) (err error) {
 	_, _ = streamingMode, grpcDialOption
 	for _, filerAddress := range filerAddresses {
-		conn, dialErr := dialFilerZap(filerAddress)
+		addr := filerAddress.ToGrpcAddress()
+		conn, dialErr := filerPool.Get(addr)
 		if dialErr != nil {
 			err = dialErr
 			continue
 		}
 		err = fn(NewZapFilerClient(conn))
-		_ = conn.Close()
+		if conn.IsClosed() {
+			filerPool.Evict(addr, conn)
+		}
 		if err == nil {
 			return nil
 		}
