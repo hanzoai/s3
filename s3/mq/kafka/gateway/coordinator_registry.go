@@ -27,7 +27,7 @@ import (
 type CoordinatorRegistry struct {
 	// Leader election
 	leaderLock       *cluster.LiveLock
-	isLeader         bool
+	isPrimary        bool
 	leaderMutex      sync.RWMutex
 	leadershipChange chan string // Notifies when leadership changes
 
@@ -197,13 +197,13 @@ func (cr *CoordinatorRegistry) onLeadershipChange(newLeader string) {
 	cr.leaderMutex.Lock()
 	defer cr.leaderMutex.Unlock()
 
-	wasLeader := cr.isLeader
-	cr.isLeader = (newLeader == cr.gatewayAddress)
+	wasLeader := cr.isPrimary
+	cr.isPrimary = (newLeader == cr.gatewayAddress)
 
-	if cr.isLeader && !wasLeader {
+	if cr.isPrimary && !wasLeader {
 		glog.V(0).Infof("Gateway %s became the coordinator registry leader", cr.gatewayAddress)
 		cr.onBecameLeader()
-	} else if !cr.isLeader && wasLeader {
+	} else if !cr.isPrimary && wasLeader {
 		glog.V(0).Infof("Gateway %s lost coordinator registry leadership to %s", cr.gatewayAddress, newLeader)
 		cr.onLostLeadership()
 	}
@@ -237,11 +237,11 @@ func (cr *CoordinatorRegistry) onLostLeadership() {
 	glog.V(1).Info("Lost leadership - no longer managing coordinator assignments")
 }
 
-// IsLeader returns whether this gateway is the coordinator registry leader
-func (cr *CoordinatorRegistry) IsLeader() bool {
+// IsPrimary returns whether this gateway is the coordinator registry leader
+func (cr *CoordinatorRegistry) IsPrimary() bool {
 	cr.leaderMutex.RLock()
 	defer cr.leaderMutex.RUnlock()
-	return cr.isLeader
+	return cr.isPrimary
 }
 
 // GetLeaderAddress returns the current leader's address
@@ -260,7 +260,7 @@ func (cr *CoordinatorRegistry) WaitForLeader(timeout time.Duration) (string, err
 	}
 
 	// Check if this instance is the leader
-	if cr.IsLeader() {
+	if cr.IsPrimary() {
 		return cr.gatewayAddress, nil
 	}
 
@@ -280,7 +280,7 @@ func (cr *CoordinatorRegistry) WaitForLeader(timeout time.Duration) (string, err
 		if leader := cr.GetLeaderAddress(); leader != "" {
 			return leader, nil
 		}
-		if cr.IsLeader() {
+		if cr.IsPrimary() {
 			return cr.gatewayAddress, nil
 		}
 
@@ -297,7 +297,7 @@ func (cr *CoordinatorRegistry) WaitForLeader(timeout time.Duration) (string, err
 // consumer group across the set of healthy gateways. This spreads groups evenly
 // and avoids hot-spotting on the first requester.
 func (cr *CoordinatorRegistry) AssignCoordinator(consumerGroup string, requestingGateway string) (*protocol.CoordinatorAssignment, error) {
-	if !cr.IsLeader() {
+	if !cr.IsPrimary() {
 		return nil, fmt.Errorf("not the coordinator registry leader")
 	}
 
@@ -351,7 +351,7 @@ func (cr *CoordinatorRegistry) AssignCoordinator(consumerGroup string, requestin
 
 // GetCoordinator returns the coordinator for a consumer group
 func (cr *CoordinatorRegistry) GetCoordinator(consumerGroup string) (*protocol.CoordinatorAssignment, error) {
-	if !cr.IsLeader() {
+	if !cr.IsPrimary() {
 		return nil, fmt.Errorf("not the coordinator registry leader")
 	}
 
@@ -366,7 +366,7 @@ func (cr *CoordinatorRegistry) GetCoordinator(consumerGroup string) (*protocol.C
 
 // RegisterGateway registers a gateway instance
 func (cr *CoordinatorRegistry) RegisterGateway(gatewayAddress string) error {
-	if !cr.IsLeader() {
+	if !cr.IsPrimary() {
 		return fmt.Errorf("not the coordinator registry leader")
 	}
 
@@ -394,7 +394,7 @@ func (cr *CoordinatorRegistry) registerGateway(gatewayAddress string) {
 
 // HeartbeatGateway updates the heartbeat for a gateway
 func (cr *CoordinatorRegistry) HeartbeatGateway(gatewayAddress string) error {
-	if !cr.IsLeader() {
+	if !cr.IsPrimary() {
 		return fmt.Errorf("not the coordinator registry leader")
 	}
 
@@ -510,7 +510,7 @@ func (cr *CoordinatorRegistry) startHeartbeatLoop() {
 			case <-cr.stopChan:
 				return
 			case <-ticker.C:
-				if cr.IsLeader() {
+				if cr.IsPrimary() {
 					// Send heartbeat for this gateway to keep it healthy
 					if err := cr.HeartbeatGateway(cr.gatewayAddress); err != nil {
 						glog.V(2).Infof("Failed to send heartbeat for gateway %s: %v", cr.gatewayAddress, err)
@@ -535,7 +535,7 @@ func (cr *CoordinatorRegistry) startCleanupLoop() {
 			case <-cr.stopChan:
 				return
 			case <-ticker.C:
-				if cr.IsLeader() {
+				if cr.IsPrimary() {
 					cr.cleanupStaleEntries()
 				}
 			}
@@ -617,14 +617,14 @@ func (cr *CoordinatorRegistry) cleanupStaleEntries() {
 
 // GetStats returns registry statistics
 func (cr *CoordinatorRegistry) GetStats() map[string]interface{} {
-	// Read counts separately to avoid holding locks while calling IsLeader()
+	// Read counts separately to avoid holding locks while calling IsPrimary()
 	cr.gatewaysMutex.RLock()
 	gatewayCount := len(cr.activeGateways)
 	cr.gatewaysMutex.RUnlock()
 
 	// Count assignments from files
 	var assignmentCount int
-	if cr.IsLeader() {
+	if cr.IsPrimary() {
 		consumerGroups, err := cr.listAllCoordinatorAssignments()
 		if err != nil {
 			glog.Warningf("Failed to count coordinator assignments: %v", err)
@@ -637,7 +637,7 @@ func (cr *CoordinatorRegistry) GetStats() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"is_leader":       cr.IsLeader(),
+		"is_leader":       cr.IsPrimary(),
 		"leader_address":  cr.GetLeaderAddress(),
 		"active_gateways": gatewayCount,
 		"assignments":     assignmentCount,
@@ -649,7 +649,7 @@ func (cr *CoordinatorRegistry) GetStats() map[string]interface{} {
 
 // saveCoordinatorAssignment saves a single coordinator assignment to its individual file
 func (cr *CoordinatorRegistry) saveCoordinatorAssignment(consumerGroup string, assignment *protocol.CoordinatorAssignment) error {
-	if !cr.IsLeader() {
+	if !cr.IsPrimary() {
 		// Only leader should save assignments
 		return nil
 	}
@@ -744,7 +744,7 @@ func (cr *CoordinatorRegistry) listAllCoordinatorAssignments() ([]string, error)
 
 // deleteCoordinatorAssignment removes a coordinator assignment file
 func (cr *CoordinatorRegistry) deleteCoordinatorAssignment(consumerGroup string) error {
-	if !cr.IsLeader() {
+	if !cr.IsPrimary() {
 		return nil
 	}
 
@@ -768,7 +768,7 @@ func (cr *CoordinatorRegistry) deleteCoordinatorAssignment(consumerGroup string)
 // ReassignCoordinator manually reassigns a coordinator for a consumer group
 // This can be called when a coordinator gateway becomes unavailable
 func (cr *CoordinatorRegistry) ReassignCoordinator(consumerGroup string) (*protocol.CoordinatorAssignment, error) {
-	if !cr.IsLeader() {
+	if !cr.IsPrimary() {
 		return nil, fmt.Errorf("not the coordinator registry leader")
 	}
 

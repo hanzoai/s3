@@ -12,7 +12,7 @@ import (
 
 // CoordinatorRegistryInterface defines the interface for coordinator registry operations
 type CoordinatorRegistryInterface interface {
-	IsLeader() bool
+	IsPrimary() bool
 	GetLeaderAddress() string
 	WaitForLeader(timeout time.Duration) (string, error)
 	AssignCoordinator(consumerGroup string, requestingGateway string) (*CoordinatorAssignment, error)
@@ -353,7 +353,7 @@ func (h *Handler) findCoordinatorForGroup(groupID string) (host string, port int
 	}
 
 	// If this gateway is the leader, handle the assignment directly
-	if registry.IsLeader() {
+	if registry.IsPrimary() {
 		return h.handleCoordinatorAssignmentAsLeader(groupID, registry)
 	}
 
@@ -414,7 +414,7 @@ func (h *Handler) requestCoordinatorFromLeader(groupID string, registry Coordina
 
 	// Since we don't have direct RPC between gateways yet, and the leader might be this gateway,
 	// check if we became the leader during the wait
-	if registry.IsLeader() {
+	if registry.IsPrimary() {
 		return h.handleCoordinatorAssignmentAsLeader(groupID, registry)
 	}
 

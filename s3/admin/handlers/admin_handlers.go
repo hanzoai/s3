@@ -536,7 +536,7 @@ func (h *AdminHandlers) getAdminData(r *http.Request) dash.AdminData {
 		masterNodes := []dash.MasterNode{
 			{
 				Address:  "localhost:9333",
-				IsLeader: true,
+				IsWriter: true,
 			},
 		}
 

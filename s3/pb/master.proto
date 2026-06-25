@@ -479,7 +479,7 @@ message RaftListClusterServersResponse {
     string id = 1;
     string address = 2;
     string suffrage = 3;
-    bool   isLeader = 4;
+    bool   isWriter = 4;
   }
   repeated ClusterServers cluster_servers = 1;
 }

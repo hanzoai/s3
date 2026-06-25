@@ -133,10 +133,10 @@ func (ms *MasterServer) redirectHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (ms *MasterServer) submitFromMasterServerHandler(w http.ResponseWriter, r *http.Request) {
-	if ms.Topo.IsLeader() {
+	if ms.Topo.IsWriter() {
 		submitForClientHandler(w, r, func(ctx context.Context) pb.ServerAddress { return ms.option.Master }, ms.grpcDialOption)
 	} else {
-		masterUrl, err := ms.Topo.Leader()
+		masterUrl, err := ms.Topo.Writer()
 		if err != nil {
 			writeJsonError(w, r, http.StatusInternalServerError, err)
 		} else {

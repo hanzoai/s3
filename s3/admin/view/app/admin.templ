@@ -250,7 +250,7 @@ templ Admin(data dash.AdminData) {
                                                 </a>
                                             </td>
                                             <td>
-                                                if master.IsLeader {
+                                                if master.IsWriter {
                                                     <span class="badge bg-primary">Leader</span>
                                                 } else {
                                                     <span class="badge bg-secondary">Follower</span>

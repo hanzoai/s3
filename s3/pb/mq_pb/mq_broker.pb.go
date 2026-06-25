@@ -1595,7 +1595,7 @@ type AssignTopicPartitionsRequest struct {
 
 	Topic                      *schema_pb.Topic             `protobuf:"bytes,1,opt,name=topic,proto3" json:"topic,omitempty"`
 	BrokerPartitionAssignments []*BrokerPartitionAssignment `protobuf:"bytes,2,rep,name=broker_partition_assignments,json=brokerPartitionAssignments,proto3" json:"broker_partition_assignments,omitempty"`
-	IsLeader                   bool                         `protobuf:"varint,3,opt,name=is_leader,json=isLeader,proto3" json:"is_leader,omitempty"`
+	IsPrimary                   bool                         `protobuf:"varint,3,opt,name=is_primary,json=isPrimary,proto3" json:"is_primary,omitempty"`
 	IsDraining                 bool                         `protobuf:"varint,4,opt,name=is_draining,json=isDraining,proto3" json:"is_draining,omitempty"`
 }
 
@@ -1645,9 +1645,9 @@ func (x *AssignTopicPartitionsRequest) GetBrokerPartitionAssignments() []*Broker
 	return nil
 }
 
-func (x *AssignTopicPartitionsRequest) GetIsLeader() bool {
+func (x *AssignTopicPartitionsRequest) GetIsPrimary() bool {
 	if x != nil {
-		return x.IsLeader
+		return x.IsPrimary
 	}
 	return false
 }

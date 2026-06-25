@@ -21,7 +21,7 @@ type ClusterTopology struct {
 
 type MasterNode struct {
 	Address  string `json:"address"`
-	IsLeader bool   `json:"is_leader"`
+	IsWriter bool   `json:"is_writer"`
 }
 
 type DataCenter struct {
@@ -268,7 +268,7 @@ type ClusterCollectionsData struct {
 // Master and Filer management structures
 type MasterInfo struct {
 	Address  string `json:"address"`
-	IsLeader bool   `json:"is_leader"`
+	IsWriter bool   `json:"is_writer"`
 	Suffrage string `json:"suffrage"`
 }
 
