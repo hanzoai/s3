@@ -10,7 +10,7 @@ import (
 // unimplementedVolumeServer fills the volume_server_pb.VolumeServerServer methods
 // the test fake does not exercise, returning errFakeVolumeUnsupported. It is the
 // test-local stand-in for the retired grpc UnimplementedVolumeServerServer, so
-// the fake satisfies the full grpc-free server contract volumezap dispatches.
+// the fake satisfies the full grpc-free server contract volume dispatches.
 type unimplementedVolumeServer struct{}
 
 var errFakeVolumeUnsupported = errors.New("fake volume server: RPC not implemented")

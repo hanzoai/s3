@@ -41,8 +41,8 @@ import it aliased: `zapdb "github.com/luxfi/zapdb"`).
   as a pure transitive dep.
 
 ## gRPC rip — transport status
-The filer and master RPC services run **end to end over the native ZAP transport**
-(`zap-proto/go`); gRPC is gone from those paths. Error semantics cross the wire as
+The filer, master, and **MQ broker** RPC services run **end to end over the native
+ZAP transport** (`zap-proto/go`); gRPC is gone from those paths. Error semantics cross the wire as
 the error STRING, not a gRPC status: each server tags a failure with its PascalCase
 code name (e.g. `fmt.Errorf("Unavailable: ...")`, `fmt.Errorf("NotFound: ...")`) and
 the ZAP dispatch ships `herr.Error()` verbatim, so the name survives to the client.
@@ -52,31 +52,40 @@ for filer/master error mapping. The filer's not-found is normalized back to the
 `filer_pb.ErrNotFound` sentinel by `filer_pb.LookupEntry`, so `errors.Is(err, ErrNotFound)`
 also works there. A round-trip proof lives in `s3/masterzap/error_propagation_test.go`.
 
+The MQ broker rip mirrors filer/master exactly: `pb/mq_pb/mq_broker_grpc.pb.go` is
+grpc-free (client iface returns `pb/rpc` stream seams, no `grpc.CallOption`; server
+iface is a plain method set; all `Register*`/`ServiceDesc`/`_Handler`/`Unimplemented`-
+via-grpc scaffolding deleted, replaced by a de-grpc'd `UnimplementedHanzoMessagingServer`
+that returns a plain error). `mqzap/client.go` returns `rpc.{Bidi,Client,Server}Stream`;
+`mqzap/stream_server.go` drops the `grpc.ServerStream` embed. `command/mq_broker.go`
+serves ZAP (unary `Dispatch` + 7-stream `StreamHandler`); `pb.WithBrokerGrpcClient`
+dials ZAP via `brokerPool`. The last gRPC broker dial (`admin/dash/admin_server.go`
+`UpdateTopicRetention`) now uses `pb.WithBrokerGrpcClient` too. Broker engine methods
+(`mq/broker/broker_grpc_*.go`) keep their `mq_pb.HanzoMessaging_*Server` signatures —
+those names are now plain `Send/Recv/Context` interfaces, not grpc generic streams.
+
 gRPC is still **load-bearing** in (these legitimately import grpc — leave them):
 - **Volume server RPC** — still gRPC-served (`command/volume.go`, `server/volume_grpc_*.go`,
   `pb/volume_server_pb/volume_server_grpc.pb.go`). Its `status.Errorf(codes.X)` producers
   must stay so gRPC clients get real codes; `peer.FromContext` works over gRPC.
-- **MQ broker RPC** — still gRPC-served (`command/mq_broker.go`, `mq/broker/broker_grpc_*.go`,
-  `pb/mq_pb/mq_broker_grpc.pb.go`).
 - **Raft transport** — hashicorp/seaweedfs raft rides the master's gRPC listener
   (`server/raft_hashicorp.go`, the `pb.NewGrpcServer` + `reflection.Register` in
   `command/master.go` and `master_follower.go`). The master's own service is ZAP; the
   gRPC listener carries raft only.
-- **Strangler client seams** `mqzap/client.go` / `volumezap/client.go` — they implement
-  the `*_pb.*Client` interfaces, whose generated signatures use `grpc.{CallOption,
-  *StreamingClient}` and `metadata.MD`. Bound to grpc until those `*_pb` interfaces are
-  regenerated grpc-free. Neither is wired into production yet.
-- **Core dial/server + request-id** — `pb/grpc_client_server.go` (volume/broker dials,
-  `NewGrpcServer`), `operation/grpc_client.go`, `server/common.go` + `admin/dash/admin_server.go`
-  (grpc metadata / broker dial).
+- **Strangler client seam** `volumezap/client.go` — implements the
+  `volume_server_pb.*Client` interface, whose generated signatures use `grpc.{CallOption,
+  *StreamingClient}` and `metadata.MD`. Bound to grpc until that `*_pb` interface is
+  regenerated grpc-free. (`mqzap/client.go` is now grpc-free — see above.)
+- **Core dial/server + request-id** — `pb/grpc_client_server.go` (volume dials,
+  `NewGrpcServer`), `operation/grpc_client.go`, `server/common.go` (grpc metadata).
 - **TLS cert hot-reload** — `security/tls.go`, `security/certreload/certreload.go`,
   `security/tls_reload.go`, `util/http/client/http_client.go` reuse grpc's
   `credentials/tls/certprovider` + `pemfile` as a generic file-watching cert provider;
   `tls.go` also returns `grpc.ServerOption` for the remaining gRPC servers.
 
-Full `go.mod` grpc removal is unreachable until volume RPC + MQ broker RPC are ported to
-ZAP (regen their `*_pb` interfaces grpc-free, switch servers to ZAP dispatch) and cert
-hot-reload drops grpc's certprovider.
+Full `go.mod` grpc removal is unreachable until volume RPC is ported to ZAP (regen its
+`*_pb` interface grpc-free, switch the server to ZAP dispatch) and cert hot-reload drops
+grpc's certprovider. (Filer, master, and MQ broker are already ported.)
 
 ### ZAP listener ports — derive via `pb.ZapPort` (overflow-safe)
 The master and IAM services serve ZAP on a port offset from their gRPC port by

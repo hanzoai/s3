@@ -29,7 +29,7 @@ import (
 	"github.com/hanzoai/s3/s3/util/grace"
 
 	"github.com/hanzoai/s3/s3/glog"
-	"github.com/hanzoai/s3/s3/masterzap"
+	"github.com/hanzoai/s3/s3/svc/master"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/security"
 	s3server "github.com/hanzoai/s3/s3/server"
@@ -282,8 +282,8 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	// native ZAP transport on the deterministic grpcPort+10000 offset
 	// (ServerAddress.ToMasterZapAddress, same convention as ToIamZapAddress).
 	// transport.ListenStream carries both the unary dispatch (masterwire.Dispatch
-	// over masterzap.NewServerBackend) and the bidirectional streams
-	// (masterstream.Handler over masterzap.NewStreamServer) on one listener —
+	// over master.NewServerBackend) and the bidirectional streams
+	// (masterstream.Handler over master.NewStreamServer) on one listener —
 	// exactly as command/filer.go serves the filer. Clients reach it via
 	// pb.WithMasterClient over the masterPool. This replaces the legacy gRPC
 	// HanzoServer registration: no master RPC rides gRPC anymore.
@@ -298,8 +298,8 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	// derived via pb.ZapPort (overflow-safe) so server and client agree even for
 	// high ephemeral ports, and the TLS config is the pb-local ServerTLSConfig.
 	masterZapAddr := util.JoinHostPort(*masterOption.ipBind, pb.ZapPort(grpcPort))
-	masterDispatch := masterwire.Dispatch(masterzap.NewServerBackend(ms))
-	masterStream := masterstream.Handler(masterzap.NewStreamServer(ms))
+	masterDispatch := masterwire.Dispatch(master.NewServerBackend(ms))
+	masterStream := masterstream.Handler(master.NewStreamServer(ms))
 	var masterZapSrv *transport.Server
 	var zapErr error
 	if tlsCfg := pb.ServerTLSConfig(util.GetViper(), "grpc.master"); tlsCfg != nil {

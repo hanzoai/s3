@@ -7,7 +7,7 @@
 // decodes the reply into the in-process iam_pb model using the bridge_pb.go
 // decoders — so internal call sites get exactly the shapes the retired gRPC
 // stub returned, with the bytes never leaving the zero-copy ZAP form on the
-// wire. This is the IAM analogue of zapsvc Client.GetObject/PutObject.
+// wire. This is the IAM analogue of object Client.GetObject/PutObject.
 
 package iamwire
 

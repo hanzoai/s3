@@ -6,7 +6,7 @@
 // Handler + Dispatch) and the zero-copy message views/builders (the *_zap.go
 // message files) to a real volume-server backend over the canonical
 // github.com/zap-proto/go transport. This is the volume_server analogue of
-// s3/zapsvc/service.go (object) and s3/wire/s3_lifecycle/zapsvc.go (lifecycle):
+// s3/svc/object/service.go (object) and s3/wire/s3_lifecycle/object.go (lifecycle):
 // it kills gRPC for the volume server's RPCs and replaces them with the SAME
 // wire hanzo and lux share. No struct marshaling, no protobuf, no HTTP — the
 // bytes ARE the message.
@@ -548,7 +548,7 @@ func (c *Client) Close() error { return c.conn.Close() }
 func (c *Client) Conn() transport.Conn { return c.conn }
 
 // The typed unary client methods take a New<Req> input and return the Wrap<Resp>
-// view. They mirror s3/zapsvc Client.GetObject/PutObject and the mq_agent typed
+// view. They mirror s3/object Client.GetObject/PutObject and the mq_agent typed
 // client. Each one decodes the reply into its zero-copy view — the bytes never
 // leave this package as structs.
 

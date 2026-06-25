@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/hanzoai/s3/s3/masterzap"
+	"github.com/hanzoai/s3/s3/svc/master"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
 
@@ -100,10 +100,10 @@ func splitHostPort(t *testing.T, addr string) (string, int) {
 type fakeMasterBackend struct{ ms *MasterServer }
 
 func (b fakeMasterBackend) VolumeList(req []byte) ([]byte, error) {
-	if _, err := masterzap.VolumeListReqFromWire(req); err != nil {
+	if _, err := master.VolumeListReqFromWire(req); err != nil {
 		return nil, err
 	}
-	return masterzap.VolumeListRespToWire(b.ms.volumeList()), nil
+	return master.VolumeListRespToWire(b.ms.volumeList()), nil
 }
 
 func (fakeMasterBackend) SendHeartbeat(req []byte) ([]byte, error) {

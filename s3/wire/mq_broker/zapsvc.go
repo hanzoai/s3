@@ -3,8 +3,8 @@
 //
 // Native ZAP service adapter for HanzoMessaging — the hand-written glue that
 // binds the generated Dispatch/Client (mq_broker_zap.go) to a real message-queue
-// broker backend. This is the mq_broker peer of s3/zapsvc/service.go (object) and
-// s3/wire/s3_lifecycle/zapsvc.go (lifecycle): requests/responses are the
+// broker backend. This is the mq_broker peer of s3/svc/object/service.go (object) and
+// s3/wire/s3_lifecycle/object.go (lifecycle): requests/responses are the
 // zero-copy mq_brokerwire message buffers, carried over the canonical
 // github.com/zap-proto/go transport. The unary RPCs are dispatched by the
 // generated DispatchHanzoMessaging; the seven streaming RPCs are wired by hand

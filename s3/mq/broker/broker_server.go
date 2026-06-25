@@ -48,7 +48,6 @@ type topicCacheEntry struct {
 }
 
 type MessageQueueBroker struct {
-	mq_pb.UnimplementedHanzoMessagingServer
 	option            *MessageQueueBrokerOption
 	grpcDialOption    pb.DialOption
 	MasterClient      *wdclient.MasterClient
@@ -71,6 +70,10 @@ type MessageQueueBroker struct {
 	topicCacheMu  sync.RWMutex
 	topicCacheTTL time.Duration
 }
+
+// MessageQueueBroker serves the grpc-free HanzoMessaging server contract; the
+// mqzap backend dispatches every ZAP request to it.
+var _ mq_pb.HanzoMessagingServer = (*MessageQueueBroker)(nil)
 
 func NewMessageBroker(option *MessageQueueBrokerOption, grpcDialOption pb.DialOption) (mqBroker *MessageQueueBroker, err error) {
 

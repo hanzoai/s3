@@ -13,7 +13,7 @@ import (
 	"github.com/hanzoai/s3/s3/filer_client"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/mq"
-	"github.com/hanzoai/s3/s3/mqzap"
+	mqsvc "github.com/hanzoai/s3/s3/svc/mq"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
@@ -54,7 +54,7 @@ func NewBrokerClientWithFilerAccessor(brokerAddress string, filerClientAccessor 
 		return nil, fmt.Errorf("failed to connect to broker %s: %v", brokerAddress, err)
 	}
 
-	client := mqzap.New(conn, nil)
+	client := mqsvc.New(conn, nil)
 
 	return &BrokerClient{
 		filerClientAccessor:         filerClientAccessor,

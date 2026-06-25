@@ -19,8 +19,8 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/hanzoai/s3/s3/glog"
-	"github.com/hanzoai/s3/s3/mqzap"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
+	"github.com/hanzoai/s3/s3/svc/mq"
 	"github.com/hanzoai/s3/s3/util"
 
 	"google.golang.org/grpc"
@@ -30,11 +30,11 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 
-	"github.com/hanzoai/s3/s3/masterzap"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
-	"github.com/hanzoai/s3/s3/volumezap"
+	"github.com/hanzoai/s3/s3/svc/master"
+	"github.com/hanzoai/s3/s3/svc/volume"
 
 	"github.com/zap-proto/go/transport"
 )
@@ -581,10 +581,10 @@ var masterPool = transport.NewPool(DialMasterZapAddr)
 // needs neither a streaming flag (every stream is a transport stream) nor a dial
 // option, and the pool already (re)dials lazily. ctx is honored by the per-RPC
 // calls fn issues. This is the master analogue of WithGrpcFilerClient.
-func WithMasterClient(ctx context.Context, streamingMode bool, master ServerAddress, grpcDialOption DialOption, waitForReady bool, fn func(client master_pb.HanzoClient) error) error {
+func WithMasterClient(ctx context.Context, streamingMode bool, masterAddr ServerAddress, grpcDialOption DialOption, waitForReady bool, fn func(client master_pb.HanzoClient) error) error {
 	_, _, _, _ = ctx, streamingMode, grpcDialOption, waitForReady
-	return masterPool.With(master.ToMasterZapAddress(), func(conn transport.Conn) error {
-		return fn(masterzap.New(conn, nil))
+	return masterPool.With(masterAddr.ToMasterZapAddress(), func(conn transport.Conn) error {
+		return fn(master.New(conn, nil))
 	})
 }
 
@@ -609,13 +609,13 @@ var volumePool = transport.NewPool(dialVolumeZapAddr)
 
 // WithVolumeServerClient dials the volume server over the native ZAP transport and
 // runs fn with a volume_server_pb.VolumeServerClient backed by that connection
-// (volumezap.New). The streamingMode/grpcDialOption parameters are retained for
+// (volume.New). The streamingMode/grpcDialOption parameters are retained for
 // caller compatibility; the ZAP path needs neither a streaming flag (every stream
 // is a transport stream) nor a dial option.
 func WithVolumeServerClient(streamingMode bool, volumeServer ServerAddress, grpcDialOption DialOption, fn func(client volume_server_pb.VolumeServerClient) error) error {
 	_, _ = streamingMode, grpcDialOption
 	return volumePool.With(volumeServer.ToGrpcAddress(), func(conn transport.Conn) error {
-		return fn(volumezap.New(conn, nil))
+		return fn(volume.New(conn, nil))
 	})
 }
 
@@ -625,7 +625,7 @@ func WithOneOfGrpcMasterClients(streamingMode bool, masterGrpcAddresses map[stri
 	_, _ = streamingMode, grpcDialOption
 	for _, masterAddress := range masterGrpcAddresses {
 		err = masterPool.With(masterAddress.ToMasterZapAddress(), func(conn transport.Conn) error {
-			return fn(masterzap.New(conn, nil))
+			return fn(master.New(conn, nil))
 		})
 		if err == nil {
 			return nil
@@ -656,14 +656,14 @@ func DialBrokerZapAddr(addr string) (transport.Conn, error) {
 var brokerPool = transport.NewPool(DialBrokerZapAddr)
 
 // WithBrokerGrpcClient dials the broker over the native ZAP transport and runs fn
-// with a mq_pb.HanzoMessagingClient backed by that connection (mqzap.New). The
+// with a mq_pb.HanzoMessagingClient backed by that connection (mq.New). The
 // streamingMode/grpcDialOption parameters are retained for caller compatibility; the
 // ZAP path needs neither a streaming flag (every stream is a transport stream) nor a
 // dial option. The pooled connection outlives fn.
 func WithBrokerGrpcClient(streamingMode bool, brokerGrpcAddress string, grpcDialOption DialOption, fn func(client mq_pb.HanzoMessagingClient) error) error {
 	_, _ = streamingMode, grpcDialOption
 	return brokerPool.With(brokerGrpcAddress, func(conn transport.Conn) error {
-		return fn(mqzap.New(conn, nil))
+		return fn(mq.New(conn, nil))
 	})
 }
 
