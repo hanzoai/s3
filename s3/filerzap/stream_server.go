@@ -9,13 +9,10 @@
 // Send-adapter that ships each proto response as a zero-copy wire frame;
 // StreamMutateEntry (bidi) replays the open frame then pumps Recv/Send.
 //
-// KNOWN LIMITATION (transport-gated): the backend uses context.Background — the
-// current transport.Stream exposes no per-stream cancellation/disconnect signal,
-// so a client that drops an IDLE SubscribeMetadata stream is not observed as gone
-// and its engine goroutine/subscription leaks. Fixing this needs the zap-proto/go
-// transport to surface a per-stream Context/close channel; until then a long-idle
-// subscriber can accumulate. Send-driven streams (ListEntries, rename) surface a
-// dead peer via Send error and are unaffected.
+// Each handler runs against the per-stream s.Context() (zap-proto/go v1.6.2+):
+// it is cancelled when the stream ends OR the peer drops the connection, so a
+// long-lived subscription that goes idle and then disconnects is observed and
+// the engine handler returns — no goroutine/subscription leak.
 
 package filerzap
 
@@ -39,14 +36,13 @@ func ListEntriesRespToWire(r *filer_pb.ListEntriesResponse) []byte {
 
 // streamServerBackend adapts a filer_pb.HanzoFilerServer to filerstream.Server.
 type streamServerBackend struct {
-	fs  filer_pb.HanzoFilerServer
-	ctx context.Context
+	fs filer_pb.HanzoFilerServer
 }
 
 // NewStreamServer returns a filerstream.Server that serves fs's streaming RPCs
 // over ZAP. Pass it to filerstream.Handler / transport.ListenStream.
 func NewStreamServer(fs filer_pb.HanzoFilerServer) filerstream.Server {
-	return streamServerBackend{fs: fs, ctx: context.Background()}
+	return streamServerBackend{fs: fs}
 }
 
 func (b streamServerBackend) ListEntries(v filerwire.ListEntriesRequest, s *filerstream.ListEntriesStream) error {
@@ -58,25 +54,23 @@ func (b streamServerBackend) ListEntries(v filerwire.ListEntriesRequest, s *file
 		Limit:              v.Limit(),
 		SnapshotTsNs:       v.SnapshotTsNs(),
 	}
-	return b.fs.ListEntries(req, &listEntriesSendAdapter{ctx: b.ctx, out: s})
+	return b.fs.ListEntries(req, &listEntriesSendAdapter{ctx: s.Context(), out: s})
 }
-
-// --- not yet migrated streaming RPCs ---
 
 func (b streamServerBackend) StreamRenameEntry(v filerwire.StreamRenameEntryRequest, s *filerstream.StreamRenameEntryStream) error {
-	return b.fs.StreamRenameEntry(streamRenameEntryReqFromView(v), &streamRenameSendAdapter{ctx: b.ctx, out: s})
+	return b.fs.StreamRenameEntry(streamRenameEntryReqFromView(v), &streamRenameSendAdapter{ctx: s.Context(), out: s})
 }
 func (b streamServerBackend) TraverseBfsMetadata(v filerwire.TraverseBfsMetadataRequest, s *filerstream.TraverseBfsMetadataStream) error {
-	return b.fs.TraverseBfsMetadata(traverseBfsMetadataReqFromView(v), &traverseBfsSendAdapter{ctx: b.ctx, out: s})
+	return b.fs.TraverseBfsMetadata(traverseBfsMetadataReqFromView(v), &traverseBfsSendAdapter{ctx: s.Context(), out: s})
 }
 func (b streamServerBackend) SubscribeMetadata(v filerwire.SubscribeMetadataRequest, s *filerstream.SubscribeMetadataStream) error {
-	return b.fs.SubscribeMetadata(subscribeMetadataReqFromView(v), &subscribeMetadataSendAdapter{ctx: b.ctx, out: s})
+	return b.fs.SubscribeMetadata(subscribeMetadataReqFromView(v), &subscribeMetadataSendAdapter{ctx: s.Context(), out: s})
 }
 func (b streamServerBackend) SubscribeLocalMetadata(v filerwire.SubscribeMetadataRequest, s *filerstream.SubscribeMetadataStream) error {
-	return b.fs.SubscribeLocalMetadata(subscribeMetadataReqFromView(v), &subscribeMetadataSendAdapter{ctx: b.ctx, out: s})
+	return b.fs.SubscribeLocalMetadata(subscribeMetadataReqFromView(v), &subscribeMetadataSendAdapter{ctx: s.Context(), out: s})
 }
 func (b streamServerBackend) StreamMutateEntry(init filerwire.StreamMutateEntryRequest, s *filerstream.StreamMutateEntryStream) error {
-	return b.fs.StreamMutateEntry(&streamMutateAdapter{ctx: b.ctx, s: s, init: init, initPending: true})
+	return b.fs.StreamMutateEntry(&streamMutateAdapter{ctx: s.Context(), s: s, init: init, initPending: true})
 }
 
 // listEntriesSendAdapter implements grpc.ServerStreamingServer[ListEntriesResponse]
