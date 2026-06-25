@@ -1,7 +1,6 @@
 package topology
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -15,9 +14,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/types"
 
 	backoff "github.com/cenkalti/backoff/v4"
-
-	hashicorpRaft "github.com/hashicorp/raft"
-	"github.com/seaweedfs/raft"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
@@ -58,11 +54,12 @@ type Topology struct {
 
 	Configuration *Configuration
 
-	RaftServer           raft.Server
+	// RaftServer is the master's HA coordination engine (Lux consensus via
+	// s3server.ConsensusServer). The field name is retained for call-site
+	// continuity; the engine is no longer Raft. nil in single-process paths that
+	// never set it (e.g. unit tests constructing a bare Topology).
+	RaftServer           Consensus
 	RaftServerAccessLock sync.RWMutex
-	HashicorpRaft        *hashicorpRaft.Raft
-	barrierLock          sync.Mutex
-	barrierDone          bool
 
 	UuidAccessLock sync.RWMutex
 	UuidMap        map[string][]string
@@ -247,59 +244,27 @@ func (t *Topology) IsLeader() bool {
 	defer t.RaftServerAccessLock.RUnlock()
 
 	if t.RaftServer != nil {
-		if t.RaftServer.State() == raft.Leader {
-			return true
-		}
-		// Directly check leader to avoid re-acquiring lock via MaybeLeader()
-		leader := pb.ServerAddress(t.RaftServer.Leader())
-		if leader != "" {
-			if pb.ServerAddress(t.RaftServer.Name()).Equals(leader) {
-				return true
-			}
-		}
-	} else if t.HashicorpRaft != nil {
-		if t.HashicorpRaft.State() == hashicorpRaft.Leader {
-			return true
-		}
+		return t.RaftServer.IsLeader()
 	}
 	return false
 }
 
+// IsLeaderAndCanRead reports whether this node is the pinned writer. With Lux
+// consensus, Do blocks until a command is finalized and applied, so there is no
+// separate barrier round to wait on (unlike hashicorp/raft's read barrier): being
+// the writer is sufficient to read.
 func (t *Topology) IsLeaderAndCanRead() bool {
-	if t.RaftServer != nil {
-		return t.IsLeader()
-	} else if t.HashicorpRaft != nil {
-		return t.IsLeader() && t.DoBarrier()
-	} else {
-		return false
-	}
+	return t.IsLeader()
 }
 
+// DoBarrier is a no-op with Lux consensus: command finalization is synchronous
+// (see Consensus.Do), so there is no asynchronous log to barrier against. Kept
+// for call-site continuity.
 func (t *Topology) DoBarrier() bool {
-	t.barrierLock.Lock()
-	defer t.barrierLock.Unlock()
-	if t.barrierDone {
-		return true
-	}
-
-	glog.V(0).Infof("raft do barrier")
-	barrier := t.HashicorpRaft.Barrier(2 * time.Minute)
-	if err := barrier.Error(); err != nil {
-		glog.Errorf("failed to wait for barrier, error %s", err)
-		return false
-
-	}
-
-	t.barrierDone = true
-	glog.V(0).Infof("raft do barrier success")
 	return true
 }
 
-func (t *Topology) BarrierReset() {
-	t.barrierLock.Lock()
-	defer t.barrierLock.Unlock()
-	t.barrierDone = false
-}
+func (t *Topology) BarrierReset() {}
 
 func (t *Topology) Leader() (l pb.ServerAddress, err error) {
 	exponentialBackoff := backoff.NewExponentialBackOff()
@@ -310,9 +275,9 @@ func (t *Topology) Leader() (l pb.ServerAddress, err error) {
 		func() (l pb.ServerAddress, err error) {
 			l, err = t.MaybeLeader()
 			if err == nil && l == "" {
-				// Thread-safe check if we are the leader
+				// Thread-safe check if we are the pinned writer
 				t.RaftServerAccessLock.RLock()
-				if t.RaftServer != nil && t.RaftServer.State() == raft.Leader {
+				if t.RaftServer != nil && t.RaftServer.IsLeader() {
 					l = pb.ServerAddress(t.RaftServer.Name())
 				}
 				t.RaftServerAccessLock.RUnlock()
@@ -337,10 +302,8 @@ func (t *Topology) MaybeLeader() (l pb.ServerAddress, err error) {
 
 	if t.RaftServer != nil {
 		l = pb.ServerAddress(t.RaftServer.Leader())
-	} else if t.HashicorpRaft != nil {
-		l = pb.ServerAddress(t.HashicorpRaft.Leader())
 	} else {
-		err = errors.New("Raft Server not ready yet!")
+		err = errors.New("consensus engine not ready yet!")
 	}
 
 	return
@@ -382,16 +345,8 @@ func (t *Topology) NextVolumeId() (needle.VolumeId, error) {
 	defer t.RaftServerAccessLock.RUnlock()
 
 	if t.RaftServer != nil {
-		if _, err := t.RaftServer.Do(NewMaxVolumeIdCommand(next, t.GetTopologyId())); err != nil {
+		if err := t.RaftServer.Do(NewMaxVolumeIdCommand(next, t.GetTopologyId())); err != nil {
 			return 0, err
-		}
-	} else if t.HashicorpRaft != nil {
-		b, err := json.Marshal(NewMaxVolumeIdCommand(next, t.GetTopologyId()))
-		if err != nil {
-			return 0, fmt.Errorf("failed marshal NewMaxVolumeIdCommand: %+v", err)
-		}
-		if future := t.HashicorpRaft.Apply(b, time.Second); future.Error() != nil {
-			return 0, future.Error()
 		}
 	}
 	return next, nil

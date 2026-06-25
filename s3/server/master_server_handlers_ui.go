@@ -6,9 +6,6 @@ import (
 
 	"github.com/hanzoai/s3/s3/util/version"
 
-	hashicorpRaft "github.com/hashicorp/raft"
-	"github.com/seaweedfs/raft"
-
 	ui "github.com/hanzoai/s3/s3/server/master_ui"
 	"github.com/hanzoai/s3/s3/stats"
 )
@@ -18,42 +15,24 @@ func (ms *MasterServer) uiStatusHandler(w http.ResponseWriter, r *http.Request) 
 	infos["Up Time"] = time.Since(startTime).Truncate(time.Second).String()
 	infos["Max Volume Id"] = ms.Topo.GetMaxVolumeId()
 
-	ms.Topo.RaftServerAccessLock.RLock()
-	defer ms.Topo.RaftServerAccessLock.RUnlock()
-
-	if ms.Topo.RaftServer != nil {
-		args := struct {
-			Version           string
-			Topology          interface{}
-			RaftServer        raft.Server
-			Stats             map[string]interface{}
-			Counters          *stats.ServerStats
-			VolumeSizeLimitMB uint32
-		}{
-			version.Version(),
-			ms.Topo.ToInfo(),
-			ms.Topo.RaftServer,
-			infos,
-			serverStats,
-			ms.option.VolumeSizeLimitMB,
-		}
-		ui.StatusTpl.Execute(w, args)
-	} else if ms.Topo.HashicorpRaft != nil {
-		args := struct {
-			Version           string
-			Topology          interface{}
-			RaftServer        *hashicorpRaft.Raft
-			Stats             map[string]interface{}
-			Counters          *stats.ServerStats
-			VolumeSizeLimitMB uint32
-		}{
-			version.Version(),
-			ms.Topo.ToInfo(),
-			ms.Topo.HashicorpRaft,
-			infos,
-			serverStats,
-			ms.option.VolumeSizeLimitMB,
-		}
-		ui.StatusNewRaftTpl.Execute(w, args)
+	if ms.consensus == nil {
+		return
 	}
+
+	args := struct {
+		Version           string
+		Topology          interface{}
+		RaftServer        ConsensusStatusView
+		Stats             map[string]interface{}
+		Counters          *stats.ServerStats
+		VolumeSizeLimitMB uint32
+	}{
+		version.Version(),
+		ms.Topo.ToInfo(),
+		ms.consensus.StatusView(),
+		infos,
+		serverStats,
+		ms.option.VolumeSizeLimitMB,
+	}
+	ui.StatusTpl.Execute(w, args)
 }

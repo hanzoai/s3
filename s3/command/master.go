@@ -3,26 +3,20 @@ package command
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"math/rand/v2"
 	"net"
 	"net/http"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/hanzoai/s3/s3/util/version"
 
-	hashicorpRaft "github.com/hashicorp/raft"
-
 	"slices"
 
 	"github.com/gorilla/mux"
-	"github.com/seaweedfs/raft/protobuf"
 	"github.com/spf13/viper"
-	"google.golang.org/grpc/reflection"
 
 	stats_collect "github.com/hanzoai/s3/s3/stats"
 
@@ -209,74 +203,30 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 		glog.Fatalf("Master startup error: %v", e)
 	}
 
-	// start raftServer
-	metaDir := path.Join(*masterOption.metaFolder, fmt.Sprintf("m%d", *masterOption.port))
-
+	// start the consensus engine (Lux consensus, replacing Raft). It coordinates
+	// HA over the ZAP-native replog; there is NO gRPC raft transport anymore.
 	isSingleMaster := isSingleMasterMode(*masterOption.peers)
 
-	raftServerOption := &s3server.RaftServerOption{
-		GrpcDialOption:    security.LoadClientTLS(util.GetViper(), "grpc.master"),
-		Peers:             masterPeers,
-		ServerAddr:        myMasterAddress,
-		DataDir:           util.ResolvePath(metaDir),
-		Topo:              ms.Topo,
-		RaftResumeState:   *masterOption.raftResumeState,
-		SingleMaster:      isSingleMaster,
-		HeartbeatInterval: *masterOption.heartbeatInterval,
-		ElectionTimeout:   *masterOption.electionTimeout,
-		RaftBootstrap:     *masterOption.raftBootstrap,
-	}
-	var raftServer *s3server.RaftServer
-	var err error
-	if *masterOption.raftHashicorp {
-		if raftServer, err = s3server.NewHashicorpRaftServer(raftServerOption); err != nil {
-			glog.Fatalf("NewHashicorpRaftServer: %s", err)
-		}
-	} else {
-		raftServer, err = s3server.NewRaftServer(raftServerOption)
-		if raftServer == nil {
-			glog.Fatalf("please verify %s is writable, see https://github.com/hanzoai/s3/issues/717: %s", *masterOption.metaFolder, err)
-		}
-		// For single-master mode with a fresh log, initialize cluster immediately.
-		// When resuming with existing state, the server is already a member and
-		// will self-elect via fastResume — sending another JoinCommand would block
-		// because goraft's setCommitIndex returns early on JoinCommand entries,
-		// preventing the new entry's event from being notified when old uncommitted
-		// JoinCommands exist in the log.
-		if isSingleMaster && !raftServer.HasExistingState() {
-			glog.V(0).Infof("Single-master mode: initializing cluster immediately")
-			raftServer.DoJoinCommand()
-		}
-	}
-	ms.SetRaftServer(raftServer)
-	r.HandleFunc("/cluster/status", raftServer.StatusHandler).Methods(http.MethodGet, http.MethodHead)
-	r.HandleFunc("/cluster/healthz", raftServer.HealthzHandler).Methods(http.MethodGet, http.MethodHead)
-	if *masterOption.raftHashicorp {
-		r.HandleFunc("/raft/stats", raftServer.StatsRaftHandler).Methods(http.MethodGet)
-	}
-	// starting grpc server
-	grpcPort := *masterOption.portGrpc
-	grpcL, grpcLocalL, err := util.NewIpAndLocalListeners(*masterOption.ipBind, grpcPort, 0)
+	consensusServer, err := s3server.NewConsensusServer(myMasterAddress, masterPeers, ms.Topo)
 	if err != nil {
-		glog.Fatalf("master failed to listen on grpc port %d: %v", grpcPort, err)
+		glog.Fatalf("NewConsensusServer: %s", err)
 	}
-	// grpcS now serves ONLY raft (the consensus service) + reflection. The Hanzo
-	// master service (master_pb.HanzoServer) no longer rides gRPC at all — it is
-	// served entirely over the native ZAP transport below. Raft migration off
-	// gRPC is a separate consensus effort; it keeps this grpc.Server until then.
-	grpcS := pb.NewGrpcServer(security.LoadServerTLS(util.GetViper(), "grpc.master"))
-	if *masterOption.raftHashicorp {
-		raftServer.TransportManager.Register(grpcS)
-	} else {
-		protobuf.RegisterRaftServer(grpcS, raftServer)
+	// For single-master mode with a fresh log, initialize participation
+	// immediately (the consensus analogue of the old raft self-join): commit the
+	// current MaxVolumeId so HasExistingState()/IsLogEmpty() reflect a non-empty
+	// log and the topology id is published. When resuming with existing state the
+	// node already has applied commands, so no join is needed.
+	if isSingleMaster && !consensusServer.HasExistingState() {
+		glog.V(0).Infof("Single-master mode: initializing consensus immediately")
+		consensusServer.DoJoinCommand()
 	}
-	reflection.Register(grpcS)
-	glog.V(0).Infof("Start Hanzo S3 Master %s raft grpc server at %s:%d", version.Version(), *masterOption.ipBind, grpcPort)
-	if grpcLocalL != nil {
-		go grpcS.Serve(grpcLocalL)
-	}
-	go grpcS.Serve(grpcL)
-	pb.ServeGrpcOnLocalSocket(grpcS, grpcPort)
+	ms.SetRaftServer(consensusServer)
+	r.HandleFunc("/cluster/status", consensusServer.StatusHandler).Methods(http.MethodGet, http.MethodHead)
+	r.HandleFunc("/cluster/healthz", consensusServer.HealthzHandler).Methods(http.MethodGet, http.MethodHead)
+
+	// grpcPort derives the master's ZAP listen port (pb.ZapPort offset); the
+	// master serves its whole service over ZAP — no gRPC listener is opened.
+	grpcPort := *masterOption.portGrpc
 
 	// Serve the WHOLE Hanzo master service (21 unary + 3 streaming RPCs) over the
 	// native ZAP transport on the deterministic grpcPort+10000 offset
@@ -315,8 +265,9 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	}
 	grace.OnInterrupt(func() { masterZapSrv.Close() })
 
-	// For multi-master mode with non-Hashicorp raft, wait and check if we should join
-	if !*masterOption.raftHashicorp && !isSingleMaster {
+	// For multi-master mode, wait and check whether this node should seed the
+	// consensus log (the first master, when no leader exists yet).
+	if !isSingleMaster {
 		go func() {
 			// Stagger bootstrap by peer index so masters don't all check
 			// simultaneously. Peer 0 waits ~1.5s, peer 1 ~3s, etc.
@@ -326,17 +277,17 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 			time.Sleep(delay)
 
 			ms.Topo.RaftServerAccessLock.RLock()
-			isEmptyMaster := ms.Topo.RaftServer.Leader() == "" && ms.Topo.RaftServer.IsLogEmpty()
+			isEmptyMaster := ms.Topo.RaftServer.Leader() == "" && consensusServer.IsLogEmpty()
 			isFirst := idx == 0
 			if isEmptyMaster && isFirst {
 				existingLeader := ms.MasterClient.FindLeaderFromOtherPeers(myMasterAddress)
 				if existingLeader == "" {
-					raftServer.DoJoinCommand()
+					consensusServer.DoJoinCommand()
 				} else {
 					glog.V(0).Infof("skip bootstrap: existing leader %s found from peers", existingLeader)
 				}
 			} else if !isEmptyMaster {
-				glog.V(0).Infof("skip bootstrap: leader=%q logEmpty=%v", ms.Topo.RaftServer.Leader(), ms.Topo.RaftServer.IsLogEmpty())
+				glog.V(0).Infof("skip bootstrap: leader=%q logEmpty=%v", ms.Topo.RaftServer.Leader(), consensusServer.IsLogEmpty())
 			} else {
 				glog.V(0).Infof("skip bootstrap: %v is not the first master in peers (index %d)", myMasterAddress, idx)
 			}
@@ -398,17 +349,10 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	}
 
 	grace.OnInterrupt(ms.Shutdown)
-	grace.OnInterrupt(grpcS.Stop)
 	grace.OnReload(ms.Reload)
-	grace.OnReload(func() {
-		if ms.Topo.HashicorpRaft != nil && ms.Topo.HashicorpRaft.State() == hashicorpRaft.Leader {
-			ms.Topo.HashicorpRaft.LeadershipTransfer()
-		}
-	})
 	if masterOption.shutdownCtx != nil {
 		<-masterOption.shutdownCtx.Done()
 		ms.Shutdown()
-		grpcS.Stop()
 	} else {
 		select {}
 	}

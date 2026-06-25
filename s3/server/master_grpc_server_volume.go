@@ -12,8 +12,6 @@ import (
 
 	"github.com/hanzoai/s3/s3/topology"
 
-	"github.com/seaweedfs/raft"
-
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/security"
@@ -198,7 +196,7 @@ func (ms *MasterServer) LookupVolume(ctx context.Context, req *master_pb.LookupV
 func (ms *MasterServer) Statistics(ctx context.Context, req *master_pb.StatisticsRequest) (*master_pb.StatisticsResponse, error) {
 
 	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+		return nil, topology.ErrNotLeader
 	}
 
 	if req.Replication == "" {
@@ -228,7 +226,7 @@ func (ms *MasterServer) Statistics(ctx context.Context, req *master_pb.Statistic
 func (ms *MasterServer) VolumeList(ctx context.Context, req *master_pb.VolumeListRequest) (*master_pb.VolumeListResponse, error) {
 
 	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+		return nil, topology.ErrNotLeader
 	}
 
 	resp := &master_pb.VolumeListResponse{
@@ -242,7 +240,7 @@ func (ms *MasterServer) VolumeList(ctx context.Context, req *master_pb.VolumeLis
 func (ms *MasterServer) LookupEcVolume(ctx context.Context, req *master_pb.LookupEcVolumeRequest) (*master_pb.LookupEcVolumeResponse, error) {
 
 	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+		return nil, topology.ErrNotLeader
 	}
 
 	resp := &master_pb.LookupEcVolumeResponse{}
@@ -278,7 +276,7 @@ func (ms *MasterServer) LookupEcVolume(ctx context.Context, req *master_pb.Looku
 func (ms *MasterServer) VacuumVolume(ctx context.Context, req *master_pb.VacuumVolumeRequest) (*master_pb.VacuumVolumeResponse, error) {
 
 	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+		return nil, topology.ErrNotLeader
 	}
 
 	resp := &master_pb.VacuumVolumeResponse{}
@@ -314,7 +312,7 @@ func (ms *MasterServer) EnableVacuum(ctx context.Context, req *master_pb.EnableV
 func (ms *MasterServer) VolumeMarkReadonly(ctx context.Context, req *master_pb.VolumeMarkReadonlyRequest) (*master_pb.VolumeMarkReadonlyResponse, error) {
 
 	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+		return nil, topology.ErrNotLeader
 	}
 
 	resp := &master_pb.VolumeMarkReadonlyResponse{}
@@ -342,7 +340,7 @@ func (ms *MasterServer) VolumeMarkReadonly(ctx context.Context, req *master_pb.V
 
 func (ms *MasterServer) VolumeGrow(ctx context.Context, req *master_pb.VolumeGrowRequest) (*master_pb.VolumeGrowResponse, error) {
 	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+		return nil, topology.ErrNotLeader
 	}
 	if req.Replication == "" {
 		req.Replication = ms.option.DefaultReplicaPlacement

@@ -16,8 +16,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/backend"
 	"github.com/hanzoai/s3/s3/util"
 
-	"github.com/seaweedfs/raft"
-
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/storage/needle"
@@ -119,7 +117,7 @@ func (ms *MasterServer) SendHeartbeat(stream master_pb.Hanzo_SendHeartbeatServer
 			newLeader, err := ms.Topo.MaybeLeader()
 			if err != nil || newLeader == "" {
 				glog.Warningf("SendHeartbeat find leader: %v, %v", newLeader, err)
-				return raft.NotLeaderError
+				return topology.ErrNotLeader
 			}
 			if err := stream.Send(&master_pb.HeartbeatResponse{
 				Leader: string(newLeader),
@@ -434,7 +432,7 @@ func (ms *MasterServer) informNewLeader(stream master_pb.Hanzo_KeepConnectedServ
 	leader, err := ms.Topo.Leader()
 	if err != nil {
 		glog.Errorf("topo leader: %v", err)
-		return raft.NotLeaderError
+		return topology.ErrNotLeader
 	}
 	if err := stream.Send(&master_pb.KeepConnectedResponse{
 		VolumeLocation: &master_pb.VolumeLocation{

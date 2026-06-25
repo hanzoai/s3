@@ -9,8 +9,6 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/stats"
 
-	"github.com/seaweedfs/raft"
-
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/storage/needle"
@@ -47,7 +45,7 @@ func (ms *MasterServer) StreamAssign(server master_pb.Hanzo_StreamAssignServer) 
 func (ms *MasterServer) Assign(ctx context.Context, req *master_pb.AssignRequest) (*master_pb.AssignResponse, error) {
 
 	if !ms.Topo.IsLeader() {
-		return nil, raft.NotLeaderError
+		return nil, topology.ErrNotLeader
 	}
 
 	if req.Count == 0 {

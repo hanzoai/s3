@@ -2,7 +2,6 @@ package s3server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
@@ -22,8 +21,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 
 	"github.com/gorilla/mux"
-	hashicorpRaft "github.com/hashicorp/raft"
-	"github.com/seaweedfs/raft"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
@@ -41,7 +38,6 @@ import (
 const (
 	SequencerType        = "master.sequencer.type"
 	SequencerSnowflakeId = "master.sequencer.sequencer_snowflake_id"
-	raftApplyTimeout     = 1 * time.Second
 )
 
 type MasterOption struct {
@@ -72,6 +68,12 @@ type MasterServer struct {
 	Topo                    *topology.Topology
 	vg                      *topology.VolumeGrowth
 	volumeGrowthRequestChan chan *topology.VolumeGrowRequest
+
+	// consensus is the master's HA coordination engine (Lux consensus). It is the
+	// concrete engine behind Topo.RaftServer (the narrow topology.Consensus
+	// interface); the master holds it typed for the engine-specific operations the
+	// interface intentionally omits (membership add/remove, Stop).
+	consensus *ConsensusServer
 
 	// notifying clients
 	clientChansLock sync.RWMutex
@@ -234,49 +236,27 @@ func (ms *MasterServer) readyzHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (ms *MasterServer) SetRaftServer(raftServer *RaftServer) {
-	var raftServerName string
-
+// SetRaftServer wires the master's consensus engine (Lux consensus) into the
+// topology. With the deterministic writer pin there is no asynchronous
+// leader-election event to subscribe to: the writer is known the moment
+// membership is known, so if this node is the writer we kick TopologyId
+// generation directly (the equivalent of the old goraft LeaderChange listener).
+func (ms *MasterServer) SetRaftServer(consensusServer *ConsensusServer) {
+	ms.consensus = consensusServer
 	ms.Topo.RaftServerAccessLock.Lock()
-	if raftServer.raftServer != nil {
-		ms.Topo.RaftServer = raftServer.raftServer
-		ms.Topo.RaftServer.AddEventListener(raft.LeaderChangeEventType, func(e raft.Event) {
-			glog.V(0).Infof("leader change event: %+v => %+v", e.PrevValue(), e.Value())
-			stats.MasterLeaderChangeCounter.WithLabelValues(fmt.Sprintf("%+v", e.Value())).Inc()
-			if ms.Topo.RaftServer.Leader() != "" {
-				glog.V(0).Infof("[%s] %s becomes leader.", ms.Topo.RaftServer.Name(), ms.Topo.RaftServer.Leader())
-				ms.Topo.SetLastLeaderChangeTime(time.Now())
-				if pb.ServerAddress(ms.Topo.RaftServer.Leader()).Equals(pb.ServerAddress(ms.Topo.RaftServer.Name())) {
-					go ms.ensureTopologyId()
-				}
-			}
-		})
-		raftServerName = fmt.Sprintf("[%s]", ms.Topo.RaftServer.Name())
-	} else if raftServer.RaftHashicorp != nil {
-		ms.Topo.HashicorpRaft = raftServer.RaftHashicorp
-		raftServerName = ms.Topo.HashicorpRaft.String()
-	}
+	ms.Topo.RaftServer = consensusServer
+	consensusName := fmt.Sprintf("[%s]", consensusServer.Name())
 	ms.Topo.RaftServerAccessLock.Unlock()
 
 	if ms.Topo.IsLeader() {
-		// Seed the warmup timestamp so IsWarmingUp() is active even if the
-		// leader change event hasn't fired yet (e.g. node is already leader
-		// on startup). Followers don't need warmup state.
+		// Seed the warmup timestamp so IsWarmingUp() is active immediately on the
+		// writer. Followers don't need warmup state.
 		ms.Topo.SetLastLeaderChangeTime(time.Now())
-		glog.V(0).Infof("%s I am the leader!", raftServerName)
+		stats.MasterLeaderChangeCounter.WithLabelValues(consensusServer.Name()).Inc()
+		glog.V(0).Infof("%s I am the leader (pinned writer)!", consensusName)
 		go ms.ensureTopologyId()
 	} else {
-		var raftServerLeader string
-		ms.Topo.RaftServerAccessLock.RLock()
-		if ms.Topo.RaftServer != nil {
-			raftServerLeader = ms.Topo.RaftServer.Leader()
-		} else if ms.Topo.HashicorpRaft != nil {
-			raftServerName = ms.Topo.HashicorpRaft.String()
-			raftServerLeaderAddr, _ := ms.Topo.HashicorpRaft.LeaderWithID()
-			raftServerLeader = string(raftServerLeaderAddr)
-		}
-		ms.Topo.RaftServerAccessLock.RUnlock()
-		glog.V(0).Infof("%s %s - is the leader.", raftServerName, raftServerLeader)
+		glog.V(0).Infof("%s %s - is the leader (pinned writer).", consensusName, consensusServer.Leader())
 	}
 }
 
@@ -285,19 +265,9 @@ func (ms *MasterServer) syncRaftForTopologyId(topologyId string) error {
 	defer ms.Topo.RaftServerAccessLock.RUnlock()
 
 	if ms.Topo.RaftServer != nil {
-		_, err := ms.Topo.RaftServer.Do(topology.NewMaxVolumeIdCommand(ms.Topo.GetMaxVolumeId(), topologyId))
-		return err
-	} else if ms.Topo.HashicorpRaft != nil {
-		b, err := json.Marshal(topology.NewMaxVolumeIdCommand(ms.Topo.GetMaxVolumeId(), topologyId))
-		if err != nil {
-			return fmt.Errorf("failed marshal NewMaxVolumeIdCommand: %v", err)
-		}
-		if future := ms.Topo.HashicorpRaft.Apply(b, raftApplyTimeout); future.Error() != nil {
-			return future.Error()
-		}
-		return nil
+		return ms.Topo.RaftServer.Do(topology.NewMaxVolumeIdCommand(ms.Topo.GetMaxVolumeId(), topologyId))
 	}
-	return fmt.Errorf("no raft server configured")
+	return fmt.Errorf("no consensus engine configured")
 }
 
 func (ms *MasterServer) ensureTopologyId() {
@@ -328,28 +298,16 @@ func (ms *MasterServer) ensureTopologyId() {
 	currentId := ms.Topo.GetTopologyId()
 	glog.V(1).Infof("ensureTopologyId: current TopologyId after barrier: %s", currentId)
 
-	prevId := ms.Topo.GetTopologyId()
-
 	EnsureTopologyId(ms.Topo, func() bool {
 		return ms.Topo.IsLeader()
 	}, func(topologyId string) error {
 		return ms.syncRaftForTopologyId(topologyId)
 	})
 
-	// If a new TopologyId was generated, take a snapshot so it survives
-	// raft state cleanup on future non-resume restarts.
-	if prevId == "" && ms.Topo.GetTopologyId() != "" {
-		ms.Topo.RaftServerAccessLock.RLock()
-		if ms.Topo.RaftServer != nil {
-			if err := ms.Topo.RaftServer.TakeSnapshot(); err != nil {
-				glog.Warningf("snapshot after TopologyId generation: %v", err)
-			} else {
-				glog.V(0).Infof("snapshot taken to persist TopologyId %s", ms.Topo.GetTopologyId())
-			}
-		}
-		// Hashicorp raft snapshots are handled automatically.
-		ms.Topo.RaftServerAccessLock.RUnlock()
-	}
+	// No snapshot step: the TopologyId rides the MaxVolumeIdCommand committed
+	// through consensus (syncRaftForTopologyId), which finalizes and applies on
+	// every node and survives in the replog — so it is durable without the Raft
+	// snapshot/state-cleanup dance.
 }
 
 func (ms *MasterServer) proxyToLeader(f http.HandlerFunc) http.HandlerFunc {
@@ -498,38 +456,26 @@ func (ms *MasterServer) createSequencer(option *MasterOption) sequence.Sequencer
 }
 
 func (ms *MasterServer) OnPeerUpdate(update *master_pb.ClusterNodeUpdate, startFrom time.Time) {
-	ms.Topo.RaftServerAccessLock.RLock()
-	defer ms.Topo.RaftServerAccessLock.RUnlock()
-
-	if update.NodeType != cluster.MasterType || ms.Topo.HashicorpRaft == nil {
+	if update.NodeType != cluster.MasterType || ms.consensus == nil {
 		return
 	}
 	glog.V(4).Infof("OnPeerUpdate: %+v", update)
 
-	peerAddress := pb.ServerAddress(update.Address)
-	peerName := raftServerID(peerAddress)
-	if ms.Topo.HashicorpRaft.State() != hashicorpRaft.Leader {
+	// Membership is maintained only by the pinned writer, so its advisory peer
+	// set stays consistent cluster-wide.
+	if !ms.Topo.IsLeader() {
 		return
 	}
+	peerAddress := pb.ServerAddress(update.Address)
+	peerName := raftServerID(peerAddress)
 	if update.IsAdd {
-		raftServerFound := false
-		for _, server := range ms.Topo.HashicorpRaft.GetConfiguration().Configuration().Servers {
-			if string(server.ID) == peerName {
-				raftServerFound = true
-			}
-		}
-		if !raftServerFound {
-			glog.V(0).Infof("adding new raft server: %s", peerName)
-			ms.Topo.HashicorpRaft.AddVoter(
-				hashicorpRaft.ServerID(peerName),
-				hashicorpRaft.ServerAddress(peerAddress.ToGrpcAddress()), 0, 0)
-		}
+		glog.V(0).Infof("adding consensus peer: %s", peerName)
+		ms.consensus.AddPeerAddress(peerName, peerAddress)
 	} else {
 		// Liveness probe of the departing peer over the native ZAP transport: the
 		// whole master service is served over ZAP (see master.NewServerBackend),
-		// so dial the master ZAP endpoint directly. The raft membership removal
-		// below stays on the gRPC raft client: it is part of the consensus path and
-		// is migrated separately.
+		// so dial the master ZAP endpoint directly, then drop it from the advisory
+		// membership over the master ZAP RPC if it's unreachable.
 		pingFailed := false
 		if zapClient, dialErr := masterwire.Dial("tcp", peerAddress.ToMasterZapAddress()); dialErr != nil {
 			pingFailed = true
@@ -539,7 +485,7 @@ func (ms *MasterServer) OnPeerUpdate(update *master_pb.ClusterNodeUpdate, startF
 			pingFailed = pErr != nil
 		}
 		if pingFailed {
-			glog.V(0).Infof("master %s didn't respond to pings. remove raft server", peerName)
+			glog.V(0).Infof("master %s didn't respond to pings. remove consensus peer", peerName)
 			if err := ms.MasterClient.WithClient(false, func(client master_pb.HanzoClient) error {
 				_, err := client.RaftRemoveServer(context.Background(), &master_pb.RaftRemoveServerRequest{
 					Id:    peerName,
@@ -547,7 +493,7 @@ func (ms *MasterServer) OnPeerUpdate(update *master_pb.ClusterNodeUpdate, startF
 				})
 				return err
 			}); err != nil {
-				glog.Warningf("failed removing old raft server: %v", err)
+				glog.Warningf("failed removing old consensus peer: %v", err)
 			}
 		} else {
 			glog.V(0).Infof("master %s successfully responded to ping", peerName)
@@ -556,13 +502,10 @@ func (ms *MasterServer) OnPeerUpdate(update *master_pb.ClusterNodeUpdate, startF
 }
 
 func (ms *MasterServer) Shutdown() {
-	if ms.Topo == nil || ms.Topo.HashicorpRaft == nil {
+	if ms.consensus == nil {
 		return
 	}
-	if ms.Topo.HashicorpRaft.State() == hashicorpRaft.Leader {
-		ms.Topo.HashicorpRaft.LeadershipTransfer()
-	}
-	ms.Topo.HashicorpRaft.Shutdown()
+	ms.consensus.Stop()
 }
 
 func (ms *MasterServer) Reload() {
