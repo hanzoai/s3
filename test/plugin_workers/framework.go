@@ -55,7 +55,7 @@ func NewHarness(t *testing.T, cfg HarnessConfig) *Harness {
 	// PluginControlService stream on the sibling ZAP port P+1 (see worker.go
 	// pluginZapAddress). So bind the ZAP listener on an OS-assigned port Z and
 	// advertise P = Z-1 — no gRPC, the WorkerStream bidi runs on pure ZAP.
-	streamHandler := func(method uint32, init []byte, st *transport.Stream) {
+	streamHandler := func(method uint32, init []byte, st transport.Stream) {
 		if method != pluginwire.PluginControlServiceWorkerStreamOrdinal {
 			return
 		}
