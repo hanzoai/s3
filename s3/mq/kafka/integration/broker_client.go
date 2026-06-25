@@ -8,16 +8,16 @@ import (
 	"strings"
 	"time"
 
-	"google.golang.org/grpc"
+	"github.com/zap-proto/go/transport"
 
 	"github.com/hanzoai/s3/s3/filer_client"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/mq"
+	"github.com/hanzoai/s3/s3/mqzap"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/pb/schema_pb"
-	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/util"
 )
 
@@ -27,35 +27,34 @@ const (
 	brokerHealthCheckBackoff  = 250 * time.Millisecond
 )
 
+// dialBrokerZap opens a ZAP connection to a broker address, PQ-secured mTLS when
+// grpc.mq.cert/.key is configured and plaintext otherwise — the single place this
+// package's broker dial-side security gate lives, mirroring pb.dialBrokerZapAddr.
+func dialBrokerZap(brokerAddress string) (transport.Conn, error) {
+	if cfg := pb.ClientTLSConfig(util.GetViper(), "grpc.mq"); cfg != nil {
+		return transport.DialTLS("tcp", brokerAddress, transport.PQTLSConfig(cfg))
+	}
+	return transport.Dial("tcp", brokerAddress)
+}
+
 // NewBrokerClientWithFilerAccessor creates a client with a shared filer accessor
 func NewBrokerClientWithFilerAccessor(brokerAddress string, filerClientAccessor *filer_client.FilerClientAccessor) (*BrokerClient, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Use background context for gRPC connections to prevent them from being canceled
-	// when BrokerClient.Close() is called. This allows subscriber streams to continue
-	// operating even during client shutdown, which is important for testing scenarios.
-	dialCtx := context.Background()
-
-	// CRITICAL FIX: Add timeout to dial context
-	// gRPC dial will retry with exponential backoff. Without a timeout, it hangs indefinitely
-	// if the broker is unreachable. Set a reasonable timeout for initial connection attempt.
-	dialCtx, dialCancel := context.WithTimeout(dialCtx, 30*time.Second)
-	defer dialCancel()
-
-	// Connect to broker
-	// Load security configuration for broker connection
+	// Connect to the broker over the native ZAP transport. The broker fully cut over
+	// to ZAP (no gRPC), so its address IS the ZAP endpoint. When grpc.mq.cert/.key is
+	// configured the connection is PQ-secured mTLS (transport.PQTLSConfig pins the
+	// X25519MLKEM768 hybrid); otherwise plaintext (loopback / dev), matching the
+	// broker server's gating. The Conn outlives BrokerClient.Close of individual
+	// streams: closing it (in Close) drops every multiplexed stream at once.
 	util.LoadSecurityConfiguration()
-	grpcDialOption := security.LoadClientTLS(util.GetViper(), "grpc.mq")
-
-	conn, err := grpc.DialContext(dialCtx, brokerAddress,
-		grpcDialOption.Grpc(),
-	)
+	conn, err := dialBrokerZap(brokerAddress)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to connect to broker %s: %v", brokerAddress, err)
 	}
 
-	client := mq_pb.NewHanzoMessagingClient(conn)
+	client := mqzap.New(conn, nil)
 
 	return &BrokerClient{
 		filerClientAccessor:         filerClientAccessor,
