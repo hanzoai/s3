@@ -6,31 +6,12 @@ import (
 
 	"github.com/hanzoai/s3/s3/storage/types"
 
-	"github.com/syndtr/goleveldb/leveldb/opt"
-
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage/backend"
 	"github.com/hanzoai/s3/s3/storage/needle"
 	"github.com/hanzoai/s3/s3/storage/super_block"
 	"github.com/hanzoai/s3/s3/util"
-)
-
-// Per-DB caps on goleveldb's open SST file cache. The library default is 500
-// per DB, but a volume server hosts one DB per volume — easily thousands —
-// so the per-DB default sums into FD exhaustion (`open .../00000N.log: too
-// many open files`) even with generous ulimits, especially when leveldb is
-// rotating its WAL.
-//
-// The trade-off: a larger cache lowers re-open overhead on cold reads, a
-// smaller cache bounds total FD usage. CompactionTableSizeMultiplier=10
-// already keeps SST counts low (~10x larger SSTs => ~10x fewer files), so
-// even the small-volume cap is enough to keep the working set hot while
-// leaving headroom for thousands of co-resident DBs.
-const (
-	LevelDbOpenFilesCacheCapacity       = 16
-	LevelDbMediumOpenFilesCacheCapacity = 32
-	LevelDbLargeOpenFilesCacheCapacity  = 64
 )
 
 func loadVolumeWithoutIndex(dirname string, collection string, id needle.VolumeId, needleMapKind NeedleMapKind, ver needle.Version) (v *Volume, err error) {
@@ -87,38 +68,13 @@ func (v *Volume) reopenIdxForWrite() error {
 			indexFile.Close()
 			return fmt.Errorf("rebuild memory needle map for volume %d: %v", v.Id, err)
 		}
-	case NeedleMapLevelDb:
-		opts := &opt.Options{
-			BlockCacheCapacity:            2 * 1024 * 1024,
-			WriteBuffer:                   1 * 1024 * 1024,
-			CompactionTableSizeMultiplier: 10,
-			OpenFilesCacheCapacity:        LevelDbOpenFilesCacheCapacity,
-		}
-		if newNm, err = NewLevelDbNeedleMap(v.FileName(".ldb"), indexFile, opts, v.ldbTimeout, v.Version()); err != nil {
+	case NeedleMapLevelDb, NeedleMapLevelDbMedium, NeedleMapLevelDbLarge:
+		// One zapdb-backed needle map serves all three sizes; the kind only
+		// selects the .ldb backend. zapdb manages its own caches, so the
+		// historical leveldb block-cache/write-buffer tuning is gone.
+		if newNm, err = NewLevelDbNeedleMap(v.FileName(".ldb"), indexFile, v.ldbTimeout, v.Version()); err != nil {
 			indexFile.Close()
 			return fmt.Errorf("rebuild leveldb needle map for volume %d: %v", v.Id, err)
-		}
-	case NeedleMapLevelDbMedium:
-		opts := &opt.Options{
-			BlockCacheCapacity:            4 * 1024 * 1024,
-			WriteBuffer:                   2 * 1024 * 1024,
-			CompactionTableSizeMultiplier: 10,
-			OpenFilesCacheCapacity:        LevelDbMediumOpenFilesCacheCapacity,
-		}
-		if newNm, err = NewLevelDbNeedleMap(v.FileName(".ldb"), indexFile, opts, v.ldbTimeout, v.Version()); err != nil {
-			indexFile.Close()
-			return fmt.Errorf("rebuild leveldb medium needle map for volume %d: %v", v.Id, err)
-		}
-	case NeedleMapLevelDbLarge:
-		opts := &opt.Options{
-			BlockCacheCapacity:            8 * 1024 * 1024,
-			WriteBuffer:                   4 * 1024 * 1024,
-			CompactionTableSizeMultiplier: 10,
-			OpenFilesCacheCapacity:        LevelDbLargeOpenFilesCacheCapacity,
-		}
-		if newNm, err = NewLevelDbNeedleMap(v.FileName(".ldb"), indexFile, opts, v.ldbTimeout, v.Version()); err != nil {
-			indexFile.Close()
-			return fmt.Errorf("rebuild leveldb large needle map for volume %d: %v", v.Id, err)
 		}
 	default:
 		indexFile.Close()
@@ -293,7 +249,7 @@ func (v *Volume) load(alsoLoadIndex bool, createDatIfMissing bool, needleMapKind
 			case NeedleMapInMemory:
 				if v.tmpNm != nil {
 					glog.V(2).Infof("updating memory compact index %s ", v.FileName(".idx"))
-					err = v.tmpNm.UpdateNeedleMap(v, indexFile, nil, 0)
+					err = v.tmpNm.UpdateNeedleMap(v, indexFile, 0)
 				} else {
 					glog.V(2).Infoln("loading memory index", v.FileName(".idx"), "to memory")
 					if v.nm, err = LoadCompactNeedleMap(indexFile, v.Version()); err != nil {
@@ -302,55 +258,17 @@ func (v *Volume) load(alsoLoadIndex bool, createDatIfMissing bool, needleMapKind
 						indexFile.Close()
 					}
 				}
-			case NeedleMapLevelDb:
-				opts := &opt.Options{
-					BlockCacheCapacity:            2 * 1024 * 1024,               // default value is 8MiB
-					WriteBuffer:                   1 * 1024 * 1024,               // default value is 4MiB
-					CompactionTableSizeMultiplier: 10,                            // default value is 1
-					OpenFilesCacheCapacity:        LevelDbOpenFilesCacheCapacity, // see package-level docs
-				}
+			case NeedleMapLevelDb, NeedleMapLevelDbMedium, NeedleMapLevelDbLarge:
+				// All three sizes share one zapdb-backed needle map. The
+				// historical small/medium/large split tuned goleveldb's block
+				// cache, write buffer, and open-file cache; zapdb manages those
+				// internally, so the kind only selects the .ldb backend here.
 				if v.tmpNm != nil {
 					glog.V(0).Infoln("updating leveldb index", v.FileName(".ldb"))
-					err = v.tmpNm.UpdateNeedleMap(v, indexFile, opts, v.ldbTimeout)
+					err = v.tmpNm.UpdateNeedleMap(v, indexFile, v.ldbTimeout)
 				} else {
 					glog.V(0).Infoln("loading leveldb index", v.FileName(".ldb"))
-					if v.nm, err = NewLevelDbNeedleMap(v.FileName(".ldb"), indexFile, opts, v.ldbTimeout, v.Version()); err != nil {
-						glog.V(0).Infof("loading leveldb %s error: %v", v.FileName(".ldb"), err)
-						v.nm = nil
-						indexFile.Close()
-					}
-				}
-			case NeedleMapLevelDbMedium:
-				opts := &opt.Options{
-					BlockCacheCapacity:            4 * 1024 * 1024,                     // default value is 8MiB
-					WriteBuffer:                   2 * 1024 * 1024,                     // default value is 4MiB
-					CompactionTableSizeMultiplier: 10,                                  // default value is 1
-					OpenFilesCacheCapacity:        LevelDbMediumOpenFilesCacheCapacity, // see package-level docs
-				}
-				if v.tmpNm != nil {
-					glog.V(0).Infoln("updating leveldb medium index", v.FileName(".ldb"))
-					err = v.tmpNm.UpdateNeedleMap(v, indexFile, opts, v.ldbTimeout)
-				} else {
-					glog.V(0).Infoln("loading leveldb medium index", v.FileName(".ldb"))
-					if v.nm, err = NewLevelDbNeedleMap(v.FileName(".ldb"), indexFile, opts, v.ldbTimeout, v.Version()); err != nil {
-						glog.V(0).Infof("loading leveldb %s error: %v", v.FileName(".ldb"), err)
-						v.nm = nil
-						indexFile.Close()
-					}
-				}
-			case NeedleMapLevelDbLarge:
-				opts := &opt.Options{
-					BlockCacheCapacity:            8 * 1024 * 1024,                    // default value is 8MiB
-					WriteBuffer:                   4 * 1024 * 1024,                    // default value is 4MiB
-					CompactionTableSizeMultiplier: 10,                                 // default value is 1
-					OpenFilesCacheCapacity:        LevelDbLargeOpenFilesCacheCapacity, // see package-level docs
-				}
-				if v.tmpNm != nil {
-					glog.V(0).Infoln("updating leveldb large index", v.FileName(".ldb"))
-					err = v.tmpNm.UpdateNeedleMap(v, indexFile, opts, v.ldbTimeout)
-				} else {
-					glog.V(0).Infoln("loading leveldb large index", v.FileName(".ldb"))
-					if v.nm, err = NewLevelDbNeedleMap(v.FileName(".ldb"), indexFile, opts, v.ldbTimeout, v.Version()); err != nil {
+					if v.nm, err = NewLevelDbNeedleMap(v.FileName(".ldb"), indexFile, v.ldbTimeout, v.Version()); err != nil {
 						glog.V(0).Infof("loading leveldb %s error: %v", v.FileName(".ldb"), err)
 						v.nm = nil
 						indexFile.Close()
