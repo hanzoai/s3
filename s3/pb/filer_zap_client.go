@@ -19,6 +19,6 @@ import (
 // filer_pb.HanzoFilerClient that routes every call over ZAP. It delegates to
 // filerzap.NewZapFilerClient with no capability token; the caller owns conn's
 // lifecycle.
-func NewZapFilerClient(conn *transport.Conn) filer_pb.HanzoFilerClient {
+func NewZapFilerClient(conn transport.Conn) filer_pb.HanzoFilerClient {
 	return filerzap.NewZapFilerClient(conn, nil)
 }

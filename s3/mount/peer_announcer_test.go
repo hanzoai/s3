@@ -56,7 +56,7 @@ func (f *fakeMountPeerClient) ChunkLookup(in mount_peerwire.ChunkLookupRequestIn
 	return mount_peerwire.ChunkLookupResponse{}, fmt.Errorf("not implemented")
 }
 
-func (f *fakeMountPeerClient) FetchChunk(in mount_peerwire.FetchChunkRequestInput) (*transport.Stream, error) {
+func (f *fakeMountPeerClient) FetchChunk(in mount_peerwire.FetchChunkRequestInput) (transport.Stream, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

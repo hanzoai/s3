@@ -347,12 +347,12 @@ func Serve(network, addr string, b Backend) (*transport.Server, error) {
 // RPCs; the response is returned as its zero-copy wire view. For streaming use
 // the filerstream client over the same (or a sibling) connection.
 type Client struct {
-	conn *transport.Conn
+	conn transport.Conn
 	rpc  *HanzoFilerClient
 }
 
 // Dial connects to the HanzoFiler ZAP service at addr (e.g. "filer.hanzo.svc:18888")
-// over plain TCP. For the PQ-secured mesh establish the *transport.Conn via the
+// over plain TCP. For the PQ-secured mesh establish the transport.Conn via the
 // TLS/QUIC path and use NewClient.
 func Dial(network, addr string) (*Client, error) {
 	conn, err := transport.Dial(network, addr)
@@ -363,13 +363,13 @@ func Dial(network, addr string) (*Client, error) {
 }
 
 // NewClient wraps an already-established transport.Conn (TCP, Unix, or PQ-TLS).
-func NewClient(conn *transport.Conn) *Client {
+func NewClient(conn transport.Conn) *Client {
 	return &Client{conn: conn, rpc: NewHanzoFilerClient(conn, nil)}
 }
 
 // Conn exposes the underlying transport connection so a filerstream client can
 // open streams over the same socket as the unary client.
-func (c *Client) Conn() *transport.Conn { return c.conn }
+func (c *Client) Conn() transport.Conn { return c.conn }
 
 // Close releases the underlying connection.
 func (c *Client) Close() error { return c.conn.Close() }

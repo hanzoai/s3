@@ -41,7 +41,7 @@ func (a *MessageQueueAgent) DispatchUnary(envelope []byte) ([]byte, error) {
 // StreamHandler routes the agent's two bidirectional streaming methods by
 // method ordinal to their real stream loops. It satisfies
 // transport.StreamHandler.
-func (a *MessageQueueAgent) StreamHandler(method uint32, init []byte, s *transport.Stream) {
+func (a *MessageQueueAgent) StreamHandler(method uint32, init []byte, s transport.Stream) {
 	switch method {
 	case mq_agentwire.HanzoMessagingAgentPublishRecordOrdinal:
 		if err := a.PublishRecord(init, s); err != nil {
