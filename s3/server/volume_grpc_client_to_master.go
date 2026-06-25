@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hanzoai/s3/s3/masterzap"
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/stats"
 
@@ -125,26 +124,41 @@ func (vs *VolumeServer) StopHeartbeat() (isAlreadyStopping bool) {
 }
 
 func (vs *VolumeServer) doHeartbeatWithRetry(masterAddress pb.ServerAddress, grpcDialOption pb.DialOption, sleepInterval time.Duration, duplicateRetryCount int) (newLeader pb.ServerAddress, err error) {
-	_ = grpcDialOption // ZAP path derives TLS from grpc.master config, not the dial option
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Dedicated long-lived ZAP connection to the master's native transport (the
-	// heartbeat owns reconnect/leader-change itself, so it does not borrow from
-	// the shared masterPool).
-	conn, err := pb.DialMasterZapAddr(masterAddress.ToMasterZapAddress())
-	if err != nil {
-		return "", fmt.Errorf("fail to dial %s : %v", masterAddress, err)
+	// The master service is served over the native ZAP transport; WithMasterClient
+	// dials it (ToMasterZapAddress) over the masterPool and holds the connection
+	// for the lifetime of fn — i.e. for the whole heartbeat stream below. The
+	// named returns (newLeader, err) are set from inside the closure.
+	clientErr := pb.WithMasterClient(ctx, true, masterAddress, grpcDialOption, false, func(client master_pb.HanzoClient) error {
+		newLeader, err = vs.runHeartbeatStream(ctx, client, masterAddress, sleepInterval, duplicateRetryCount)
+		return err
+	})
+	if clientErr != nil && err == nil {
+		err = clientErr
 	}
-	defer conn.Close()
+	return newLeader, err
+}
 
-	client := masterzap.New(conn, nil)
+// runHeartbeatStream opens and pumps the bidirectional SendHeartbeat stream over
+// the given master client (ZAP-backed) until the stream ends, a new leader is
+// observed, or the volume server stops. Split out of doHeartbeatWithRetry so the
+// connection lifetime is scoped to pb.WithMasterClient's fn.
+func (vs *VolumeServer) runHeartbeatStream(ctx context.Context, client master_pb.HanzoClient, masterAddress pb.ServerAddress, sleepInterval time.Duration, duplicateRetryCount int) (newLeader pb.ServerAddress, err error) {
 	stream, err := client.SendHeartbeat(ctx)
 	if err != nil {
 		glog.V(0).Infof("SendHeartbeat to %s: %v", masterAddress, err)
 		return "", err
 	}
+	// The master conn is a SHARED pooled conn (masterPool) that outlives this
+	// fn — the old dedicated gRPC ClientConn was torn down on return, releasing
+	// the server stream; the pooled conn is not. Half-close on every exit
+	// (new-leader, recv/send error) so the master's SendHeartbeat handler
+	// observes stream-end and releases instead of leaking a goroutine per
+	// leader-change.
+	defer func() { _ = stream.CloseSend() }()
 	glog.V(0).Infof("Heartbeat to: %v", masterAddress)
 	vs.setCurrentMaster(masterAddress)
 

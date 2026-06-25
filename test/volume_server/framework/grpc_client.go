@@ -1,28 +1,24 @@
 package framework
 
 import (
-	"context"
 	"testing"
-	"time"
 
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/hanzoai/s3/s3/volumezap"
+
+	"github.com/zap-proto/go/transport"
 )
 
-func DialVolumeServer(t testing.TB, address string) (*grpc.ClientConn, volume_server_pb.VolumeServerClient) {
+// DialVolumeServer dials the volume server over the native ZAP transport (gRPC is
+// gone) and returns the connection plus a volume_server_pb.VolumeServerClient
+// backed by it (volumezap.New). The caller closes the returned conn.
+func DialVolumeServer(t testing.TB, address string) (transport.Conn, volume_server_pb.VolumeServerClient) {
 	t.Helper()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	conn, err := grpc.DialContext(ctx, address,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
-	)
+	conn, err := transport.Dial("tcp", address)
 	if err != nil {
-		t.Fatalf("dial volume grpc %s: %v", address, err)
+		t.Fatalf("dial volume ZAP %s: %v", address, err)
 	}
 
-	return conn, volume_server_pb.NewVolumeServerClient(conn)
+	return conn, volumezap.New(conn, nil)
 }
