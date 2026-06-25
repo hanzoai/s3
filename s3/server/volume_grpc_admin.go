@@ -45,13 +45,20 @@ func (vs *VolumeServer) checkGrpcAdminAuth(ctx context.Context) error {
 	}
 	pr, ok := peer.FromContext(ctx)
 	if !ok {
-		// No gRPC peer means the call arrived over the native ZAP mesh, not gRPC.
-		// On that path the caller is authenticated at the TRANSPORT by PQ-mTLS —
-		// pb.ServerTLSConfig requires and verifies the client cert against the CA
-		// and the allowed-CN gate, and fails closed without a CA. The IP whitelist
-		// is a gRPC-era fallback that cannot apply over ZAP (there is no peer IP to
-		// match), so the transport's mTLS is the authorization boundary here.
-		return nil
+		// No gRPC peer = the call arrived over the native ZAP mesh (the backend
+		// dispatches with a peerless context). The IP whitelist CANNOT be
+		// evaluated here — there is no caller IP. FAIL CLOSED: allow only when the
+		// whitelist is empty (allow-all / dev, IsWhiteListed("")==true). If the
+		// operator configured a whitelist they want a restriction we cannot honor
+		// over ZAP (no IP), so deny rather than silently bypass it — the prior
+		// blanket `return nil` was a categorical authz bypass on every ZAP admin
+		// RPC (CVE-class). For authenticated ZAP admin authz use the transport's
+		// PQ-mTLS allowed-CN gate (grpc.<c>.allowed_commonNames), not IP.
+		if vs.guard.IsWhiteListed("") {
+			return nil
+		}
+		glog.V(0).Infof("gRPC admin auth: denied — no peer IP over ZAP and a whitelist is configured; use grpc.volume.allowed_commonNames (PQ-mTLS CN) for ZAP admin authz")
+		return status.Error(codes.PermissionDenied, "admin RPC over ZAP: IP whitelist cannot be evaluated without a peer; configure mTLS allowed_commonNames")
 	}
 	addr := pr.Addr.String()
 	var host string

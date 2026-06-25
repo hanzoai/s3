@@ -13,11 +13,11 @@ import (
 	"github.com/hanzoai/s3/s3/filer_client"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/mq"
-	mqsvc "github.com/hanzoai/s3/s3/svc/mq"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/pb/schema_pb"
+	mqsvc "github.com/hanzoai/s3/s3/svc/mq"
 	"github.com/hanzoai/s3/s3/util"
 )
 
@@ -28,10 +28,10 @@ const (
 )
 
 // dialBrokerZap opens a ZAP connection to a broker address, PQ-secured mTLS when
-// grpc.mq.cert/.key is configured and plaintext otherwise — the single place this
+// grpc.msg_broker.cert/.key is configured and plaintext otherwise — the single place this
 // package's broker dial-side security gate lives, mirroring pb.dialBrokerZapAddr.
 func dialBrokerZap(brokerAddress string) (transport.Conn, error) {
-	if cfg := pb.ClientTLSConfig(util.GetViper(), "grpc.mq"); cfg != nil {
+	if cfg := pb.ClientTLSConfig(util.GetViper(), "grpc.msg_broker"); cfg != nil {
 		return transport.DialTLS("tcp", brokerAddress, transport.PQTLSConfig(cfg))
 	}
 	return transport.Dial("tcp", brokerAddress)
@@ -42,7 +42,7 @@ func NewBrokerClientWithFilerAccessor(brokerAddress string, filerClientAccessor 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Connect to the broker over the native ZAP transport. The broker fully cut over
-	// to ZAP (no gRPC), so its address IS the ZAP endpoint. When grpc.mq.cert/.key is
+	// to ZAP (no gRPC), so its address IS the ZAP endpoint. When grpc.msg_broker.cert/.key is
 	// configured the connection is PQ-secured mTLS (transport.PQTLSConfig pins the
 	// X25519MLKEM768 hybrid); otherwise plaintext (loopback / dev), matching the
 	// broker server's gating. The Conn outlives BrokerClient.Close of individual
