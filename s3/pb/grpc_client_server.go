@@ -31,6 +31,7 @@ import (
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
+	"github.com/hanzoai/s3/s3/volumezap"
 
 	"github.com/zap-proto/go/transport"
 )
@@ -544,12 +545,35 @@ func WithMasterClient(ctx context.Context, streamingMode bool, master ServerAddr
 
 }
 
-func WithVolumeServerClient(streamingMode bool, volumeServer ServerAddress, grpcDialOption grpc.DialOption, fn func(client volume_server_pb.VolumeServerClient) error) error {
-	return WithGrpcClient(context.Background(), streamingMode, 0, func(grpcConnection *grpc.ClientConn) error {
-		client := volume_server_pb.NewVolumeServerClient(grpcConnection)
-		return fn(client)
-	}, volumeServer.ToGrpcAddress(), false, grpcDialOption)
+// dialVolumeZapAddr opens a ZAP connection to a volume-server grpc address. When
+// grpc.volume.cert/.key is configured it is PQ-secured TLS (transport.PQTLSConfig
+// pins X25519MLKEM768, the PQ X-Wing curve) presenting the client cert and
+// trusting grpc.ca — the same mTLS the legacy gRPC volume client used. Otherwise
+// plaintext (loopback / dev), matching the volume server's gating in
+// command/volume.go. The returned *Conn drives both unary Call and OpenStream.
+func dialVolumeZapAddr(addr string) (transport.Conn, error) {
+	if cfg := security.ClientTLSConfig(util.GetViper(), "grpc.volume"); cfg != nil {
+		return transport.DialTLS("tcp", addr, transport.PQTLSConfig(cfg))
+	}
+	return transport.Dial("tcp", addr)
+}
 
+// volumePool reuses one ZAP connection per volume-server address across calls — a
+// Conn is concurrency-safe, so this avoids a fresh TCP (and, under grpc.volume
+// mTLS, a fresh X25519MLKEM768 handshake) on every volume RPC. Generic pooling
+// lives in the transport (transport.Pool); only the dial choice is ours.
+var volumePool = transport.NewPool(dialVolumeZapAddr)
+
+// WithVolumeServerClient dials the volume server over the native ZAP transport and
+// runs fn with a volume_server_pb.VolumeServerClient backed by that connection
+// (volumezap.New). The streamingMode/grpcDialOption parameters are retained for
+// caller compatibility; the ZAP path needs neither a streaming flag (every stream
+// is a transport stream) nor a dial option.
+func WithVolumeServerClient(streamingMode bool, volumeServer ServerAddress, grpcDialOption grpc.DialOption, fn func(client volume_server_pb.VolumeServerClient) error) error {
+	_, _ = streamingMode, grpcDialOption
+	return volumePool.With(volumeServer.ToGrpcAddress(), func(conn transport.Conn) error {
+		return fn(volumezap.New(conn, nil))
+	})
 }
 
 func WithOneOfGrpcMasterClients(streamingMode bool, masterGrpcAddresses map[string]ServerAddress, grpcDialOption grpc.DialOption, fn func(client master_pb.HanzoClient) error) (err error) {
