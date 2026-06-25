@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -46,7 +47,7 @@ func (c *commandS3AccessKeyDelete) Do(args []string, commandEnv *CommandEnv, wri
 	}
 
 	err := commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.DeleteAccessKey(iamwire.NewDeleteAccessKeyRequest(iamwire.DeleteAccessKeyRequestInput{
+		_, _, err := client.DeleteAccessKey(context.Background(), iamwire.NewDeleteAccessKeyRequest(iamwire.DeleteAccessKeyRequestInput{
 			Username:  *user,
 			AccessKey: *accessKey,
 		}))

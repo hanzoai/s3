@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/cluster"
 	"github.com/hanzoai/s3/s3/credential"
@@ -47,7 +46,7 @@ type S3ApiServerOption struct {
 	DomainName                string
 	AllowedOrigins            []string
 	BucketsPath               string
-	GrpcDialOption            grpc.DialOption
+	GrpcDialOption            pb.DialOption
 	AllowDeleteBucketNotEmpty bool
 	LocalFilerSocket          string
 	DataCenter                string

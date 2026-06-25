@@ -9,22 +9,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/seaweedfs/go-fuse/v2/fuse"
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/filerzap"
 	"github.com/hanzoai/s3/s3/mount/meta_cache"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/filerstub"
 	"github.com/hanzoai/s3/s3/util"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
+	"github.com/seaweedfs/go-fuse/v2/fuse"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type createEntryTestServer struct {
-	filer_pb.UnimplementedHanzoFilerServer
+	filerstub.FilerServer
 	mu            sync.Mutex
 	lastDirectory string
 	lastName      string
@@ -97,7 +96,7 @@ func newCreateTestWFS(t *testing.T) (*WFS, *createEntryTestServer) {
 		FilerAddresses: []pb.ServerAddress{
 			pb.NewServerAddressWithGrpcPort("127.0.0.1:1", listener.Addr().(*net.TCPAddr).Port),
 		},
-		GrpcDialOption:         grpc.WithTransportCredentials(insecure.NewCredentials()),
+		GrpcDialOption:         pb.DialOption{},
 		FilerMountRootPath:     "/",
 		MountUid:               99,
 		MountGid:               100,

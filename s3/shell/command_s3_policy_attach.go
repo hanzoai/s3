@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -50,12 +51,12 @@ func (c *commandS3PolicyAttach) Do(args []string, commandEnv *CommandEnv, writer
 
 	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
 		// Verify the policy exists
-		if _, _, err := client.GetPolicy(iamwire.NewGetPolicyRequest(iamwire.GetPolicyRequestInput{Name: *policy})); err != nil {
+		if _, _, err := client.GetPolicy(context.Background(), iamwire.NewGetPolicyRequest(iamwire.GetPolicyRequestInput{Name: *policy})); err != nil {
 			return fmt.Errorf("get policy %q: %w", *policy, err)
 		}
 
 		// Get the user
-		_, body, err := client.GetUser(iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: *user}))
+		_, body, err := client.GetUser(context.Background(), iamwire.NewGetUserRequest(iamwire.GetUserRequestInput{Username: *user}))
 		if err != nil {
 			return fmt.Errorf("get user %q: %w", *user, err)
 		}
@@ -75,7 +76,7 @@ func (c *commandS3PolicyAttach) Do(args []string, commandEnv *CommandEnv, writer
 		}
 
 		identity.PolicyNames = append(identity.PolicyNames, *policy)
-		_, _, err = client.UpdateUser(iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
+		_, _, err = client.UpdateUser(context.Background(), iamwire.NewUpdateUserRequest(iamwire.UpdateUserRequestInput{
 			Username: *user,
 			Identity: iamwire.IdentityInputFromPB(identity),
 		}))

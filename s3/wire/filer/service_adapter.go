@@ -30,6 +30,7 @@
 package filerwire
 
 import (
+	"context"
 	"errors"
 
 	"github.com/zap-proto/go/transport"
@@ -313,12 +314,12 @@ func (h handler) MountList(req []byte) ([]byte, error) {
 
 // --- streaming RPCs: refused on the unary path (served by filerstream) ---
 
-func (h handler) ListEntries(req []byte) ([]byte, error)             { return nil, ErrStreamingEndpoint }
-func (h handler) StreamRenameEntry(req []byte) ([]byte, error)       { return nil, ErrStreamingEndpoint }
-func (h handler) StreamMutateEntry(req []byte) ([]byte, error)       { return nil, ErrStreamingEndpoint }
-func (h handler) TraverseBfsMetadata(req []byte) ([]byte, error)     { return nil, ErrStreamingEndpoint }
-func (h handler) SubscribeMetadata(req []byte) ([]byte, error)       { return nil, ErrStreamingEndpoint }
-func (h handler) SubscribeLocalMetadata(req []byte) ([]byte, error)  { return nil, ErrStreamingEndpoint }
+func (h handler) ListEntries(req []byte) ([]byte, error)            { return nil, ErrStreamingEndpoint }
+func (h handler) StreamRenameEntry(req []byte) ([]byte, error)      { return nil, ErrStreamingEndpoint }
+func (h handler) StreamMutateEntry(req []byte) ([]byte, error)      { return nil, ErrStreamingEndpoint }
+func (h handler) TraverseBfsMetadata(req []byte) ([]byte, error)    { return nil, ErrStreamingEndpoint }
+func (h handler) SubscribeMetadata(req []byte) ([]byte, error)      { return nil, ErrStreamingEndpoint }
+func (h handler) SubscribeLocalMetadata(req []byte) ([]byte, error) { return nil, ErrStreamingEndpoint }
 
 // compile-time assertion that handler satisfies the generated server contract.
 var _ HanzoFilerHandler = handler{}
@@ -377,224 +378,224 @@ func (c *Client) Close() error { return c.conn.Close() }
 // The typed unary calls below build the request with New*, ship it over the
 // generated HanzoFilerClient, and return the response as its zero-copy view.
 
-func (c *Client) LookupDirectoryEntry(req []byte) (LookupDirectoryEntryResponse, error) {
-	_, body, err := c.rpc.LookupDirectoryEntry(req)
+func (c *Client) LookupDirectoryEntry(ctx context.Context, req []byte) (LookupDirectoryEntryResponse, error) {
+	_, body, err := c.rpc.LookupDirectoryEntry(ctx, req)
 	if err != nil {
 		return LookupDirectoryEntryResponse{}, err
 	}
 	return WrapLookupDirectoryEntryResponse(body)
 }
 
-func (c *Client) CreateEntry(req []byte) (CreateEntryResponse, error) {
-	_, body, err := c.rpc.CreateEntry(req)
+func (c *Client) CreateEntry(ctx context.Context, req []byte) (CreateEntryResponse, error) {
+	_, body, err := c.rpc.CreateEntry(ctx, req)
 	if err != nil {
 		return CreateEntryResponse{}, err
 	}
 	return WrapCreateEntryResponse(body)
 }
 
-func (c *Client) UpdateEntry(req []byte) (UpdateEntryResponse, error) {
-	_, body, err := c.rpc.UpdateEntry(req)
+func (c *Client) UpdateEntry(ctx context.Context, req []byte) (UpdateEntryResponse, error) {
+	_, body, err := c.rpc.UpdateEntry(ctx, req)
 	if err != nil {
 		return UpdateEntryResponse{}, err
 	}
 	return WrapUpdateEntryResponse(body)
 }
 
-func (c *Client) TouchAccessTime(req []byte) (TouchAccessTimeResponse, error) {
-	_, body, err := c.rpc.TouchAccessTime(req)
+func (c *Client) TouchAccessTime(ctx context.Context, req []byte) (TouchAccessTimeResponse, error) {
+	_, body, err := c.rpc.TouchAccessTime(ctx, req)
 	if err != nil {
 		return TouchAccessTimeResponse{}, err
 	}
 	return WrapTouchAccessTimeResponse(body)
 }
 
-func (c *Client) AppendToEntry(req []byte) (AppendToEntryResponse, error) {
-	_, body, err := c.rpc.AppendToEntry(req)
+func (c *Client) AppendToEntry(ctx context.Context, req []byte) (AppendToEntryResponse, error) {
+	_, body, err := c.rpc.AppendToEntry(ctx, req)
 	if err != nil {
 		return AppendToEntryResponse{}, err
 	}
 	return WrapAppendToEntryResponse(body)
 }
 
-func (c *Client) DeleteEntry(req []byte) (DeleteEntryResponse, error) {
-	_, body, err := c.rpc.DeleteEntry(req)
+func (c *Client) DeleteEntry(ctx context.Context, req []byte) (DeleteEntryResponse, error) {
+	_, body, err := c.rpc.DeleteEntry(ctx, req)
 	if err != nil {
 		return DeleteEntryResponse{}, err
 	}
 	return WrapDeleteEntryResponse(body)
 }
 
-func (c *Client) ObjectTransaction(req []byte) (ObjectTransactionResponse, error) {
-	_, body, err := c.rpc.ObjectTransaction(req)
+func (c *Client) ObjectTransaction(ctx context.Context, req []byte) (ObjectTransactionResponse, error) {
+	_, body, err := c.rpc.ObjectTransaction(ctx, req)
 	if err != nil {
 		return ObjectTransactionResponse{}, err
 	}
 	return WrapObjectTransactionResponse(body)
 }
 
-func (c *Client) ObjectTransactionBatch(req []byte) (ObjectTransactionBatchResponse, error) {
-	_, body, err := c.rpc.ObjectTransactionBatch(req)
+func (c *Client) ObjectTransactionBatch(ctx context.Context, req []byte) (ObjectTransactionBatchResponse, error) {
+	_, body, err := c.rpc.ObjectTransactionBatch(ctx, req)
 	if err != nil {
 		return ObjectTransactionBatchResponse{}, err
 	}
 	return WrapObjectTransactionBatchResponse(body)
 }
 
-func (c *Client) PosixLock(req []byte) (PosixLockResponse, error) {
-	_, body, err := c.rpc.PosixLock(req)
+func (c *Client) PosixLock(ctx context.Context, req []byte) (PosixLockResponse, error) {
+	_, body, err := c.rpc.PosixLock(ctx, req)
 	if err != nil {
 		return PosixLockResponse{}, err
 	}
 	return WrapPosixLockResponse(body)
 }
 
-func (c *Client) AtomicRenameEntry(req []byte) (AtomicRenameEntryResponse, error) {
-	_, body, err := c.rpc.AtomicRenameEntry(req)
+func (c *Client) AtomicRenameEntry(ctx context.Context, req []byte) (AtomicRenameEntryResponse, error) {
+	_, body, err := c.rpc.AtomicRenameEntry(ctx, req)
 	if err != nil {
 		return AtomicRenameEntryResponse{}, err
 	}
 	return WrapAtomicRenameEntryResponse(body)
 }
 
-func (c *Client) AssignVolume(req []byte) (AssignVolumeResponse, error) {
-	_, body, err := c.rpc.AssignVolume(req)
+func (c *Client) AssignVolume(ctx context.Context, req []byte) (AssignVolumeResponse, error) {
+	_, body, err := c.rpc.AssignVolume(ctx, req)
 	if err != nil {
 		return AssignVolumeResponse{}, err
 	}
 	return WrapAssignVolumeResponse(body)
 }
 
-func (c *Client) LookupVolume(req []byte) (LookupVolumeResponse, error) {
-	_, body, err := c.rpc.LookupVolume(req)
+func (c *Client) LookupVolume(ctx context.Context, req []byte) (LookupVolumeResponse, error) {
+	_, body, err := c.rpc.LookupVolume(ctx, req)
 	if err != nil {
 		return LookupVolumeResponse{}, err
 	}
 	return WrapLookupVolumeResponse(body)
 }
 
-func (c *Client) CollectionList(req []byte) (CollectionListResponse, error) {
-	_, body, err := c.rpc.CollectionList(req)
+func (c *Client) CollectionList(ctx context.Context, req []byte) (CollectionListResponse, error) {
+	_, body, err := c.rpc.CollectionList(ctx, req)
 	if err != nil {
 		return CollectionListResponse{}, err
 	}
 	return WrapCollectionListResponse(body)
 }
 
-func (c *Client) DeleteCollection(req []byte) (DeleteCollectionResponse, error) {
-	_, body, err := c.rpc.DeleteCollection(req)
+func (c *Client) DeleteCollection(ctx context.Context, req []byte) (DeleteCollectionResponse, error) {
+	_, body, err := c.rpc.DeleteCollection(ctx, req)
 	if err != nil {
 		return DeleteCollectionResponse{}, err
 	}
 	return WrapDeleteCollectionResponse(body)
 }
 
-func (c *Client) Statistics(req []byte) (StatisticsResponse, error) {
-	_, body, err := c.rpc.Statistics(req)
+func (c *Client) Statistics(ctx context.Context, req []byte) (StatisticsResponse, error) {
+	_, body, err := c.rpc.Statistics(ctx, req)
 	if err != nil {
 		return StatisticsResponse{}, err
 	}
 	return WrapStatisticsResponse(body)
 }
 
-func (c *Client) Ping(req []byte) (PingResponse, error) {
-	_, body, err := c.rpc.Ping(req)
+func (c *Client) Ping(ctx context.Context, req []byte) (PingResponse, error) {
+	_, body, err := c.rpc.Ping(ctx, req)
 	if err != nil {
 		return PingResponse{}, err
 	}
 	return WrapPingResponse(body)
 }
 
-func (c *Client) GetFilerConfiguration(req []byte) (GetFilerConfigurationResponse, error) {
-	_, body, err := c.rpc.GetFilerConfiguration(req)
+func (c *Client) GetFilerConfiguration(ctx context.Context, req []byte) (GetFilerConfigurationResponse, error) {
+	_, body, err := c.rpc.GetFilerConfiguration(ctx, req)
 	if err != nil {
 		return GetFilerConfigurationResponse{}, err
 	}
 	return WrapGetFilerConfigurationResponse(body)
 }
 
-func (c *Client) ListMetadataSubscribers(req []byte) (ListMetadataSubscribersResponse, error) {
-	_, body, err := c.rpc.ListMetadataSubscribers(req)
+func (c *Client) ListMetadataSubscribers(ctx context.Context, req []byte) (ListMetadataSubscribersResponse, error) {
+	_, body, err := c.rpc.ListMetadataSubscribers(ctx, req)
 	if err != nil {
 		return ListMetadataSubscribersResponse{}, err
 	}
 	return WrapListMetadataSubscribersResponse(body)
 }
 
-func (c *Client) KvGet(req []byte) (KvGetResponse, error) {
-	_, body, err := c.rpc.KvGet(req)
+func (c *Client) KvGet(ctx context.Context, req []byte) (KvGetResponse, error) {
+	_, body, err := c.rpc.KvGet(ctx, req)
 	if err != nil {
 		return KvGetResponse{}, err
 	}
 	return WrapKvGetResponse(body)
 }
 
-func (c *Client) KvPut(req []byte) (KvPutResponse, error) {
-	_, body, err := c.rpc.KvPut(req)
+func (c *Client) KvPut(ctx context.Context, req []byte) (KvPutResponse, error) {
+	_, body, err := c.rpc.KvPut(ctx, req)
 	if err != nil {
 		return KvPutResponse{}, err
 	}
 	return WrapKvPutResponse(body)
 }
 
-func (c *Client) CacheRemoteObjectToLocalCluster(req []byte) (CacheRemoteObjectToLocalClusterResponse, error) {
-	_, body, err := c.rpc.CacheRemoteObjectToLocalCluster(req)
+func (c *Client) CacheRemoteObjectToLocalCluster(ctx context.Context, req []byte) (CacheRemoteObjectToLocalClusterResponse, error) {
+	_, body, err := c.rpc.CacheRemoteObjectToLocalCluster(ctx, req)
 	if err != nil {
 		return CacheRemoteObjectToLocalClusterResponse{}, err
 	}
 	return WrapCacheRemoteObjectToLocalClusterResponse(body)
 }
 
-func (c *Client) DistributedLock(req []byte) (LockResponse, error) {
-	_, body, err := c.rpc.DistributedLock(req)
+func (c *Client) DistributedLock(ctx context.Context, req []byte) (LockResponse, error) {
+	_, body, err := c.rpc.DistributedLock(ctx, req)
 	if err != nil {
 		return LockResponse{}, err
 	}
 	return WrapLockResponse(body)
 }
 
-func (c *Client) DistributedUnlock(req []byte) (UnlockResponse, error) {
-	_, body, err := c.rpc.DistributedUnlock(req)
+func (c *Client) DistributedUnlock(ctx context.Context, req []byte) (UnlockResponse, error) {
+	_, body, err := c.rpc.DistributedUnlock(ctx, req)
 	if err != nil {
 		return UnlockResponse{}, err
 	}
 	return WrapUnlockResponse(body)
 }
 
-func (c *Client) FindLockOwner(req []byte) (FindLockOwnerResponse, error) {
-	_, body, err := c.rpc.FindLockOwner(req)
+func (c *Client) FindLockOwner(ctx context.Context, req []byte) (FindLockOwnerResponse, error) {
+	_, body, err := c.rpc.FindLockOwner(ctx, req)
 	if err != nil {
 		return FindLockOwnerResponse{}, err
 	}
 	return WrapFindLockOwnerResponse(body)
 }
 
-func (c *Client) TransferLocks(req []byte) (TransferLocksResponse, error) {
-	_, body, err := c.rpc.TransferLocks(req)
+func (c *Client) TransferLocks(ctx context.Context, req []byte) (TransferLocksResponse, error) {
+	_, body, err := c.rpc.TransferLocks(ctx, req)
 	if err != nil {
 		return TransferLocksResponse{}, err
 	}
 	return WrapTransferLocksResponse(body)
 }
 
-func (c *Client) ReplicateLock(req []byte) (ReplicateLockResponse, error) {
-	_, body, err := c.rpc.ReplicateLock(req)
+func (c *Client) ReplicateLock(ctx context.Context, req []byte) (ReplicateLockResponse, error) {
+	_, body, err := c.rpc.ReplicateLock(ctx, req)
 	if err != nil {
 		return ReplicateLockResponse{}, err
 	}
 	return WrapReplicateLockResponse(body)
 }
 
-func (c *Client) MountRegister(req []byte) (MountRegisterResponse, error) {
-	_, body, err := c.rpc.MountRegister(req)
+func (c *Client) MountRegister(ctx context.Context, req []byte) (MountRegisterResponse, error) {
+	_, body, err := c.rpc.MountRegister(ctx, req)
 	if err != nil {
 		return MountRegisterResponse{}, err
 	}
 	return WrapMountRegisterResponse(body)
 }
 
-func (c *Client) MountList(req []byte) (MountListResponse, error) {
-	_, body, err := c.rpc.MountList(req)
+func (c *Client) MountList(ctx context.Context, req []byte) (MountListResponse, error) {
+	_, body, err := c.rpc.MountList(ctx, req)
 	if err != nil {
 		return MountListResponse{}, err
 	}

@@ -14,8 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
@@ -35,7 +33,7 @@ type ReplicaStatus struct {
 }
 
 // GetReplicaStatus retrieves the current status of a single volume replica.
-func GetReplicaStatus(grpcDialOption grpc.DialOption, vid needle.VolumeId, location wdclient.Location) ReplicaStatus {
+func GetReplicaStatus(grpcDialOption pb.DialOption, vid needle.VolumeId, location wdclient.Location) ReplicaStatus {
 	status := ReplicaStatus{Location: location}
 	err := operation.WithVolumeServerClient(false, location.ServerAddress(), grpcDialOption, func(volumeServerClient volume_server_pb.VolumeServerClient) error {
 		resp, reqErr := volumeServerClient.VolumeStatus(context.Background(), &volume_server_pb.VolumeStatusRequest{
@@ -57,7 +55,7 @@ func GetReplicaStatus(grpcDialOption grpc.DialOption, vid needle.VolumeId, locat
 }
 
 // GetReplicaStatuses retrieves status for all replicas of a volume in parallel.
-func GetReplicaStatuses(grpcDialOption grpc.DialOption, vid needle.VolumeId, locations []wdclient.Location) []ReplicaStatus {
+func GetReplicaStatuses(grpcDialOption pb.DialOption, vid needle.VolumeId, locations []wdclient.Location) []ReplicaStatus {
 	statuses := make([]ReplicaStatus, len(locations))
 	var wg sync.WaitGroup
 	for i, location := range locations {
@@ -72,7 +70,7 @@ func GetReplicaStatuses(grpcDialOption grpc.DialOption, vid needle.VolumeId, loc
 }
 
 // ReadNeedleMeta reads a needle's metadata (e.g. AppendAtNs) from a volume server.
-func ReadNeedleMeta(grpcDialOption grpc.DialOption, volumeServer pb.ServerAddress, volumeId uint32, needleValue needle_map.NeedleValue) (resp *volume_server_pb.ReadNeedleMetaResponse, err error) {
+func ReadNeedleMeta(grpcDialOption pb.DialOption, volumeServer pb.ServerAddress, volumeId uint32, needleValue needle_map.NeedleValue) (resp *volume_server_pb.ReadNeedleMetaResponse, err error) {
 	err = operation.WithVolumeServerClient(false, volumeServer, grpcDialOption,
 		func(client volume_server_pb.VolumeServerClient) error {
 			if resp, err = client.ReadNeedleMeta(context.Background(), &volume_server_pb.ReadNeedleMetaRequest{
@@ -91,7 +89,7 @@ func ReadNeedleMeta(grpcDialOption grpc.DialOption, volumeServer pb.ServerAddres
 
 // unionBuilder builds a union replica by copying missing entries from other replicas.
 type unionBuilder struct {
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 	writer         io.Writer
 	vid            needle.VolumeId
 	collection     string
@@ -292,7 +290,7 @@ func (rub *unionBuilder) writeNeedleBlob(server pb.ServerAddress, nv needle_map.
 // other replicas into it to create a union, then returns this union replica for the
 // operation. If excludeFromSelection is non-empty, that server won't be selected
 // but will still contribute entries. Already-consistent replica sets skip the sync.
-func SyncAndSelectBestReplica(grpcDialOption grpc.DialOption, vid needle.VolumeId, collection string, locations []wdclient.Location, excludeFromSelection string, writer io.Writer) (wdclient.Location, error) {
+func SyncAndSelectBestReplica(grpcDialOption pb.DialOption, vid needle.VolumeId, collection string, locations []wdclient.Location, excludeFromSelection string, writer io.Writer) (wdclient.Location, error) {
 	if len(locations) == 0 {
 		return wdclient.Location{}, fmt.Errorf("no replicas available for volume %d", vid)
 	}

@@ -446,7 +446,7 @@ func (fo *FilerOptions) startFiler() {
 	if credentialManager != nil {
 		adminSigningKey := security.SigningKey(util.GetViper().GetString("jwt.filer_signing.key"))
 		iamServer := s3server.NewIamGrpcServer(credentialManager, adminSigningKey)
-		iamPort := grpcPort + 10000
+		iamPort := pb.ZapPort(grpcPort)
 		iamL, iamLocalL, iamErr := util.NewIpAndLocalListeners(*fo.bindIp, iamPort, 0)
 		if iamErr != nil {
 			glog.Fatalf("failed to listen on IAM ZAP port %d: %v", iamPort, iamErr)
@@ -479,7 +479,7 @@ func (fo *FilerOptions) startFiler() {
 	filerStream := filerstream.Handler(filerzap.NewStreamServer(fs))
 	var filerZapSrv *transport.Server
 	var zapErr error
-	if tlsCfg := security.ServerTLSConfig(util.GetViper(), "grpc.filer"); tlsCfg != nil {
+	if tlsCfg := pb.ServerTLSConfig(util.GetViper(), "grpc.filer"); tlsCfg != nil {
 		filerZapSrv, zapErr = transport.ListenStreamTLS("tcp", filerAddr,
 			transport.PQTLSConfig(tlsCfg), filerDispatch, filerStream)
 		glog.V(0).Infof("Serving HanzoFiler over PQ-TLS (X25519MLKEM768) ZAP transport on port %d", grpcPort)

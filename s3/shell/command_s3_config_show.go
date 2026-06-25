@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -35,7 +36,7 @@ func (c *commandS3ConfigShow) HasTag(CommandTag) bool {
 
 func (c *commandS3ConfigShow) Do(args []string, commandEnv *CommandEnv, writer io.Writer) error {
 	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetConfiguration(iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
+		_, body, err := client.GetConfiguration(context.Background(), iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
 		if err != nil {
 			return err
 		}

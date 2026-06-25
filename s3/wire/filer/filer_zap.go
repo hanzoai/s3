@@ -3,6 +3,7 @@
 package filerwire
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/zap-proto/go/rpc"
@@ -49,8 +50,11 @@ const (
 )
 
 // HanzoFilerChannel ships one Call envelope and awaits its correlated Response.
+// CallContext is Call that also aborts when ctx is done (transport.Conn
+// satisfies both).
 type HanzoFilerChannel interface {
 	Call(envelope []byte) (rpc.Response, error)
+	CallContext(ctx context.Context, envelope []byte) (rpc.Response, error)
 }
 
 // HanzoFilerClient is a typed RPC client for the HanzoFiler service over a ZAP
@@ -71,10 +75,11 @@ func NewHanzoFilerClient(ch HanzoFilerChannel, capability []byte) *HanzoFilerCli
 }
 
 // unaryCall issues one request envelope under a fresh promise and returns the
-// response body, mapping a non-OK status to an error tagged with method.
-func (c *HanzoFilerClient) unaryCall(method, target uint32, payload []byte, name string) (rpc.Promise, []byte, error) {
+// response body, mapping a non-OK status to an error tagged with method. The
+// call aborts when ctx is done.
+func (c *HanzoFilerClient) unaryCall(ctx context.Context, method, target uint32, payload []byte, name string) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    method,
 		PromiseID: p.ID,
 		Target:    target,
@@ -95,192 +100,192 @@ func (c *HanzoFilerClient) unaryCall(method, target uint32, payload []byte, name
 	return p, resp.Body, nil
 }
 
-func (c *HanzoFilerClient) LookupDirectoryEntry(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerLookupDirectoryEntryOrdinal, rpc.NoTarget, req, "LookupDirectoryEntry")
+func (c *HanzoFilerClient) LookupDirectoryEntry(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerLookupDirectoryEntryOrdinal, rpc.NoTarget, req, "LookupDirectoryEntry")
 }
 
 // LookupDirectoryEntryOn issues LookupDirectoryEntry as a dependent call
 // pipelined on the answer of on.
-func (c *HanzoFilerClient) LookupDirectoryEntryOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerLookupDirectoryEntryOrdinal, on.ID, nil, "LookupDirectoryEntry")
+func (c *HanzoFilerClient) LookupDirectoryEntryOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerLookupDirectoryEntryOrdinal, on.ID, nil, "LookupDirectoryEntry")
 }
 
-func (c *HanzoFilerClient) CreateEntry(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerCreateEntryOrdinal, rpc.NoTarget, req, "CreateEntry")
+func (c *HanzoFilerClient) CreateEntry(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerCreateEntryOrdinal, rpc.NoTarget, req, "CreateEntry")
 }
 
 // CreateEntryOn issues CreateEntry as a dependent call pipelined on on.
-func (c *HanzoFilerClient) CreateEntryOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerCreateEntryOrdinal, on.ID, nil, "CreateEntry")
+func (c *HanzoFilerClient) CreateEntryOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerCreateEntryOrdinal, on.ID, nil, "CreateEntry")
 }
 
-func (c *HanzoFilerClient) UpdateEntry(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerUpdateEntryOrdinal, rpc.NoTarget, req, "UpdateEntry")
+func (c *HanzoFilerClient) UpdateEntry(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerUpdateEntryOrdinal, rpc.NoTarget, req, "UpdateEntry")
 }
 
 // UpdateEntryOn issues UpdateEntry as a dependent call pipelined on on.
-func (c *HanzoFilerClient) UpdateEntryOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerUpdateEntryOrdinal, on.ID, nil, "UpdateEntry")
+func (c *HanzoFilerClient) UpdateEntryOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerUpdateEntryOrdinal, on.ID, nil, "UpdateEntry")
 }
 
-func (c *HanzoFilerClient) TouchAccessTime(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerTouchAccessTimeOrdinal, rpc.NoTarget, req, "TouchAccessTime")
+func (c *HanzoFilerClient) TouchAccessTime(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerTouchAccessTimeOrdinal, rpc.NoTarget, req, "TouchAccessTime")
 }
 
 // TouchAccessTimeOn issues TouchAccessTime as a dependent call pipelined on on.
-func (c *HanzoFilerClient) TouchAccessTimeOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerTouchAccessTimeOrdinal, on.ID, nil, "TouchAccessTime")
+func (c *HanzoFilerClient) TouchAccessTimeOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerTouchAccessTimeOrdinal, on.ID, nil, "TouchAccessTime")
 }
 
-func (c *HanzoFilerClient) AppendToEntry(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerAppendToEntryOrdinal, rpc.NoTarget, req, "AppendToEntry")
+func (c *HanzoFilerClient) AppendToEntry(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerAppendToEntryOrdinal, rpc.NoTarget, req, "AppendToEntry")
 }
 
 // AppendToEntryOn issues AppendToEntry as a dependent call pipelined on on.
-func (c *HanzoFilerClient) AppendToEntryOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerAppendToEntryOrdinal, on.ID, nil, "AppendToEntry")
+func (c *HanzoFilerClient) AppendToEntryOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerAppendToEntryOrdinal, on.ID, nil, "AppendToEntry")
 }
 
-func (c *HanzoFilerClient) DeleteEntry(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerDeleteEntryOrdinal, rpc.NoTarget, req, "DeleteEntry")
+func (c *HanzoFilerClient) DeleteEntry(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerDeleteEntryOrdinal, rpc.NoTarget, req, "DeleteEntry")
 }
 
 // DeleteEntryOn issues DeleteEntry as a dependent call pipelined on on.
-func (c *HanzoFilerClient) DeleteEntryOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerDeleteEntryOrdinal, on.ID, nil, "DeleteEntry")
+func (c *HanzoFilerClient) DeleteEntryOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerDeleteEntryOrdinal, on.ID, nil, "DeleteEntry")
 }
 
-func (c *HanzoFilerClient) ObjectTransaction(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerObjectTransactionOrdinal, rpc.NoTarget, req, "ObjectTransaction")
+func (c *HanzoFilerClient) ObjectTransaction(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerObjectTransactionOrdinal, rpc.NoTarget, req, "ObjectTransaction")
 }
 
 // ObjectTransactionOn issues ObjectTransaction as a dependent call pipelined on on.
-func (c *HanzoFilerClient) ObjectTransactionOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerObjectTransactionOrdinal, on.ID, nil, "ObjectTransaction")
+func (c *HanzoFilerClient) ObjectTransactionOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerObjectTransactionOrdinal, on.ID, nil, "ObjectTransaction")
 }
 
-func (c *HanzoFilerClient) ObjectTransactionBatch(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerObjectTransactionBatchOrdinal, rpc.NoTarget, req, "ObjectTransactionBatch")
+func (c *HanzoFilerClient) ObjectTransactionBatch(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerObjectTransactionBatchOrdinal, rpc.NoTarget, req, "ObjectTransactionBatch")
 }
 
 // ObjectTransactionBatchOn issues ObjectTransactionBatch as a dependent call
 // pipelined on on.
-func (c *HanzoFilerClient) ObjectTransactionBatchOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerObjectTransactionBatchOrdinal, on.ID, nil, "ObjectTransactionBatch")
+func (c *HanzoFilerClient) ObjectTransactionBatchOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerObjectTransactionBatchOrdinal, on.ID, nil, "ObjectTransactionBatch")
 }
 
-func (c *HanzoFilerClient) PosixLock(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerPosixLockOrdinal, rpc.NoTarget, req, "PosixLock")
+func (c *HanzoFilerClient) PosixLock(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerPosixLockOrdinal, rpc.NoTarget, req, "PosixLock")
 }
 
 // PosixLockOn issues PosixLock as a dependent call pipelined on on.
-func (c *HanzoFilerClient) PosixLockOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerPosixLockOrdinal, on.ID, nil, "PosixLock")
+func (c *HanzoFilerClient) PosixLockOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerPosixLockOrdinal, on.ID, nil, "PosixLock")
 }
 
-func (c *HanzoFilerClient) AtomicRenameEntry(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerAtomicRenameEntryOrdinal, rpc.NoTarget, req, "AtomicRenameEntry")
+func (c *HanzoFilerClient) AtomicRenameEntry(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerAtomicRenameEntryOrdinal, rpc.NoTarget, req, "AtomicRenameEntry")
 }
 
 // AtomicRenameEntryOn issues AtomicRenameEntry as a dependent call pipelined on on.
-func (c *HanzoFilerClient) AtomicRenameEntryOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerAtomicRenameEntryOrdinal, on.ID, nil, "AtomicRenameEntry")
+func (c *HanzoFilerClient) AtomicRenameEntryOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerAtomicRenameEntryOrdinal, on.ID, nil, "AtomicRenameEntry")
 }
 
 // StreamRenameEntry is a server-streaming RPC.
 // STREAMING: the streaming body lands when the transport streaming primitive
 // ships. Until then this unary stub issues a single request and returns the
 // first response frame, so the ordinal and wire types are exercised end-to-end.
-func (c *HanzoFilerClient) StreamRenameEntry(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerStreamRenameEntryOrdinal, rpc.NoTarget, req, "StreamRenameEntry")
+func (c *HanzoFilerClient) StreamRenameEntry(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerStreamRenameEntryOrdinal, rpc.NoTarget, req, "StreamRenameEntry")
 }
 
 // StreamMutateEntry is a bidirectional-streaming RPC.
 // STREAMING: the streaming body lands when the transport streaming primitive
 // ships. Until then this unary stub issues a single request and returns the
 // first response frame, so the ordinal and wire types are exercised end-to-end.
-func (c *HanzoFilerClient) StreamMutateEntry(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerStreamMutateEntryOrdinal, rpc.NoTarget, req, "StreamMutateEntry")
+func (c *HanzoFilerClient) StreamMutateEntry(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerStreamMutateEntryOrdinal, rpc.NoTarget, req, "StreamMutateEntry")
 }
 
-func (c *HanzoFilerClient) AssignVolume(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerAssignVolumeOrdinal, rpc.NoTarget, req, "AssignVolume")
+func (c *HanzoFilerClient) AssignVolume(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerAssignVolumeOrdinal, rpc.NoTarget, req, "AssignVolume")
 }
 
 // AssignVolumeOn issues AssignVolume as a dependent call pipelined on on.
-func (c *HanzoFilerClient) AssignVolumeOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerAssignVolumeOrdinal, on.ID, nil, "AssignVolume")
+func (c *HanzoFilerClient) AssignVolumeOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerAssignVolumeOrdinal, on.ID, nil, "AssignVolume")
 }
 
-func (c *HanzoFilerClient) LookupVolume(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerLookupVolumeOrdinal, rpc.NoTarget, req, "LookupVolume")
+func (c *HanzoFilerClient) LookupVolume(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerLookupVolumeOrdinal, rpc.NoTarget, req, "LookupVolume")
 }
 
 // LookupVolumeOn issues LookupVolume as a dependent call pipelined on on.
-func (c *HanzoFilerClient) LookupVolumeOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerLookupVolumeOrdinal, on.ID, nil, "LookupVolume")
+func (c *HanzoFilerClient) LookupVolumeOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerLookupVolumeOrdinal, on.ID, nil, "LookupVolume")
 }
 
-func (c *HanzoFilerClient) CollectionList(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerCollectionListOrdinal, rpc.NoTarget, req, "CollectionList")
+func (c *HanzoFilerClient) CollectionList(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerCollectionListOrdinal, rpc.NoTarget, req, "CollectionList")
 }
 
 // CollectionListOn issues CollectionList as a dependent call pipelined on on.
-func (c *HanzoFilerClient) CollectionListOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerCollectionListOrdinal, on.ID, nil, "CollectionList")
+func (c *HanzoFilerClient) CollectionListOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerCollectionListOrdinal, on.ID, nil, "CollectionList")
 }
 
-func (c *HanzoFilerClient) DeleteCollection(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerDeleteCollectionOrdinal, rpc.NoTarget, req, "DeleteCollection")
+func (c *HanzoFilerClient) DeleteCollection(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerDeleteCollectionOrdinal, rpc.NoTarget, req, "DeleteCollection")
 }
 
 // DeleteCollectionOn issues DeleteCollection as a dependent call pipelined on on.
-func (c *HanzoFilerClient) DeleteCollectionOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerDeleteCollectionOrdinal, on.ID, nil, "DeleteCollection")
+func (c *HanzoFilerClient) DeleteCollectionOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerDeleteCollectionOrdinal, on.ID, nil, "DeleteCollection")
 }
 
-func (c *HanzoFilerClient) Statistics(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerStatisticsOrdinal, rpc.NoTarget, req, "Statistics")
+func (c *HanzoFilerClient) Statistics(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerStatisticsOrdinal, rpc.NoTarget, req, "Statistics")
 }
 
 // StatisticsOn issues Statistics as a dependent call pipelined on on.
-func (c *HanzoFilerClient) StatisticsOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerStatisticsOrdinal, on.ID, nil, "Statistics")
+func (c *HanzoFilerClient) StatisticsOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerStatisticsOrdinal, on.ID, nil, "Statistics")
 }
 
-func (c *HanzoFilerClient) Ping(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerPingOrdinal, rpc.NoTarget, req, "Ping")
+func (c *HanzoFilerClient) Ping(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerPingOrdinal, rpc.NoTarget, req, "Ping")
 }
 
 // PingOn issues Ping as a dependent call pipelined on on.
-func (c *HanzoFilerClient) PingOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerPingOrdinal, on.ID, nil, "Ping")
+func (c *HanzoFilerClient) PingOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerPingOrdinal, on.ID, nil, "Ping")
 }
 
-func (c *HanzoFilerClient) GetFilerConfiguration(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerGetFilerConfigurationOrdinal, rpc.NoTarget, req, "GetFilerConfiguration")
+func (c *HanzoFilerClient) GetFilerConfiguration(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerGetFilerConfigurationOrdinal, rpc.NoTarget, req, "GetFilerConfiguration")
 }
 
 // GetFilerConfigurationOn issues GetFilerConfiguration as a dependent call
 // pipelined on on.
-func (c *HanzoFilerClient) GetFilerConfigurationOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerGetFilerConfigurationOrdinal, on.ID, nil, "GetFilerConfiguration")
+func (c *HanzoFilerClient) GetFilerConfigurationOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerGetFilerConfigurationOrdinal, on.ID, nil, "GetFilerConfiguration")
 }
 
 // TraverseBfsMetadata is a server-streaming RPC.
 // STREAMING: the streaming body lands when the transport streaming primitive
 // ships. Until then this unary stub issues a single request and returns the
 // first response frame, so the ordinal and wire types are exercised end-to-end.
-func (c *HanzoFilerClient) TraverseBfsMetadata(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerTraverseBfsMetadataOrdinal, rpc.NoTarget, req, "TraverseBfsMetadata")
+func (c *HanzoFilerClient) TraverseBfsMetadata(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerTraverseBfsMetadataOrdinal, rpc.NoTarget, req, "TraverseBfsMetadata")
 }
 
 // SubscribeMetadata is a server-streaming RPC.
 // STREAMING: the streaming body lands when the transport streaming primitive
 // ships. Until then this unary stub issues a single request and returns the
 // first response frame, so the ordinal and wire types are exercised end-to-end.
-func (c *HanzoFilerClient) SubscribeMetadata(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerSubscribeMetadataOrdinal, rpc.NoTarget, req, "SubscribeMetadata")
+func (c *HanzoFilerClient) SubscribeMetadata(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerSubscribeMetadataOrdinal, rpc.NoTarget, req, "SubscribeMetadata")
 }
 
 // SubscribeLocalMetadata is a server-streaming RPC (shares the SubscribeMetadata
@@ -288,109 +293,109 @@ func (c *HanzoFilerClient) SubscribeMetadata(req []byte) (rpc.Promise, []byte, e
 // STREAMING: the streaming body lands when the transport streaming primitive
 // ships. Until then this unary stub issues a single request and returns the
 // first response frame, so the ordinal and wire types are exercised end-to-end.
-func (c *HanzoFilerClient) SubscribeLocalMetadata(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerSubscribeLocalMetadataOrdinal, rpc.NoTarget, req, "SubscribeLocalMetadata")
+func (c *HanzoFilerClient) SubscribeLocalMetadata(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerSubscribeLocalMetadataOrdinal, rpc.NoTarget, req, "SubscribeLocalMetadata")
 }
 
-func (c *HanzoFilerClient) ListMetadataSubscribers(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerListMetadataSubscribersOrdinal, rpc.NoTarget, req, "ListMetadataSubscribers")
+func (c *HanzoFilerClient) ListMetadataSubscribers(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerListMetadataSubscribersOrdinal, rpc.NoTarget, req, "ListMetadataSubscribers")
 }
 
 // ListMetadataSubscribersOn issues ListMetadataSubscribers as a dependent call
 // pipelined on on.
-func (c *HanzoFilerClient) ListMetadataSubscribersOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerListMetadataSubscribersOrdinal, on.ID, nil, "ListMetadataSubscribers")
+func (c *HanzoFilerClient) ListMetadataSubscribersOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerListMetadataSubscribersOrdinal, on.ID, nil, "ListMetadataSubscribers")
 }
 
-func (c *HanzoFilerClient) KvGet(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerKvGetOrdinal, rpc.NoTarget, req, "KvGet")
+func (c *HanzoFilerClient) KvGet(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerKvGetOrdinal, rpc.NoTarget, req, "KvGet")
 }
 
 // KvGetOn issues KvGet as a dependent call pipelined on on.
-func (c *HanzoFilerClient) KvGetOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerKvGetOrdinal, on.ID, nil, "KvGet")
+func (c *HanzoFilerClient) KvGetOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerKvGetOrdinal, on.ID, nil, "KvGet")
 }
 
-func (c *HanzoFilerClient) KvPut(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerKvPutOrdinal, rpc.NoTarget, req, "KvPut")
+func (c *HanzoFilerClient) KvPut(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerKvPutOrdinal, rpc.NoTarget, req, "KvPut")
 }
 
 // KvPutOn issues KvPut as a dependent call pipelined on on.
-func (c *HanzoFilerClient) KvPutOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerKvPutOrdinal, on.ID, nil, "KvPut")
+func (c *HanzoFilerClient) KvPutOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerKvPutOrdinal, on.ID, nil, "KvPut")
 }
 
-func (c *HanzoFilerClient) CacheRemoteObjectToLocalCluster(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerCacheRemoteObjectToLocalClusterOrdinal, rpc.NoTarget, req, "CacheRemoteObjectToLocalCluster")
+func (c *HanzoFilerClient) CacheRemoteObjectToLocalCluster(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerCacheRemoteObjectToLocalClusterOrdinal, rpc.NoTarget, req, "CacheRemoteObjectToLocalCluster")
 }
 
 // CacheRemoteObjectToLocalClusterOn issues CacheRemoteObjectToLocalCluster as a
 // dependent call pipelined on on.
-func (c *HanzoFilerClient) CacheRemoteObjectToLocalClusterOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerCacheRemoteObjectToLocalClusterOrdinal, on.ID, nil, "CacheRemoteObjectToLocalCluster")
+func (c *HanzoFilerClient) CacheRemoteObjectToLocalClusterOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerCacheRemoteObjectToLocalClusterOrdinal, on.ID, nil, "CacheRemoteObjectToLocalCluster")
 }
 
-func (c *HanzoFilerClient) DistributedLock(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerDistributedLockOrdinal, rpc.NoTarget, req, "DistributedLock")
+func (c *HanzoFilerClient) DistributedLock(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerDistributedLockOrdinal, rpc.NoTarget, req, "DistributedLock")
 }
 
 // DistributedLockOn issues DistributedLock as a dependent call pipelined on on.
-func (c *HanzoFilerClient) DistributedLockOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerDistributedLockOrdinal, on.ID, nil, "DistributedLock")
+func (c *HanzoFilerClient) DistributedLockOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerDistributedLockOrdinal, on.ID, nil, "DistributedLock")
 }
 
-func (c *HanzoFilerClient) DistributedUnlock(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerDistributedUnlockOrdinal, rpc.NoTarget, req, "DistributedUnlock")
+func (c *HanzoFilerClient) DistributedUnlock(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerDistributedUnlockOrdinal, rpc.NoTarget, req, "DistributedUnlock")
 }
 
 // DistributedUnlockOn issues DistributedUnlock as a dependent call pipelined on on.
-func (c *HanzoFilerClient) DistributedUnlockOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerDistributedUnlockOrdinal, on.ID, nil, "DistributedUnlock")
+func (c *HanzoFilerClient) DistributedUnlockOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerDistributedUnlockOrdinal, on.ID, nil, "DistributedUnlock")
 }
 
-func (c *HanzoFilerClient) FindLockOwner(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerFindLockOwnerOrdinal, rpc.NoTarget, req, "FindLockOwner")
+func (c *HanzoFilerClient) FindLockOwner(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerFindLockOwnerOrdinal, rpc.NoTarget, req, "FindLockOwner")
 }
 
 // FindLockOwnerOn issues FindLockOwner as a dependent call pipelined on on.
-func (c *HanzoFilerClient) FindLockOwnerOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerFindLockOwnerOrdinal, on.ID, nil, "FindLockOwner")
+func (c *HanzoFilerClient) FindLockOwnerOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerFindLockOwnerOrdinal, on.ID, nil, "FindLockOwner")
 }
 
-func (c *HanzoFilerClient) TransferLocks(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerTransferLocksOrdinal, rpc.NoTarget, req, "TransferLocks")
+func (c *HanzoFilerClient) TransferLocks(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerTransferLocksOrdinal, rpc.NoTarget, req, "TransferLocks")
 }
 
 // TransferLocksOn issues TransferLocks as a dependent call pipelined on on.
-func (c *HanzoFilerClient) TransferLocksOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerTransferLocksOrdinal, on.ID, nil, "TransferLocks")
+func (c *HanzoFilerClient) TransferLocksOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerTransferLocksOrdinal, on.ID, nil, "TransferLocks")
 }
 
-func (c *HanzoFilerClient) ReplicateLock(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerReplicateLockOrdinal, rpc.NoTarget, req, "ReplicateLock")
+func (c *HanzoFilerClient) ReplicateLock(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerReplicateLockOrdinal, rpc.NoTarget, req, "ReplicateLock")
 }
 
 // ReplicateLockOn issues ReplicateLock as a dependent call pipelined on on.
-func (c *HanzoFilerClient) ReplicateLockOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerReplicateLockOrdinal, on.ID, nil, "ReplicateLock")
+func (c *HanzoFilerClient) ReplicateLockOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerReplicateLockOrdinal, on.ID, nil, "ReplicateLock")
 }
 
-func (c *HanzoFilerClient) MountRegister(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerMountRegisterOrdinal, rpc.NoTarget, req, "MountRegister")
+func (c *HanzoFilerClient) MountRegister(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerMountRegisterOrdinal, rpc.NoTarget, req, "MountRegister")
 }
 
 // MountRegisterOn issues MountRegister as a dependent call pipelined on on.
-func (c *HanzoFilerClient) MountRegisterOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerMountRegisterOrdinal, on.ID, nil, "MountRegister")
+func (c *HanzoFilerClient) MountRegisterOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerMountRegisterOrdinal, on.ID, nil, "MountRegister")
 }
 
-func (c *HanzoFilerClient) MountList(req []byte) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerMountListOrdinal, rpc.NoTarget, req, "MountList")
+func (c *HanzoFilerClient) MountList(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerMountListOrdinal, rpc.NoTarget, req, "MountList")
 }
 
 // MountListOn issues MountList as a dependent call pipelined on on.
-func (c *HanzoFilerClient) MountListOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.unaryCall(HanzoFilerMountListOrdinal, on.ID, nil, "MountList")
+func (c *HanzoFilerClient) MountListOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.unaryCall(ctx, HanzoFilerMountListOrdinal, on.ID, nil, "MountList")
 }
 
 // HanzoFilerHandler is the server contract for the HanzoFiler service. Implement

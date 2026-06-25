@@ -6,16 +6,17 @@ import (
 	"math"
 	"strings"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/remote_pb"
 	"github.com/hanzoai/s3/s3/remote_storage"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
+
+	"github.com/viant/ptrie"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"github.com/viant/ptrie"
 )
 
 const REMOTE_STORAGE_CONF_SUFFIX = ".conf"
@@ -135,7 +136,7 @@ func UnmarshalRemoteStorageMappings(oldContent []byte) (mappings *remote_pb.Remo
 	return
 }
 
-func ReadRemoteStorageConf(grpcDialOption grpc.DialOption, filerAddress pb.ServerAddress, storageName string) (conf *remote_pb.RemoteConf, readErr error) {
+func ReadRemoteStorageConf(grpcDialOption pb.DialOption, filerAddress pb.ServerAddress, storageName string) (conf *remote_pb.RemoteConf, readErr error) {
 	var oldContent []byte
 	if readErr = pb.WithFilerClient(false, 0, filerAddress, grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
 		oldContent, readErr = ReadInsideFiler(context.Background(), client, DirectoryEtcRemote, storageName+REMOTE_STORAGE_CONF_SUFFIX)
@@ -154,7 +155,7 @@ func ReadRemoteStorageConf(grpcDialOption grpc.DialOption, filerAddress pb.Serve
 	return
 }
 
-func DetectMountInfo(grpcDialOption grpc.DialOption, filerAddress pb.ServerAddress, dir string) (*remote_pb.RemoteStorageMapping, string, *remote_pb.RemoteStorageLocation, *remote_pb.RemoteConf, error) {
+func DetectMountInfo(grpcDialOption pb.DialOption, filerAddress pb.ServerAddress, dir string) (*remote_pb.RemoteStorageMapping, string, *remote_pb.RemoteStorageLocation, *remote_pb.RemoteConf, error) {
 
 	mappings, listErr := ReadMountMappings(grpcDialOption, filerAddress)
 	if listErr != nil {

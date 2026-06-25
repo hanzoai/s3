@@ -3,6 +3,7 @@
 package pluginwire
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/zap-proto/go/rpc"
@@ -15,9 +16,11 @@ const (
 )
 
 // PluginControlServiceChannel ships one Call envelope and awaits its correlated
-// Response.
+// Response. CallContext is Call that also aborts when ctx is done (transport.Conn
+// satisfies both).
 type PluginControlServiceChannel interface {
 	Call(envelope []byte) (rpc.Response, error)
+	CallContext(ctx context.Context, envelope []byte) (rpc.Response, error)
 }
 
 // PluginControlServiceClient is a typed RPC client for the PluginControlService
@@ -43,8 +46,8 @@ func NewPluginControlServiceClient(ch PluginControlServiceChannel, capability []
 // frame form ships one WorkerToAdminMessage and awaits one AdminToWorkerMessage
 // (the per-frame unit the streaming transport will multiplex). The full
 // stream-oriented body lands when the transport streaming primitive ships.
-func (c *PluginControlServiceClient) WorkerStream(req []byte) (rpc.Promise, []byte, error) {
-	return c.invokeWorkerStream(rpc.NoTarget, req)
+func (c *PluginControlServiceClient) WorkerStream(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
+	return c.invokeWorkerStream(ctx, rpc.NoTarget, req)
 }
 
 // WorkerStreamOn issues WorkerStream as a dependent call pipelined on the answer
@@ -52,13 +55,13 @@ func (c *PluginControlServiceClient) WorkerStream(req []byte) (rpc.Promise, []by
 // before dispatch, so it ships without waiting for on to round-trip.
 //
 // STREAMING: see WorkerStream.
-func (c *PluginControlServiceClient) WorkerStreamOn(on rpc.Promise) (rpc.Promise, []byte, error) {
-	return c.invokeWorkerStream(on.ID, nil)
+func (c *PluginControlServiceClient) WorkerStreamOn(ctx context.Context, on rpc.Promise) (rpc.Promise, []byte, error) {
+	return c.invokeWorkerStream(ctx, on.ID, nil)
 }
 
-func (c *PluginControlServiceClient) invokeWorkerStream(target uint32, payload []byte) (rpc.Promise, []byte, error) {
+func (c *PluginControlServiceClient) invokeWorkerStream(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
 	p := c.sess.Next()
-	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
+	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    PluginControlServiceWorkerStreamOrdinal,
 		PromiseID: p.ID,
 		Target:    target,

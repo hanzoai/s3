@@ -17,8 +17,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/super_block"
 	"github.com/hanzoai/s3/s3/storage/types"
 	"github.com/hanzoai/s3/s3/topology"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func (ms *MasterServer) StreamAssign(server master_pb.Hanzo_StreamAssignServer) error {
@@ -32,9 +30,9 @@ func (ms *MasterServer) StreamAssign(server master_pb.Hanzo_StreamAssignServer) 
 		if err != nil {
 			// Return transient errors (e.g. warmup) as in-band error responses
 			// instead of killing the stream, so pooled connections survive.
-			if st, ok := status.FromError(err); ok && st.Code() == codes.Unavailable {
+			if strings.Contains(err.Error(), "Unavailable") {
 				glog.V(1).Infof("StreamAssign transient error: %v", err)
-				resp = &master_pb.AssignResponse{Error: st.Message()}
+				resp = &master_pb.AssignResponse{Error: err.Error()}
 			} else {
 				glog.Errorf("StreamAssign failed to assign: %v", err)
 				return err
@@ -69,7 +67,7 @@ func (ms *MasterServer) Assign(ctx context.Context, req *master_pb.AssignRequest
 	}
 
 	if ms.Topo.IsWarmingUp() {
-		return nil, status.Errorf(codes.Unavailable, "master is warming up, topology is still loading")
+		return nil, fmt.Errorf("Unavailable: master is warming up, topology is still loading")
 	}
 	diskType := types.ToDiskType(req.DiskType)
 

@@ -10,8 +10,6 @@ import (
 	"sort"
 	"sync"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/util"
@@ -49,7 +47,7 @@ type ChunkedFileReader struct {
 	pr             *io.PipeReader
 	pw             *io.PipeWriter
 	mutex          sync.Mutex
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 }
 
 func (s ChunkList) Len() int           { return len(s) }
@@ -75,7 +73,7 @@ func (cm *ChunkManifest) Marshal() ([]byte, error) {
 	return json.Marshal(cm)
 }
 
-func (cm *ChunkManifest) DeleteChunks(masterFn GetMasterFn, usePublicUrl bool, grpcDialOption grpc.DialOption) error {
+func (cm *ChunkManifest) DeleteChunks(masterFn GetMasterFn, usePublicUrl bool, grpcDialOption pb.DialOption) error {
 	var fileIds []string
 	for _, ci := range cm.Chunks {
 		fileIds = append(fileIds, ci.Fid)
@@ -124,7 +122,7 @@ func readChunkNeedle(fileUrl string, w io.Writer, offset int64, jwt string) (wri
 	return io.Copy(w, resp.Body)
 }
 
-func NewChunkedFileReader(chunkList []*ChunkInfo, master pb.ServerAddress, grpcDialOption grpc.DialOption) *ChunkedFileReader {
+func NewChunkedFileReader(chunkList []*ChunkInfo, master pb.ServerAddress, grpcDialOption pb.DialOption) *ChunkedFileReader {
 	var totalSize int64
 	for _, chunk := range chunkList {
 		totalSize += chunk.Size

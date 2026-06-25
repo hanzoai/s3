@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/test/volume_server/framework"
-	"github.com/hanzoai/s3/test/volume_server/matrix"
+	"github.com/stretchr/testify/require"
+
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/storage/volume_info"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/hanzoai/s3/test/volume_server/framework"
+	"github.com/hanzoai/s3/test/volume_server/matrix"
 )
 
 func TestCopyVolumeFilesToWorkerUsesCurrentCompactionRevision(t *testing.T) {
@@ -56,7 +56,7 @@ func TestCopyVolumeFilesToWorkerUsesCurrentCompactionRevision(t *testing.T) {
 		clusterHarness.VolumeServerAddress(),
 		volumeID,
 		"",
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		pb.DialOption{},
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -106,7 +106,7 @@ func TestMarkReplicasReadonlyPersists(t *testing.T) {
 		clusterHarness.VolumeServerAddress(),
 		volumeID,
 		"",
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		pb.DialOption{},
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -146,7 +146,7 @@ func TestGenerateEcShardsLocallyStampsEncodeIdentity(t *testing.T) {
 		clusterHarness.VolumeServerAddress(),
 		volumeID,
 		"",
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		pb.DialOption{},
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -196,7 +196,7 @@ func TestGenerateEcShardsLocallyUsesAdminGeneration(t *testing.T) {
 		clusterHarness.VolumeServerAddress(),
 		volumeID,
 		"",
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		pb.DialOption{},
 	)
 	const adminGeneration int64 = 1_700_000_000_000_000_321
 	task.encodeTsNs = adminGeneration

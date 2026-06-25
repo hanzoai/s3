@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 
@@ -40,7 +41,7 @@ type s3GroupListEntry struct {
 
 func (c *commandS3GroupList) Do(args []string, commandEnv *CommandEnv, writer io.Writer) error {
 	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetConfiguration(iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
+		_, body, err := client.GetConfiguration(context.Background(), iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
 		if err != nil {
 			return err
 		}

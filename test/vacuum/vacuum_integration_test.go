@@ -15,13 +15,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/shell"
 	"github.com/hanzoai/s3/s3/storage/needle"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 )
 
 type TestCluster struct {
@@ -136,7 +136,7 @@ func waitForServer(address string, timeout time.Duration) error {
 func uploadData(masterAddr, collection string, data []byte) (string, needle.VolumeId, error) {
 	assignResult, err := operation.Assign(context.Background(), func(ctx context.Context) pb.ServerAddress {
 		return pb.ServerAddress(masterAddr)
-	}, grpc.WithInsecure(), &operation.VolumeAssignRequest{
+	}, pb.DialOption{}, &operation.VolumeAssignRequest{
 		Count:      1,
 		Collection: collection,
 	})
@@ -171,7 +171,7 @@ func uploadData(masterAddr, collection string, data []byte) (string, needle.Volu
 func deleteFile(masterAddr string, fid string) error {
 	results := operation.DeleteFileIds(func(ctx context.Context) pb.ServerAddress {
 		return pb.ServerAddress(masterAddr)
-	}, false, grpc.WithInsecure(), []string{fid})
+	}, false, pb.DialOption{}, []string{fid})
 	for _, r := range results {
 		if r.Error != "" {
 			return fmt.Errorf("delete %s: %s", fid, r.Error)
@@ -182,7 +182,7 @@ func deleteFile(masterAddr string, fid string) error {
 
 func getGarbageRatio(volumeServerAddr string, volumeId uint32) (float64, error) {
 	var ratio float64
-	err := operation.WithVolumeServerClient(false, pb.ServerAddress(volumeServerAddr), grpc.WithInsecure(),
+	err := operation.WithVolumeServerClient(false, pb.ServerAddress(volumeServerAddr), pb.DialOption{},
 		func(client volume_server_pb.VolumeServerClient) error {
 			resp, err := client.VacuumVolumeCheck(context.Background(), &volume_server_pb.VacuumVolumeCheckRequest{
 				VolumeId: volumeId,
@@ -310,7 +310,7 @@ func TestVacuumIntegration(t *testing.T) {
 	t.Run("run_vacuum", func(t *testing.T) {
 		options := &shell.ShellOptions{
 			Masters:        stringPtr(masterAddr),
-			GrpcDialOption: grpc.WithInsecure(),
+			GrpcDialOption: pb.DialOption{},
 			FilerGroup:     stringPtr("default"),
 		}
 		commandEnv := shell.NewCommandEnv(options)

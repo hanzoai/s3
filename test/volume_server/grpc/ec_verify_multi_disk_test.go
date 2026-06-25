@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/test/volume_server/framework"
-	"github.com/hanzoai/s3/test/volume_server/matrix"
+	"github.com/hanzoai/s3/s3/pb"
+
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/storage/erasure_coding"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/hanzoai/s3/test/volume_server/framework"
+	"github.com/hanzoai/s3/test/volume_server/matrix"
 )
 
 // TestVolumeEcShardsInfoReturnsAllShardsAcrossDisks drives the full path
@@ -162,7 +162,7 @@ func TestVolumeEcShardsInfoReturnsAllShardsAcrossDisks(t *testing.T) {
 	// RequireRecoverableShardSet measures; with one destination that holds
 	// every shard, the union must cover dataShards + parityShards without
 	// being reported as degraded.
-	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOption := pb.DialOption{}
 	servers := []string{clusterHarness.VolumeServerAddress()}
 	union, perServer := erasure_coding.VerifyShardsAcrossServers(ctx, volumeID, servers, dialOption)
 	degraded, err := erasure_coding.RequireRecoverableShardSet(

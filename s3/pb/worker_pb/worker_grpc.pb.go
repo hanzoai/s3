@@ -3,20 +3,20 @@
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             v7.35.0
 // source: worker.proto
+//
+// gRPC ripped: this file holds only the grpc-free WorkerService contracts. The
+// client interface returns the shared rpc.* stream seams; the server interface
+// is the plain method set. The service rides the ZAP transport (see
+// s3/wire/worker), whose Dispatch serves it. No grpc client/server scaffolding
+// remains.
 
 package worker_pb
 
 import (
 	context "context"
-	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
-)
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the grpc package it is being compiled against.
-// Requires gRPC-Go v1.64.0 or later.
-const _ = grpc.SupportPackageIsVersion9
+	"github.com/hanzoai/s3/s3/pb/rpc"
+)
 
 const (
 	WorkerService_WorkerStream_FullMethodName = "/worker_pb.WorkerService/WorkerStream"
@@ -24,98 +24,23 @@ const (
 
 // WorkerServiceClient is the client API for WorkerService service.
 //
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
 // WorkerService provides bidirectional communication between admin and worker
 type WorkerServiceClient interface {
 	// WorkerStream maintains a bidirectional stream for worker communication
-	WorkerStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WorkerMessage, AdminMessage], error)
+	WorkerStream(ctx context.Context) (rpc.BidiStream[WorkerMessage, AdminMessage], error)
 }
 
-type workerServiceClient struct {
-	cc grpc.ClientConnInterface
+// WorkerService_WorkerStreamServer is the server side of the WorkerStream bidi-stream.
+type WorkerService_WorkerStreamServer interface {
+	Send(*AdminMessage) error
+	Recv() (*WorkerMessage, error)
 }
 
-func NewWorkerServiceClient(cc grpc.ClientConnInterface) WorkerServiceClient {
-	return &workerServiceClient{cc}
-}
-
-func (c *workerServiceClient) WorkerStream(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WorkerMessage, AdminMessage], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &WorkerService_ServiceDesc.Streams[0], WorkerService_WorkerStream_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[WorkerMessage, AdminMessage]{ClientStream: stream}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type WorkerService_WorkerStreamClient = grpc.BidiStreamingClient[WorkerMessage, AdminMessage]
-
-// WorkerServiceServer is the server API for WorkerService service.
-// All implementations must embed UnimplementedWorkerServiceServer
-// for forward compatibility.
+// WorkerServiceServer is the server API for WorkerService service: the plain
+// method set, transport-free.
 //
 // WorkerService provides bidirectional communication between admin and worker
 type WorkerServiceServer interface {
 	// WorkerStream maintains a bidirectional stream for worker communication
-	WorkerStream(grpc.BidiStreamingServer[WorkerMessage, AdminMessage]) error
-	mustEmbedUnimplementedWorkerServiceServer()
-}
-
-// UnimplementedWorkerServiceServer must be embedded to have
-// forward compatible implementations.
-//
-// NOTE: this should be embedded by value instead of pointer to avoid a nil
-// pointer dereference when methods are called.
-type UnimplementedWorkerServiceServer struct{}
-
-func (UnimplementedWorkerServiceServer) WorkerStream(grpc.BidiStreamingServer[WorkerMessage, AdminMessage]) error {
-	return status.Error(codes.Unimplemented, "method WorkerStream not implemented")
-}
-func (UnimplementedWorkerServiceServer) mustEmbedUnimplementedWorkerServiceServer() {}
-func (UnimplementedWorkerServiceServer) testEmbeddedByValue()                       {}
-
-// UnsafeWorkerServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to WorkerServiceServer will
-// result in compilation errors.
-type UnsafeWorkerServiceServer interface {
-	mustEmbedUnimplementedWorkerServiceServer()
-}
-
-func RegisterWorkerServiceServer(s grpc.ServiceRegistrar, srv WorkerServiceServer) {
-	// If the following call panics, it indicates UnimplementedWorkerServiceServer was
-	// embedded by pointer and is nil.  This will cause panics if an
-	// unimplemented method is ever invoked, so we test this at initialization
-	// time to prevent it from happening at runtime later due to I/O.
-	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
-		t.testEmbeddedByValue()
-	}
-	s.RegisterService(&WorkerService_ServiceDesc, srv)
-}
-
-func _WorkerService_WorkerStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(WorkerServiceServer).WorkerStream(&grpc.GenericServerStream[WorkerMessage, AdminMessage]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type WorkerService_WorkerStreamServer = grpc.BidiStreamingServer[WorkerMessage, AdminMessage]
-
-// WorkerService_ServiceDesc is the grpc.ServiceDesc for WorkerService service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var WorkerService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "worker_pb.WorkerService",
-	HandlerType: (*WorkerServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "WorkerStream",
-			Handler:       _WorkerService_WorkerStream_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-	},
-	Metadata: "worker.proto",
+	WorkerStream(WorkerService_WorkerStreamServer) error
 }

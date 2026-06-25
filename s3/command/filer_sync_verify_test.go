@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
+	"github.com/hanzoai/s3/s3/pb/rpc"
 )
 
 // --- stream / inner-client / outer-client mocks ---
@@ -29,20 +28,13 @@ func (s *verifyTestStream) Recv() (*filer_pb.ListEntriesResponse, error) {
 	return resp, nil
 }
 
-func (s *verifyTestStream) Header() (metadata.MD, error) { return metadata.MD{}, nil }
-func (s *verifyTestStream) Trailer() metadata.MD         { return metadata.MD{} }
-func (s *verifyTestStream) CloseSend() error             { return nil }
-func (s *verifyTestStream) Context() context.Context     { return context.Background() }
-func (s *verifyTestStream) SendMsg(_ any) error          { return nil }
-func (s *verifyTestStream) RecvMsg(_ any) error          { return nil }
-
 // verifyTestInnerClient is the HanzoFilerClient passed to fn inside WithFilerClient.
 type verifyTestInnerClient struct {
 	filer_pb.HanzoFilerClient // embed for unimplemented RPCs
-	entriesByDir map[string][]*filer_pb.Entry
+	entriesByDir              map[string][]*filer_pb.Entry
 }
 
-func (c *verifyTestInnerClient) ListEntries(_ context.Context, in *filer_pb.ListEntriesRequest, _ ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.ListEntriesResponse], error) {
+func (c *verifyTestInnerClient) ListEntries(_ context.Context, in *filer_pb.ListEntriesRequest) (rpc.ServerStream[filer_pb.ListEntriesResponse], error) {
 	return &verifyTestStream{entries: c.entriesByDir[in.Directory]}, nil
 }
 
@@ -422,8 +414,8 @@ func TestVerifySyncMissingDirRecursesEvenWithRecentMtime(t *testing.T) {
 
 	clientA := &verifyTestFilerClient{
 		entriesByDir: map[string][]*filer_pb.Entry{
-			"/":        {recentDir},
-			"/subdir":  {oldChild},
+			"/":       {recentDir},
+			"/subdir": {oldChild},
 		},
 	}
 	clientB := &verifyTestFilerClient{
@@ -454,14 +446,14 @@ func TestVerifySyncMissingDirRecursesEvenWithRecentMtime(t *testing.T) {
 func TestVerifySyncRootPath(t *testing.T) {
 	clientA := &verifyTestFilerClient{
 		entriesByDir: map[string][]*filer_pb.Entry{
-			"/":      {verifyDirEntry("data")},
-			"/data":  {verifyFileEntry("file.txt", 42)},
+			"/":     {verifyDirEntry("data")},
+			"/data": {verifyFileEntry("file.txt", 42)},
 		},
 	}
 	clientB := &verifyTestFilerClient{
 		entriesByDir: map[string][]*filer_pb.Entry{
-			"/":      {verifyDirEntry("data")},
-			"/data":  {verifyFileEntry("file.txt", 42)},
+			"/":     {verifyDirEntry("data")},
+			"/data": {verifyFileEntry("file.txt", 42)},
 		},
 	}
 

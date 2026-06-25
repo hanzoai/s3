@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -46,7 +47,7 @@ func (c *commandS3GroupCreate) Do(args []string, commandEnv *CommandEnv, writer 
 	}
 
 	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetConfiguration(iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
+		_, body, err := client.GetConfiguration(context.Background(), iamwire.NewGetConfigurationRequest(iamwire.GetConfigurationRequestInput{}))
 		if err != nil {
 			return err
 		}
@@ -66,7 +67,7 @@ func (c *commandS3GroupCreate) Do(args []string, commandEnv *CommandEnv, writer 
 
 		cfg.Groups = append(cfg.Groups, &iam_pb.Group{Name: *name})
 
-		if _, _, err := client.PutConfiguration(iamwire.NewPutConfigurationRequest(iamwire.PutConfigurationRequestInput{Configuration: iamwire.ConfigurationInputFromPB(cfg)})); err != nil {
+		if _, _, err := client.PutConfiguration(context.Background(), iamwire.NewPutConfigurationRequest(iamwire.PutConfigurationRequestInput{Configuration: iamwire.ConfigurationInputFromPB(cfg)})); err != nil {
 			return err
 		}
 

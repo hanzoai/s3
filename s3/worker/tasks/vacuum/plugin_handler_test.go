@@ -6,12 +6,14 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
 	workertypes "github.com/hanzoai/s3/s3/worker/types"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestDecodeVacuumTaskParamsFromPayload(t *testing.T) {
@@ -129,7 +131,7 @@ func TestShouldSkipDetectionByInterval(t *testing.T) {
 }
 
 func TestVacuumHandlerRejectsUnsupportedJobType(t *testing.T) {
-	handler := NewVacuumHandler(nil, 0)
+	handler := NewVacuumHandler(pb.DialOption{}, 0)
 	err := handler.Detect(context.Background(), &plugin_pb.RunDetectionRequest{
 		JobType: "balance",
 	}, noopDetectionSender{})
@@ -207,7 +209,7 @@ func TestEmitVacuumDetectionDecisionTraceNoTasks(t *testing.T) {
 }
 
 func TestVacuumDescriptorHasNewFields(t *testing.T) {
-	handler := NewVacuumHandler(nil, 2)
+	handler := NewVacuumHandler(pb.DialOption{}, 2)
 	desc := handler.Descriptor()
 	if desc == nil {
 		t.Fatal("descriptor is nil")

@@ -10,10 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
@@ -36,18 +32,13 @@ func isCanceledErr(err error) bool {
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return true
 	}
-	if statusErr, ok := status.FromError(err); ok {
-		switch statusErr.Code() {
-		case codes.Canceled, codes.DeadlineExceeded:
-			return true
-		}
-	}
-	return false
+	s := err.Error()
+	return strings.Contains(s, "Canceled") || strings.Contains(s, "DeadlineExceeded")
 }
 
 // LookupVolumeIds queries the master for volume locations (fallback when cache misses).
 // Returns partial results with aggregated errors for volumes that failed.
-// Retries on codes.Unavailable (e.g. master warming up after restart) with backoff.
+// Retries on Unavailable (e.g. master warming up after restart) with backoff.
 func (p *masterVolumeProvider) LookupVolumeIds(ctx context.Context, volumeIds []string) (map[string][]Location, error) {
 	var result map[string][]Location
 	var lookupErrors []error
@@ -56,8 +47,7 @@ func (p *masterVolumeProvider) LookupVolumeIds(ctx context.Context, volumeIds []
 
 	retryErr := util.RetryWithBackoff(ctx, "lookup", 30*time.Second,
 		func(err error) bool {
-			st, ok := status.FromError(err)
-			return ok && st.Code() == codes.Unavailable
+			return strings.Contains(err.Error(), "Unavailable")
 		},
 		func() error {
 			result = make(map[string][]Location)
@@ -73,7 +63,7 @@ func (p *masterVolumeProvider) LookupVolumeIds(ctx context.Context, volumeIds []
 				if ctx.Err() != nil {
 					return ctx.Err()
 				}
-				return status.Errorf(codes.Unavailable, "no master available")
+				return fmt.Errorf("Unavailable: no master available")
 			}
 
 			return pb.WithMasterClient(timeoutCtx, false, master, p.masterClient.grpcDialOption, false, func(client master_pb.HanzoClient) error {
@@ -150,7 +140,7 @@ type MasterClient struct {
 	currentMaster        pb.ServerAddress
 	currentMasterLock    sync.RWMutex
 	masters              pb.ServerDiscovery
-	grpcDialOption       grpc.DialOption
+	grpcDialOption       pb.DialOption
 	grpcTimeout          time.Duration // Timeout for gRPC calls to master
 	OnPeerUpdate         func(update *master_pb.ClusterNodeUpdate, startFrom time.Time)
 	OnPeerUpdateLock     sync.RWMutex
@@ -158,7 +148,7 @@ type MasterClient struct {
 	OnLockRingUpdateLock sync.RWMutex
 }
 
-func NewMasterClient(grpcDialOption grpc.DialOption, filerGroup string, clientType string, clientHost pb.ServerAddress, clientDataCenter string, rack string, masters pb.ServerDiscovery) *MasterClient {
+func NewMasterClient(grpcDialOption pb.DialOption, filerGroup string, clientType string, clientHost pb.ServerAddress, clientDataCenter string, rack string, masters pb.ServerDiscovery) *MasterClient {
 	mc := &MasterClient{
 		FilerGroup:     filerGroup,
 		clientType:     clientType,

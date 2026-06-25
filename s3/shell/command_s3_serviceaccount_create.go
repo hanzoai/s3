@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"flag"
@@ -114,7 +115,7 @@ func (c *commandS3ServiceAccountCreate) Do(args []string, commandEnv *CommandEnv
 	}
 
 	err = commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.CreateServiceAccount(iamwire.NewCreateServiceAccountRequest(iamwire.CreateServiceAccountRequestInput{
+		_, _, err := client.CreateServiceAccount(context.Background(), iamwire.NewCreateServiceAccountRequest(iamwire.CreateServiceAccountRequestInput{
 			ServiceAccount: iamwire.ServiceAccountInputFromPB(sa),
 		}))
 		return err

@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"github.com/hanzoai/s3/s3/cluster"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
@@ -96,7 +93,7 @@ func (fs *FilerServer) Ping(ctx context.Context, req *filer_pb.PingRequest) (res
 	// Empty target is a self-liveness probe and stays unauthenticated.
 	if req.Target != "" && !fs.isKnownPingTarget(ctx, req.Target, req.TargetType) {
 		resp.StopTimeNs = time.Now().UnixNano()
-		return resp, status.Errorf(codes.InvalidArgument, "unknown ping target %s of type %s", req.Target, req.TargetType)
+		return resp, fmt.Errorf("InvalidArgument: unknown ping target %s of type %s", req.Target, req.TargetType)
 	}
 	if req.TargetType == cluster.FilerType {
 		pingErr = pb.WithFilerClient(false, 0, pb.ServerAddress(req.Target), fs.grpcDialOption, func(client filer_pb.HanzoFilerClient) error {

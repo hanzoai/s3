@@ -13,7 +13,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"google.golang.org/grpc"
 )
 
 // WithMasterClient executes a function with a master client connection
@@ -51,7 +50,7 @@ func (s *AdminServer) GetMasterClient() *wdclient.MasterClient {
 // GetGrpcDialOption returns the dial option used for all admin-originated
 // gRPC connections (TLS or insecure). File browser uploads need this when
 // they perform the assign + volume HTTP POST + create-entry flow.
-func (s *AdminServer) GetGrpcDialOption() grpc.DialOption {
+func (s *AdminServer) GetGrpcDialOption() pb.DialOption {
 	return s.grpcDialOption
 }
 

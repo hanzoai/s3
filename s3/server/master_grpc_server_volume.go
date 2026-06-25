@@ -20,8 +20,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/needle"
 	"github.com/hanzoai/s3/s3/storage/super_block"
 	"github.com/hanzoai/s3/s3/storage/types"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 const (
@@ -191,7 +189,7 @@ func (ms *MasterServer) LookupVolume(ctx context.Context, req *master_pb.LookupV
 	// Only return Unavailable during warmup when every requested ID was a transient not-found
 	if len(req.VolumeOrFileIds) > 0 && notFoundCount == len(req.VolumeOrFileIds) && ms.Topo.IsLeader() && ms.Topo.IsWarmingUp() {
 		glog.V(0).Infof("lookup volume warming up: topology is still loading (%d not found)", notFoundCount)
-		return nil, status.Errorf(codes.Unavailable, "master is warming up, topology is still loading")
+		return nil, fmt.Errorf("Unavailable: master is warming up, topology is still loading")
 	}
 
 	return resp, nil

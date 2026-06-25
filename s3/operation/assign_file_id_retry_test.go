@@ -5,66 +5,81 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/hanzoai/s3/s3/masterzap"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
+	masterwire "github.com/hanzoai/s3/s3/wire/master"
+
+	"github.com/zap-proto/go/transport"
 )
 
-// fakeAssignServer returns Unavailable for the first N calls, then succeeds.
-type fakeAssignServer struct {
-	master_pb.UnimplementedHanzoServer
+// fakeAssignBackend is a masterwire.Backend whose Assign returns Unavailable for
+// the first unavailableCount calls, then succeeds — the same warmup behaviour the
+// production master signals as a plain "Unavailable: ..." error over ZAP (no gRPC
+// status). The retry loop classifies it by strings.Contains(err, "Unavailable").
+// Every other method is unimplemented via the embedded interface.
+type fakeAssignBackend struct {
+	masterwire.Backend
 	unavailableCount int32
 	callCount        atomic.Int32
 }
 
-func (s *fakeAssignServer) Assign(_ context.Context, _ *master_pb.AssignRequest) (*master_pb.AssignResponse, error) {
+func (s *fakeAssignBackend) Assign(req []byte) ([]byte, error) {
+	if _, err := masterzap.AssignReqFromWire(req); err != nil {
+		return nil, err
+	}
 	n := s.callCount.Add(1)
 	if n <= s.unavailableCount {
-		return nil, status.Errorf(codes.Unavailable, "master is warming up")
+		return nil, fmt.Errorf("Unavailable: master is warming up")
 	}
-	return &master_pb.AssignResponse{
+	return masterzap.AssignRespToWire(&master_pb.AssignResponse{
 		Fid:   "1,abc",
 		Count: 1,
 		Location: &master_pb.Location{
 			Url:       "127.0.0.1:8080",
 			PublicUrl: "127.0.0.1:8080",
 		},
-	}, nil
+	}), nil
 }
 
-func startFakeServer(t *testing.T, srv master_pb.HanzoServer) pb.ServerAddress {
+// startFakeMaster serves backend over the native ZAP transport and returns an
+// HTTP-style master address whose ServerAddress.ToMasterZapAddress() (grpcPort+
+// 10000, i.e. http+20000) resolves back to the listener, so Assign reaches it via
+// pb.WithMasterClient.
+func startFakeMaster(t *testing.T, backend masterwire.Backend) pb.ServerAddress {
 	t.Helper()
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	srv, err := transport.ListenStream("tcp", "127.0.0.1:0", masterwire.Dispatch(backend), nil)
 	if err != nil {
-		t.Fatalf("listen: %v", err)
+		t.Fatalf("listen master ZAP: %v", err)
 	}
-	grpcServer := grpc.NewServer()
-	master_pb.RegisterHanzoServer(grpcServer, srv)
-	go func() { _ = grpcServer.Serve(lis) }()
-	t.Cleanup(grpcServer.GracefulStop)
+	t.Cleanup(func() { _ = srv.Close() })
 
-	_, port, _ := net.SplitHostPort(lis.Addr().String())
-	// Use "0.<grpcPort>" format so ToGrpcAddress() resolves to the actual port
-	return pb.ServerAddress(fmt.Sprintf("127.0.0.1:0.%s", port))
+	host, portStr, err := net.SplitHostPort(srv.Addr().String())
+	if err != nil {
+		t.Fatalf("split master addr: %v", err)
+	}
+	zapPort, err := strconv.Atoi(portStr)
+	if err != nil {
+		t.Fatalf("parse master port: %v", err)
+	}
+	return pb.ServerAddress(net.JoinHostPort(host, strconv.Itoa(zapPort-20000)))
 }
 
 func TestAssignRetriesOnUnavailable(t *testing.T) {
-	srv := &fakeAssignServer{unavailableCount: 3}
-	addr := startFakeServer(t, srv)
+	backend := &fakeAssignBackend{unavailableCount: 3}
+	addr := startFakeMaster(t, backend)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	ret, err := Assign(ctx, func(_ context.Context) pb.ServerAddress {
 		return addr
-	}, grpc.WithTransportCredentials(insecure.NewCredentials()), &VolumeAssignRequest{Count: 1})
+	}, pb.DialOption{}, &VolumeAssignRequest{Count: 1})
 
 	if err != nil {
 		t.Fatalf("expected success after retries, got error: %v", err)
@@ -72,14 +87,14 @@ func TestAssignRetriesOnUnavailable(t *testing.T) {
 	if ret.Fid != "1,abc" {
 		t.Errorf("expected fid '1,abc', got '%s'", ret.Fid)
 	}
-	if calls := srv.callCount.Load(); calls != 4 {
+	if calls := backend.callCount.Load(); calls != 4 {
 		t.Errorf("expected 4 calls (3 unavailable + 1 success), got %d", calls)
 	}
 }
 
 func TestAssignStopsOnContextCancel(t *testing.T) {
-	srv := &fakeAssignServer{unavailableCount: 1000} // never succeeds
-	addr := startFakeServer(t, srv)
+	backend := &fakeAssignBackend{unavailableCount: 1000} // never succeeds
+	addr := startFakeMaster(t, backend)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -87,7 +102,7 @@ func TestAssignStopsOnContextCancel(t *testing.T) {
 	start := time.Now()
 	_, err := Assign(ctx, func(_ context.Context) pb.ServerAddress {
 		return addr
-	}, grpc.WithTransportCredentials(insecure.NewCredentials()), &VolumeAssignRequest{Count: 1})
+	}, pb.DialOption{}, &VolumeAssignRequest{Count: 1})
 
 	elapsed := time.Since(start)
 	if err == nil {
@@ -98,7 +113,7 @@ func TestAssignStopsOnContextCancel(t *testing.T) {
 		t.Errorf("took %v, expected to stop near context deadline of 2s", elapsed)
 	}
 	// Verify the loop actually retried (not just an immediate failure)
-	if calls := srv.callCount.Load(); calls <= 1 {
+	if calls := backend.callCount.Load(); calls <= 1 {
 		t.Errorf("expected multiple retry attempts, got %d calls", calls)
 	}
 	// Verify the error is from context deadline

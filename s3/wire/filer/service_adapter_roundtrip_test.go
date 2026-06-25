@@ -5,6 +5,7 @@ package filerwire
 
 import (
 	"bytes"
+	"context"
 	"testing"
 )
 
@@ -141,7 +142,7 @@ func TestUnaryRoundTrip(t *testing.T) {
 	wantContent := []byte("the bytes are the message")
 	entry := NewEntry(EntryInput{Name: "x.bin", IsDirectory: false, Content: wantContent})
 
-	createResp, err := cli.CreateEntry(NewCreateEntryRequest(CreateEntryRequestInput{
+	createResp, err := cli.CreateEntry(context.Background(), NewCreateEntryRequest(CreateEntryRequestInput{
 		Directory:                "/buckets/blobs/team-go",
 		Entry:                    entry,
 		SkipCheckParentDirectory: true,
@@ -153,7 +154,7 @@ func TestUnaryRoundTrip(t *testing.T) {
 		t.Fatalf("CreateEntry error_code = %d, want OK", createResp.ErrorCode())
 	}
 
-	lookupResp, err := cli.LookupDirectoryEntry(NewLookupDirectoryEntryRequest(LookupDirectoryEntryRequestInput{
+	lookupResp, err := cli.LookupDirectoryEntry(context.Background(), NewLookupDirectoryEntryRequest(LookupDirectoryEntryRequestInput{
 		Directory: "/buckets/blobs/team-go",
 		Name:      "x.bin",
 	}))
@@ -173,7 +174,7 @@ func TestUnaryRoundTrip(t *testing.T) {
 
 	// A streaming RPC invoked on the unary path must be refused, not faked: the
 	// handler returns ErrStreamingEndpoint -> StatusInternal -> a client error.
-	if _, body, err := cli.rpc.SubscribeMetadata(NewSubscribeMetadataRequest(SubscribeMetadataRequestInput{ClientName: "probe"})); err == nil {
+	if _, body, err := cli.rpc.SubscribeMetadata(context.Background(), NewSubscribeMetadataRequest(SubscribeMetadataRequestInput{ClientName: "probe"})); err == nil {
 		t.Fatalf("SubscribeMetadata unary call should be refused, got body %d bytes", len(body))
 	}
 }

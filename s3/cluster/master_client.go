@@ -4,13 +4,13 @@ import (
 	"context"
 
 	"github.com/dustin/go-humanize/english"
+
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
-	"google.golang.org/grpc"
 )
 
-func ListExistingPeerUpdates(master pb.ServerAddress, grpcDialOption grpc.DialOption, filerGroup string, clientType string) (existingNodes []*master_pb.ClusterNodeUpdate) {
+func ListExistingPeerUpdates(master pb.ServerAddress, grpcDialOption pb.DialOption, filerGroup string, clientType string) (existingNodes []*master_pb.ClusterNodeUpdate) {
 
 	if grpcErr := pb.WithMasterClient(context.Background(), false, master, grpcDialOption, false, func(client master_pb.HanzoClient) error {
 		resp, err := client.ListClusterNodes(context.Background(), &master_pb.ListClusterNodesRequest{

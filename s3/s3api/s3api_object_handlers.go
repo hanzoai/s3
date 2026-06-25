@@ -27,8 +27,6 @@ import (
 	util_http "github.com/hanzoai/s3/s3/util/http"
 
 	"github.com/hanzoai/s3/s3/glog"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // corsHeaders defines the CORS headers that need to be preserved
@@ -252,7 +250,7 @@ func newStreamErrorWithResponse(err error) *StreamError {
 }
 
 func isCanceledStreamingError(err error) bool {
-	return errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled
+	return errors.Is(err, context.Canceled) || strings.Contains(err.Error(), "Canceled")
 }
 
 func shouldWriteStreamingErrorResponse(err error) bool {
@@ -993,10 +991,10 @@ func (s3a *S3ApiServer) streamFromVolumeServers(w http.ResponseWriter, r *http.R
 				chunks = cachedEntry.GetChunks()
 				entry = cachedEntry
 				glog.V(1).Infof("streamFromVolumeServers: successfully cached remote object, got %d chunks", len(chunks))
-			} else if cacheErr != nil && !errors.Is(cacheErr, context.DeadlineExceeded) && !errors.Is(cacheErr, context.Canceled) && status.Code(cacheErr) != codes.DeadlineExceeded && status.Code(cacheErr) != codes.Canceled {
+			} else if cacheErr != nil && !errors.Is(cacheErr, context.DeadlineExceeded) && !errors.Is(cacheErr, context.Canceled) && !strings.Contains(cacheErr.Error(), "DeadlineExceeded") && !strings.Contains(cacheErr.Error(), "Canceled") {
 				// Permanent error (e.g. not found, permission denied) - return final status
 				glog.Errorf("streamFromVolumeServers: permanent cache error for %s/%s: %v", bucket, object, cacheErr)
-				if status.Code(cacheErr) == codes.NotFound {
+				if strings.Contains(cacheErr.Error(), "NotFound") {
 					s3err.WriteErrorResponse(w, r, s3err.ErrNoSuchKey)
 				} else {
 					s3err.WriteErrorResponse(w, r, s3err.ErrInternalError)

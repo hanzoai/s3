@@ -48,7 +48,7 @@ func NewBrokerClientWithFilerAccessor(brokerAddress string, filerClientAccessor 
 	grpcDialOption := security.LoadClientTLS(util.GetViper(), "grpc.mq")
 
 	conn, err := grpc.DialContext(dialCtx, brokerAddress,
-		grpcDialOption,
+		grpcDialOption.Grpc(),
 	)
 	if err != nil {
 		cancel()
@@ -400,7 +400,7 @@ func (bc *BrokerClient) GetFilers() []pb.ServerAddress {
 	return bc.filerClientAccessor.GetFilers()
 }
 
-func (bc *BrokerClient) GetGrpcDialOption() grpc.DialOption {
+func (bc *BrokerClient) GetGrpcDialOption() pb.DialOption {
 	return bc.filerClientAccessor.GetGrpcDialOption()
 }
 

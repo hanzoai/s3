@@ -7,24 +7,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/seaweedfs/go-fuse/v2/fuse"
 	"github.com/hanzoai/s3/s3/filerzap"
 	"github.com/hanzoai/s3/s3/mount/meta_cache"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/filerstub"
 	"github.com/hanzoai/s3/s3/util"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
+	"github.com/seaweedfs/go-fuse/v2/fuse"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // cacheRemoteTestServer broadcasts the matching invalidate event before
 // returning the cached entry, so the apply loop is busy invalidating the same
 // file handle the read still holds when downloadRemoteEntry applies its event.
 type cacheRemoteTestServer struct {
-	filer_pb.UnimplementedHanzoFilerServer
+	filerstub.FilerServer
 	wfs               *WFS
 	dir, name         string
 	content           []byte
@@ -81,7 +80,7 @@ func TestReadUncachedRemoteEntryDoesNotDeadlock(t *testing.T) {
 			FilerAddresses: []pb.ServerAddress{
 				pb.NewServerAddressWithGrpcPort("127.0.0.1:1", listener.Addr().(*net.TCPAddr).Port),
 			},
-			GrpcDialOption: grpc.WithTransportCredentials(insecure.NewCredentials()),
+			GrpcDialOption: pb.DialOption{},
 		},
 	}
 	testServer.wfs = wfs

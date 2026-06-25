@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -44,7 +45,7 @@ func (c *commandS3ServiceAccountShow) Do(args []string, commandEnv *CommandEnv, 
 	}
 
 	return commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetServiceAccount(iamwire.NewGetServiceAccountRequest(iamwire.GetServiceAccountRequestInput{ID: *id}))
+		_, body, err := client.GetServiceAccount(context.Background(), iamwire.NewGetServiceAccountRequest(iamwire.GetServiceAccountRequestInput{ID: *id}))
 		if err != nil {
 			return err
 		}

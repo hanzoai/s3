@@ -13,13 +13,12 @@ import (
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/util"
 	util_http "github.com/hanzoai/s3/s3/util/http"
-	"google.golang.org/grpc"
 )
 
 var (
 	volumeServer   = flag.String("volumeServer", "localhost:8080", "a volume server")
 	volumeId       = flag.Int("volumeId", -1, "a volume id to stream read")
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 )
 
 func main() {

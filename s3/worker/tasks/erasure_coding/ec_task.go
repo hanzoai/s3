@@ -24,7 +24,6 @@ import (
 	"github.com/hanzoai/s3/s3/wdclient"
 	"github.com/hanzoai/s3/s3/worker/types"
 	"github.com/hanzoai/s3/s3/worker/types/base"
-	"google.golang.org/grpc"
 )
 
 // ErasureCodingTask implements the Task interface
@@ -35,7 +34,7 @@ type ErasureCodingTask struct {
 	collection     string
 	workDir        string
 	progress       float64
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 
 	// EC parameters
 	dataShards       int32
@@ -54,7 +53,7 @@ type ErasureCodingTask struct {
 }
 
 // NewErasureCodingTask creates a new unified EC task instance
-func NewErasureCodingTask(id string, server string, volumeID uint32, collection string, grpcDialOption grpc.DialOption) *ErasureCodingTask {
+func NewErasureCodingTask(id string, server string, volumeID uint32, collection string, grpcDialOption pb.DialOption) *ErasureCodingTask {
 	return &ErasureCodingTask{
 		BaseTask:       base.NewBaseTask(id, types.TaskTypeErasureCoding),
 		server:         server,
@@ -987,7 +986,7 @@ func fullShardIdRange(dataShards, parityShards int32) []uint32 {
 // unmounted); both RPCs are idempotent against missing shards.
 func unmountAndDeleteEcShards(
 	ctx context.Context,
-	dialOption grpc.DialOption,
+	dialOption pb.DialOption,
 	destination string,
 	volumeID uint32,
 	collection string,

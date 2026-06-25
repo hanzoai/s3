@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/grpc"
+
 	"github.com/hanzoai/s3/s3/admin/maintenance"
 	adminplugin "github.com/hanzoai/s3/s3/admin/plugin"
 	"github.com/hanzoai/s3/s3/cluster"
@@ -29,7 +31,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/super_block"
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/s3api"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
@@ -85,7 +86,7 @@ type AdminServer struct {
 	masterClient    *wdclient.MasterClient
 	templateFS      http.FileSystem
 	dataDir         string
-	grpcDialOption  grpc.DialOption
+	grpcDialOption  pb.DialOption
 	cacheExpiration time.Duration
 	lastCacheUpdate time.Time
 	cachedTopology  *ClusterTopology
@@ -189,7 +190,7 @@ func NewAdminServer(masters string, templateFS http.FileSystem, dataDir string, 
 		// For stores that need filer address function, configure them
 		if store := credentialManager.GetStore(); store != nil {
 			if filerFuncSetter, ok := store.(interface {
-				SetFilerAddressFunc(func() pb.ServerAddress, grpc.DialOption)
+				SetFilerAddressFunc(func() pb.ServerAddress, pb.DialOption)
 			}); ok {
 				// Configure the filer address function to dynamically return the current active filer
 				// This function will be called each time credentials need to be loaded/saved,
@@ -1667,7 +1668,7 @@ func (s *AdminServer) UpdateTopicRetention(namespace, name string, enabled bool,
 	}
 
 	// Create gRPC connection
-	conn, err := grpc.NewClient(brokerAddress, s.grpcDialOption)
+	conn, err := grpc.NewClient(brokerAddress, s.grpcDialOption.Grpc())
 	if err != nil {
 		return fmt.Errorf("failed to connect to broker: %w", err)
 	}

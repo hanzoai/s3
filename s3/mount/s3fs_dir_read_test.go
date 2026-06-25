@@ -7,9 +7,8 @@ import (
 
 	"github.com/hanzoai/s3/s3/mount/meta_cache"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/rpc"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 type directoryListStream struct {
@@ -26,19 +25,12 @@ func (s *directoryListStream) Recv() (*filer_pb.ListEntriesResponse, error) {
 	return resp, nil
 }
 
-func (s *directoryListStream) Header() (metadata.MD, error) { return metadata.MD{}, nil }
-func (s *directoryListStream) Trailer() metadata.MD         { return metadata.MD{} }
-func (s *directoryListStream) CloseSend() error             { return nil }
-func (s *directoryListStream) Context() context.Context     { return context.Background() }
-func (s *directoryListStream) SendMsg(any) error            { return nil }
-func (s *directoryListStream) RecvMsg(any) error            { return nil }
-
 type directoryListClient struct {
 	filer_pb.HanzoFilerClient
 	responses []*filer_pb.ListEntriesResponse
 }
 
-func (c *directoryListClient) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.ListEntriesResponse], error) {
+func (c *directoryListClient) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest) (rpc.ServerStream[filer_pb.ListEntriesResponse], error) {
 	return &directoryListStream{responses: c.responses}, nil
 }
 

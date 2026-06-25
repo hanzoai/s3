@@ -4,11 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hanzoai/s3/s3/credential"
-	"github.com/hanzoai/s3/s3/credential/memory"
-	"github.com/hanzoai/s3/s3/pb/iam_pb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/hanzoai/s3/s3/credential"
+	"github.com/hanzoai/s3/s3/credential/memory"
+	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/s3/pb/iam_pb"
 
 	// Side-effect: register filer_etc so the existing
 	// TestCredentialStoreInterface / TestGetAvailableStores assertions
@@ -27,7 +29,7 @@ func TestSaveConfigurationDelegatesWithoutMaster(t *testing.T) {
 	upstream := &memory.MemoryStore{}
 	require.NoError(t, upstream.Initialize(nil, ""))
 
-	ps := credential.NewPropagatingCredentialStore(upstream, nil, nil)
+	ps := credential.NewPropagatingCredentialStore(upstream, nil, pb.DialOption{})
 
 	cfg := &iam_pb.S3ApiConfiguration{
 		Identities: []*iam_pb.Identity{{Name: "alice"}, {Name: "bob"}},
@@ -49,7 +51,7 @@ func TestSaveConfigurationDiffSnapshotTakenBeforeWrite(t *testing.T) {
 	upstream := &memory.MemoryStore{}
 	require.NoError(t, upstream.Initialize(nil, ""))
 
-	ps := credential.NewPropagatingCredentialStore(upstream, nil, nil)
+	ps := credential.NewPropagatingCredentialStore(upstream, nil, pb.DialOption{})
 
 	require.NoError(t, ps.SaveConfiguration(ctx, &iam_pb.S3ApiConfiguration{
 		Identities: []*iam_pb.Identity{{Name: "alice"}, {Name: "bob"}},

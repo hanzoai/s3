@@ -12,7 +12,7 @@ import (
 func (store *IamGrpcStore) GetPolicies(ctx context.Context) (map[string]policy_engine.PolicyDocument, error) {
 	policies := make(map[string]policy_engine.PolicyDocument)
 	err := store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.ListPolicies(iamwire.NewListPoliciesRequest(iamwire.ListPoliciesRequestInput{}))
+		_, body, err := client.ListPolicies(ctx, iamwire.NewListPoliciesRequest(iamwire.ListPoliciesRequestInput{}))
 		if err != nil {
 			return err
 		}
@@ -38,7 +38,7 @@ func (store *IamGrpcStore) PutPolicy(ctx context.Context, name string, document 
 		return err
 	}
 	return store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.PutPolicy(iamwire.NewPutPolicyRequest(iamwire.PutPolicyRequestInput{
+		_, _, err := client.PutPolicy(ctx, iamwire.NewPutPolicyRequest(iamwire.PutPolicyRequestInput{
 			Name:    name,
 			Content: string(content),
 		}))
@@ -48,7 +48,7 @@ func (store *IamGrpcStore) PutPolicy(ctx context.Context, name string, document 
 
 func (store *IamGrpcStore) DeletePolicy(ctx context.Context, name string) error {
 	return store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.DeletePolicy(iamwire.NewDeletePolicyRequest(iamwire.DeletePolicyRequestInput{
+		_, _, err := client.DeletePolicy(ctx, iamwire.NewDeletePolicyRequest(iamwire.DeletePolicyRequestInput{
 			Name: name,
 		}))
 		return err
@@ -58,7 +58,7 @@ func (store *IamGrpcStore) DeletePolicy(ctx context.Context, name string) error 
 func (store *IamGrpcStore) GetPolicy(ctx context.Context, name string) (*policy_engine.PolicyDocument, error) {
 	var doc policy_engine.PolicyDocument
 	err := store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.GetPolicy(iamwire.NewGetPolicyRequest(iamwire.GetPolicyRequestInput{
+		_, body, err := client.GetPolicy(ctx, iamwire.NewGetPolicyRequest(iamwire.GetPolicyRequestInput{
 			Name: name,
 		}))
 		if err != nil {
@@ -88,7 +88,7 @@ func (store *IamGrpcStore) CreatePolicy(ctx context.Context, name string, docume
 func (store *IamGrpcStore) ListPolicyNames(ctx context.Context) ([]string, error) {
 	var names []string
 	err := store.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, body, err := client.ListPolicies(iamwire.NewListPoliciesRequest(iamwire.ListPoliciesRequestInput{}))
+		_, body, err := client.ListPolicies(ctx, iamwire.NewListPoliciesRequest(iamwire.ListPoliciesRequestInput{}))
 		if err != nil {
 			return err
 		}

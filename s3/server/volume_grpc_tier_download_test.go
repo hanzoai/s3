@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage"
@@ -121,8 +122,8 @@ func (f *tierTestBackendFile) ReadAt(p []byte, off int64) (int, error) {
 func (f *tierTestBackendFile) WriteAt(p []byte, off int64) (int, error) { panic("not implemented") }
 func (f *tierTestBackendFile) Truncate(off int64) error                 { panic("not implemented") }
 func (f *tierTestBackendFile) Close() error                             { return nil }
-func (f *tierTestBackendFile) Name() string                            { return f.key }
-func (f *tierTestBackendFile) Sync() error                             { return nil }
+func (f *tierTestBackendFile) Name() string                             { return f.key }
+func (f *tierTestBackendFile) Sync() error                              { return nil }
 func (f *tierTestBackendFile) GetStat() (int64, time.Time, error) {
 	files := f.tierInfo.GetFiles()
 	if len(files) == 0 {
@@ -136,12 +137,14 @@ type fakeTierStream struct {
 	grpc.ServerStream
 }
 
-func (s *fakeTierStream) Send(*volume_server_pb.VolumeTierMoveDatFromRemoteResponse) error { return nil }
+func (s *fakeTierStream) Send(*volume_server_pb.VolumeTierMoveDatFromRemoteResponse) error {
+	return nil
+}
 
 func newTierTestStore(t *testing.T, dir string) *storage.Store {
 	t.Helper()
 	diskIOProbeConfig := stats.DefaultDiskIOProbeConfig()
-	store := storage.NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "",
+	store := storage.NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "",
 		[]string{dir}, []int32{100}, []util.MinFreeSpace{{}}, "",
 		storage.NeedleMapInMemory, []types.DiskType{types.HardDriveType}, nil, 3, diskIOProbeConfig)
 

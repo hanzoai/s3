@@ -6,11 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/protobuf/proto"
+
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	ecstorage "github.com/hanzoai/s3/s3/storage/erasure_coding"
 	workertypes "github.com/hanzoai/s3/s3/worker/types"
-	"google.golang.org/protobuf/proto"
 )
 
 func TestDecodeErasureCodingTaskParamsFromPayload(t *testing.T) {
@@ -187,7 +189,7 @@ func TestBuildErasureCodingProposal(t *testing.T) {
 }
 
 func TestErasureCodingHandlerRejectsUnsupportedJobType(t *testing.T) {
-	handler := NewErasureCodingHandler(nil, "")
+	handler := NewErasureCodingHandler(pb.DialOption{}, "")
 	err := handler.Detect(context.Background(), &plugin_pb.RunDetectionRequest{
 		JobType: "vacuum",
 	}, noopDetectionSender{})
@@ -250,7 +252,7 @@ func TestEmitErasureCodingDetectionDecisionTraceNoTasks(t *testing.T) {
 }
 
 func TestErasureCodingDescriptorOmitsLocalExecutionFields(t *testing.T) {
-	descriptor := NewErasureCodingHandler(nil, "").Descriptor()
+	descriptor := NewErasureCodingHandler(pb.DialOption{}, "").Descriptor()
 	if descriptor == nil || descriptor.WorkerConfigForm == nil {
 		t.Fatalf("expected worker config form in descriptor")
 	}

@@ -7,19 +7,19 @@ import (
 	"strings"
 	"sync"
 
+	"google.golang.org/protobuf/encoding/protojson"
+
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/iam_pb"
 	"github.com/hanzoai/s3/s3/s3api/policy_engine"
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // FilerAddressSetter is an interface for credential stores that need a dynamic filer address
 type FilerAddressSetter interface {
-	SetFilerAddressFunc(getFiler func() pb.ServerAddress, grpcDialOption grpc.DialOption)
+	SetFilerAddressFunc(getFiler func() pb.ServerAddress, grpcDialOption pb.DialOption)
 }
 
 // CredentialManager manages user credentials using a configurable store
@@ -63,12 +63,12 @@ func NewCredentialManager(storeName CredentialStoreTypeName, configuration util.
 	}, nil
 }
 
-func (cm *CredentialManager) SetMasterClient(masterClient *wdclient.MasterClient, grpcDialOption grpc.DialOption) {
+func (cm *CredentialManager) SetMasterClient(masterClient *wdclient.MasterClient, grpcDialOption pb.DialOption) {
 	cm.Store = NewPropagatingCredentialStore(cm.Store, masterClient, grpcDialOption)
 }
 
 // SetFilerAddressFunc sets the function to get the current filer address
-func (cm *CredentialManager) SetFilerAddressFunc(getFiler func() pb.ServerAddress, grpcDialOption grpc.DialOption) {
+func (cm *CredentialManager) SetFilerAddressFunc(getFiler func() pb.ServerAddress, grpcDialOption pb.DialOption) {
 	if s, ok := cm.Store.(FilerAddressSetter); ok {
 		s.SetFilerAddressFunc(getFiler, grpcDialOption)
 	}

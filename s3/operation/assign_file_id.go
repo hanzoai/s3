@@ -3,6 +3,7 @@ package operation
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb"
@@ -11,9 +12,6 @@ import (
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage/needle"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type VolumeAssignRequest struct {
@@ -40,7 +38,7 @@ type AssignResult struct {
 	Replicas  []Location          `json:"replicas,omitempty"`
 }
 
-func Assign(ctx context.Context, masterFn GetMasterFn, grpcDialOption grpc.DialOption, primaryRequest *VolumeAssignRequest, alternativeRequests ...*VolumeAssignRequest) (*AssignResult, error) {
+func Assign(ctx context.Context, masterFn GetMasterFn, grpcDialOption pb.DialOption, primaryRequest *VolumeAssignRequest, alternativeRequests ...*VolumeAssignRequest) (*AssignResult, error) {
 
 	var requests []*VolumeAssignRequest
 	requests = append(requests, primaryRequest)
@@ -69,18 +67,15 @@ func Assign(ctx context.Context, masterFn GetMasterFn, grpcDialOption grpc.DialO
 
 		lastError = util.RetryWithBackoff(deadlineCtx, "assign", remaining,
 			func(err error) bool {
-				st, ok := status.FromError(err)
-				if !ok {
-					return false
-				}
-				switch st.Code() {
-				case codes.Unavailable:
+				s := err.Error()
+				switch {
+				case strings.Contains(s, "Unavailable"):
 					return true
-				case codes.Canceled, codes.DeadlineExceeded:
-					// A stale cached gRPC channel (e.g., master restart behind
-					// a k8s Service VIP) can return Canceled/DeadlineExceeded
+				case strings.Contains(s, "Canceled"), strings.Contains(s, "DeadlineExceeded"):
+					// A stale cached channel (e.g., master restart behind a k8s
+					// Service VIP) can return Canceled/DeadlineExceeded
 					// immediately even though the caller's context is still
-					// live. The first failure invalidates the cached ClientConn
+					// live. The first failure invalidates the cached connection
 					// via shouldInvalidateConnection; retry so the next attempt
 					// dials a fresh channel.
 					return deadlineCtx.Err() == nil
@@ -152,7 +147,7 @@ func Assign(ctx context.Context, masterFn GetMasterFn, grpcDialOption grpc.DialO
 	return ret, lastError
 }
 
-func LookupJwt(master pb.ServerAddress, grpcDialOption grpc.DialOption, fileId string) (token security.EncodedJwt) {
+func LookupJwt(master pb.ServerAddress, grpcDialOption pb.DialOption, fileId string) (token security.EncodedJwt) {
 
 	WithMasterServerClient(context.Background(), false, master, grpcDialOption, func(masterClient master_pb.HanzoClient) error {
 
