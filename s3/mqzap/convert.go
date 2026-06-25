@@ -81,6 +81,21 @@ func partitionOffsetToWire(o *schema_pb.PartitionOffset) []byte {
 	})
 }
 
+func partitionOffsetFromWire(b []byte) *schema_pb.PartitionOffset {
+	if len(b) == 0 {
+		return nil
+	}
+	v, err := mq_schemawire.WrapPartitionOffset(b)
+	if err != nil {
+		return nil
+	}
+	o := &schema_pb.PartitionOffset{StartTsNs: v.StartTsNs(), StartOffset: v.StartOffset()}
+	if p, ok := v.Partition(); ok {
+		o.Partition = partitionFromView(p)
+	}
+	return o
+}
+
 // --- schema_pb.RecordType (recursive: Field -> Type -> RecordType/ListType) ---
 
 func recordTypeToWire(rt *schema_pb.RecordType) []byte {
@@ -291,6 +306,37 @@ func subscriberFromView(v mq_brokerwire.TopicSubscriber) *mq_pb.TopicSubscriber 
 		IsActive:           v.IsActive(),
 		CurrentOffset:      v.CurrentOffset(),
 		LastReceivedOffset: v.LastReceivedOffset(),
+	}
+}
+
+// --- mq_pb.BrokerStats (PublisherToPubBalancer payload, server direction) ---
+
+func brokerStatsFromView(v mq_brokerwire.BrokerStats) *mq_pb.BrokerStats {
+	bs := &mq_pb.BrokerStats{
+		CpuUsagePercent: v.CpuUsagePercent(),
+		Stats:           make(map[string]*mq_pb.TopicPartitionStats, v.StatsLen()),
+	}
+	for i := 0; i < v.StatsLen(); i++ {
+		e := v.StatsAt(i)
+		bs.Stats[e.Key] = topicPartitionStatsFromWire(e.Value)
+	}
+	return bs
+}
+
+func topicPartitionStatsFromWire(b []byte) *mq_pb.TopicPartitionStats {
+	if len(b) == 0 {
+		return nil
+	}
+	v, err := mq_brokerwire.WrapTopicPartitionStats(b)
+	if err != nil {
+		return nil
+	}
+	return &mq_pb.TopicPartitionStats{
+		Topic:           topicFromWire(v.Topic()),
+		Partition:       partitionFromWire(v.Partition()),
+		PublisherCount:  v.PublisherCount(),
+		SubscriberCount: v.SubscriberCount(),
+		Follower:        v.Follower(),
 	}
 }
 
