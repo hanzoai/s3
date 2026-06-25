@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:s3/filer/zapdb/object_size_metric_test.go
-package zapdb
-========
 package luxdb
->>>>>>>> feat/luxdb-store:s3/filer/luxdb/object_size_metric_test.go
 
 import (
 	"context"
@@ -31,15 +27,9 @@ func histogramState(t *testing.T) (count uint64, perBucket map[float64]uint64) {
 }
 
 func TestCreateEntryRecordsObjectSize(t *testing.T) {
-<<<<<<<< HEAD:s3/filer/zapdb/object_size_metric_test.go
 	testFiler := filer.NewFiler(pb.ServerDiscovery{}, pb.DialOption{}, "", "", "", "", "", 255, nil)
-	store := &ZapDBStore{}
-	if err := store.initialize(t.TempDir()); err != nil {
-========
-	testFiler := filer.NewFiler(pb.ServerDiscovery{}, nil, "", "", "", "", "", 255, nil)
 	store := &LuxDBStore{}
 	if err := store.initialize("zapdb", t.TempDir()); err != nil {
->>>>>>>> feat/luxdb-store:s3/filer/luxdb/object_size_metric_test.go
 		t.Fatalf("init store: %v", err)
 	}
 	testFiler.SetStore(store)
