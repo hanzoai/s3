@@ -72,19 +72,21 @@ func FetchDefaultReplicaPlacement(ctx context.Context, masterAddresses []string,
 			if ctx.Err() != nil {
 				return ""
 			}
-			dialCtx, cancelDial := context.WithTimeout(ctx, 5*time.Second)
-			conn, err := pb.GrpcDial(dialCtx, candidate, false, grpcDialOption)
-			cancelDial()
-			if err != nil {
-				continue
-			}
-			client := master_pb.NewHanzoClient(conn)
-			callCtx, cancelCall := context.WithTimeout(ctx, 10*time.Second)
-			resp, callErr := client.GetMasterConfiguration(callCtx, &master_pb.GetMasterConfigurationRequest{})
-			cancelCall()
-			_ = conn.Close()
+			// The master service is served over the native ZAP transport;
+			// WithMasterClient dials it (ToMasterZapAddress) over the masterPool.
+			var replication string
+			callErr := pb.WithMasterClient(ctx, false, pb.ServerAddress(candidate), grpcDialOption, false, func(client master_pb.HanzoClient) error {
+				callCtx, cancelCall := context.WithTimeout(ctx, 10*time.Second)
+				defer cancelCall()
+				resp, err := client.GetMasterConfiguration(callCtx, &master_pb.GetMasterConfigurationRequest{})
+				if err != nil {
+					return err
+				}
+				replication = resp.DefaultReplication
+				return nil
+			})
 			if callErr == nil {
-				return resp.DefaultReplication
+				return replication
 			}
 		}
 	}
@@ -98,19 +100,19 @@ func FetchVolumeList(ctx context.Context, address string, grpcDialOption grpc.Di
 			return nil, ctx.Err()
 		}
 
-		dialCtx, cancelDial := context.WithTimeout(ctx, 5*time.Second)
-		conn, err := pb.GrpcDial(dialCtx, candidate, false, grpcDialOption)
-		cancelDial()
-		if err != nil {
-			lastErr = err
-			continue
-		}
-
-		client := master_pb.NewHanzoClient(conn)
-		callCtx, cancelCall := context.WithTimeout(ctx, 10*time.Second)
-		response, callErr := client.VolumeList(callCtx, &master_pb.VolumeListRequest{})
-		cancelCall()
-		_ = conn.Close()
+		// The master service is served over the native ZAP transport;
+		// WithMasterClient dials it (ToMasterZapAddress) over the masterPool.
+		var response *master_pb.VolumeListResponse
+		callErr := pb.WithMasterClient(ctx, false, pb.ServerAddress(candidate), grpcDialOption, false, func(client master_pb.HanzoClient) error {
+			callCtx, cancelCall := context.WithTimeout(ctx, 10*time.Second)
+			defer cancelCall()
+			resp, err := client.VolumeList(callCtx, &master_pb.VolumeListRequest{})
+			if err != nil {
+				return err
+			}
+			response = resp
+			return nil
+		})
 
 		if callErr == nil {
 			return response, nil

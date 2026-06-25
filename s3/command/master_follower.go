@@ -7,15 +7,18 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/gorilla/mux"
-	"google.golang.org/grpc/reflection"
 
 	"github.com/hanzoai/s3/s3/glog"
+	"github.com/hanzoai/s3/s3/masterzap"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/security"
 	s3server "github.com/hanzoai/s3/s3/server"
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/hanzoai/s3/s3/util/version"
+	masterwire "github.com/hanzoai/s3/s3/wire/master"
+	masterstream "github.com/hanzoai/s3/s3/wire/master/masterstream"
+	"github.com/zap-proto/go/transport"
 )
 
 var (
@@ -135,20 +138,20 @@ func startMasterFollower(masterOptions MasterOptions) {
 		glog.Fatalf("Master startup error: %v", e)
 	}
 
-	// starting grpc server
+	// Serve the WHOLE Hanzo master service (21 unary + 3 streaming RPCs) over the
+	// native ZAP transport on the deterministic grpcPort+10000 offset
+	// (ServerAddress.ToMasterZapAddress). The follower carries no raft service, so
+	// — unlike the leader in command/master.go — it stands up NO gRPC server at
+	// all: the entire master API rides ZAP, exactly as command/filer.go serves the
+	// filer. Clients reach it via pb.WithMasterClient over the masterPool.
 	grpcPort := *masterOptions.portGrpc
-	grpcL, grpcLocalL, err := util.NewIpAndLocalListeners(*masterOptions.ipBind, grpcPort, 0)
-	if err != nil {
-		glog.Fatalf("master failed to listen on grpc port %d: %v", grpcPort, err)
+	masterZapAddr := util.JoinHostPort(*masterOptions.ipBind, grpcPort+10000)
+	masterDispatch := masterwire.Dispatch(masterzap.NewServerBackend(ms))
+	masterStream := masterstream.Handler(masterzap.NewStreamServer(ms))
+	if _, zapErr := transport.ListenStream("tcp", masterZapAddr, masterDispatch, masterStream); zapErr != nil {
+		glog.Fatalf("master follower failed to serve over ZAP on %s: %v", masterZapAddr, zapErr)
 	}
-	grpcS := pb.NewGrpcServer(security.LoadServerTLS(util.GetViper(), "grpc.master"))
-	master_pb.RegisterHanzoServer(grpcS, ms)
-	reflection.Register(grpcS)
-	glog.V(0).Infof("Start Hanzo S3 Master %s grpc server at %s:%d", version.Version(), *masterOptions.ip, grpcPort)
-	if grpcLocalL != nil {
-		go grpcS.Serve(grpcLocalL)
-	}
-	go grpcS.Serve(grpcL)
+	glog.V(0).Infof("Start Hanzo S3 Master %s ZAP transport (unary+streaming) at %s", version.Version(), masterZapAddr)
 
 	go ms.MasterClient.KeepConnectedToMaster(context.Background())
 

@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 
+	"github.com/hanzoai/s3/s3/masterzap"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
@@ -537,11 +538,17 @@ func GrpcAddressToServerAddress(grpcAddress string) (serverAddress string) {
 // caller's own timeout does not invalidate the shared cached master connection.
 // Pass context.Background() when there is no per-request deadline to honor.
 func WithMasterClient(ctx context.Context, streamingMode bool, master ServerAddress, grpcDialOption grpc.DialOption, waitForReady bool, fn func(client master_pb.HanzoClient) error) error {
-	return WithGrpcClient(ctx, streamingMode, 0, func(grpcConnection *grpc.ClientConn) error {
-		client := master_pb.NewHanzoClient(grpcConnection)
-		return fn(client)
-	}, master.ToGrpcAddress(), waitForReady, grpcDialOption)
-
+	// The master service is served entirely over the native ZAP transport
+	// (command/master.go and command/master_follower.go serve unary+streaming on
+	// ToMasterZapAddress). Dial it over the masterPool and run fn with a
+	// master_pb.HanzoClient backed by that connection (masterzap.New routes every
+	// unary call and every bidi stream over the one Conn). The streamingMode /
+	// ctx / grpcDialOption / waitForReady parameters are retained for caller
+	// compatibility; the ZAP path needs none of them.
+	_, _, _, _ = ctx, streamingMode, grpcDialOption, waitForReady
+	return masterPool.With(master.ToMasterZapAddress(), func(conn transport.Conn) error {
+		return fn(masterzap.New(conn, nil))
+	})
 }
 
 func WithVolumeServerClient(streamingMode bool, volumeServer ServerAddress, grpcDialOption grpc.DialOption, fn func(client volume_server_pb.VolumeServerClient) error) error {
@@ -553,12 +560,15 @@ func WithVolumeServerClient(streamingMode bool, volumeServer ServerAddress, grpc
 }
 
 func WithOneOfGrpcMasterClients(streamingMode bool, masterGrpcAddresses map[string]ServerAddress, grpcDialOption grpc.DialOption, fn func(client master_pb.HanzoClient) error) (err error) {
-
+	// Like WithMasterClient, the master service rides ZAP: try each master in turn
+	// over the masterPool, returning on the first that runs fn without error. The
+	// streamingMode / grpcDialOption parameters are retained for caller
+	// compatibility and unused on the ZAP path.
+	_, _ = streamingMode, grpcDialOption
 	for _, masterGrpcAddress := range masterGrpcAddresses {
-		err = WithGrpcClient(context.Background(), streamingMode, 0, func(grpcConnection *grpc.ClientConn) error {
-			client := master_pb.NewHanzoClient(grpcConnection)
-			return fn(client)
-		}, masterGrpcAddress.ToGrpcAddress(), false, grpcDialOption)
+		err = masterPool.With(masterGrpcAddress.ToMasterZapAddress(), func(conn transport.Conn) error {
+			return fn(masterzap.New(conn, nil))
+		})
 		if err == nil {
 			return nil
 		}
@@ -605,6 +615,26 @@ func dialFilerZapAddr(addr string) (transport.Conn, error) {
 // fresh X25519MLKEM768 handshake) on every filer RPC. Generic pooling lives in
 // the transport (transport.Pool); only the dial choice is ours.
 var filerPool = transport.NewPool(dialFilerZapAddr)
+
+// dialMasterZapAddr opens a ZAP connection to a master ZAP address
+// (ServerAddress.ToMasterZapAddress). When grpc.master.cert/.key is configured it
+// is PQ-secured TLS (transport.PQTLSConfig pins X25519MLKEM768, the PQ X-Wing
+// curve) presenting the client cert and trusting grpc.ca — the same mTLS the
+// legacy gRPC master client used. Otherwise plaintext (loopback / dev), matching
+// the master server's gating in command/master.go. The returned *Conn drives
+// both unary Call and OpenStream (the 3 bidi master streams).
+func dialMasterZapAddr(addr string) (transport.Conn, error) {
+	if cfg := security.ClientTLSConfig(util.GetViper(), "grpc.master"); cfg != nil {
+		return transport.DialTLS("tcp", addr, transport.PQTLSConfig(cfg))
+	}
+	return transport.Dial("tcp", addr)
+}
+
+// masterPool reuses one ZAP connection per master ZAP address across calls — the
+// master analogue of filerPool. A Conn is concurrency-safe, so this avoids a
+// fresh TCP (and, under grpc.master mTLS, a fresh X25519MLKEM768 handshake) on
+// every master RPC.
+var masterPool = transport.NewPool(dialMasterZapAddr)
 
 func WithGrpcFilerClient(streamingMode bool, signature int32, filerAddress ServerAddress, grpcDialOption grpc.DialOption, fn func(client filer_pb.HanzoFilerClient) error) error {
 	_, _, _ = streamingMode, signature, grpcDialOption

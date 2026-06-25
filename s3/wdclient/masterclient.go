@@ -45,6 +45,24 @@ func isCanceledErr(err error) bool {
 	return false
 }
 
+// isUnavailableErr reports whether err signals a transient "master unavailable"
+// condition (e.g. master warming up after restart), retried by LookupVolumeIds.
+// The master service is served over the native ZAP transport, which carries only
+// the error's string — the gRPC status Code does not survive the wire. So this
+// recognizes Unavailable both as a gRPC status (the in-process / locally
+// generated path, e.g. "no master available") AND as the ZAP-transported error
+// string. This mirrors the filer's ErrNotFound string match across the same
+// transport.
+func isUnavailableErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	if st, ok := status.FromError(err); ok && st.Code() == codes.Unavailable {
+		return true
+	}
+	return strings.Contains(err.Error(), codes.Unavailable.String())
+}
+
 // LookupVolumeIds queries the master for volume locations (fallback when cache misses).
 // Returns partial results with aggregated errors for volumes that failed.
 // Retries on codes.Unavailable (e.g. master warming up after restart) with backoff.
@@ -55,10 +73,7 @@ func (p *masterVolumeProvider) LookupVolumeIds(ctx context.Context, volumeIds []
 	glog.V(2).Infof("Looking up %d volumes from master: %v", len(volumeIds), volumeIds)
 
 	retryErr := util.RetryWithBackoff(ctx, "lookup", 30*time.Second,
-		func(err error) bool {
-			st, ok := status.FromError(err)
-			return ok && st.Code() == codes.Unavailable
-		},
+		isUnavailableErr,
 		func() error {
 			result = make(map[string][]Location)
 			lookupErrors = nil
@@ -403,11 +418,13 @@ func (mc *MasterClient) WithClientCustomGetMaster(getMasterF func() pb.ServerAdd
 
 // WithZapClient runs fn against the master's native ZAP transport client,
 // dialing the current master's ZAP endpoint (grpcPort+10000) over zap-proto.
-// This is the strangler client path for the unary RPCs already bridged to ZAP
-// (see server.NewMasterZapBackend); the gRPC WithClient path above still serves
-// the not-yet-bridged RPCs (nested-topology, raft, streaming). The connection
-// is dialed per call and closed on return — the master ZAP server is cheap to
-// reconnect and this keeps the shim free of connection-cache state.
+// It exposes the low-level *masterwire.Client directly (the masterwire typed
+// helpers) for callers that want it without the master_pb.HanzoClient shim —
+// e.g. the master-to-master Ping liveness probes. WithClient above is the
+// higher-level path: it also rides ZAP now (pb.WithMasterClient), wrapping the
+// pooled connection as a master_pb.HanzoClient. The connection here is dialed
+// per call and closed on return — the master ZAP server is cheap to reconnect
+// and this keeps the helper free of connection-cache state.
 func (mc *MasterClient) WithZapClient(fn func(client *masterwire.Client) error) error {
 	return util.Retry("master zap", func() error {
 		master := mc.GetMaster(context.Background())

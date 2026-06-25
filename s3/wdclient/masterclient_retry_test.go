@@ -9,8 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hanzoai/s3/s3/masterzap"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
+	masterwire "github.com/hanzoai/s3/s3/wire/master"
+	masterstream "github.com/hanzoai/s3/s3/wire/master/masterstream"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -41,19 +45,27 @@ func (s *fakeLookupServer) LookupVolume(_ context.Context, req *master_pb.Lookup
 	return resp, nil
 }
 
+// startFakeMasterServer stands up the fake master over the native ZAP transport
+// (the master service is ZAP-only now — see command/master.go), then returns a
+// master ServerAddress whose ToMasterZapAddress resolves to the live listener.
+// The master client derives the ZAP port as grpcPort+10000, so the address
+// encodes grpcPort = (live ZAP port - 10000); ToMasterZapAddress adds 10000 back
+// to reach the listener.
 func startFakeMasterServer(t *testing.T, srv master_pb.HanzoServer) pb.ServerAddress {
 	t.Helper()
-	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	zapSrv, err := transport.ListenStream("tcp", "127.0.0.1:0",
+		masterwire.Dispatch(masterzap.NewServerBackend(srv)),
+		masterstream.Handler(masterzap.NewStreamServer(srv)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
-	grpcServer := grpc.NewServer()
-	master_pb.RegisterHanzoServer(grpcServer, srv)
-	go func() { _ = grpcServer.Serve(lis) }()
-	t.Cleanup(grpcServer.GracefulStop)
+	t.Cleanup(func() { _ = zapSrv.Close() })
 
-	_, port, _ := net.SplitHostPort(lis.Addr().String())
-	return pb.ServerAddress(fmt.Sprintf("127.0.0.1:0.%s", port))
+	_, zapPortStr, _ := net.SplitHostPort(zapSrv.Addr().String())
+	var zapPort int
+	fmt.Sscanf(zapPortStr, "%d", &zapPort)
+	grpcPort := zapPort - 10000
+	return pb.ServerAddress(fmt.Sprintf("127.0.0.1:0.%d", grpcPort))
 }
 
 func TestLookupVolumeIdsRetriesOnUnavailable(t *testing.T) {
