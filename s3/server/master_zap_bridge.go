@@ -1,37 +1,37 @@
 // Copyright (C) 2026, Lux Industries Inc. All rights reserved.
 // See the file LICENSE for licensing terms.
 //
-// masterZapBridge adapts the existing *MasterServer gRPC handlers to the
-// native ZAP masterwire.Backend contract, so the master serves its unary RPCs
-// over the canonical zap-proto transport (grpcPort+10000) alongside the legacy
-// gRPC listener. This is the strangler bridge: scalar-shaped unary RPCs are
-// decoded from their ZAP request buffer, threaded through the unchanged
-// (ctx,*pb.Req)->(*pb.Resp,err) handler, then re-encoded as the ZAP response.
+// masterZapBridge adapts the existing *MasterServer handlers to the native ZAP
+// masterwire.Backend contract, so the master serves its unary RPCs over the
+// canonical zap-proto transport. Each unary RPC is decoded from its ZAP request
+// buffer (masterzap.<Rpc>ReqFromWire), threaded through the unchanged
+// (ctx,*pb.Req)->(*pb.Resp,err) handler, then re-encoded as the ZAP response
+// (masterzap.<Rpc>RespToWire). The three bidi streams are served separately by
+// masterZapStream (master_zap_stream.go) over the same listener.
 //
-// NOT bridged here (still served only over gRPC until their wire converters /
-// stream transport land — masterwire returns an explicit error so a caller that
-// dials ZAP for them fails loudly instead of silently degrading):
-//   - nested-topology unary: LookupVolume, Assign, VolumeList, LookupEcVolume,
-//     ListClusterNodes, CollectionList, GetMasterConfiguration (carry pb message
-//     trees with no masterwire New* counterpart yet).
+// NOT bridged here:
 //   - raft membership: RaftListClusterServers/AddServer/RemoveServer/
 //     LeadershipTransfer (entangled with the raftServer; consensus migration is
-//     separate — see consensus_server.go).
-//   - streaming: SendHeartbeat, KeepConnected, StreamAssign (transport stream
-//     primitive not wired for master).
+//     separate — see consensus_server.go). These ride the gRPC raft listener.
+//   - streaming dispatch: SendHeartbeat/KeepConnected/StreamAssign are served by
+//     masterstream.Handler, NOT this unary Backend; the methods below exist only
+//     to satisfy masterwire.Backend and must never be reached over the unary
+//     path.
 package s3server
 
 import (
 	"context"
 	"errors"
 
+	"github.com/hanzoai/s3/s3/masterzap"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
 )
 
-// errZapNotBridged marks a master RPC that is not yet served over the ZAP
-// transport. Clients for these RPCs stay on the gRPC path during the strangler.
-var errZapNotBridged = errors.New("masterzap: RPC not bridged to ZAP yet (served over gRPC)")
+// errZapUnaryStream guards the streaming ordinals on the unary Backend: those
+// RPCs are served by masterstream.Handler, so reaching them here is a wiring
+// bug, not a runtime path.
+var errZapUnaryStream = errors.New("masterzap: streaming RPC must be served via masterstream.Handler, not the unary Backend")
 
 // masterZapBridge implements masterwire.Backend by delegating to the live
 // *MasterServer handlers.
@@ -40,33 +40,147 @@ type masterZapBridge struct{ ms *MasterServer }
 // NewMasterZapBackend returns the masterwire.Backend backed by ms.
 func NewMasterZapBackend(ms *MasterServer) masterwire.Backend { return masterZapBridge{ms: ms} }
 
-// --- streaming (not wired) ---
+// --- streaming (served by masterstream.Handler, never the unary path) ---
 
-func (z masterZapBridge) SendHeartbeat(req []byte) ([]byte, error) { return nil, errZapNotBridged }
-func (z masterZapBridge) KeepConnected(req []byte) ([]byte, error) { return nil, errZapNotBridged }
-func (z masterZapBridge) StreamAssign(req []byte) ([]byte, error)  { return nil, errZapNotBridged }
+func (z masterZapBridge) SendHeartbeat(req []byte) ([]byte, error) { return nil, errZapUnaryStream }
+func (z masterZapBridge) KeepConnected(req []byte) ([]byte, error) { return nil, errZapUnaryStream }
+func (z masterZapBridge) StreamAssign(req []byte) ([]byte, error)  { return nil, errZapUnaryStream }
 
-// --- nested-topology unary (not bridged yet) ---
+// --- nested-message unary ---
 
-func (z masterZapBridge) LookupVolume(req []byte) ([]byte, error)   { return nil, errZapNotBridged }
-func (z masterZapBridge) Assign(req []byte) ([]byte, error)         { return nil, errZapNotBridged }
-func (z masterZapBridge) VolumeList(req []byte) ([]byte, error)     { return nil, errZapNotBridged }
-func (z masterZapBridge) LookupEcVolume(req []byte) ([]byte, error) { return nil, errZapNotBridged }
-func (z masterZapBridge) CollectionList(req []byte) ([]byte, error) { return nil, errZapNotBridged }
-func (z masterZapBridge) GetMasterConfiguration(req []byte) ([]byte, error) {
-	return nil, errZapNotBridged
+func (z masterZapBridge) LookupVolume(req []byte) ([]byte, error) {
+	in, err := masterzap.LookupVolumeReqFromWire(req)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := z.ms.LookupVolume(context.Background(), in)
+	if err != nil {
+		return nil, err
+	}
+	return masterzap.LookupVolumeRespToWire(resp), nil
 }
-func (z masterZapBridge) ListClusterNodes(req []byte) ([]byte, error) { return nil, errZapNotBridged }
 
-// --- raft membership (consensus migration is separate) ---
+func (z masterZapBridge) Assign(req []byte) ([]byte, error) {
+	in, err := masterzap.AssignReqFromWire(req)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := z.ms.Assign(context.Background(), in)
+	if err != nil {
+		return nil, err
+	}
+	return masterzap.AssignRespToWire(resp), nil
+}
+
+func (z masterZapBridge) VolumeList(req []byte) ([]byte, error) {
+	in, err := masterzap.VolumeListReqFromWire(req)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := z.ms.VolumeList(context.Background(), in)
+	if err != nil {
+		return nil, err
+	}
+	return masterzap.VolumeListRespToWire(resp), nil
+}
+
+func (z masterZapBridge) LookupEcVolume(req []byte) ([]byte, error) {
+	in, err := masterzap.LookupEcVolumeReqFromWire(req)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := z.ms.LookupEcVolume(context.Background(), in)
+	if err != nil {
+		return nil, err
+	}
+	return masterzap.LookupEcVolumeRespToWire(resp), nil
+}
+
+func (z masterZapBridge) CollectionList(req []byte) ([]byte, error) {
+	in, err := masterzap.CollectionListReqFromWire(req)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := z.ms.CollectionList(context.Background(), in)
+	if err != nil {
+		return nil, err
+	}
+	return masterzap.CollectionListRespToWire(resp), nil
+}
+
+func (z masterZapBridge) GetMasterConfiguration(req []byte) ([]byte, error) {
+	in, err := masterzap.GetMasterConfigurationReqFromWire(req)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := z.ms.GetMasterConfiguration(context.Background(), in)
+	if err != nil {
+		return nil, err
+	}
+	return masterzap.GetMasterConfigurationRespToWire(resp), nil
+}
+
+func (z masterZapBridge) ListClusterNodes(req []byte) ([]byte, error) {
+	in, err := masterzap.ListClusterNodesReqFromWire(req)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := z.ms.ListClusterNodes(context.Background(), in)
+	if err != nil {
+		return nil, err
+	}
+	return masterzap.ListClusterNodesRespToWire(resp), nil
+}
+
+// --- raft membership admin RPCs (the gRPC listener carries only the
+//     seaweedfs/raft transport; these admin calls answer over ZAP) ---
 
 func (z masterZapBridge) RaftListClusterServers(req []byte) ([]byte, error) {
-	return nil, errZapNotBridged
+	in, err := masterzap.RaftListClusterServersReqFromWire(req)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := z.ms.RaftListClusterServers(context.Background(), in)
+	if err != nil {
+		return nil, err
+	}
+	return masterzap.RaftListClusterServersRespToWire(resp), nil
 }
-func (z masterZapBridge) RaftAddServer(req []byte) ([]byte, error)    { return nil, errZapNotBridged }
-func (z masterZapBridge) RaftRemoveServer(req []byte) ([]byte, error) { return nil, errZapNotBridged }
+
+func (z masterZapBridge) RaftAddServer(req []byte) ([]byte, error) {
+	in, err := masterzap.RaftAddServerReqFromWire(req)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := z.ms.RaftAddServer(context.Background(), in)
+	if err != nil {
+		return nil, err
+	}
+	return masterzap.RaftAddServerRespToWire(resp), nil
+}
+
+func (z masterZapBridge) RaftRemoveServer(req []byte) ([]byte, error) {
+	in, err := masterzap.RaftRemoveServerReqFromWire(req)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := z.ms.RaftRemoveServer(context.Background(), in)
+	if err != nil {
+		return nil, err
+	}
+	return masterzap.RaftRemoveServerRespToWire(resp), nil
+}
+
 func (z masterZapBridge) RaftLeadershipTransfer(req []byte) ([]byte, error) {
-	return nil, errZapNotBridged
+	in, err := masterzap.RaftLeadershipTransferReqFromWire(req)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := z.ms.RaftLeadershipTransfer(context.Background(), in)
+	if err != nil {
+		return nil, err
+	}
+	return masterzap.RaftLeadershipTransferRespToWire(resp), nil
 }
 
 // --- scalar-shaped unary (bridged) ---

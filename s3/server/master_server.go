@@ -33,10 +33,10 @@ import (
 	"github.com/hanzoai/s3/s3/shell"
 	"github.com/hanzoai/s3/s3/topology"
 	"github.com/hanzoai/s3/s3/util"
-	masterwire "github.com/hanzoai/s3/s3/wire/master"
 	util_http "github.com/hanzoai/s3/s3/util/http"
 	"github.com/hanzoai/s3/s3/util/version"
 	"github.com/hanzoai/s3/s3/wdclient"
+	masterwire "github.com/hanzoai/s3/s3/wire/master"
 )
 
 const (
@@ -65,7 +65,6 @@ type MasterOption struct {
 }
 
 type MasterServer struct {
-	master_pb.UnimplementedHanzoServer
 	option *MasterOption
 	guard  *security.Guard
 

@@ -11,6 +11,7 @@ import (
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/rpc"
 
 	"github.com/zap-proto/go/transport"
 )
@@ -39,7 +40,7 @@ type streamMutateMux struct {
 	wfs *WFS
 
 	mu         sync.Mutex // protects stream, cancel, conn, closed, stopSend, generation
-	stream     filer_pb.HanzoFiler_StreamMutateEntryClient
+	stream     rpc.BidiStream[filer_pb.StreamMutateEntryRequest, filer_pb.StreamMutateEntryResponse]
 	cancel     context.CancelFunc
 	conn       transport.Conn // dedicated ZAP connection, closed on stream teardown
 	closed     bool
@@ -280,7 +281,7 @@ func (m *streamMutateMux) ensureStream() (uint64, error) {
 		}
 	}
 
-	var stream filer_pb.HanzoFiler_StreamMutateEntryClient
+	var stream rpc.BidiStream[filer_pb.StreamMutateEntryRequest, filer_pb.StreamMutateEntryResponse]
 	err := m.openStream(&stream)
 	if err != nil {
 		return 0, err
@@ -297,7 +298,7 @@ func (m *streamMutateMux) ensureStream() (uint64, error) {
 	return gen, nil
 }
 
-func (m *streamMutateMux) openStream(out *filer_pb.HanzoFiler_StreamMutateEntryClient) error {
+func (m *streamMutateMux) openStream(out *rpc.BidiStream[filer_pb.StreamMutateEntryRequest, filer_pb.StreamMutateEntryResponse]) error {
 	i := atomic.LoadInt32(&m.wfs.option.filerIndex)
 	n := int32(len(m.wfs.option.FilerAddresses))
 	var lastErr error
@@ -331,7 +332,7 @@ func (m *streamMutateMux) openStream(out *filer_pb.HanzoFiler_StreamMutateEntryC
 	return lastErr
 }
 
-func (m *streamMutateMux) sendLoop(stream filer_pb.HanzoFiler_StreamMutateEntryClient, stop <-chan struct{}, gen uint64) {
+func (m *streamMutateMux) sendLoop(stream rpc.BidiStream[filer_pb.StreamMutateEntryRequest, filer_pb.StreamMutateEntryResponse], stop <-chan struct{}, gen uint64) {
 	defer m.drainSendCh()
 	for {
 		select {
@@ -355,7 +356,7 @@ func (m *streamMutateMux) sendLoop(stream filer_pb.HanzoFiler_StreamMutateEntryC
 	}
 }
 
-func (m *streamMutateMux) recvLoop(stream filer_pb.HanzoFiler_StreamMutateEntryClient, gen uint64, recvDone chan struct{}) {
+func (m *streamMutateMux) recvLoop(stream rpc.BidiStream[filer_pb.StreamMutateEntryRequest, filer_pb.StreamMutateEntryResponse], gen uint64, recvDone chan struct{}) {
 	defer func() {
 		m.failAllPending()
 		close(recvDone)

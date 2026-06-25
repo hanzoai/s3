@@ -234,32 +234,25 @@ func (h *Handler) Execute(ctx context.Context, request *plugin_pb.ExecuteJobRequ
 		Message: fmt.Sprintf("scheduler workers=%d s3=%v", cfg.Workers, s3Endpoints),
 	})
 
-	dialCtx, dialCancel := context.WithTimeout(runCtx, 30*time.Second)
-	filerConn, err := pb.GrpcDial(dialCtx, filerAddress, false, h.grpcDialOption)
-	dialCancel()
-	if err != nil {
-		return fmt.Errorf("dial filer %s: %w", filerAddress, err)
-	}
-	defer filerConn.Close()
-	filerClient := filer_pb.NewHanzoFilerClient(filerConn)
+	return pb.WithFilerClient(false, 0, pb.ServerAddress(pb.GrpcAddressToServerAddress(filerAddress)), h.grpcDialOption, func(filerClient filer_pb.HanzoFilerClient) error {
+		bucketsPath, err := lookupBucketsPath(runCtx, filerClient)
+		if err != nil {
+			return fmt.Errorf("buckets path: %w", err)
+		}
 
-	bucketsPath, err := lookupBucketsPath(runCtx, filerClient)
-	if err != nil {
-		return fmt.Errorf("buckets path: %w", err)
-	}
+		s3Conn, err := transport.Dial("tcp", s3Endpoints[0])
+		if err != nil {
+			return fmt.Errorf("dial s3 %s: %w", s3Endpoints[0], err)
+		}
+		defer s3Conn.Close()
+		rpc := s3_lifecyclewire.NewClient(s3Conn)
 
-	s3Conn, err := transport.Dial("tcp", s3Endpoints[0])
-	if err != nil {
-		return fmt.Errorf("dial s3 %s: %w", s3Endpoints[0], err)
-	}
-	defer s3Conn.Close()
-	rpc := s3_lifecyclewire.NewClient(s3Conn)
+		if err := h.executeDailyReplay(runCtx, request, bucketsPath, filerClient, rpc, cfg, sender); err != nil {
+			return err
+		}
 
-	if err := h.executeDailyReplay(runCtx, request, bucketsPath, filerClient, rpc, cfg, sender); err != nil {
-		return err
-	}
-
-	return sendSuccessCompletion(request, sender)
+		return sendSuccessCompletion(request, sender)
+	})
 }
 
 const dailyReplaySuccessSummary = "s3 lifecycle daily replay completed"

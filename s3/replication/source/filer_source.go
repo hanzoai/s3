@@ -149,10 +149,7 @@ var _ = filer_pb.FilerClient(&FilerSource{})
 
 func (fs *FilerSource) WithFilerClient(streamingMode bool, fn func(filer_pb.HanzoFilerClient) error) error {
 
-	return pb.WithGrpcClient(context.Background(), streamingMode, fs.signature, func(grpcConnection *grpc.ClientConn) error {
-		client := filer_pb.NewHanzoFilerClient(grpcConnection)
-		return fn(client)
-	}, fs.grpcAddress, false, fs.grpcDialOption)
+	return pb.WithFilerClient(streamingMode, fs.signature, pb.ServerAddress(fs.address), fs.grpcDialOption, fn)
 
 }
 

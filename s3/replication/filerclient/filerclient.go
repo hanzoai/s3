@@ -11,8 +11,8 @@
 //     Call channel), translating *filer_pb.<Rpc>Request <-> ZAP buffer <->
 //     *filer_pb.<Rpc>Response with the filerzap converters;
 //   - the 6 streaming RPCs open a transport stream via the filerstream client
-//     and return a grpc.ServerStreamingClient / grpc.BidiStreamingClient whose
-//     Recv()/Send() decode/encode each frame with the same filerzap converters.
+//     and return an rpc.ServerStream / rpc.BidiStream whose Recv()/Send()
+//     decode/encode each frame with the same filerzap converters.
 //
 // Because the adapter satisfies filer_pb.HanzoFilerClient, no replication call
 // site changes: callers keep building *filer_pb requests and reading *filer_pb
@@ -30,11 +30,9 @@ import (
 	"context"
 	"io"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
-
 	"github.com/hanzoai/s3/s3/filerzap"
 	filer_pb "github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/rpc"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	filerstream "github.com/hanzoai/s3/s3/wire/filer/filerstream"
 
@@ -65,7 +63,7 @@ var _ filer_pb.HanzoFilerClient = (*adapter)(nil)
 
 // --- unary RPCs ------------------------------------------------------------
 
-func (a *adapter) LookupDirectoryEntry(_ context.Context, in *filer_pb.LookupDirectoryEntryRequest, _ ...grpc.CallOption) (*filer_pb.LookupDirectoryEntryResponse, error) {
+func (a *adapter) LookupDirectoryEntry(_ context.Context, in *filer_pb.LookupDirectoryEntryRequest) (*filer_pb.LookupDirectoryEntryResponse, error) {
 	_, body, err := a.unary.LookupDirectoryEntry(filerzap.LookupDirectoryEntryReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -73,7 +71,7 @@ func (a *adapter) LookupDirectoryEntry(_ context.Context, in *filer_pb.LookupDir
 	return filerzap.LookupDirectoryEntryRespFromWire(body)
 }
 
-func (a *adapter) CreateEntry(_ context.Context, in *filer_pb.CreateEntryRequest, _ ...grpc.CallOption) (*filer_pb.CreateEntryResponse, error) {
+func (a *adapter) CreateEntry(_ context.Context, in *filer_pb.CreateEntryRequest) (*filer_pb.CreateEntryResponse, error) {
 	_, body, err := a.unary.CreateEntry(filerzap.CreateEntryReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -81,7 +79,7 @@ func (a *adapter) CreateEntry(_ context.Context, in *filer_pb.CreateEntryRequest
 	return filerzap.CreateEntryRespFromWire(body)
 }
 
-func (a *adapter) UpdateEntry(_ context.Context, in *filer_pb.UpdateEntryRequest, _ ...grpc.CallOption) (*filer_pb.UpdateEntryResponse, error) {
+func (a *adapter) UpdateEntry(_ context.Context, in *filer_pb.UpdateEntryRequest) (*filer_pb.UpdateEntryResponse, error) {
 	_, body, err := a.unary.UpdateEntry(filerzap.UpdateEntryReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -89,7 +87,7 @@ func (a *adapter) UpdateEntry(_ context.Context, in *filer_pb.UpdateEntryRequest
 	return filerzap.UpdateEntryRespFromWire(body)
 }
 
-func (a *adapter) TouchAccessTime(_ context.Context, in *filer_pb.TouchAccessTimeRequest, _ ...grpc.CallOption) (*filer_pb.TouchAccessTimeResponse, error) {
+func (a *adapter) TouchAccessTime(_ context.Context, in *filer_pb.TouchAccessTimeRequest) (*filer_pb.TouchAccessTimeResponse, error) {
 	_, body, err := a.unary.TouchAccessTime(filerzap.TouchAccessTimeReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -97,7 +95,7 @@ func (a *adapter) TouchAccessTime(_ context.Context, in *filer_pb.TouchAccessTim
 	return filerzap.TouchAccessTimeRespFromWire(body)
 }
 
-func (a *adapter) AppendToEntry(_ context.Context, in *filer_pb.AppendToEntryRequest, _ ...grpc.CallOption) (*filer_pb.AppendToEntryResponse, error) {
+func (a *adapter) AppendToEntry(_ context.Context, in *filer_pb.AppendToEntryRequest) (*filer_pb.AppendToEntryResponse, error) {
 	_, body, err := a.unary.AppendToEntry(filerzap.AppendToEntryReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -105,7 +103,7 @@ func (a *adapter) AppendToEntry(_ context.Context, in *filer_pb.AppendToEntryReq
 	return filerzap.AppendToEntryRespFromWire(body)
 }
 
-func (a *adapter) DeleteEntry(_ context.Context, in *filer_pb.DeleteEntryRequest, _ ...grpc.CallOption) (*filer_pb.DeleteEntryResponse, error) {
+func (a *adapter) DeleteEntry(_ context.Context, in *filer_pb.DeleteEntryRequest) (*filer_pb.DeleteEntryResponse, error) {
 	_, body, err := a.unary.DeleteEntry(filerzap.DeleteEntryReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -113,7 +111,7 @@ func (a *adapter) DeleteEntry(_ context.Context, in *filer_pb.DeleteEntryRequest
 	return filerzap.DeleteEntryRespFromWire(body)
 }
 
-func (a *adapter) ObjectTransaction(_ context.Context, in *filer_pb.ObjectTransactionRequest, _ ...grpc.CallOption) (*filer_pb.ObjectTransactionResponse, error) {
+func (a *adapter) ObjectTransaction(_ context.Context, in *filer_pb.ObjectTransactionRequest) (*filer_pb.ObjectTransactionResponse, error) {
 	_, body, err := a.unary.ObjectTransaction(filerzap.ObjectTransactionReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -121,7 +119,7 @@ func (a *adapter) ObjectTransaction(_ context.Context, in *filer_pb.ObjectTransa
 	return filerzap.ObjectTransactionRespFromWire(body)
 }
 
-func (a *adapter) ObjectTransactionBatch(_ context.Context, in *filer_pb.ObjectTransactionBatchRequest, _ ...grpc.CallOption) (*filer_pb.ObjectTransactionBatchResponse, error) {
+func (a *adapter) ObjectTransactionBatch(_ context.Context, in *filer_pb.ObjectTransactionBatchRequest) (*filer_pb.ObjectTransactionBatchResponse, error) {
 	_, body, err := a.unary.ObjectTransactionBatch(filerzap.ObjectTransactionBatchReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -129,7 +127,7 @@ func (a *adapter) ObjectTransactionBatch(_ context.Context, in *filer_pb.ObjectT
 	return filerzap.ObjectTransactionBatchRespFromWire(body)
 }
 
-func (a *adapter) PosixLock(_ context.Context, in *filer_pb.PosixLockRequest, _ ...grpc.CallOption) (*filer_pb.PosixLockResponse, error) {
+func (a *adapter) PosixLock(_ context.Context, in *filer_pb.PosixLockRequest) (*filer_pb.PosixLockResponse, error) {
 	_, body, err := a.unary.PosixLock(filerzap.PosixLockReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -137,7 +135,7 @@ func (a *adapter) PosixLock(_ context.Context, in *filer_pb.PosixLockRequest, _ 
 	return filerzap.PosixLockRespFromWire(body)
 }
 
-func (a *adapter) AtomicRenameEntry(_ context.Context, in *filer_pb.AtomicRenameEntryRequest, _ ...grpc.CallOption) (*filer_pb.AtomicRenameEntryResponse, error) {
+func (a *adapter) AtomicRenameEntry(_ context.Context, in *filer_pb.AtomicRenameEntryRequest) (*filer_pb.AtomicRenameEntryResponse, error) {
 	_, body, err := a.unary.AtomicRenameEntry(filerzap.AtomicRenameEntryReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -145,7 +143,7 @@ func (a *adapter) AtomicRenameEntry(_ context.Context, in *filer_pb.AtomicRename
 	return filerzap.AtomicRenameEntryRespFromWire(body)
 }
 
-func (a *adapter) AssignVolume(_ context.Context, in *filer_pb.AssignVolumeRequest, _ ...grpc.CallOption) (*filer_pb.AssignVolumeResponse, error) {
+func (a *adapter) AssignVolume(_ context.Context, in *filer_pb.AssignVolumeRequest) (*filer_pb.AssignVolumeResponse, error) {
 	_, body, err := a.unary.AssignVolume(filerzap.AssignVolumeReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -153,7 +151,7 @@ func (a *adapter) AssignVolume(_ context.Context, in *filer_pb.AssignVolumeReque
 	return filerzap.AssignVolumeRespFromWire(body)
 }
 
-func (a *adapter) LookupVolume(_ context.Context, in *filer_pb.LookupVolumeRequest, _ ...grpc.CallOption) (*filer_pb.LookupVolumeResponse, error) {
+func (a *adapter) LookupVolume(_ context.Context, in *filer_pb.LookupVolumeRequest) (*filer_pb.LookupVolumeResponse, error) {
 	_, body, err := a.unary.LookupVolume(filerzap.LookupVolumeReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -161,7 +159,7 @@ func (a *adapter) LookupVolume(_ context.Context, in *filer_pb.LookupVolumeReque
 	return filerzap.LookupVolumeRespFromWire(body)
 }
 
-func (a *adapter) CollectionList(_ context.Context, in *filer_pb.CollectionListRequest, _ ...grpc.CallOption) (*filer_pb.CollectionListResponse, error) {
+func (a *adapter) CollectionList(_ context.Context, in *filer_pb.CollectionListRequest) (*filer_pb.CollectionListResponse, error) {
 	_, body, err := a.unary.CollectionList(filerzap.CollectionListReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -169,7 +167,7 @@ func (a *adapter) CollectionList(_ context.Context, in *filer_pb.CollectionListR
 	return filerzap.CollectionListRespFromWire(body)
 }
 
-func (a *adapter) DeleteCollection(_ context.Context, in *filer_pb.DeleteCollectionRequest, _ ...grpc.CallOption) (*filer_pb.DeleteCollectionResponse, error) {
+func (a *adapter) DeleteCollection(_ context.Context, in *filer_pb.DeleteCollectionRequest) (*filer_pb.DeleteCollectionResponse, error) {
 	_, body, err := a.unary.DeleteCollection(filerzap.DeleteCollectionReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -177,7 +175,7 @@ func (a *adapter) DeleteCollection(_ context.Context, in *filer_pb.DeleteCollect
 	return filerzap.DeleteCollectionRespFromWire(body)
 }
 
-func (a *adapter) Statistics(_ context.Context, in *filer_pb.StatisticsRequest, _ ...grpc.CallOption) (*filer_pb.StatisticsResponse, error) {
+func (a *adapter) Statistics(_ context.Context, in *filer_pb.StatisticsRequest) (*filer_pb.StatisticsResponse, error) {
 	_, body, err := a.unary.Statistics(filerzap.StatisticsReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -185,7 +183,7 @@ func (a *adapter) Statistics(_ context.Context, in *filer_pb.StatisticsRequest, 
 	return filerzap.StatisticsRespFromWire(body)
 }
 
-func (a *adapter) Ping(_ context.Context, in *filer_pb.PingRequest, _ ...grpc.CallOption) (*filer_pb.PingResponse, error) {
+func (a *adapter) Ping(_ context.Context, in *filer_pb.PingRequest) (*filer_pb.PingResponse, error) {
 	_, body, err := a.unary.Ping(filerzap.PingReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -193,7 +191,7 @@ func (a *adapter) Ping(_ context.Context, in *filer_pb.PingRequest, _ ...grpc.Ca
 	return filerzap.PingRespFromWire(body)
 }
 
-func (a *adapter) GetFilerConfiguration(_ context.Context, in *filer_pb.GetFilerConfigurationRequest, _ ...grpc.CallOption) (*filer_pb.GetFilerConfigurationResponse, error) {
+func (a *adapter) GetFilerConfiguration(_ context.Context, in *filer_pb.GetFilerConfigurationRequest) (*filer_pb.GetFilerConfigurationResponse, error) {
 	_, body, err := a.unary.GetFilerConfiguration(filerzap.GetFilerConfigurationReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -201,7 +199,7 @@ func (a *adapter) GetFilerConfiguration(_ context.Context, in *filer_pb.GetFiler
 	return filerzap.GetFilerConfigurationRespFromWire(body)
 }
 
-func (a *adapter) ListMetadataSubscribers(_ context.Context, in *filer_pb.ListMetadataSubscribersRequest, _ ...grpc.CallOption) (*filer_pb.ListMetadataSubscribersResponse, error) {
+func (a *adapter) ListMetadataSubscribers(_ context.Context, in *filer_pb.ListMetadataSubscribersRequest) (*filer_pb.ListMetadataSubscribersResponse, error) {
 	_, body, err := a.unary.ListMetadataSubscribers(filerzap.ListMetadataSubscribersReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -209,7 +207,7 @@ func (a *adapter) ListMetadataSubscribers(_ context.Context, in *filer_pb.ListMe
 	return filerzap.ListMetadataSubscribersRespFromWire(body)
 }
 
-func (a *adapter) KvGet(_ context.Context, in *filer_pb.KvGetRequest, _ ...grpc.CallOption) (*filer_pb.KvGetResponse, error) {
+func (a *adapter) KvGet(_ context.Context, in *filer_pb.KvGetRequest) (*filer_pb.KvGetResponse, error) {
 	_, body, err := a.unary.KvGet(filerzap.KvGetReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -217,7 +215,7 @@ func (a *adapter) KvGet(_ context.Context, in *filer_pb.KvGetRequest, _ ...grpc.
 	return filerzap.KvGetRespFromWire(body)
 }
 
-func (a *adapter) KvPut(_ context.Context, in *filer_pb.KvPutRequest, _ ...grpc.CallOption) (*filer_pb.KvPutResponse, error) {
+func (a *adapter) KvPut(_ context.Context, in *filer_pb.KvPutRequest) (*filer_pb.KvPutResponse, error) {
 	_, body, err := a.unary.KvPut(filerzap.KvPutReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -225,7 +223,7 @@ func (a *adapter) KvPut(_ context.Context, in *filer_pb.KvPutRequest, _ ...grpc.
 	return filerzap.KvPutRespFromWire(body)
 }
 
-func (a *adapter) CacheRemoteObjectToLocalCluster(_ context.Context, in *filer_pb.CacheRemoteObjectToLocalClusterRequest, _ ...grpc.CallOption) (*filer_pb.CacheRemoteObjectToLocalClusterResponse, error) {
+func (a *adapter) CacheRemoteObjectToLocalCluster(_ context.Context, in *filer_pb.CacheRemoteObjectToLocalClusterRequest) (*filer_pb.CacheRemoteObjectToLocalClusterResponse, error) {
 	_, body, err := a.unary.CacheRemoteObjectToLocalCluster(filerzap.CacheRemoteObjectToLocalClusterReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -233,7 +231,7 @@ func (a *adapter) CacheRemoteObjectToLocalCluster(_ context.Context, in *filer_p
 	return filerzap.CacheRemoteObjectToLocalClusterRespFromWire(body)
 }
 
-func (a *adapter) DistributedLock(_ context.Context, in *filer_pb.LockRequest, _ ...grpc.CallOption) (*filer_pb.LockResponse, error) {
+func (a *adapter) DistributedLock(_ context.Context, in *filer_pb.LockRequest) (*filer_pb.LockResponse, error) {
 	_, body, err := a.unary.DistributedLock(filerzap.DistributedLockReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -241,7 +239,7 @@ func (a *adapter) DistributedLock(_ context.Context, in *filer_pb.LockRequest, _
 	return filerzap.DistributedLockRespFromWire(body)
 }
 
-func (a *adapter) DistributedUnlock(_ context.Context, in *filer_pb.UnlockRequest, _ ...grpc.CallOption) (*filer_pb.UnlockResponse, error) {
+func (a *adapter) DistributedUnlock(_ context.Context, in *filer_pb.UnlockRequest) (*filer_pb.UnlockResponse, error) {
 	_, body, err := a.unary.DistributedUnlock(filerzap.DistributedUnlockReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -249,7 +247,7 @@ func (a *adapter) DistributedUnlock(_ context.Context, in *filer_pb.UnlockReques
 	return filerzap.DistributedUnlockRespFromWire(body)
 }
 
-func (a *adapter) FindLockOwner(_ context.Context, in *filer_pb.FindLockOwnerRequest, _ ...grpc.CallOption) (*filer_pb.FindLockOwnerResponse, error) {
+func (a *adapter) FindLockOwner(_ context.Context, in *filer_pb.FindLockOwnerRequest) (*filer_pb.FindLockOwnerResponse, error) {
 	_, body, err := a.unary.FindLockOwner(filerzap.FindLockOwnerReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -257,7 +255,7 @@ func (a *adapter) FindLockOwner(_ context.Context, in *filer_pb.FindLockOwnerReq
 	return filerzap.FindLockOwnerRespFromWire(body)
 }
 
-func (a *adapter) TransferLocks(_ context.Context, in *filer_pb.TransferLocksRequest, _ ...grpc.CallOption) (*filer_pb.TransferLocksResponse, error) {
+func (a *adapter) TransferLocks(_ context.Context, in *filer_pb.TransferLocksRequest) (*filer_pb.TransferLocksResponse, error) {
 	_, body, err := a.unary.TransferLocks(filerzap.TransferLocksReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -265,7 +263,7 @@ func (a *adapter) TransferLocks(_ context.Context, in *filer_pb.TransferLocksReq
 	return filerzap.TransferLocksRespFromWire(body)
 }
 
-func (a *adapter) ReplicateLock(_ context.Context, in *filer_pb.ReplicateLockRequest, _ ...grpc.CallOption) (*filer_pb.ReplicateLockResponse, error) {
+func (a *adapter) ReplicateLock(_ context.Context, in *filer_pb.ReplicateLockRequest) (*filer_pb.ReplicateLockResponse, error) {
 	_, body, err := a.unary.ReplicateLock(filerzap.ReplicateLockReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -273,7 +271,7 @@ func (a *adapter) ReplicateLock(_ context.Context, in *filer_pb.ReplicateLockReq
 	return filerzap.ReplicateLockRespFromWire(body)
 }
 
-func (a *adapter) MountRegister(_ context.Context, in *filer_pb.MountRegisterRequest, _ ...grpc.CallOption) (*filer_pb.MountRegisterResponse, error) {
+func (a *adapter) MountRegister(_ context.Context, in *filer_pb.MountRegisterRequest) (*filer_pb.MountRegisterResponse, error) {
 	_, body, err := a.unary.MountRegister(filerzap.MountRegisterReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -281,7 +279,7 @@ func (a *adapter) MountRegister(_ context.Context, in *filer_pb.MountRegisterReq
 	return filerzap.MountRegisterRespFromWire(body)
 }
 
-func (a *adapter) MountList(_ context.Context, in *filer_pb.MountListRequest, _ ...grpc.CallOption) (*filer_pb.MountListResponse, error) {
+func (a *adapter) MountList(_ context.Context, in *filer_pb.MountListRequest) (*filer_pb.MountListResponse, error) {
 	_, body, err := a.unary.MountList(filerzap.MountListReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -291,7 +289,7 @@ func (a *adapter) MountList(_ context.Context, in *filer_pb.MountListRequest, _ 
 
 // --- streaming RPCs --------------------------------------------------------
 
-func (a *adapter) ListEntries(_ context.Context, in *filer_pb.ListEntriesRequest, _ ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.ListEntriesResponse], error) {
+func (a *adapter) ListEntries(_ context.Context, in *filer_pb.ListEntriesRequest) (rpc.ServerStream[filer_pb.ListEntriesResponse], error) {
 	s, err := a.stream.ListEntries(filerzap.ListEntriesReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -299,7 +297,7 @@ func (a *adapter) ListEntries(_ context.Context, in *filer_pb.ListEntriesRequest
 	return &listEntriesStream{s: s}, nil
 }
 
-func (a *adapter) StreamRenameEntry(_ context.Context, in *filer_pb.StreamRenameEntryRequest, _ ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.StreamRenameEntryResponse], error) {
+func (a *adapter) StreamRenameEntry(_ context.Context, in *filer_pb.StreamRenameEntryRequest) (rpc.ServerStream[filer_pb.StreamRenameEntryResponse], error) {
 	s, err := a.stream.StreamRenameEntry(filerzap.StreamRenameEntryReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -307,7 +305,7 @@ func (a *adapter) StreamRenameEntry(_ context.Context, in *filer_pb.StreamRename
 	return &streamRenameStream{s: s}, nil
 }
 
-func (a *adapter) TraverseBfsMetadata(_ context.Context, in *filer_pb.TraverseBfsMetadataRequest, _ ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.TraverseBfsMetadataResponse], error) {
+func (a *adapter) TraverseBfsMetadata(_ context.Context, in *filer_pb.TraverseBfsMetadataRequest) (rpc.ServerStream[filer_pb.TraverseBfsMetadataResponse], error) {
 	s, err := a.stream.TraverseBfsMetadata(filerzap.TraverseBfsMetadataReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -315,7 +313,7 @@ func (a *adapter) TraverseBfsMetadata(_ context.Context, in *filer_pb.TraverseBf
 	return &traverseBfsStream{s: s}, nil
 }
 
-func (a *adapter) SubscribeMetadata(_ context.Context, in *filer_pb.SubscribeMetadataRequest, _ ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.SubscribeMetadataResponse], error) {
+func (a *adapter) SubscribeMetadata(_ context.Context, in *filer_pb.SubscribeMetadataRequest) (rpc.ServerStream[filer_pb.SubscribeMetadataResponse], error) {
 	s, err := a.stream.SubscribeMetadata(filerzap.SubscribeMetadataReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -323,7 +321,7 @@ func (a *adapter) SubscribeMetadata(_ context.Context, in *filer_pb.SubscribeMet
 	return &subscribeMetadataStream{s: s}, nil
 }
 
-func (a *adapter) SubscribeLocalMetadata(_ context.Context, in *filer_pb.SubscribeMetadataRequest, _ ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.SubscribeMetadataResponse], error) {
+func (a *adapter) SubscribeLocalMetadata(_ context.Context, in *filer_pb.SubscribeMetadataRequest) (rpc.ServerStream[filer_pb.SubscribeMetadataResponse], error) {
 	s, err := a.stream.SubscribeLocalMetadata(filerzap.SubscribeMetadataReqToWire(in))
 	if err != nil {
 		return nil, err
@@ -331,7 +329,7 @@ func (a *adapter) SubscribeLocalMetadata(_ context.Context, in *filer_pb.Subscri
 	return &subscribeMetadataStream{s: s}, nil
 }
 
-func (a *adapter) StreamMutateEntry(_ context.Context, _ ...grpc.CallOption) (grpc.BidiStreamingClient[filer_pb.StreamMutateEntryRequest, filer_pb.StreamMutateEntryResponse], error) {
+func (a *adapter) StreamMutateEntry(_ context.Context) (rpc.BidiStream[filer_pb.StreamMutateEntryRequest, filer_pb.StreamMutateEntryResponse], error) {
 	// Open the bidi stream with an empty (Which=0, "no member") request frame so
 	// the server has a parseable opener that yields no response; requests then
 	// flow via Send.
@@ -342,21 +340,11 @@ func (a *adapter) StreamMutateEntry(_ context.Context, _ ...grpc.CallOption) (gr
 	return &streamMutateStream{s: s}, nil
 }
 
-// --- grpc.ClientStream stub shared by every adapter stream -----------------
-
-// clientStreamStub satisfies the non-Recv/Send half of grpc.ClientStream. The
-// consumers only ever call Recv()/Send()/CloseSend(); the remaining methods
-// exist solely to satisfy the interface.
-type clientStreamStub struct{}
-
-func (clientStreamStub) Header() (metadata.MD, error) { return nil, nil }
-func (clientStreamStub) Trailer() metadata.MD         { return nil }
-func (clientStreamStub) Context() context.Context     { return context.Background() }
-func (clientStreamStub) SendMsg(any) error            { return nil }
-func (clientStreamStub) RecvMsg(any) error            { return nil }
+// The stream wrappers below implement exactly the rpc.* seam each RPC returns:
+// rpc.ServerStream needs Recv (CloseSend is offered to release the stream early);
+// the bidi wrapper adds Send.
 
 type listEntriesStream struct {
-	clientStreamStub
 	s *filerstream.ClientListEntriesStream
 }
 
@@ -370,7 +358,6 @@ func (x *listEntriesStream) Recv() (*filer_pb.ListEntriesResponse, error) {
 func (x *listEntriesStream) CloseSend() error { return x.s.Close() }
 
 type streamRenameStream struct {
-	clientStreamStub
 	s *filerstream.ClientStreamRenameEntryStream
 }
 
@@ -384,7 +371,6 @@ func (x *streamRenameStream) Recv() (*filer_pb.StreamRenameEntryResponse, error)
 func (x *streamRenameStream) CloseSend() error { return x.s.Close() }
 
 type traverseBfsStream struct {
-	clientStreamStub
 	s *filerstream.ClientTraverseBfsMetadataStream
 }
 
@@ -398,7 +384,6 @@ func (x *traverseBfsStream) Recv() (*filer_pb.TraverseBfsMetadataResponse, error
 func (x *traverseBfsStream) CloseSend() error { return x.s.Close() }
 
 type subscribeMetadataStream struct {
-	clientStreamStub
 	s *filerstream.ClientSubscribeMetadataStream
 }
 
@@ -412,7 +397,6 @@ func (x *subscribeMetadataStream) Recv() (*filer_pb.SubscribeMetadataResponse, e
 func (x *subscribeMetadataStream) CloseSend() error { return x.s.Close() }
 
 type streamMutateStream struct {
-	clientStreamStub
 	s *filerstream.ClientStreamMutateEntryStream
 }
 

@@ -11,7 +11,6 @@ import (
 
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/filer/abstract_sql"
-	"github.com/hanzoai/s3/s3/filer/mysql"
 	"github.com/hanzoai/s3/s3/util"
 	_ "modernc.org/sqlite"
 )
@@ -52,7 +51,7 @@ func (store *SqliteStore) Initialize(configuration util.Configuration, prefix st
 func (store *SqliteStore) initialize(dbFile, createTable, upsertQuery string) (err error) {
 
 	store.SupportBucketTable = true
-	store.SqlGenerator = &mysql.SqlGenMysql{
+	store.SqlGenerator = &SqlGenSqlite{
 		CreateTableSqlTemplate: createTable,
 		DropTableSqlTemplate:   "drop table `%s`",
 		UpsertQueryTemplate:    upsertQuery,

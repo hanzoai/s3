@@ -22,7 +22,6 @@ import (
 	filer_pb "github.com/hanzoai/s3/s3/pb/filer_pb"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
-	"google.golang.org/grpc"
 )
 
 // ListEntriesRespToWire builds a zero-copy ListEntriesResponse wire frame.
@@ -73,13 +72,10 @@ func (b streamServerBackend) StreamMutateEntry(init filerwire.StreamMutateEntryR
 	return b.fs.StreamMutateEntry(&streamMutateAdapter{ctx: s.Context(), s: s, init: init, initPending: true})
 }
 
-// listEntriesSendAdapter implements grpc.ServerStreamingServer[ListEntriesResponse]
-// (= filer_pb.HanzoFiler_ListEntriesServer): the existing fs.ListEntries calls
-// Send for each entry; we ship it as a wire frame on the ZAP stream. The
-// embedded grpc.ServerStream supplies the interface's remaining methods, which
-// the filer engine does not call on this path.
+// listEntriesSendAdapter implements filer_pb.HanzoFiler_ListEntriesServer: the
+// existing fs.ListEntries calls Send for each entry; we ship it as a wire frame
+// on the ZAP stream.
 type listEntriesSendAdapter struct {
-	grpc.ServerStream
 	ctx context.Context
 	out *filerstream.ListEntriesStream
 }
@@ -93,7 +89,6 @@ func (a *listEntriesSendAdapter) Context() context.Context { return a.ctx }
 // --- server-stream Send adapters (proto Send -> wire frame on the ZAP stream) ---
 
 type streamRenameSendAdapter struct {
-	grpc.ServerStream
 	ctx context.Context
 	out *filerstream.StreamRenameEntryStream
 }
@@ -104,7 +99,6 @@ func (a *streamRenameSendAdapter) Send(resp *filer_pb.StreamRenameEntryResponse)
 func (a *streamRenameSendAdapter) Context() context.Context { return a.ctx }
 
 type traverseBfsSendAdapter struct {
-	grpc.ServerStream
 	ctx context.Context
 	out *filerstream.TraverseBfsMetadataStream
 }
@@ -115,7 +109,6 @@ func (a *traverseBfsSendAdapter) Send(resp *filer_pb.TraverseBfsMetadataResponse
 func (a *traverseBfsSendAdapter) Context() context.Context { return a.ctx }
 
 type subscribeMetadataSendAdapter struct {
-	grpc.ServerStream
 	ctx context.Context
 	out *filerstream.SubscribeMetadataStream
 }
@@ -125,11 +118,10 @@ func (a *subscribeMetadataSendAdapter) Send(resp *filer_pb.SubscribeMetadataResp
 }
 func (a *subscribeMetadataSendAdapter) Context() context.Context { return a.ctx }
 
-// streamMutateAdapter implements grpc.BidiStreamingServer[StreamMutateEntryRequest,
-// StreamMutateEntryResponse]: the opener's first frame (init) is replayed by the
-// first Recv, then subsequent frames come off the ZAP stream; Send ships replies.
+// streamMutateAdapter implements filer_pb.HanzoFiler_StreamMutateEntryServer:
+// the opener's first frame (init) is replayed by the first Recv, then subsequent
+// frames come off the ZAP stream; Send ships replies.
 type streamMutateAdapter struct {
-	grpc.ServerStream
 	ctx         context.Context
 	s           *filerstream.StreamMutateEntryStream
 	init        filerwire.StreamMutateEntryRequest
