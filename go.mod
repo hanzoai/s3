@@ -69,7 +69,7 @@ require (
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
-	github.com/syndtr/goleveldb v1.0.1-0.20220614013038-64ee5596c38a
+	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d
 	github.com/tylertreat/BoomFilters v0.0.0-20210315201527-1a82519a3e43
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/viant/ptrie v1.0.1
@@ -97,7 +97,7 @@ require (
 	google.golang.org/protobuf v1.36.11
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.49.1
+	modernc.org/sqlite v1.50.0
 )
 
 require (
@@ -123,9 +123,8 @@ require (
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/jhump/protoreflect v1.18.0
 	github.com/linkedin/goavro/v2 v2.15.0
-	github.com/luxfi/database v1.19.0
+	github.com/luxfi/database v1.19.3
 	github.com/luxfi/log v1.4.3
-	github.com/luxfi/metric v1.5.8
 	github.com/minio/crc64nvme v1.1.1
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/parquet-go/parquet-go v0.30.1
@@ -192,6 +191,7 @@ require (
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/gorilla/rpc v1.2.1 // indirect
 	github.com/grandcat/zeroconf v1.0.0 // indirect
+	github.com/hanzoai/vfs v0.4.3 // indirect
 	github.com/hanzos3/go-sdk v1.0.2 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/go-secure-stdlib/parseutil v0.2.0 // indirect
@@ -223,6 +223,7 @@ require (
 	github.com/luxfi/math v1.4.1 // indirect
 	github.com/luxfi/math/big v0.1.0 // indirect
 	github.com/luxfi/mdns v0.1.1 // indirect
+	github.com/luxfi/metric v1.5.8 // indirect
 	github.com/luxfi/mock v0.1.1 // indirect
 	github.com/luxfi/p2p v1.21.1 // indirect
 	github.com/luxfi/pq v1.0.3 // indirect
