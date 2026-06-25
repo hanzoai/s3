@@ -18,6 +18,6 @@ import (
 
 // newFilerClientAdapter wraps an established transport.Conn as a
 // filer_pb.HanzoFilerClient backed by ZAP. The caller owns conn's lifecycle.
-func newFilerClientAdapter(conn *transport.Conn) filer_pb.HanzoFilerClient {
+func newFilerClientAdapter(conn transport.Conn) filer_pb.HanzoFilerClient {
 	return pb.NewZapFilerClient(conn)
 }

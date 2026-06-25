@@ -62,7 +62,7 @@ type LogRequestContext struct {
 // WorkerConnection represents an active worker connection
 type WorkerConnection struct {
 	workerID      string
-	stream        *transport.Stream
+	stream        transport.Stream
 	lastSeen      time.Time
 	capabilities  []MaintenanceTaskType
 	address       string
@@ -125,7 +125,7 @@ func (s *WorkerGrpcServer) StartWithTLS(port int) error {
 // streamHandler adapts a ZAP transport stream to the WorkerStream loop. The
 // transport invokes it on its own goroutine for each opened stream; returning
 // half-closes the send side.
-func (s *WorkerGrpcServer) streamHandler(method uint32, _ []byte, st *transport.Stream) {
+func (s *WorkerGrpcServer) streamHandler(method uint32, _ []byte, st transport.Stream) {
 	if method != workerwire.WorkerServiceWorkerStreamOrdinal {
 		return
 	}
@@ -137,7 +137,7 @@ func (s *WorkerGrpcServer) streamHandler(method uint32, _ []byte, st *transport.
 // pluginStreamHandler adapts a ZAP transport stream to the plugin's
 // PluginControlService.WorkerStream loop. The transport invokes it on its own
 // goroutine for each opened stream; returning half-closes the send side.
-func (s *WorkerGrpcServer) pluginStreamHandler(method uint32, init []byte, st *transport.Stream) {
+func (s *WorkerGrpcServer) pluginStreamHandler(method uint32, init []byte, st transport.Stream) {
 	if method != pluginwire.PluginControlServiceWorkerStreamOrdinal {
 		return
 	}
@@ -202,7 +202,7 @@ func (s *WorkerGrpcServer) Stop() error {
 
 // WorkerStream handles bidirectional communication with workers over the ZAP
 // transport stream. It runs on the transport's per-stream goroutine.
-func (s *WorkerGrpcServer) WorkerStream(stream *transport.Stream) error {
+func (s *WorkerGrpcServer) WorkerStream(stream transport.Stream) error {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	defer ctxCancel()
 

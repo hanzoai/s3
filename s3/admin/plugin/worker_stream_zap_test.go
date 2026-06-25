@@ -23,7 +23,7 @@ func TestServeWorkerStream_EndToEnd(t *testing.T) {
 	}
 	defer p.Shutdown()
 
-	srv, err := transport.ListenStream("tcp", "127.0.0.1:0", nil, func(method uint32, init []byte, s *transport.Stream) {
+	srv, err := transport.ListenStream("tcp", "127.0.0.1:0", nil, func(method uint32, init []byte, s transport.Stream) {
 		if method != pluginwire.PluginControlServiceWorkerStreamOrdinal {
 			return
 		}

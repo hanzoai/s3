@@ -15,7 +15,7 @@
 //   - Streaming RPCs (PublishRecord, SubscribeRecord) are bidirectional in the
 //     proto (`stream … returns stream …`). zapgen cannot express streams, so —
 //     exactly like s3/admin/plugin/worker_stream_zap.go — they are hand-wired
-//     over transport.OpenStream / transport.StreamHandler / *transport.Stream.
+//     over transport.OpenStream / transport.StreamHandler / transport.Stream.
 //     Each stream frame is a zero-copy New*/Wrap* buffer (same doctrine as
 //     unary); the opening request rides as the stream's init payload and is
 //     replayed as the server's first Recv. NOTHING is faked or buffered into a
@@ -128,17 +128,17 @@ type SubscribeRecordServerStream interface {
 	Send(resp []byte) error
 }
 
-// serverStream adapts a *transport.Stream to the *ServerStream interfaces.
+// serverStream adapts a transport.Stream to the *ServerStream interfaces.
 // Both streaming methods share the same frame plumbing (raw ZAP buffers in/out);
 // only the typed wrappers around the buffers differ, so one adapter serves both.
 // The opening request frame rides as init and is replayed as the first Recv.
 type serverStream struct {
-	s     *transport.Stream
+	s     transport.Stream
 	init  []byte
 	hasIn bool
 }
 
-func newServerStream(init []byte, s *transport.Stream) *serverStream {
+func newServerStream(init []byte, s transport.Stream) *serverStream {
 	return &serverStream{s: s, init: init, hasIn: len(init) > 0}
 }
 
@@ -160,7 +160,7 @@ func (z *serverStream) Send(body []byte) error { return z.s.Send(body) }
 // Returning from the backend handler half-closes the send side (the client's
 // Recv then sees io.EOF), per transport.StreamHandler semantics.
 func StreamHandler(store MessagingAgentStore) transport.StreamHandler {
-	return func(method uint32, init []byte, s *transport.Stream) {
+	return func(method uint32, init []byte, s transport.Stream) {
 		switch method {
 		case HanzoMessagingAgentPublishRecordOrdinal:
 			_ = store.PublishRecord(newServerStream(init, s))
@@ -188,13 +188,13 @@ func Serve(network, addr string, store MessagingAgentStore) (*transport.Server, 
 // owns the transport connection to one agent endpoint and serves both the unary
 // calls and the streaming opens over it.
 type Client struct {
-	conn *transport.Conn
+	conn transport.Conn
 	rpc  *HanzoMessagingAgentClient
 }
 
 // Dial connects to the agent ZAP service at addr over plain TCP (e.g.
 // "mq-agent.hanzo.svc:16777"). For the PQ-secured mesh, build the
-// *transport.Conn via the TLS/QUIC path and use NewClient.
+// transport.Conn via the TLS/QUIC path and use NewClient.
 func Dial(network, addr string) (*Client, error) {
 	conn, err := transport.Dial(network, addr)
 	if err != nil {
@@ -204,7 +204,7 @@ func Dial(network, addr string) (*Client, error) {
 }
 
 // NewClient wraps an already-established transport.Conn (TCP, Unix, or PQ-TLS).
-func NewClient(conn *transport.Conn) *Client {
+func NewClient(conn transport.Conn) *Client {
 	return &Client{conn: conn, rpc: NewHanzoMessagingAgentClient(conn, nil)}
 }
 
@@ -233,7 +233,7 @@ func (c *Client) ClosePublishSession(in ClosePublishSessionRequestInput) (CloseP
 // PublishRecordClientStream is the client view of one PublishRecord stream: send
 // PublishRecordRequest frames, receive PublishRecordResponse acks, half-close
 // when done.
-type PublishRecordClientStream struct{ s *transport.Stream }
+type PublishRecordClientStream struct{ s transport.Stream }
 
 // Send streams one PublishRecordRequest frame.
 func (p *PublishRecordClientStream) Send(in PublishRecordRequestInput) error {
@@ -267,7 +267,7 @@ func (c *Client) PublishRecord(first PublishRecordRequestInput) (*PublishRecordC
 // SubscribeRecordClientStream is the client view of one SubscribeRecord stream:
 // send SubscribeRecordRequest ack frames, receive SubscribeRecordResponse data
 // frames.
-type SubscribeRecordClientStream struct{ s *transport.Stream }
+type SubscribeRecordClientStream struct{ s transport.Stream }
 
 // Send streams one SubscribeRecordRequest frame (an ack after the init).
 func (p *SubscribeRecordClientStream) Send(in SubscribeRecordRequestInput) error {

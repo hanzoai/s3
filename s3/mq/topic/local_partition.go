@@ -32,8 +32,8 @@ type LocalPartition struct {
 	Publishers  *LocalPartitionPublishers
 	Subscribers *LocalPartitionSubscribers
 
-	publishFolloweMeStream *transport.Stream
-	followerConn           *transport.Conn
+	publishFolloweMeStream transport.Stream
+	followerConn           transport.Conn
 	Follower               string
 
 	// Track last activity for idle cleanup
