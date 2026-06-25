@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage/erasure_coding"
@@ -48,7 +49,7 @@ func TestMountEcShards_LocatesEcxOnSiblingDisk(t *testing.T) {
 	const shardOnDisk0 erasure_coding.ShardId = 6
 	diskIOProbeConfig := stats.DefaultDiskIOProbeConfig()
 
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir0, dir1},
 		[]int32{100, 100},
 		[]util.MinFreeSpace{{}, {}},
@@ -171,7 +172,7 @@ func TestMountEcShards_SameDiskEcxStillWorks(t *testing.T) {
 	const shardOnDisk0 erasure_coding.ShardId = 3
 	diskIOProbeConfig := stats.DefaultDiskIOProbeConfig()
 
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir0, dir1},
 		[]int32{100, 100},
 		[]util.MinFreeSpace{{}, {}},
@@ -254,7 +255,7 @@ func startEcMountStore(t *testing.T, dirs []string) *Store {
 		}
 	}
 	diskIOProbeConfig := stats.DefaultDiskIOProbeConfig()
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		dirs,
 		[]int32{100, 100},
 		[]util.MinFreeSpace{{}, {}},

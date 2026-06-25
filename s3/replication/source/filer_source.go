@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/security"
 
@@ -20,7 +18,7 @@ import (
 
 type FilerSource struct {
 	grpcAddress    string
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 	Dir            string
 	address        string
 	proxyByFiler   bool
@@ -52,7 +50,7 @@ func (fs *FilerSource) DoInitialize(address, grpcAddress string, dir string, rea
 	return nil
 }
 
-func (fs *FilerSource) SetGrpcDialOption(option grpc.DialOption) {
+func (fs *FilerSource) SetGrpcDialOption(option pb.DialOption) {
 	fs.grpcDialOption = option
 }
 

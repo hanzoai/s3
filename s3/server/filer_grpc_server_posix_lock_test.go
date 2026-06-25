@@ -13,8 +13,6 @@ import (
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func newPosixTestServer() *FilerServer {
@@ -131,11 +129,11 @@ func TestPosixLockForwardsToOwner(t *testing.T) {
 	sender := pb.ServerAddress("127.0.0.1:1")
 
 	withRing(owner, ownerAddr, sender)
-	owner.grpcDialOption = grpc.WithTransportCredentials(insecure.NewCredentials())
+	owner.grpcDialOption = pb.DialOption{}
 
 	self := newPosixTestServer()
 	withRing(self, sender, ownerAddr)
-	self.grpcDialOption = grpc.WithTransportCredentials(insecure.NewCredentials())
+	self.grpcDialOption = pb.DialOption{}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

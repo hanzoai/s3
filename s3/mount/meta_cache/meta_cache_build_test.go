@@ -10,9 +10,8 @@ import (
 
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/rpc"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 )
 
 type buildListStream struct {
@@ -36,20 +35,13 @@ func (s *buildListStream) Recv() (*filer_pb.ListEntriesResponse, error) {
 	return resp, nil
 }
 
-func (s *buildListStream) Header() (metadata.MD, error) { return metadata.MD{}, nil }
-func (s *buildListStream) Trailer() metadata.MD         { return metadata.MD{} }
-func (s *buildListStream) CloseSend() error             { return nil }
-func (s *buildListStream) Context() context.Context     { return context.Background() }
-func (s *buildListStream) SendMsg(any) error            { return nil }
-func (s *buildListStream) RecvMsg(any) error            { return nil }
-
 type buildListClient struct {
 	filer_pb.HanzoFilerClient
 	responses   []*filer_pb.ListEntriesResponse
 	onFirstRecv func()
 }
 
-func (c *buildListClient) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[filer_pb.ListEntriesResponse], error) {
+func (c *buildListClient) ListEntries(ctx context.Context, in *filer_pb.ListEntriesRequest) (rpc.ServerStream[filer_pb.ListEntriesResponse], error) {
 	return &buildListStream{
 		responses:   c.responses,
 		onFirstRecv: c.onFirstRecv,

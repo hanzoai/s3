@@ -11,8 +11,6 @@ import (
 
 	"github.com/hanzoai/s3/s3/pb"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/storage/needle"
 
 	"github.com/hanzoai/s3/s3/glog"
@@ -20,7 +18,7 @@ import (
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 )
 
-func (t *Topology) batchVacuumVolumeCheck(grpcDialOption grpc.DialOption, vid needle.VolumeId,
+func (t *Topology) batchVacuumVolumeCheck(grpcDialOption pb.DialOption, vid needle.VolumeId,
 	locationlist *VolumeLocationList, garbageThreshold float64) (*VolumeLocationList, bool) {
 	ch := make(chan int, locationlist.Length())
 	errCount := int32(0)
@@ -65,7 +63,7 @@ func (t *Topology) batchVacuumVolumeCheck(grpcDialOption grpc.DialOption, vid ne
 	return vacuumLocationList, errCount == 0 && len(vacuumLocationList.list) > 0
 }
 
-func (t *Topology) batchVacuumVolumeCompact(grpcDialOption grpc.DialOption, vl *VolumeLayout, vid needle.VolumeId,
+func (t *Topology) batchVacuumVolumeCompact(grpcDialOption pb.DialOption, vl *VolumeLayout, vid needle.VolumeId,
 	locationlist *VolumeLocationList, preallocate int64) bool {
 	vl.DrainAndRemoveFromWritable(vid)
 
@@ -121,7 +119,7 @@ func (t *Topology) batchVacuumVolumeCompact(grpcDialOption grpc.DialOption, vl *
 	return isVacuumSuccess
 }
 
-func (t *Topology) batchVacuumVolumeCommit(grpcDialOption grpc.DialOption, vl *VolumeLayout, vid needle.VolumeId, vacuumLocationList, locationList *VolumeLocationList) bool {
+func (t *Topology) batchVacuumVolumeCommit(grpcDialOption pb.DialOption, vl *VolumeLayout, vid needle.VolumeId, vacuumLocationList, locationList *VolumeLocationList) bool {
 	isCommitSuccess := true
 	isReadOnly := false
 	isFullCapacity := false
@@ -197,7 +195,7 @@ func (t *Topology) batchVacuumVolumeCommit(grpcDialOption grpc.DialOption, vl *V
 	return isCommitSuccess
 }
 
-func (t *Topology) batchVacuumVolumeCleanup(grpcDialOption grpc.DialOption, vl *VolumeLayout, vid needle.VolumeId, locationlist *VolumeLocationList) {
+func (t *Topology) batchVacuumVolumeCleanup(grpcDialOption pb.DialOption, vl *VolumeLayout, vid needle.VolumeId, locationlist *VolumeLocationList) {
 	for _, dn := range locationlist.list {
 		glog.V(0).Infoln("Start cleaning up", vid, "on", dn.Url())
 		err := operation.WithVolumeServerClient(false, dn.ServerAddress(), grpcDialOption, func(volumeServerClient volume_server_pb.VolumeServerClient) error {
@@ -214,7 +212,7 @@ func (t *Topology) batchVacuumVolumeCleanup(grpcDialOption grpc.DialOption, vl *
 	}
 }
 
-func (t *Topology) Vacuum(grpcDialOption grpc.DialOption, garbageThreshold float64, maxParallelVacuumPerServer int, volumeId uint32, collection string, preallocate int64, automatic bool) {
+func (t *Topology) Vacuum(grpcDialOption pb.DialOption, garbageThreshold float64, maxParallelVacuumPerServer int, volumeId uint32, collection string, preallocate int64, automatic bool) {
 
 	// if there is vacuum going on, return immediately
 	swapped := atomic.CompareAndSwapInt64(&t.vacuumLockCounter, 0, 1)
@@ -262,7 +260,7 @@ func (t *Topology) Vacuum(grpcDialOption grpc.DialOption, garbageThreshold float
 	}
 }
 
-func (t *Topology) vacuumOneVolumeLayout(grpcDialOption grpc.DialOption, volumeLayout *VolumeLayout, c *Collection, garbageThreshold float64, maxParallelVacuumPerServer int, preallocate int64, automatic bool) {
+func (t *Topology) vacuumOneVolumeLayout(grpcDialOption pb.DialOption, volumeLayout *VolumeLayout, c *Collection, garbageThreshold float64, maxParallelVacuumPerServer int, preallocate int64, automatic bool) {
 
 	volumeLayout.accessLock.RLock()
 	todoVolumeMap := make(map[needle.VolumeId]*VolumeLocationList)
@@ -342,7 +340,7 @@ func (t *Topology) vacuumOneVolumeLayout(grpcDialOption grpc.DialOption, volumeL
 // skipReadOnly is set by the background scan and all-volumes sweep, where a
 // read-only flag usually means an unhealthy disk. An explicit volumeId clears
 // it so a benignly read-only (full/oversized) volume can be reclaimed.
-func (t *Topology) vacuumOneVolumeId(grpcDialOption grpc.DialOption, volumeLayout *VolumeLayout, c *Collection, garbageThreshold float64, locationList *VolumeLocationList, vid needle.VolumeId, preallocate int64, skipReadOnly bool) {
+func (t *Topology) vacuumOneVolumeId(grpcDialOption pb.DialOption, volumeLayout *VolumeLayout, c *Collection, garbageThreshold float64, locationList *VolumeLocationList, vid needle.VolumeId, preallocate int64, skipReadOnly bool) {
 	volumeLayout.accessLock.RLock()
 	isReadOnly := volumeLayout.readonlyVolumes.IsTrue(vid)
 	isEnoughCopies := volumeLayout.enoughCopies(vid)

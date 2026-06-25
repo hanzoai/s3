@@ -8,8 +8,6 @@ import (
 
 	"github.com/hanzoai/s3/s3/pb"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/operation"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/storage/idx"
@@ -66,7 +64,7 @@ update needle map when receiving new .dat bytes. But seems not necessary now.)
 
 */
 
-func (v *Volume) IncrementalBackup(volumeServer pb.ServerAddress, grpcDialOption grpc.DialOption) error {
+func (v *Volume) IncrementalBackup(volumeServer pb.ServerAddress, grpcDialOption pb.DialOption) error {
 
 	startFromOffset, _, _ := v.FileStat()
 	appendAtNs, err := v.findLastAppendAtNs()

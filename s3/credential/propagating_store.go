@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/zap-proto/go/transport"
+
 	"github.com/hanzoai/s3/s3/cluster"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
@@ -16,8 +18,6 @@ import (
 	iamwire "github.com/hanzoai/s3/s3/wire/iam"
 	"github.com/hanzoai/s3/s3/wire/iamadapt"
 	s3wire "github.com/hanzoai/s3/s3/wire/s3"
-	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
 )
 
 var _ CredentialStore = &PropagatingCredentialStore{}
@@ -34,10 +34,10 @@ type propagatingInlinePolicyLoader interface {
 type PropagatingCredentialStore struct {
 	CredentialStore
 	masterClient   *wdclient.MasterClient
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 }
 
-func NewPropagatingCredentialStore(upstream CredentialStore, masterClient *wdclient.MasterClient, grpcDialOption grpc.DialOption) *PropagatingCredentialStore {
+func NewPropagatingCredentialStore(upstream CredentialStore, masterClient *wdclient.MasterClient, grpcDialOption pb.DialOption) *PropagatingCredentialStore {
 	return &PropagatingCredentialStore{
 		CredentialStore: upstream,
 		masterClient:    masterClient,
@@ -45,7 +45,7 @@ func NewPropagatingCredentialStore(upstream CredentialStore, masterClient *wdcli
 	}
 }
 
-func (s *PropagatingCredentialStore) SetFilerAddressFunc(getFiler func() pb.ServerAddress, grpcDialOption grpc.DialOption) {
+func (s *PropagatingCredentialStore) SetFilerAddressFunc(getFiler func() pb.ServerAddress, grpcDialOption pb.DialOption) {
 	if setter, ok := s.CredentialStore.(FilerAddressSetter); ok {
 		setter.SetFilerAddressFunc(getFiler, grpcDialOption)
 	}

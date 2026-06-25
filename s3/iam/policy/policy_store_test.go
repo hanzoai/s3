@@ -13,20 +13,19 @@ import (
 	"github.com/hanzoai/s3/s3/filerzap"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/pb/filerstub"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
 	"github.com/stretchr/testify/assert"
-	"github.com/zap-proto/go/transport"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
+	"github.com/zap-proto/go/transport"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
 type policyStoreTestFilerServer struct {
-	filer_pb.UnimplementedHanzoFilerServer
+	filerstub.FilerServer
 	mu      sync.RWMutex
 	entries map[string]*filer_pb.Entry
 }
@@ -75,7 +74,7 @@ func (s *policyStoreTestFilerServer) UpdateEntry(_ context.Context, req *filer_p
 	return &filer_pb.UpdateEntryResponse{}, nil
 }
 
-func (s *policyStoreTestFilerServer) ListEntries(req *filer_pb.ListEntriesRequest, stream grpc.ServerStreamingServer[filer_pb.ListEntriesResponse]) error {
+func (s *policyStoreTestFilerServer) ListEntries(req *filer_pb.ListEntriesRequest, stream filer_pb.HanzoFiler_ListEntriesServer) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -162,7 +161,7 @@ func newTestFilerPolicyStore(t *testing.T) (*FilerPolicyStore, *policyStoreTestF
 		return string(pb.NewServerAddress(host, 1, grpcPort))
 	})
 	require.NoError(t, err)
-	store.grpcDialOption = grpc.WithTransportCredentials(insecure.NewCredentials())
+	store.grpcDialOption = pb.DialOption{}
 
 	return store, server
 }

@@ -15,7 +15,6 @@ import (
 	"github.com/hanzoai/s3/s3/cluster/lock_manager"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
 	"github.com/hanzoai/s3/s3/wdclient"
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
@@ -51,7 +50,7 @@ type topicCacheEntry struct {
 type MessageQueueBroker struct {
 	mq_pb.UnimplementedHanzoMessagingServer
 	option            *MessageQueueBrokerOption
-	grpcDialOption    grpc.DialOption
+	grpcDialOption    pb.DialOption
 	MasterClient      *wdclient.MasterClient
 	filers            map[pb.ServerAddress]struct{}
 	currentFiler      pb.ServerAddress
@@ -73,7 +72,7 @@ type MessageQueueBroker struct {
 	topicCacheTTL time.Duration
 }
 
-func NewMessageBroker(option *MessageQueueBrokerOption, grpcDialOption grpc.DialOption) (mqBroker *MessageQueueBroker, err error) {
+func NewMessageBroker(option *MessageQueueBrokerOption, grpcDialOption pb.DialOption) (mqBroker *MessageQueueBroker, err error) {
 
 	pubBalancer := pub_balancer.NewPubBalancer()
 	subCoordinator := sub_coordinator.NewSubCoordinator()
@@ -177,7 +176,7 @@ func (b *MessageQueueBroker) OnBrokerUpdate(update *master_pb.ClusterNodeUpdate,
 
 }
 
-func (b *MessageQueueBroker) GetGrpcDialOption() grpc.DialOption {
+func (b *MessageQueueBroker) GetGrpcDialOption() pb.DialOption {
 	return b.grpcDialOption
 }
 

@@ -5,23 +5,24 @@ import (
 	"testing"
 	"time"
 
-	pluginworkers "github.com/hanzoai/s3/test/plugin_workers"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/hanzoai/s3/s3/pb"
+
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
 	"github.com/hanzoai/s3/s3/worker/tasks/balance"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/proto"
+	pluginworkers "github.com/hanzoai/s3/test/plugin_workers"
 )
 
 func TestVolumeBalanceDetectionIntegration(t *testing.T) {
 	response := buildBalanceVolumeListResponse(t)
 	master := pluginworkers.NewMasterServer(t, response)
 
-	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOption := pb.DialOption{}
 	handler := balance.NewVolumeBalanceHandler(dialOption)
 	harness := pluginworkers.NewHarness(t, pluginworkers.HarnessConfig{
 		WorkerOptions: pluginworker.WorkerOptions{

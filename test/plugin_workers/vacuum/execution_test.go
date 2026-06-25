@@ -6,13 +6,14 @@ import (
 	"testing"
 	"time"
 
-	pluginworkers "github.com/hanzoai/s3/test/plugin_workers"
+	"github.com/stretchr/testify/require"
+
+	"github.com/hanzoai/s3/s3/pb"
+
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	pluginworker "github.com/hanzoai/s3/s3/plugin/worker"
 	"github.com/hanzoai/s3/s3/worker/tasks/vacuum"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	pluginworkers "github.com/hanzoai/s3/test/plugin_workers"
 )
 
 func vacuumJobSpec(volumeID uint32, server string) *plugin_pb.JobSpec {
@@ -36,7 +37,7 @@ func vacuumJobSpec(volumeID uint32, server string) *plugin_pb.JobSpec {
 func TestVacuumExecutionIntegration(t *testing.T) {
 	volumeID := uint32(202)
 
-	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOption := pb.DialOption{}
 	handler := vacuum.NewVacuumHandler(dialOption, 1)
 	harness := pluginworkers.NewHarness(t, pluginworkers.HarnessConfig{
 		WorkerOptions: pluginworker.WorkerOptions{
@@ -80,7 +81,7 @@ func TestVacuumExecutionIntegration(t *testing.T) {
 func TestVacuumExecutionSkipsMarkWritableWhenReadOnly(t *testing.T) {
 	volumeID := uint32(203)
 
-	dialOption := grpc.WithTransportCredentials(insecure.NewCredentials())
+	dialOption := pb.DialOption{}
 	handler := vacuum.NewVacuumHandler(dialOption, 1)
 	harness := pluginworkers.NewHarness(t, pluginworkers.HarnessConfig{
 		WorkerOptions: pluginworker.WorkerOptions{

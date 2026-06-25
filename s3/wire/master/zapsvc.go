@@ -31,6 +31,7 @@
 package masterwire
 
 import (
+	"context"
 	"errors"
 
 	"github.com/zap-proto/go/transport"
@@ -186,8 +187,8 @@ func (c *Client) RPC() *HanzoClient { return c.rpc }
 // --- typed unary calls (build request -> ship -> decode reply) ---
 
 // LookupVolume resolves volume-or-file ids to their locations.
-func (c *Client) LookupVolume(in LookupVolumeRequestInput) (LookupVolumeResponse, error) {
-	_, body, err := c.rpc.LookupVolume(NewLookupVolumeRequest(in))
+func (c *Client) LookupVolume(ctx context.Context, in LookupVolumeRequestInput) (LookupVolumeResponse, error) {
+	_, body, err := c.rpc.LookupVolume(ctx, NewLookupVolumeRequest(in))
 	if err != nil {
 		return LookupVolumeResponse{}, err
 	}
@@ -195,8 +196,8 @@ func (c *Client) LookupVolume(in LookupVolumeRequestInput) (LookupVolumeResponse
 }
 
 // Assign allocates a file id / volume for a write.
-func (c *Client) Assign(in AssignRequestInput) (AssignResponse, error) {
-	_, body, err := c.rpc.Assign(NewAssignRequest(in))
+func (c *Client) Assign(ctx context.Context, in AssignRequestInput) (AssignResponse, error) {
+	_, body, err := c.rpc.Assign(ctx, NewAssignRequest(in))
 	if err != nil {
 		return AssignResponse{}, err
 	}
@@ -204,8 +205,8 @@ func (c *Client) Assign(in AssignRequestInput) (AssignResponse, error) {
 }
 
 // Statistics returns cluster size/usage counters.
-func (c *Client) Statistics(in StatisticsRequestInput) (StatisticsResponse, error) {
-	_, body, err := c.rpc.Statistics(NewStatisticsRequest(in))
+func (c *Client) Statistics(ctx context.Context, in StatisticsRequestInput) (StatisticsResponse, error) {
+	_, body, err := c.rpc.Statistics(ctx, NewStatisticsRequest(in))
 	if err != nil {
 		return StatisticsResponse{}, err
 	}
@@ -213,8 +214,8 @@ func (c *Client) Statistics(in StatisticsRequestInput) (StatisticsResponse, erro
 }
 
 // CollectionList lists collections.
-func (c *Client) CollectionList(in CollectionListRequestInput) (CollectionListResponse, error) {
-	_, body, err := c.rpc.CollectionList(NewCollectionListRequest(in))
+func (c *Client) CollectionList(ctx context.Context, in CollectionListRequestInput) (CollectionListResponse, error) {
+	_, body, err := c.rpc.CollectionList(ctx, NewCollectionListRequest(in))
 	if err != nil {
 		return CollectionListResponse{}, err
 	}
@@ -222,8 +223,8 @@ func (c *Client) CollectionList(in CollectionListRequestInput) (CollectionListRe
 }
 
 // CollectionDelete deletes a collection.
-func (c *Client) CollectionDelete(in CollectionDeleteRequestInput) (CollectionDeleteResponse, error) {
-	_, body, err := c.rpc.CollectionDelete(NewCollectionDeleteRequest(in))
+func (c *Client) CollectionDelete(ctx context.Context, in CollectionDeleteRequestInput) (CollectionDeleteResponse, error) {
+	_, body, err := c.rpc.CollectionDelete(ctx, NewCollectionDeleteRequest(in))
 	if err != nil {
 		return CollectionDeleteResponse{}, err
 	}
@@ -231,8 +232,8 @@ func (c *Client) CollectionDelete(in CollectionDeleteRequestInput) (CollectionDe
 }
 
 // VolumeList returns the full topology.
-func (c *Client) VolumeList(in VolumeListRequestInput) (VolumeListResponse, error) {
-	_, body, err := c.rpc.VolumeList(NewVolumeListRequest(in))
+func (c *Client) VolumeList(ctx context.Context, in VolumeListRequestInput) (VolumeListResponse, error) {
+	_, body, err := c.rpc.VolumeList(ctx, NewVolumeListRequest(in))
 	if err != nil {
 		return VolumeListResponse{}, err
 	}
@@ -240,8 +241,8 @@ func (c *Client) VolumeList(in VolumeListRequestInput) (VolumeListResponse, erro
 }
 
 // LookupEcVolume resolves the shard locations of an EC volume.
-func (c *Client) LookupEcVolume(in LookupEcVolumeRequestInput) (LookupEcVolumeResponse, error) {
-	_, body, err := c.rpc.LookupEcVolume(NewLookupEcVolumeRequest(in))
+func (c *Client) LookupEcVolume(ctx context.Context, in LookupEcVolumeRequestInput) (LookupEcVolumeResponse, error) {
+	_, body, err := c.rpc.LookupEcVolume(ctx, NewLookupEcVolumeRequest(in))
 	if err != nil {
 		return LookupEcVolumeResponse{}, err
 	}
@@ -249,8 +250,8 @@ func (c *Client) LookupEcVolume(in LookupEcVolumeRequestInput) (LookupEcVolumeRe
 }
 
 // VacuumVolume triggers a vacuum.
-func (c *Client) VacuumVolume(in VacuumVolumeRequestInput) (VacuumVolumeResponse, error) {
-	_, body, err := c.rpc.VacuumVolume(NewVacuumVolumeRequest(in))
+func (c *Client) VacuumVolume(ctx context.Context, in VacuumVolumeRequestInput) (VacuumVolumeResponse, error) {
+	_, body, err := c.rpc.VacuumVolume(ctx, NewVacuumVolumeRequest(in))
 	if err != nil {
 		return VacuumVolumeResponse{}, err
 	}
@@ -258,8 +259,8 @@ func (c *Client) VacuumVolume(in VacuumVolumeRequestInput) (VacuumVolumeResponse
 }
 
 // DisableVacuum disables automatic vacuum.
-func (c *Client) DisableVacuum(in DisableVacuumRequestInput) (DisableVacuumResponse, error) {
-	_, body, err := c.rpc.DisableVacuum(NewDisableVacuumRequest(in))
+func (c *Client) DisableVacuum(ctx context.Context, in DisableVacuumRequestInput) (DisableVacuumResponse, error) {
+	_, body, err := c.rpc.DisableVacuum(ctx, NewDisableVacuumRequest(in))
 	if err != nil {
 		return DisableVacuumResponse{}, err
 	}
@@ -267,8 +268,8 @@ func (c *Client) DisableVacuum(in DisableVacuumRequestInput) (DisableVacuumRespo
 }
 
 // EnableVacuum enables automatic vacuum.
-func (c *Client) EnableVacuum(in EnableVacuumRequestInput) (EnableVacuumResponse, error) {
-	_, body, err := c.rpc.EnableVacuum(NewEnableVacuumRequest(in))
+func (c *Client) EnableVacuum(ctx context.Context, in EnableVacuumRequestInput) (EnableVacuumResponse, error) {
+	_, body, err := c.rpc.EnableVacuum(ctx, NewEnableVacuumRequest(in))
 	if err != nil {
 		return EnableVacuumResponse{}, err
 	}
@@ -276,8 +277,8 @@ func (c *Client) EnableVacuum(in EnableVacuumRequestInput) (EnableVacuumResponse
 }
 
 // VolumeMarkReadonly marks a volume read-only.
-func (c *Client) VolumeMarkReadonly(in VolumeMarkReadonlyRequestInput) (VolumeMarkReadonlyResponse, error) {
-	_, body, err := c.rpc.VolumeMarkReadonly(NewVolumeMarkReadonlyRequest(in))
+func (c *Client) VolumeMarkReadonly(ctx context.Context, in VolumeMarkReadonlyRequestInput) (VolumeMarkReadonlyResponse, error) {
+	_, body, err := c.rpc.VolumeMarkReadonly(ctx, NewVolumeMarkReadonlyRequest(in))
 	if err != nil {
 		return VolumeMarkReadonlyResponse{}, err
 	}
@@ -285,8 +286,8 @@ func (c *Client) VolumeMarkReadonly(in VolumeMarkReadonlyRequestInput) (VolumeMa
 }
 
 // GetMasterConfiguration returns the master's runtime configuration.
-func (c *Client) GetMasterConfiguration(in GetMasterConfigurationRequestInput) (GetMasterConfigurationResponse, error) {
-	_, body, err := c.rpc.GetMasterConfiguration(NewGetMasterConfigurationRequest(in))
+func (c *Client) GetMasterConfiguration(ctx context.Context, in GetMasterConfigurationRequestInput) (GetMasterConfigurationResponse, error) {
+	_, body, err := c.rpc.GetMasterConfiguration(ctx, NewGetMasterConfigurationRequest(in))
 	if err != nil {
 		return GetMasterConfigurationResponse{}, err
 	}
@@ -294,8 +295,8 @@ func (c *Client) GetMasterConfiguration(in GetMasterConfigurationRequestInput) (
 }
 
 // ListClusterNodes lists known cluster nodes of a client type.
-func (c *Client) ListClusterNodes(in ListClusterNodesRequestInput) (ListClusterNodesResponse, error) {
-	_, body, err := c.rpc.ListClusterNodes(NewListClusterNodesRequest(in))
+func (c *Client) ListClusterNodes(ctx context.Context, in ListClusterNodesRequestInput) (ListClusterNodesResponse, error) {
+	_, body, err := c.rpc.ListClusterNodes(ctx, NewListClusterNodesRequest(in))
 	if err != nil {
 		return ListClusterNodesResponse{}, err
 	}
@@ -303,8 +304,8 @@ func (c *Client) ListClusterNodes(in ListClusterNodesRequestInput) (ListClusterN
 }
 
 // LeaseAdminToken leases the admin lock token.
-func (c *Client) LeaseAdminToken(in LeaseAdminTokenRequestInput) (LeaseAdminTokenResponse, error) {
-	_, body, err := c.rpc.LeaseAdminToken(NewLeaseAdminTokenRequest(in))
+func (c *Client) LeaseAdminToken(ctx context.Context, in LeaseAdminTokenRequestInput) (LeaseAdminTokenResponse, error) {
+	_, body, err := c.rpc.LeaseAdminToken(ctx, NewLeaseAdminTokenRequest(in))
 	if err != nil {
 		return LeaseAdminTokenResponse{}, err
 	}
@@ -312,8 +313,8 @@ func (c *Client) LeaseAdminToken(in LeaseAdminTokenRequestInput) (LeaseAdminToke
 }
 
 // ReleaseAdminToken releases the admin lock token.
-func (c *Client) ReleaseAdminToken(in ReleaseAdminTokenRequestInput) (ReleaseAdminTokenResponse, error) {
-	_, body, err := c.rpc.ReleaseAdminToken(NewReleaseAdminTokenRequest(in))
+func (c *Client) ReleaseAdminToken(ctx context.Context, in ReleaseAdminTokenRequestInput) (ReleaseAdminTokenResponse, error) {
+	_, body, err := c.rpc.ReleaseAdminToken(ctx, NewReleaseAdminTokenRequest(in))
 	if err != nil {
 		return ReleaseAdminTokenResponse{}, err
 	}
@@ -321,8 +322,8 @@ func (c *Client) ReleaseAdminToken(in ReleaseAdminTokenRequestInput) (ReleaseAdm
 }
 
 // Ping round-trips a liveness probe.
-func (c *Client) Ping(in PingRequestInput) (PingResponse, error) {
-	_, body, err := c.rpc.Ping(NewPingRequest(in))
+func (c *Client) Ping(ctx context.Context, in PingRequestInput) (PingResponse, error) {
+	_, body, err := c.rpc.Ping(ctx, NewPingRequest(in))
 	if err != nil {
 		return PingResponse{}, err
 	}
@@ -330,8 +331,8 @@ func (c *Client) Ping(in PingRequestInput) (PingResponse, error) {
 }
 
 // RaftListClusterServers lists the raft membership.
-func (c *Client) RaftListClusterServers(in RaftListClusterServersRequestInput) (RaftListClusterServersResponse, error) {
-	_, body, err := c.rpc.RaftListClusterServers(NewRaftListClusterServersRequest(in))
+func (c *Client) RaftListClusterServers(ctx context.Context, in RaftListClusterServersRequestInput) (RaftListClusterServersResponse, error) {
+	_, body, err := c.rpc.RaftListClusterServers(ctx, NewRaftListClusterServersRequest(in))
 	if err != nil {
 		return RaftListClusterServersResponse{}, err
 	}
@@ -339,8 +340,8 @@ func (c *Client) RaftListClusterServers(in RaftListClusterServersRequestInput) (
 }
 
 // RaftAddServer adds a raft server.
-func (c *Client) RaftAddServer(in RaftAddServerRequestInput) (RaftAddServerResponse, error) {
-	_, body, err := c.rpc.RaftAddServer(NewRaftAddServerRequest(in))
+func (c *Client) RaftAddServer(ctx context.Context, in RaftAddServerRequestInput) (RaftAddServerResponse, error) {
+	_, body, err := c.rpc.RaftAddServer(ctx, NewRaftAddServerRequest(in))
 	if err != nil {
 		return RaftAddServerResponse{}, err
 	}
@@ -348,8 +349,8 @@ func (c *Client) RaftAddServer(in RaftAddServerRequestInput) (RaftAddServerRespo
 }
 
 // RaftRemoveServer removes a raft server.
-func (c *Client) RaftRemoveServer(in RaftRemoveServerRequestInput) (RaftRemoveServerResponse, error) {
-	_, body, err := c.rpc.RaftRemoveServer(NewRaftRemoveServerRequest(in))
+func (c *Client) RaftRemoveServer(ctx context.Context, in RaftRemoveServerRequestInput) (RaftRemoveServerResponse, error) {
+	_, body, err := c.rpc.RaftRemoveServer(ctx, NewRaftRemoveServerRequest(in))
 	if err != nil {
 		return RaftRemoveServerResponse{}, err
 	}
@@ -357,8 +358,8 @@ func (c *Client) RaftRemoveServer(in RaftRemoveServerRequestInput) (RaftRemoveSe
 }
 
 // RaftLeadershipTransfer transfers raft leadership.
-func (c *Client) RaftLeadershipTransfer(in RaftLeadershipTransferRequestInput) (RaftLeadershipTransferResponse, error) {
-	_, body, err := c.rpc.RaftLeadershipTransfer(NewRaftLeadershipTransferRequest(in))
+func (c *Client) RaftLeadershipTransfer(ctx context.Context, in RaftLeadershipTransferRequestInput) (RaftLeadershipTransferResponse, error) {
+	_, body, err := c.rpc.RaftLeadershipTransfer(ctx, NewRaftLeadershipTransferRequest(in))
 	if err != nil {
 		return RaftLeadershipTransferResponse{}, err
 	}
@@ -366,8 +367,8 @@ func (c *Client) RaftLeadershipTransfer(in RaftLeadershipTransferRequestInput) (
 }
 
 // VolumeGrow grows writable volumes.
-func (c *Client) VolumeGrow(in VolumeGrowRequestInput) (VolumeGrowResponse, error) {
-	_, body, err := c.rpc.VolumeGrow(NewVolumeGrowRequest(in))
+func (c *Client) VolumeGrow(ctx context.Context, in VolumeGrowRequestInput) (VolumeGrowResponse, error) {
+	_, body, err := c.rpc.VolumeGrow(ctx, NewVolumeGrowRequest(in))
 	if err != nil {
 		return VolumeGrowResponse{}, err
 	}

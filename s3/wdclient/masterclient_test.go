@@ -6,14 +6,13 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb"
-	"google.golang.org/grpc"
 )
 
 // TestWaitUntilConnectedWithoutKeepConnected verifies that WaitUntilConnected
 // respects context cancellation when KeepConnectedToMaster is not running.
 // This tests the fix for https://github.com/hanzoai/s3/issues/7721
 func TestWaitUntilConnectedWithoutKeepConnected(t *testing.T) {
-	mc := NewMasterClient(grpc.EmptyDialOption{}, "test-group", "test-client", "", "", "", pb.ServerDiscovery{})
+	mc := NewMasterClient(pb.DialOption{}, "test-group", "test-client", "", "", "", pb.ServerDiscovery{})
 
 	// Without KeepConnectedToMaster running, WaitUntilConnected should
 	// respect context cancellation and not block forever
@@ -39,7 +38,7 @@ func TestWaitUntilConnectedWithoutKeepConnected(t *testing.T) {
 // TestWaitUntilConnectedReturnsImmediatelyWhenConnected verifies that
 // WaitUntilConnected returns immediately when a master is already set.
 func TestWaitUntilConnectedReturnsImmediatelyWhenConnected(t *testing.T) {
-	mc := NewMasterClient(grpc.EmptyDialOption{}, "test-group", "test-client", "", "", "", pb.ServerDiscovery{})
+	mc := NewMasterClient(pb.DialOption{}, "test-group", "test-client", "", "", "", pb.ServerDiscovery{})
 
 	// Simulate that KeepConnectedToMaster has already established a connection
 	mc.setCurrentMaster("localhost:9333")
@@ -64,7 +63,7 @@ func TestWaitUntilConnectedReturnsImmediatelyWhenConnected(t *testing.T) {
 // TestGetMasterRespectsContextCancellation verifies that GetMaster
 // respects context cancellation and doesn't block forever.
 func TestGetMasterRespectsContextCancellation(t *testing.T) {
-	mc := NewMasterClient(grpc.EmptyDialOption{}, "test-group", "test-client", "", "", "", pb.ServerDiscovery{})
+	mc := NewMasterClient(pb.DialOption{}, "test-group", "test-client", "", "", "", pb.ServerDiscovery{})
 
 	// GetMaster calls WaitUntilConnected internally
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
@@ -91,7 +90,7 @@ func TestMasterClientFilerGroupLogging(t *testing.T) {
 	filerGroup := "filer_1"
 	clientType := "s3"
 
-	mc := NewMasterClient(grpc.EmptyDialOption{}, filerGroup, clientType, "", "", "", pb.ServerDiscovery{})
+	mc := NewMasterClient(pb.DialOption{}, filerGroup, clientType, "", "", "", pb.ServerDiscovery{})
 
 	if mc.FilerGroup != filerGroup {
 		t.Errorf("Expected FilerGroup %s, got %s", filerGroup, mc.FilerGroup)

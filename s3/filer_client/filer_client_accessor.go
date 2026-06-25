@@ -12,7 +12,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
-	"google.golang.org/grpc"
 )
 
 // filerHealth tracks the health status of a filer
@@ -51,7 +50,7 @@ func (fh *filerHealth) recordSuccess() {
 }
 
 type FilerClientAccessor struct {
-	GetGrpcDialOption func() grpc.DialOption
+	GetGrpcDialOption func() pb.DialOption
 	GetFilers         func() []pb.ServerAddress // Returns multiple filer addresses for failover
 
 	// Health tracking for smart failover
@@ -206,13 +205,13 @@ func (fca *FilerClientAccessor) ReadTopicConfFromFilerWithMetadata(t topic.Topic
 }
 
 // NewFilerClientAccessor creates a FilerClientAccessor with one or more filers
-func NewFilerClientAccessor(filerAddresses []pb.ServerAddress, grpcDialOption grpc.DialOption) *FilerClientAccessor {
+func NewFilerClientAccessor(filerAddresses []pb.ServerAddress, grpcDialOption pb.DialOption) *FilerClientAccessor {
 	if len(filerAddresses) == 0 {
 		panic("at least one filer address is required")
 	}
 
 	return &FilerClientAccessor{
-		GetGrpcDialOption: func() grpc.DialOption {
+		GetGrpcDialOption: func() pb.DialOption {
 			return grpcDialOption
 		},
 		GetFilers: func() []pb.ServerAddress {

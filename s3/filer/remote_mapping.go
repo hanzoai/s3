@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/remote_pb"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
 )
 
-func ReadMountMappings(grpcDialOption grpc.DialOption, filerAddress pb.ServerAddress) (mappings *remote_pb.RemoteStorageMapping, readErr error) {
+func ReadMountMappings(grpcDialOption pb.DialOption, filerAddress pb.ServerAddress) (mappings *remote_pb.RemoteStorageMapping, readErr error) {
 	var oldContent []byte
 	if readErr = pb.WithFilerClient(false, 0, filerAddress, grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
 		oldContent, readErr = ReadInsideFiler(context.Background(), client, DirectoryEtcRemote, REMOTE_STORAGE_MOUNT_FILE)

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage/erasure_coding"
@@ -114,7 +115,7 @@ func TestEc9plus3MultiDiskRebootLoadsAllShards(t *testing.T) {
 		maxCounts[i] = 100
 	}
 
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		dirs, maxCounts, minFree, "", NeedleMapInMemory, diskTypes, nil, 3, stats.DefaultDiskIOProbeConfig())
 	drainStoreChans(t, store)
 
@@ -215,7 +216,7 @@ func TestEc9plus3ValidateKeepsVolumeWithDat(t *testing.T) {
 		t.Fatalf("save .vif: %v", err)
 	}
 
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir}, []int32{100}, []util.MinFreeSpace{{}}, "",
 		NeedleMapInMemory, []types.DiskType{types.HardDriveType}, nil, 3, stats.DefaultDiskIOProbeConfig())
 	drainStoreChans(t, store)
@@ -305,7 +306,7 @@ func TestEc9plus3PruneKeepsFullDataShardSet(t *testing.T) {
 		t.Fatalf("write .dat: %v", err)
 	}
 
-	store := NewStore(nil, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
+	store := NewStore(pb.DialOption{}, "localhost", 8080, 18080, "http://localhost:8080", "store-id",
 		[]string{dir0, dir1}, []int32{100, 100}, []util.MinFreeSpace{{}, {}}, "",
 		NeedleMapInMemory, []types.DiskType{types.HardDriveType, types.HardDriveType}, nil, 3, stats.DefaultDiskIOProbeConfig())
 	drainStoreChans(t, store)

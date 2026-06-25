@@ -11,17 +11,17 @@ import (
 	"time"
 
 	"github.com/pkg/sftp"
+
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	filer_pb "github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/sftpd/user"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc"
 )
 
 type SftpServer struct {
 	filerAddr                pb.ServerAddress
-	grpcDialOption           grpc.DialOption
+	grpcDialOption           pb.DialOption
 	dataCenter               string
 	filerGroup               string
 	user                     *user.User
@@ -30,7 +30,7 @@ type SftpServer struct {
 }
 
 // NewSftpServer constructs the server.
-func NewSftpServer(filerAddr pb.ServerAddress, grpcDialOption grpc.DialOption, dataCenter, filerGroup string, user *user.User, filerSigningKey []byte, filerSigningExpiresAfter int) SftpServer {
+func NewSftpServer(filerAddr pb.ServerAddress, grpcDialOption pb.DialOption, dataCenter, filerGroup string, user *user.User, filerSigningKey []byte, filerSigningExpiresAfter int) SftpServer {
 
 	return SftpServer{
 		filerAddr:                filerAddr,

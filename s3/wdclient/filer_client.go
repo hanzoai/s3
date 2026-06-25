@@ -9,10 +9,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"github.com/hanzoai/s3/s3/cluster"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
@@ -44,7 +40,7 @@ type FilerClient struct {
 	filerAddressesMu   sync.RWMutex   // Protects filerAddresses and filerHealth
 	filerIndex         int32          // atomic: current filer index for round-robin
 	filerHealth        []*filerHealth // health status per filer (same order as filerAddresses)
-	grpcDialOption     grpc.DialOption
+	grpcDialOption     pb.DialOption
 	urlPreference      UrlPreference
 	grpcTimeout        time.Duration
 	cacheSize          int           // Number of historical vidMap snapshots to keep
@@ -89,7 +85,7 @@ type FilerClientOption struct {
 // NewFilerClient creates a new client that queries filer(s) for volume locations
 // Supports multiple filer addresses for high availability with automatic failover
 // Uses sensible defaults: 5-second gRPC timeout, PreferUrl, DefaultVidMapCacheSize
-func NewFilerClient(filerAddresses []pb.ServerAddress, grpcDialOption grpc.DialOption, dataCenter string, opts ...*FilerClientOption) *FilerClient {
+func NewFilerClient(filerAddresses []pb.ServerAddress, grpcDialOption pb.DialOption, dataCenter string, opts ...*FilerClientOption) *FilerClient {
 	if len(filerAddresses) == 0 {
 		glog.Fatal("NewFilerClient requires at least one filer address")
 	}
@@ -489,39 +485,25 @@ func (fc *FilerClient) GetLookupFileIdFunction() LookupFileIdFunctionType {
 	}
 }
 
-// isRetryableGrpcError checks if a gRPC error is transient and should be retried
+// isRetryableFilerLookupError checks if a filer lookup error is transient and
+// should be retried. The filer speaks ZAP, which carries the error as a string
+// tagged with its code name; classify by matching those names plus the
+// transport-level substrings.
 //
-// Note on codes.Aborted: While Aborted can indicate application-level conflicts
-// (e.g., transaction failures), in the context of volume location lookups (which
-// are simple read-only operations with no transactions), Aborted is more likely
-// to indicate transient server issues during restart/recovery. We include it here
-// for volume lookups but log it for visibility in case misclassification occurs.
-func isRetryableGrpcError(err error) bool {
+// Note on Aborted: while it can mark an application-level conflict, volume
+// location lookups are read-only with no transactions, so Aborted there is far
+// more likely a transient server hiccup during restart/recovery — treat it as
+// retryable.
+func isRetryableFilerLookupError(err error) bool {
 	if err == nil {
 		return false
 	}
-
-	// Check gRPC status code
-	st, ok := status.FromError(err)
-	if ok {
-		switch st.Code() {
-		case codes.Unavailable: // Server unavailable (temporary)
-			return true
-		case codes.DeadlineExceeded: // Request timeout
-			return true
-		case codes.ResourceExhausted: // Rate limited or overloaded
-			return true
-		case codes.Aborted:
-			// Aborted during read-only volume lookups is likely transient
-			// (e.g., filer restarting), but log for visibility
-			glog.V(1).Infof("Treating Aborted as retryable for volume lookup: %v", err)
-			return true
-		}
-	}
-
-	// Fallback to string matching for non-gRPC errors (e.g., network errors)
 	errStr := err.Error()
-	return strings.Contains(errStr, "transport") ||
+	return strings.Contains(errStr, "Unavailable") ||
+		strings.Contains(errStr, "DeadlineExceeded") ||
+		strings.Contains(errStr, "ResourceExhausted") ||
+		strings.Contains(errStr, "Aborted") ||
+		strings.Contains(errStr, "transport") ||
 		strings.Contains(errStr, "connection") ||
 		strings.Contains(errStr, "timeout") ||
 		strings.Contains(errStr, "unavailable")
@@ -700,8 +682,8 @@ func (p *filerVolumeProvider) LookupVolumeIds(ctx context.Context, volumeIds []s
 		}
 
 		// All filers failed on this attempt
-		// Check if the error is retryable (transient gRPC error)
-		if !isRetryableGrpcError(lastErr) {
+		// Check if the error is retryable (transient error)
+		if !isRetryableFilerLookupError(lastErr) {
 			// Non-retryable error (e.g., NotFound, PermissionDenied) - fail immediately
 			return nil, fmt.Errorf("all %d filer(s) failed with non-retryable error: %w", n, lastErr)
 		}

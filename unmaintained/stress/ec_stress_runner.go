@@ -22,8 +22,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/storage/erasure_coding"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type config struct {
@@ -46,7 +44,7 @@ type runner struct {
 	cfg config
 
 	httpClient     *http.Client
-	grpcDialOption grpc.DialOption
+	grpcDialOption pb.DialOption
 
 	mu            sync.Mutex
 	sequence      int64
@@ -83,7 +81,7 @@ func main() {
 	r := &runner{
 		cfg:            cfg,
 		httpClient:     &http.Client{Timeout: cfg.RequestTimeout},
-		grpcDialOption: grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpcDialOption: pb.DialOption{},
 		ecFirstSeenAt:  make(map[uint32]time.Time),
 		rng:            mrand.New(mrand.NewSource(time.Now().UnixNano())),
 	}

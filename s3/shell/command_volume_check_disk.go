@@ -22,7 +22,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/server/constants"
 	"github.com/hanzoai/s3/s3/storage/needle_map"
-	"google.golang.org/grpc"
 )
 
 func init() {
@@ -320,7 +319,7 @@ func (vcd *volumeCheckDisk) checkReadOnlyVolumes(volumeReplicas map[uint32][]*Vo
 	}
 }
 
-func (vcd *volumeCheckDisk) grpcDialOption() grpc.DialOption {
+func (vcd *volumeCheckDisk) grpcDialOption() pb.DialOption {
 	return vcd.commandEnv.option.GrpcDialOption
 }
 

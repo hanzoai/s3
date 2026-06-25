@@ -13,8 +13,6 @@ import (
 
 	"github.com/hanzoai/s3/s3/pb"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/security"
 )
@@ -50,7 +48,7 @@ type StoragePreference struct {
 
 type GetMasterFn func(ctx context.Context) pb.ServerAddress
 
-func SubmitFiles(masterFn GetMasterFn, grpcDialOption grpc.DialOption, files []*FilePart, pref StoragePreference, usePublicUrl bool) ([]SubmitResult, error) {
+func SubmitFiles(masterFn GetMasterFn, grpcDialOption pb.DialOption, files []*FilePart, pref StoragePreference, usePublicUrl bool) ([]SubmitResult, error) {
 	results := make([]SubmitResult, len(files))
 	var totalBytes int64
 	for index, file := range files {
@@ -131,7 +129,7 @@ func newFilePart(fullPathFilename string) (ret *FilePart, err error) {
 	return ret, nil
 }
 
-func (fi *FilePart) Upload(maxMB int, masterFn GetMasterFn, usePublicUrl bool, jwt security.EncodedJwt, grpcDialOption grpc.DialOption) (retSize uint32, err error) {
+func (fi *FilePart) Upload(maxMB int, masterFn GetMasterFn, usePublicUrl bool, jwt security.EncodedJwt, grpcDialOption pb.DialOption) (retSize uint32, err error) {
 	fileUrl := "http://" + fi.Server + "/" + fi.Fid
 	if fi.ModTime != 0 {
 		fileUrl += "?ts=" + strconv.Itoa(int(fi.ModTime))

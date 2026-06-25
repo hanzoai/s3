@@ -17,8 +17,6 @@ import (
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func newTxnTestServer(seed map[string]*filer.Entry) (*FilerServer, *renameTestStore) {
@@ -751,11 +749,11 @@ func TestObjectTransactionForwardsToOwner(t *testing.T) {
 	// owner's ring points back at the sender; only is_moved keeps it from
 	// re-forwarding to (and failing to dial) that bogus address.
 	withRing(owner, ownerAddr, sender)
-	owner.grpcDialOption = grpc.WithTransportCredentials(insecure.NewCredentials())
+	owner.grpcDialOption = pb.DialOption{}
 
 	self, selfStore := newTxnTestServer(nil)
 	withRing(self, sender, ownerAddr) // ring owner is the real owner; self forwards
-	self.grpcDialOption = grpc.WithTransportCredentials(insecure.NewCredentials())
+	self.grpcDialOption = pb.DialOption{}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

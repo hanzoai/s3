@@ -13,7 +13,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/worker_pb"
 	"github.com/hanzoai/s3/s3/worker/types"
 	"github.com/hanzoai/s3/s3/worker/types/base"
-	"google.golang.org/grpc"
 )
 
 // VacuumTask implements the Task interface.
@@ -31,14 +30,14 @@ type VacuumTask struct {
 	collection       string
 	garbageThreshold float64
 	progress         float64
-	grpcDialOption   grpc.DialOption
+	grpcDialOption   pb.DialOption
 	volumeSize       uint64
 	vacuumTargets    []string // populated by checkVacuumEligibility — subset of servers that pass the per-replica garbage re-check and proceed to Compact/Commit/Cleanup
 }
 
 // NewVacuumTask creates a new unified vacuum task instance covering every
 // replica server reported by the dispatcher.
-func NewVacuumTask(id string, servers []string, volumeID uint32, collection string, grpcDialOption grpc.DialOption) *VacuumTask {
+func NewVacuumTask(id string, servers []string, volumeID uint32, collection string, grpcDialOption pb.DialOption) *VacuumTask {
 	deduped := dedupePreserveOrder(servers)
 	return &VacuumTask{
 		BaseTask:         base.NewBaseTask(id, types.TaskTypeVacuum),

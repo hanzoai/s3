@@ -155,24 +155,18 @@ func Detection(ctx context.Context, metrics []*types.VolumeHealthMetrics, cluste
 				glog.Warningf("EC Detection: Volume %d has all %d EC shards in topology; "+
 					"source replica on %s is orphaned (#9448).",
 					metric.VolumeID, totalShards, metric.Server)
-				if clusterInfo.GrpcDialOption != nil {
-					deleted, cleanupErr := cleanupOrphanSourceReplicas(ctx, clusterInfo, metric, totalShards)
-					switch {
-					case cleanupErr != nil:
-						// Don't fall through to a re-encode — that would just
-						// collide with the mounted shards again. Surface the
-						// failure and wait for the next cycle; the source is
-						// still safe.
-						glog.Warningf("EC Detection: failed to auto-clean orphaned source for volume %d: %v", metric.VolumeID, cleanupErr)
-					case deleted > 0:
-						glog.Infof("EC Detection: auto-cleaned %d orphaned source replica(s) for volume %d after verifying all %d EC shards present", deleted, metric.VolumeID, totalShards)
-					default:
-						glog.V(1).Infof("EC Detection: no orphaned regular replicas found in topology for volume %d (collection %q)", metric.VolumeID, metric.Collection)
-					}
-				} else {
-					glog.Warningf("EC Detection: no gRPC dial option available to auto-clean orphaned source for volume %d; "+
-						"to clean up by hand, send a targeted VolumeDelete RPC to %s only — DO NOT use the cluster-wide `volume.delete` shell command, which would also delete the EC shards.",
-						metric.VolumeID, metric.Server)
+				deleted, cleanupErr := cleanupOrphanSourceReplicas(ctx, clusterInfo, metric, totalShards)
+				switch {
+				case cleanupErr != nil:
+					// Don't fall through to a re-encode — that would just
+					// collide with the mounted shards again. Surface the
+					// failure and wait for the next cycle; the source is
+					// still safe.
+					glog.Warningf("EC Detection: failed to auto-clean orphaned source for volume %d: %v", metric.VolumeID, cleanupErr)
+				case deleted > 0:
+					glog.Infof("EC Detection: auto-cleaned %d orphaned source replica(s) for volume %d after verifying all %d EC shards present", deleted, metric.VolumeID, totalShards)
+				default:
+					glog.V(1).Infof("EC Detection: no orphaned regular replicas found in topology for volume %d (collection %q)", metric.VolumeID, metric.Collection)
 				}
 				skippedAlreadyEC++
 				continue
@@ -694,9 +688,6 @@ func findExistingECShards(activeTopology *topology.ActiveTopology, volumeID uint
 func cleanupOrphanSourceReplicas(ctx context.Context, clusterInfo *types.ClusterInfo, metric *types.VolumeHealthMetrics, expectedShards int) (int, error) {
 	if clusterInfo == nil || clusterInfo.ActiveTopology == nil {
 		return 0, fmt.Errorf("active topology unavailable")
-	}
-	if clusterInfo.GrpcDialOption == nil {
-		return 0, fmt.Errorf("grpc dial option unavailable")
 	}
 
 	// Re-verify shard completeness right before acting. Defensive: detection

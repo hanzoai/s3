@@ -9,8 +9,6 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // DistributedLock is a grpc handler to handle FilerServer's LockRequest
@@ -120,10 +118,10 @@ func (fs *FilerServer) FindLockOwner(ctx context.Context, req *filer_pb.FindLock
 
 	if owner == "" {
 		glog.V(0).Infof("find lock %s moved to %v: %v", req.Name, movedTo, err)
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("lock %s not found", req.Name))
+		return nil, fmt.Errorf("NotFound: lock %s not found", req.Name)
 	}
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, fmt.Errorf("Internal: %w", err)
 	}
 
 	return &filer_pb.FindLockOwnerResponse{

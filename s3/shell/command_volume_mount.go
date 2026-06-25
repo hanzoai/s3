@@ -9,7 +9,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/storage/needle"
-	"google.golang.org/grpc"
 )
 
 func init() {
@@ -58,7 +57,7 @@ func (c *commandVolumeMount) Do(args []string, commandEnv *CommandEnv, writer io
 
 }
 
-func mountVolume(grpcDialOption grpc.DialOption, volumeId needle.VolumeId, sourceVolumeServer pb.ServerAddress) (err error) {
+func mountVolume(grpcDialOption pb.DialOption, volumeId needle.VolumeId, sourceVolumeServer pb.ServerAddress) (err error) {
 	return operation.WithVolumeServerClient(false, sourceVolumeServer, grpcDialOption, func(volumeServerClient volume_server_pb.VolumeServerClient) error {
 		_, mountErr := volumeServerClient.VolumeMount(context.Background(), &volume_server_pb.VolumeMountRequest{
 			VolumeId: uint32(volumeId),

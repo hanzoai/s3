@@ -12,8 +12,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/wdclient"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/security"
 
 	"github.com/hanzoai/s3/s3/filer"
@@ -52,7 +50,7 @@ type FilerSink struct {
 	ttlSec            int32
 	diskType          string
 	dataCenter        string
-	grpcDialOption    grpc.DialOption
+	grpcDialOption    pb.DialOption
 	address           string
 	writeChunkByFiler bool
 	isIncremental     bool
@@ -114,7 +112,7 @@ func (fs *FilerSink) getUploader() (*operation.Uploader, error) {
 }
 
 func (fs *FilerSink) DoInitialize(address, grpcAddress string, dir string,
-	replication string, collection string, ttlSec int, diskType string, grpcDialOption grpc.DialOption, writeChunkByFiler bool) (err error) {
+	replication string, collection string, ttlSec int, diskType string, grpcDialOption pb.DialOption, writeChunkByFiler bool) (err error) {
 	fs.address = address
 	if fs.address == "" {
 		fs.address = pb.GrpcAddressToServerAddress(grpcAddress)

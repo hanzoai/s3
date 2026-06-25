@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/pb"
 
 	"github.com/hanzoai/s3/s3/security"
@@ -109,7 +107,7 @@ func parseReplication(userReplication string, statsReplication string) (*super_b
 // backupFromLocation attempts to backup a volume from a specific volume server location.
 // Returns (error, isFatal) where isFatal=true means the error is due to invalid user input
 // and should not be retried with other locations.
-func backupFromLocation(volumeServer pb.ServerAddress, grpcDialOption grpc.DialOption, vid needle.VolumeId) (error, bool) {
+func backupFromLocation(volumeServer pb.ServerAddress, grpcDialOption pb.DialOption, vid needle.VolumeId) (error, bool) {
 	stats, err := operation.GetVolumeSyncStatus(volumeServer, grpcDialOption, uint32(vid))
 	if err != nil {
 		return fmt.Errorf("getting volume status: %w", err), false

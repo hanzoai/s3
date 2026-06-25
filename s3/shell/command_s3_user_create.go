@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -86,7 +87,7 @@ func (c *commandS3UserCreate) Do(args []string, commandEnv *CommandEnv, writer i
 	}
 
 	err := commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.CreateUser(iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{
+		_, _, err := client.CreateUser(context.Background(), iamwire.NewCreateUserRequest(iamwire.CreateUserRequestInput{
 			Identity: iamwire.IdentityInputFromPB(identity),
 		}))
 		return err

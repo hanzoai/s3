@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -67,7 +68,7 @@ func (c *commandS3AccessKeyCreate) Do(args []string, commandEnv *CommandEnv, wri
 	}
 
 	err := commandEnv.withIamClient(func(client *iamwire.HanzoIdentityAccessManagementClient) error {
-		_, _, err := client.CreateAccessKey(iamwire.NewCreateAccessKeyRequest(iamwire.CreateAccessKeyRequestInput{
+		_, _, err := client.CreateAccessKey(context.Background(), iamwire.NewCreateAccessKeyRequest(iamwire.CreateAccessKeyRequestInput{
 			Username: *user,
 			Credential: iamwire.CredentialInputFromPB(&iam_pb.Credential{
 				AccessKey: ak,

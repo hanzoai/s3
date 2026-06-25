@@ -13,15 +13,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/zap-proto/go/transport"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
 	pluginwire "github.com/hanzoai/s3/s3/wire/plugin"
 	pluginzapbridge "github.com/hanzoai/s3/s3/wire/plugin/zapbridge"
-	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -61,7 +61,7 @@ type WorkerOptions struct {
 	ReconnectDelay          time.Duration
 	MaxDetectionConcurrency int
 	MaxExecutionConcurrency int
-	GrpcDialOption          grpc.DialOption
+	GrpcDialOption          pb.DialOption
 	Handlers                []JobHandler
 	Handler                 JobHandler
 }
@@ -91,9 +91,6 @@ type Worker struct {
 func NewWorker(options WorkerOptions) (*Worker, error) {
 	if strings.TrimSpace(options.AdminServer) == "" {
 		return nil, fmt.Errorf("admin server is required")
-	}
-	if options.GrpcDialOption == nil {
-		return nil, fmt.Errorf("grpc dial option is required")
 	}
 	if options.HeartbeatInterval <= 0 {
 		options.HeartbeatInterval = defaultHeartbeatInterval

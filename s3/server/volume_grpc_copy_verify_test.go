@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage"
@@ -38,7 +38,7 @@ func (s *fakeVolumeCopyStream) RecvMsg(any) error                               
 func TestVolumeCopy_KeepsExistingReplicaWhenSourceUnreachable(t *testing.T) {
 	dir := t.TempDir()
 	store := storage.NewStore(
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		pb.DialOption{},
 		"127.0.0.1", 0, 0, "", "test-store",
 		[]string{dir}, []int32{10}, []util.MinFreeSpace{{}},
 		dir, storage.NeedleMapInMemory,
@@ -56,7 +56,7 @@ func TestVolumeCopy_KeepsExistingReplicaWhenSourceUnreachable(t *testing.T) {
 
 	vs := &VolumeServer{
 		store:          store,
-		grpcDialOption: grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpcDialOption: pb.DialOption{},
 	}
 
 	// 127.0.0.1:1 is unreachable, so ReadVolumeFileStatus on the source fails.
