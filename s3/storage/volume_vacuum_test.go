@@ -106,8 +106,9 @@ func testCompactionByIndex(t *testing.T, needleMapKind NeedleMapKind) {
 		nm := reflect.ValueOf(v.nm).Interface().(*LevelDbNeedleMap)
 		mm := nm.mapMetric
 		watermark := getWatermark(nm.db)
-		realWatermark := (nm.recordCount / watermarkBatchSize) * watermarkBatchSize
-		t.Logf("watermark from levelDB: %d, realWatermark: %d, nm.recordCount: %d, realRecordCount:%d, fileCount=%d, deletedcount:%d", watermark, realWatermark, nm.recordCount, realRecordCount, mm.FileCount(), v.DeletedCount())
+		recordCount := nm.recordCount.Load()
+		realWatermark := (recordCount / watermarkBatchSize) * watermarkBatchSize
+		t.Logf("watermark from levelDB: %d, realWatermark: %d, nm.recordCount: %d, realRecordCount:%d, fileCount=%d, deletedcount:%d", watermark, realWatermark, recordCount, realRecordCount, mm.FileCount(), v.DeletedCount())
 		if realWatermark != watermark {
 			t.Fatalf("testing watermark failed")
 		}
