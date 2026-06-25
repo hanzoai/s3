@@ -63,13 +63,13 @@ func Serve(network, addr string, mounter Mounter) (*transport.Server, error) {
 // Client is the typed HanzoMount ZAP service client internal services hold. It
 // owns the transport connection to one mount endpoint.
 type Client struct {
-	conn *transport.Conn
+	conn transport.Conn
 	rpc  *HanzoMountClient
 }
 
 // Dial connects to the HanzoMount ZAP service at addr over plain TCP. For the
 // PQ-secured mesh use transport.DialTLS with transport.PQTLSConfig and wrap the
-// resulting *transport.Conn with NewClient.
+// resulting transport.Conn with NewClient.
 func Dial(network, addr string) (*Client, error) {
 	conn, err := transport.Dial(network, addr)
 	if err != nil {
@@ -79,7 +79,7 @@ func Dial(network, addr string) (*Client, error) {
 }
 
 // NewClient wraps an already-established transport.Conn (TCP, Unix, or PQ-TLS).
-func NewClient(conn *transport.Conn) *Client {
+func NewClient(conn transport.Conn) *Client {
 	return &Client{conn: conn, rpc: NewHanzoMountClient(conn, nil)}
 }
 

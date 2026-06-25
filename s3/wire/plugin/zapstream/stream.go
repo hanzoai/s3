@@ -65,7 +65,7 @@ type Admin interface {
 // WorkerToAdminMessage (worker→admin), Send ships one AdminToWorkerMessage
 // (admin→worker). Safe for one concurrent Recv and one concurrent Send — the
 // standard streaming-RPC discipline.
-type ServerStream struct{ s *transport.Stream }
+type ServerStream struct{ s transport.Stream }
 
 // Recv returns the next worker→admin frame as a zero-copy view, or io.EOF once
 // the worker half-closes its send side.
@@ -94,7 +94,7 @@ func (s *ServerStream) CloseSend() error { return s.s.CloseSend() }
 // does that). An open for any ordinal other than WorkerStreamOrdinal is ignored
 // (the stream half-closes immediately).
 func Handler(admin Admin) transport.StreamHandler {
-	return func(method uint32, init []byte, s *transport.Stream) {
+	return func(method uint32, init []byte, s transport.Stream) {
 		if method != WorkerStreamOrdinal {
 			return // unknown stream method: returning half-closes + ends it
 		}
@@ -137,7 +137,7 @@ func (s *Server) Close() error { return s.srv.Close() }
 // Client is the worker's typed connection to one admin endpoint. It owns the
 // transport connection; one Client may open one WorkerStream at a time over it
 // (the control plane is a single long-lived stream per worker).
-type Client struct{ conn *transport.Conn }
+type Client struct{ conn transport.Conn }
 
 // Dial connects to the admin PluginControlService at addr (e.g.
 // "admin.hanzo.svc:18920") over plain TCP. For the PQ-secured mesh use
@@ -153,7 +153,7 @@ func Dial(network, addr string) (*Client, error) {
 // NewClient wraps an already-established transport.Conn (TCP, Unix, or PQ-TLS).
 // The conn's read loop routes stream frames, so a plain call-only Dial conn is
 // sufficient for the worker side.
-func NewClient(conn *transport.Conn) *Client { return &Client{conn: conn} }
+func NewClient(conn transport.Conn) *Client { return &Client{conn: conn} }
 
 // Close releases the underlying connection.
 func (c *Client) Close() error { return c.conn.Close() }
@@ -174,7 +174,7 @@ func (c *Client) OpenWorkerStream(hello []byte) (*ClientStream, error) {
 // one WorkerToAdminMessage (worker→admin); Recv yields the next
 // AdminToWorkerMessage (admin→worker). Safe for one concurrent Send and one
 // concurrent Recv.
-type ClientStream struct{ s *transport.Stream }
+type ClientStream struct{ s transport.Stream }
 
 // Send ships one worker→admin frame. frame must be a pluginwire
 // NewWorkerToAdminMessage buffer.

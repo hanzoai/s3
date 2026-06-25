@@ -20,7 +20,7 @@
 //     built response buffer. Dispatched by ordinal over a plain Call/Response
 //     envelope.
 //   - Streaming RPCs are hand-wired over transport.OpenStream /
-//     transport.StreamHandler / *transport.Stream, exactly like the mq_agent and
+//     transport.StreamHandler / transport.Stream, exactly like the mq_agent and
 //     plugin/worker stream adapters, because zapgen cannot express streams. Each
 //     stream frame is a zero-copy New*/Wrap* buffer (same doctrine as unary); the
 //     opening request rides as the stream's init payload and is replayed as the
@@ -230,19 +230,19 @@ func Dispatch(store VolumeServerStore) transport.Dispatch {
 
 // --- streaming server side ---
 
-// serverStream adapts a *transport.Stream to the per-RPC *ServerStream
+// serverStream adapts a transport.Stream to the per-RPC *ServerStream
 // interfaces below. Every streaming method shares the same frame plumbing (raw
 // ZAP buffers in/out); only the typed wrappers around the buffers differ, so one
 // adapter serves all of them. The opening request frame rides as init and is
 // replayed as the first Recv (mirroring mq_agentwire.serverStream and
 // s3/admin/plugin/worker_stream_zap.go).
 type serverStream struct {
-	s     *transport.Stream
+	s     transport.Stream
 	init  []byte
 	hasIn bool
 }
 
-func newServerStream(init []byte, s *transport.Stream) *serverStream {
+func newServerStream(init []byte, s transport.Stream) *serverStream {
 	return &serverStream{s: s, init: init, hasIn: len(init) > 0}
 }
 
@@ -445,7 +445,7 @@ func (s ReceiveFileServerStream) Reply(in ReceiveFileResponseInput) error {
 // handler half-closes the send side (the client's Recv then sees io.EOF), per
 // transport.StreamHandler semantics.
 func StreamHandler(store VolumeServerStore) transport.StreamHandler {
-	return func(method uint32, init []byte, s *transport.Stream) {
+	return func(method uint32, init []byte, s transport.Stream) {
 		z := newServerStream(init, s)
 		switch method {
 		case VolumeServerVacuumVolumeCompactOrdinal:
@@ -481,7 +481,7 @@ func StreamHandler(store VolumeServerStore) transport.StreamHandler {
 // ":18906"), backed by store. Unary calls route through Dispatch; the 11 streams
 // route through StreamHandler — both over ONE listener (transport.ListenStream),
 // exactly like the mq_agent ZAP server. Returns the running server; Close stops
-// it. For the PQ-secured mesh, build a TLS/QUIC *transport.Conn and serve the
+// it. For the PQ-secured mesh, build a TLS/QUIC transport.Conn and serve the
 // streams via conn.OpenStream against a ListenStream on the TLS listener.
 func Serve(network, addr string, store VolumeServerStore) (*transport.Server, error) {
 	return transport.ListenStream(network, addr, Dispatch(store), StreamHandler(store))
@@ -494,12 +494,12 @@ func Serve(network, addr string, store VolumeServerStore) (*transport.Server, er
 // owns the transport connection to one volume-server endpoint and serves both
 // the unary calls and the streaming opens over it.
 type Client struct {
-	conn *transport.Conn
+	conn transport.Conn
 	rpc  *VolumeServerClient
 }
 
 // Dial connects to the volume-server ZAP service at addr over plain TCP (e.g.
-// "volume.hanzo.svc:18906"). For the PQ-secured mesh, build the *transport.Conn
+// "volume.hanzo.svc:18906"). For the PQ-secured mesh, build the transport.Conn
 // via transport.DialTLS with a *tls.Config and use NewClient.
 func Dial(network, addr string) (*Client, error) {
 	conn, err := transport.Dial(network, addr)
@@ -510,7 +510,7 @@ func Dial(network, addr string) (*Client, error) {
 }
 
 // NewClient wraps an already-established transport.Conn (TCP, Unix, or PQ-TLS).
-func NewClient(conn *transport.Conn) *Client {
+func NewClient(conn transport.Conn) *Client {
 	return &Client{conn: conn, rpc: NewVolumeServerClient(conn, nil)}
 }
 
@@ -519,7 +519,7 @@ func (c *Client) Close() error { return c.conn.Close() }
 
 // Conn exposes the underlying transport connection, for callers that open
 // streams directly (the streaming client opens below use it).
-func (c *Client) Conn() *transport.Conn { return c.conn }
+func (c *Client) Conn() transport.Conn { return c.conn }
 
 // The typed unary client methods take a New<Req> input and return the Wrap<Resp>
 // view. They mirror s3/zapsvc Client.GetObject/PutObject and the mq_agent typed
@@ -830,7 +830,7 @@ func (c *Client) Ping(in PingRequestInput) (PingResponse, error) {
 // io.EOF.
 
 // VacuumVolumeCompactClientStream reads VacuumVolumeCompactResponse items.
-type VacuumVolumeCompactClientStream struct{ s *transport.Stream }
+type VacuumVolumeCompactClientStream struct{ s transport.Stream }
 
 // Recv returns the next VacuumVolumeCompactResponse, or io.EOF at end of stream.
 func (r *VacuumVolumeCompactClientStream) Recv() (VacuumVolumeCompactResponse, error) {
@@ -852,7 +852,7 @@ func (c *Client) VacuumVolumeCompact(in VacuumVolumeCompactRequestInput) (*Vacuu
 }
 
 // VolumeIncrementalCopyClientStream reads VolumeIncrementalCopyResponse items.
-type VolumeIncrementalCopyClientStream struct{ s *transport.Stream }
+type VolumeIncrementalCopyClientStream struct{ s transport.Stream }
 
 func (r *VolumeIncrementalCopyClientStream) Recv() (VolumeIncrementalCopyResponse, error) {
 	b, err := r.s.Recv()
@@ -872,7 +872,7 @@ func (c *Client) VolumeIncrementalCopy(in VolumeIncrementalCopyRequestInput) (*V
 }
 
 // VolumeCopyClientStream reads VolumeCopyResponse items.
-type VolumeCopyClientStream struct{ s *transport.Stream }
+type VolumeCopyClientStream struct{ s transport.Stream }
 
 func (r *VolumeCopyClientStream) Recv() (VolumeCopyResponse, error) {
 	b, err := r.s.Recv()
@@ -892,7 +892,7 @@ func (c *Client) VolumeCopy(in VolumeCopyRequestInput) (*VolumeCopyClientStream,
 }
 
 // CopyFileClientStream reads CopyFileResponse items.
-type CopyFileClientStream struct{ s *transport.Stream }
+type CopyFileClientStream struct{ s transport.Stream }
 
 func (r *CopyFileClientStream) Recv() (CopyFileResponse, error) {
 	b, err := r.s.Recv()
@@ -912,7 +912,7 @@ func (c *Client) CopyFile(in CopyFileRequestInput) (*CopyFileClientStream, error
 }
 
 // ReadAllNeedlesClientStream reads ReadAllNeedlesResponse items.
-type ReadAllNeedlesClientStream struct{ s *transport.Stream }
+type ReadAllNeedlesClientStream struct{ s transport.Stream }
 
 func (r *ReadAllNeedlesClientStream) Recv() (ReadAllNeedlesResponse, error) {
 	b, err := r.s.Recv()
@@ -932,7 +932,7 @@ func (c *Client) ReadAllNeedles(in ReadAllNeedlesRequestInput) (*ReadAllNeedlesC
 }
 
 // VolumeTailSenderClientStream reads VolumeTailSenderResponse items.
-type VolumeTailSenderClientStream struct{ s *transport.Stream }
+type VolumeTailSenderClientStream struct{ s transport.Stream }
 
 func (r *VolumeTailSenderClientStream) Recv() (VolumeTailSenderResponse, error) {
 	b, err := r.s.Recv()
@@ -952,7 +952,7 @@ func (c *Client) VolumeTailSender(in VolumeTailSenderRequestInput) (*VolumeTailS
 }
 
 // VolumeEcShardReadClientStream reads VolumeEcShardReadResponse items.
-type VolumeEcShardReadClientStream struct{ s *transport.Stream }
+type VolumeEcShardReadClientStream struct{ s transport.Stream }
 
 func (r *VolumeEcShardReadClientStream) Recv() (VolumeEcShardReadResponse, error) {
 	b, err := r.s.Recv()
@@ -972,7 +972,7 @@ func (c *Client) VolumeEcShardRead(in VolumeEcShardReadRequestInput) (*VolumeEcS
 }
 
 // VolumeTierMoveDatToRemoteClientStream reads VolumeTierMoveDatToRemoteResponse items.
-type VolumeTierMoveDatToRemoteClientStream struct{ s *transport.Stream }
+type VolumeTierMoveDatToRemoteClientStream struct{ s transport.Stream }
 
 func (r *VolumeTierMoveDatToRemoteClientStream) Recv() (VolumeTierMoveDatToRemoteResponse, error) {
 	b, err := r.s.Recv()
@@ -992,7 +992,7 @@ func (c *Client) VolumeTierMoveDatToRemote(in VolumeTierMoveDatToRemoteRequestIn
 }
 
 // VolumeTierMoveDatFromRemoteClientStream reads VolumeTierMoveDatFromRemoteResponse items.
-type VolumeTierMoveDatFromRemoteClientStream struct{ s *transport.Stream }
+type VolumeTierMoveDatFromRemoteClientStream struct{ s transport.Stream }
 
 func (r *VolumeTierMoveDatFromRemoteClientStream) Recv() (VolumeTierMoveDatFromRemoteResponse, error) {
 	b, err := r.s.Recv()
@@ -1012,7 +1012,7 @@ func (c *Client) VolumeTierMoveDatFromRemote(in VolumeTierMoveDatFromRemoteReque
 }
 
 // QueryClientStream reads QueriedStripe items.
-type QueryClientStream struct{ s *transport.Stream }
+type QueryClientStream struct{ s transport.Stream }
 
 func (r *QueryClientStream) Recv() (QueriedStripe, error) {
 	b, err := r.s.Recv()
@@ -1034,7 +1034,7 @@ func (c *Client) Query(in QueryRequestInput) (*QueryClientStream, error) {
 // ReceiveFileClientStream is the client view of the one client-streaming RPC:
 // Send ReceiveFileRequest frames (first = info, then content chunks), CloseSend,
 // then Reply() reads the single terminal ReceiveFileResponse.
-type ReceiveFileClientStream struct{ s *transport.Stream }
+type ReceiveFileClientStream struct{ s transport.Stream }
 
 // Send streams one ReceiveFileRequest frame.
 func (p *ReceiveFileClientStream) Send(in ReceiveFileRequestInput) error {

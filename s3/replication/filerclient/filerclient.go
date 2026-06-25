@@ -45,7 +45,7 @@ import (
 // unary issues calls over the filerwire client; stream opens streams over the
 // filerstream client on the SAME connection.
 type adapter struct {
-	conn   *transport.Conn
+	conn   transport.Conn
 	unary  *filerwire.HanzoFilerClient
 	stream *filerstream.Client
 }
@@ -53,7 +53,7 @@ type adapter struct {
 // New wraps an established transport.Conn as a filer_pb.HanzoFilerClient that
 // routes over the native ZAP transport. The conn's lifetime is owned by the
 // caller (close it when the call scope returns).
-func New(conn *transport.Conn) filer_pb.HanzoFilerClient {
+func New(conn transport.Conn) filer_pb.HanzoFilerClient {
 	return &adapter{
 		conn:   conn,
 		unary:  filerwire.NewHanzoFilerClient(conn, nil),

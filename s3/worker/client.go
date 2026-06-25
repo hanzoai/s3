@@ -73,8 +73,8 @@ type grpcState struct {
 	connected       bool
 	reconnecting    bool
 	shouldReconnect bool
-	conn            *transport.Conn
-	stream          *transport.Stream
+	conn            transport.Conn
+	stream          transport.Stream
 	streamCtx       context.Context
 	streamCancel    context.CancelFunc
 	lastWorkerInfo  *types.WorkerData
@@ -252,7 +252,7 @@ func (c *GrpcAdminClient) handleConnect(cmd grpcCommand, s *grpcState) {
 }
 
 // createConnection dials the admin server over the ZAP transport.
-func (c *GrpcAdminClient) createConnection() (*transport.Conn, error) {
+func (c *GrpcAdminClient) createConnection() (transport.Conn, error) {
 	conn, err := transport.Dial("tcp", c.adminAddress)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to admin server %s: %w", c.adminAddress, err)
@@ -393,7 +393,7 @@ func (c *GrpcAdminClient) reconnectionLoop(reconnectStop chan struct{}, onExit f
 // handleOutgoing processes outgoing messages to admin
 func handleOutgoing(
 	sessionID string,
-	stream *transport.Stream,
+	stream transport.Stream,
 	streamExit <-chan struct{},
 	outgoing <-chan *worker_pb.WorkerMessage,
 	cmds chan<- grpcCommand) {
@@ -472,7 +472,7 @@ func handleOutgoing(
 func handleIncoming(
 	sessionID string,
 	workerID string,
-	stream *transport.Stream,
+	stream transport.Stream,
 	streamExit <-chan struct{},
 	incoming chan<- *worker_pb.AdminMessage,
 	cmds chan<- grpcCommand,

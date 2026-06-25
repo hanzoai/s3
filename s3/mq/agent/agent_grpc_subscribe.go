@@ -22,7 +22,7 @@ import (
 // stream over the ZAP transport: the first frame carries the init request, each
 // subsequent inbound frame an ack; each delivered record is sent back as a
 // SubscribeRecordResponse frame.
-func (a *MessageQueueAgent) SubscribeRecord(init []byte, s *transport.Stream) error {
+func (a *MessageQueueAgent) SubscribeRecord(init []byte, s transport.Stream) error {
 	// the first message is the subscribe request; it carries the init request
 	initMessage, err := mq_agentwire.WrapSubscribeRecordRequest(init)
 	if err != nil {

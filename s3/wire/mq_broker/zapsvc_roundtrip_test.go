@@ -109,7 +109,7 @@ func (f *fakeBroker) GetPartitionRangeInfo(GetPartitionRangeInfoRequest) (GetPar
 // sends one ack with the publisher's assigned base offset, and for every data
 // frame it records the value and sends a per-message ack. Other streaming
 // ordinals are not exercised by these tests.
-func (f *fakeBroker) ServeStream(method uint32, init []byte, s *transport.Stream) {
+func (f *fakeBroker) ServeStream(method uint32, init []byte, s transport.Stream) {
 	switch method {
 	case HanzoMessagingPublishMessageOrdinal:
 		f.servePublish(init, s)
@@ -118,7 +118,7 @@ func (f *fakeBroker) ServeStream(method uint32, init []byte, s *transport.Stream
 	}
 }
 
-func (f *fakeBroker) servePublish(init []byte, s *transport.Stream) {
+func (f *fakeBroker) servePublish(init []byte, s transport.Stream) {
 	// The opening frame is a PublishMessageRequest carrying the InitMessage
 	// variant; ack it with the base offset.
 	_ = init

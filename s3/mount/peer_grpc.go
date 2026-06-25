@@ -82,7 +82,7 @@ func (s *PeerGrpcServer) Start(addr string) error {
 // FetchChunkResponse frames, then returns (which half-closes the stream so the
 // client's Recv sees io.EOF). A miss or invalid request returns without
 // sending any frame; the client treats a frameless stream as a miss.
-func (s *PeerGrpcServer) streamHandler(method uint32, init []byte, stream *transport.Stream) {
+func (s *PeerGrpcServer) streamHandler(method uint32, init []byte, stream transport.Stream) {
 	if method != mount_peerwire.MountPeerFetchChunkOrdinal {
 		return
 	}
@@ -178,7 +178,7 @@ func (s *PeerGrpcServer) FetchChunk(reqBytes []byte) ([]byte, error) {
 // FetchChunkResponse frames of at most fetchChunkStreamSize bytes. A miss or
 // invalid request returns an error and no frame; the client reads zero frames
 // as a miss.
-func (s *PeerGrpcServer) serveFetchChunk(initBytes []byte, stream *transport.Stream) error {
+func (s *PeerGrpcServer) serveFetchChunk(initBytes []byte, stream transport.Stream) error {
 	req, err := mount_peerwire.WrapFetchChunkRequest(initBytes)
 	if err != nil {
 		return err

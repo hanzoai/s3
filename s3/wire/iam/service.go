@@ -138,7 +138,7 @@ func Serve(network, addr string, store IamStore) (*transport.Server, error) {
 // in-process iam_pb model (via the bridge_pb.go decoders) so call sites get the
 // same shapes the retired gRPC stub returned.
 type Client struct {
-	conn *transport.Conn
+	conn transport.Conn
 	rpc  *HanzoIdentityAccessManagementClient
 }
 
@@ -154,7 +154,7 @@ func Dial(network, addr string) (*Client, error) {
 }
 
 // NewClient wraps an already-established transport.Conn (TCP, Unix, or PQ-TLS).
-func NewClient(conn *transport.Conn) *Client {
+func NewClient(conn transport.Conn) *Client {
 	return &Client{conn: conn, rpc: NewHanzoIdentityAccessManagementClient(conn, nil)}
 }
 
