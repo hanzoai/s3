@@ -608,16 +608,9 @@ var filerPool = transport.NewPool(dialFilerZapAddr)
 
 func WithGrpcFilerClient(streamingMode bool, signature int32, filerAddress ServerAddress, grpcDialOption grpc.DialOption, fn func(client filer_pb.HanzoFilerClient) error) error {
 	_, _, _ = streamingMode, signature, grpcDialOption
-	addr := filerAddress.ToGrpcAddress()
-	conn, err := filerPool.Get(addr)
-	if err != nil {
-		return err
-	}
-	err = fn(NewZapFilerClient(conn))
-	if conn.IsClosed() { // the conn died during the call — drop it so the next redials
-		filerPool.Evict(addr, conn)
-	}
-	return err
+	return filerPool.With(filerAddress.ToGrpcAddress(), func(conn *transport.Conn) error {
+		return fn(NewZapFilerClient(conn))
+	})
 }
 
 // WithOneOfGrpcFilerClients tries each filer address in turn over the ZAP
@@ -625,16 +618,9 @@ func WithGrpcFilerClient(streamingMode bool, signature int32, filerAddress Serve
 func WithOneOfGrpcFilerClients(streamingMode bool, filerAddresses []ServerAddress, grpcDialOption grpc.DialOption, fn func(client filer_pb.HanzoFilerClient) error) (err error) {
 	_, _ = streamingMode, grpcDialOption
 	for _, filerAddress := range filerAddresses {
-		addr := filerAddress.ToGrpcAddress()
-		conn, dialErr := filerPool.Get(addr)
-		if dialErr != nil {
-			err = dialErr
-			continue
-		}
-		err = fn(NewZapFilerClient(conn))
-		if conn.IsClosed() {
-			filerPool.Evict(addr, conn)
-		}
+		err = filerPool.With(filerAddress.ToGrpcAddress(), func(conn *transport.Conn) error {
+			return fn(NewZapFilerClient(conn))
+		})
 		if err == nil {
 			return nil
 		}
