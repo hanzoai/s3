@@ -439,14 +439,13 @@ func (a *zapVolumeClient) Query(_ context.Context, in *volume_server_pb.QueryReq
 // --- client-streaming RPC --------------------------------------------------
 
 func (a *zapVolumeClient) ReceiveFile(_ context.Context) (rpc.ClientStream[volume_server_pb.ReceiveFileRequest, volume_server_pb.ReceiveFileResponse], error) {
-	// ReceiveFile opens with no message; the wire open needs an init frame, so
-	// open with an empty (Data=0, oneof-unset) opener the server's Recv loop
-	// drains without acting on. Every Send then ships a real info/content frame.
-	s, err := a.stream.ReceiveFile(vsw.ReceiveFileRequestInput{})
-	if err != nil {
-		return nil, err
-	}
-	return &receiveFileClientStream{s: s}, nil
+	// The gRPC contract opens with no message, but the wire stream's OpenStream
+	// payload IS the first frame and the server replays it as its first Recv
+	// (serverStream.Recv). So the FIRST Send becomes the open's init frame — the
+	// real info frame rides as init exactly like every server-streaming RPC's
+	// request does. There is no empty opener: an opener with Data=0 (oneof-unset)
+	// would surface to the handler's oneof switch as "unknown message type".
+	return &receiveFileClientStream{open: a.stream.ReceiveFile}, nil
 }
 
 type vacuumVolumeCompactClientStream struct {
@@ -569,19 +568,43 @@ func (x *queryClientStream) Recv() (*volume_server_pb.QueriedStripe, error) {
 	return QueriedStripeFromView(v), nil
 }
 
-// receiveFileClientStream adapts the one client-streaming RPC: each Send ships a
-// ReceiveFileRequest frame; CloseAndRecv half-closes and reads the terminal
-// ReceiveFileResponse.
+// receiveFileClientStream adapts the one client-streaming RPC. The wire stream
+// opens lazily on the FIRST Send: that frame becomes the open's init payload (the
+// server replays init as its first Recv), so the real info frame — never an empty
+// opener — leads the stream. Subsequent Sends ship content frames; CloseAndRecv
+// half-closes and reads the terminal ReceiveFileResponse.
 type receiveFileClientStream struct {
-	s *vsw.ReceiveFileClientStream
+	open func(vsw.ReceiveFileRequestInput) (*vsw.ReceiveFileClientStream, error)
+	s    *vsw.ReceiveFileClientStream
 }
 
 func (x *receiveFileClientStream) Send(in *volume_server_pb.ReceiveFileRequest) error {
+	if x.s == nil {
+		s, err := x.open(receiveFileReqInput(in))
+		if err != nil {
+			return err
+		}
+		x.s = s
+		return nil
+	}
 	return x.s.Send(receiveFileReqInput(in))
 }
-func (x *receiveFileClientStream) CloseSend() error { return x.s.CloseSend() }
+func (x *receiveFileClientStream) CloseSend() error {
+	if x.s == nil {
+		// No frame was ever sent; open with an empty init so the server sees a
+		// stream it can half-close cleanly (the handler's loop returns io.EOF
+		// with zero bytes written). This path is unused by the EC distributor,
+		// which always sends an info frame first, but keeps CloseSend total.
+		s, err := x.open(vsw.ReceiveFileRequestInput{})
+		if err != nil {
+			return err
+		}
+		x.s = s
+	}
+	return x.s.CloseSend()
+}
 func (x *receiveFileClientStream) CloseAndRecv() (*volume_server_pb.ReceiveFileResponse, error) {
-	if err := x.s.CloseSend(); err != nil {
+	if err := x.CloseSend(); err != nil {
 		return nil, err
 	}
 	v, err := x.s.Reply()
