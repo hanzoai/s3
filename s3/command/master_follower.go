@@ -143,15 +143,24 @@ func startMasterFollower(masterOptions MasterOptions) {
 	// (ServerAddress.ToMasterZapAddress). The follower carries no raft service, so
 	// — unlike the leader in command/master.go — it stands up NO gRPC server at
 	// all: the entire master API rides ZAP, exactly as command/filer.go serves the
-	// filer. Clients reach it via pb.WithMasterClient over the masterPool.
+	// filer. Clients reach it via pb.WithMasterClient over the masterPool. PQ-mTLS
+	// gating mirrors the leader: grpc.master.cert/.key -> PQ-TLS, else plaintext.
 	grpcPort := *masterOptions.portGrpc
 	masterZapAddr := util.JoinHostPort(*masterOptions.ipBind, grpcPort+10000)
 	masterDispatch := masterwire.Dispatch(masterzap.NewServerBackend(ms))
 	masterStream := masterstream.Handler(masterzap.NewStreamServer(ms))
-	if _, zapErr := transport.ListenStream("tcp", masterZapAddr, masterDispatch, masterStream); zapErr != nil {
+	var zapErr error
+	if tlsCfg := security.ServerTLSConfig(util.GetViper(), "grpc.master"); tlsCfg != nil {
+		_, zapErr = transport.ListenStreamTLS("tcp", masterZapAddr,
+			transport.PQTLSConfig(tlsCfg), masterDispatch, masterStream)
+		glog.V(0).Infof("Serving Hanzo S3 Master %s (follower) over PQ-TLS ZAP transport at %s", version.Version(), masterZapAddr)
+	} else {
+		_, zapErr = transport.ListenStream("tcp", masterZapAddr, masterDispatch, masterStream)
+		glog.V(0).Infof("Start Hanzo S3 Master %s (follower) ZAP transport (unary+streaming; plaintext) at %s", version.Version(), masterZapAddr)
+	}
+	if zapErr != nil {
 		glog.Fatalf("master follower failed to serve over ZAP on %s: %v", masterZapAddr, zapErr)
 	}
-	glog.V(0).Infof("Start Hanzo S3 Master %s ZAP transport (unary+streaming) at %s", version.Version(), masterZapAddr)
 
 	go ms.MasterClient.KeepConnectedToMaster(context.Background())
 

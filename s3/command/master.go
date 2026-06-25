@@ -286,17 +286,32 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	// (masterstream.Handler over masterzap.NewStreamServer) on one listener —
 	// exactly as command/filer.go serves the filer. Clients reach it via
 	// pb.WithMasterClient over the masterPool. This replaces the legacy gRPC
-	// HanzoServer registration: no master RPC rides gRPC anymore. Fatal on bind
-	// error: the master cannot serve its API without it.
+	// HanzoServer registration: no master RPC rides gRPC anymore.
+	//
+	// When grpc.master.cert/.key is configured the listener is PQ-secured mTLS:
+	// transport.PQTLSConfig pins the X25519MLKEM768 hybrid (PQ X-Wing) and the
+	// same cert/CA/allowed-CN gate the legacy gRPC master enforced (LoadServerTLS
+	// "grpc.master") applies — no security downgrade. The client mirrors this in
+	// pb.dialMasterZapAddr (DialTLS under grpc.master). Otherwise plaintext
+	// (loopback / dev), exactly as the gRPC master was plaintext with no cert.
+	// Fatal on bind error: the master cannot serve its API without it.
 	masterZapAddr := util.JoinHostPort(*masterOption.ipBind, grpcPort+10000)
 	masterDispatch := masterwire.Dispatch(masterzap.NewServerBackend(ms))
 	masterStream := masterstream.Handler(masterzap.NewStreamServer(ms))
-	if masterZapSrv, zapErr := transport.ListenStream("tcp", masterZapAddr, masterDispatch, masterStream); zapErr != nil {
-		glog.Fatalf("master failed to serve over ZAP on %s: %v", masterZapAddr, zapErr)
+	var masterZapSrv *transport.Server
+	var zapErr error
+	if tlsCfg := security.ServerTLSConfig(util.GetViper(), "grpc.master"); tlsCfg != nil {
+		masterZapSrv, zapErr = transport.ListenStreamTLS("tcp", masterZapAddr,
+			transport.PQTLSConfig(tlsCfg), masterDispatch, masterStream)
+		glog.V(0).Infof("Serving Hanzo S3 Master %s over PQ-TLS (X25519MLKEM768) ZAP transport at %s", version.Version(), masterZapAddr)
 	} else {
-		glog.V(0).Infof("Start Hanzo S3 Master %s ZAP transport (unary+streaming) at %s", version.Version(), masterZapAddr)
-		grace.OnInterrupt(func() { masterZapSrv.Close() })
+		masterZapSrv, zapErr = transport.ListenStream("tcp", masterZapAddr, masterDispatch, masterStream)
+		glog.V(0).Infof("Start Hanzo S3 Master %s ZAP transport (unary+streaming; plaintext, set grpc.master.cert/.key for PQ-TLS) at %s", version.Version(), masterZapAddr)
 	}
+	if zapErr != nil {
+		glog.Fatalf("master failed to serve over ZAP on %s: %v", masterZapAddr, zapErr)
+	}
+	grace.OnInterrupt(func() { masterZapSrv.Close() })
 
 	// For multi-master mode with non-Hashicorp raft, wait and check if we should join
 	if !*masterOption.raftHashicorp && !isSingleMaster {
