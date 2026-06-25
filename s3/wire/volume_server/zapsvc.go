@@ -450,13 +450,13 @@ func (s ReceiveFileServerStream) Reply(in ReceiveFileResponseInput) error {
 // end OR peer conn-drop), so a backend handler that blocks on Context().Done()
 // is released on client disconnect — no goroutine leak. Delegates to the shared
 // serverStream.Context(); mirrors filerstream's per-type Context().
-func (s VacuumVolumeCompactServerStream) Context() context.Context     { return s.z.Context() }
-func (s VolumeIncrementalCopyServerStream) Context() context.Context   { return s.z.Context() }
-func (s VolumeCopyServerStream) Context() context.Context              { return s.z.Context() }
-func (s CopyFileServerStream) Context() context.Context                { return s.z.Context() }
-func (s ReadAllNeedlesServerStream) Context() context.Context          { return s.z.Context() }
-func (s VolumeTailSenderServerStream) Context() context.Context        { return s.z.Context() }
-func (s VolumeEcShardReadServerStream) Context() context.Context       { return s.z.Context() }
+func (s VacuumVolumeCompactServerStream) Context() context.Context       { return s.z.Context() }
+func (s VolumeIncrementalCopyServerStream) Context() context.Context     { return s.z.Context() }
+func (s VolumeCopyServerStream) Context() context.Context                { return s.z.Context() }
+func (s CopyFileServerStream) Context() context.Context                  { return s.z.Context() }
+func (s ReadAllNeedlesServerStream) Context() context.Context            { return s.z.Context() }
+func (s VolumeTailSenderServerStream) Context() context.Context          { return s.z.Context() }
+func (s VolumeEcShardReadServerStream) Context() context.Context         { return s.z.Context() }
 func (s VolumeTierMoveDatToRemoteServerStream) Context() context.Context { return s.z.Context() }
 func (s VolumeTierMoveDatFromRemoteServerStream) Context() context.Context {
 	return s.z.Context()
@@ -553,7 +553,7 @@ func (c *Client) Conn() transport.Conn { return c.conn }
 // leave this package as structs.
 
 func (c *Client) BatchDelete(in BatchDeleteRequestInput) (BatchDeleteResponse, error) {
-	_, body, err := c.rpc.BatchDelete(NewBatchDeleteRequest(in))
+	_, body, err := c.rpc.BatchDelete(context.Background(), NewBatchDeleteRequest(in))
 	if err != nil {
 		return BatchDeleteResponse{}, err
 	}
@@ -561,7 +561,7 @@ func (c *Client) BatchDelete(in BatchDeleteRequestInput) (BatchDeleteResponse, e
 }
 
 func (c *Client) VacuumVolumeCheck(in VacuumVolumeCheckRequestInput) (VacuumVolumeCheckResponse, error) {
-	_, body, err := c.rpc.VacuumVolumeCheck(NewVacuumVolumeCheckRequest(in))
+	_, body, err := c.rpc.VacuumVolumeCheck(context.Background(), NewVacuumVolumeCheckRequest(in))
 	if err != nil {
 		return VacuumVolumeCheckResponse{}, err
 	}
@@ -569,7 +569,7 @@ func (c *Client) VacuumVolumeCheck(in VacuumVolumeCheckRequestInput) (VacuumVolu
 }
 
 func (c *Client) VacuumVolumeCommit(in VacuumVolumeCommitRequestInput) (VacuumVolumeCommitResponse, error) {
-	_, body, err := c.rpc.VacuumVolumeCommit(NewVacuumVolumeCommitRequest(in))
+	_, body, err := c.rpc.VacuumVolumeCommit(context.Background(), NewVacuumVolumeCommitRequest(in))
 	if err != nil {
 		return VacuumVolumeCommitResponse{}, err
 	}
@@ -577,7 +577,7 @@ func (c *Client) VacuumVolumeCommit(in VacuumVolumeCommitRequestInput) (VacuumVo
 }
 
 func (c *Client) VacuumVolumeCleanup(in VacuumVolumeCleanupRequestInput) (VacuumVolumeCleanupResponse, error) {
-	_, body, err := c.rpc.VacuumVolumeCleanup(NewVacuumVolumeCleanupRequest(in))
+	_, body, err := c.rpc.VacuumVolumeCleanup(context.Background(), NewVacuumVolumeCleanupRequest(in))
 	if err != nil {
 		return VacuumVolumeCleanupResponse{}, err
 	}
@@ -585,7 +585,7 @@ func (c *Client) VacuumVolumeCleanup(in VacuumVolumeCleanupRequestInput) (Vacuum
 }
 
 func (c *Client) DeleteCollection(in DeleteCollectionRequestInput) (DeleteCollectionResponse, error) {
-	_, body, err := c.rpc.DeleteCollection(NewDeleteCollectionRequest(in))
+	_, body, err := c.rpc.DeleteCollection(context.Background(), NewDeleteCollectionRequest(in))
 	if err != nil {
 		return DeleteCollectionResponse{}, err
 	}
@@ -593,7 +593,7 @@ func (c *Client) DeleteCollection(in DeleteCollectionRequestInput) (DeleteCollec
 }
 
 func (c *Client) AllocateVolume(in AllocateVolumeRequestInput) (AllocateVolumeResponse, error) {
-	_, body, err := c.rpc.AllocateVolume(NewAllocateVolumeRequest(in))
+	_, body, err := c.rpc.AllocateVolume(context.Background(), NewAllocateVolumeRequest(in))
 	if err != nil {
 		return AllocateVolumeResponse{}, err
 	}
@@ -601,7 +601,7 @@ func (c *Client) AllocateVolume(in AllocateVolumeRequestInput) (AllocateVolumeRe
 }
 
 func (c *Client) VolumeSyncStatus(in VolumeSyncStatusRequestInput) (VolumeSyncStatusResponse, error) {
-	_, body, err := c.rpc.VolumeSyncStatus(NewVolumeSyncStatusRequest(in))
+	_, body, err := c.rpc.VolumeSyncStatus(context.Background(), NewVolumeSyncStatusRequest(in))
 	if err != nil {
 		return VolumeSyncStatusResponse{}, err
 	}
@@ -609,7 +609,7 @@ func (c *Client) VolumeSyncStatus(in VolumeSyncStatusRequestInput) (VolumeSyncSt
 }
 
 func (c *Client) VolumeMount(in VolumeMountRequestInput) (VolumeMountResponse, error) {
-	_, body, err := c.rpc.VolumeMount(NewVolumeMountRequest(in))
+	_, body, err := c.rpc.VolumeMount(context.Background(), NewVolumeMountRequest(in))
 	if err != nil {
 		return VolumeMountResponse{}, err
 	}
@@ -617,7 +617,7 @@ func (c *Client) VolumeMount(in VolumeMountRequestInput) (VolumeMountResponse, e
 }
 
 func (c *Client) VolumeUnmount(in VolumeUnmountRequestInput) (VolumeUnmountResponse, error) {
-	_, body, err := c.rpc.VolumeUnmount(NewVolumeUnmountRequest(in))
+	_, body, err := c.rpc.VolumeUnmount(context.Background(), NewVolumeUnmountRequest(in))
 	if err != nil {
 		return VolumeUnmountResponse{}, err
 	}
@@ -625,7 +625,7 @@ func (c *Client) VolumeUnmount(in VolumeUnmountRequestInput) (VolumeUnmountRespo
 }
 
 func (c *Client) VolumeDelete(in VolumeDeleteRequestInput) (VolumeDeleteResponse, error) {
-	_, body, err := c.rpc.VolumeDelete(NewVolumeDeleteRequest(in))
+	_, body, err := c.rpc.VolumeDelete(context.Background(), NewVolumeDeleteRequest(in))
 	if err != nil {
 		return VolumeDeleteResponse{}, err
 	}
@@ -633,7 +633,7 @@ func (c *Client) VolumeDelete(in VolumeDeleteRequestInput) (VolumeDeleteResponse
 }
 
 func (c *Client) VolumeMarkReadonly(in VolumeMarkReadonlyRequestInput) (VolumeMarkReadonlyResponse, error) {
-	_, body, err := c.rpc.VolumeMarkReadonly(NewVolumeMarkReadonlyRequest(in))
+	_, body, err := c.rpc.VolumeMarkReadonly(context.Background(), NewVolumeMarkReadonlyRequest(in))
 	if err != nil {
 		return VolumeMarkReadonlyResponse{}, err
 	}
@@ -641,7 +641,7 @@ func (c *Client) VolumeMarkReadonly(in VolumeMarkReadonlyRequestInput) (VolumeMa
 }
 
 func (c *Client) VolumeMarkWritable(in VolumeMarkWritableRequestInput) (VolumeMarkWritableResponse, error) {
-	_, body, err := c.rpc.VolumeMarkWritable(NewVolumeMarkWritableRequest(in))
+	_, body, err := c.rpc.VolumeMarkWritable(context.Background(), NewVolumeMarkWritableRequest(in))
 	if err != nil {
 		return VolumeMarkWritableResponse{}, err
 	}
@@ -649,7 +649,7 @@ func (c *Client) VolumeMarkWritable(in VolumeMarkWritableRequestInput) (VolumeMa
 }
 
 func (c *Client) VolumeConfigure(in VolumeConfigureRequestInput) (VolumeConfigureResponse, error) {
-	_, body, err := c.rpc.VolumeConfigure(NewVolumeConfigureRequest(in))
+	_, body, err := c.rpc.VolumeConfigure(context.Background(), NewVolumeConfigureRequest(in))
 	if err != nil {
 		return VolumeConfigureResponse{}, err
 	}
@@ -657,7 +657,7 @@ func (c *Client) VolumeConfigure(in VolumeConfigureRequestInput) (VolumeConfigur
 }
 
 func (c *Client) VolumeStatus(in VolumeStatusRequestInput) (VolumeStatusResponse, error) {
-	_, body, err := c.rpc.VolumeStatus(NewVolumeStatusRequest(in))
+	_, body, err := c.rpc.VolumeStatus(context.Background(), NewVolumeStatusRequest(in))
 	if err != nil {
 		return VolumeStatusResponse{}, err
 	}
@@ -665,7 +665,7 @@ func (c *Client) VolumeStatus(in VolumeStatusRequestInput) (VolumeStatusResponse
 }
 
 func (c *Client) GetState(in GetStateRequestInput) (GetStateResponse, error) {
-	_, body, err := c.rpc.GetState(NewGetStateRequest(in))
+	_, body, err := c.rpc.GetState(context.Background(), NewGetStateRequest(in))
 	if err != nil {
 		return GetStateResponse{}, err
 	}
@@ -673,7 +673,7 @@ func (c *Client) GetState(in GetStateRequestInput) (GetStateResponse, error) {
 }
 
 func (c *Client) SetState(in SetStateRequestInput) (SetStateResponse, error) {
-	_, body, err := c.rpc.SetState(NewSetStateRequest(in))
+	_, body, err := c.rpc.SetState(context.Background(), NewSetStateRequest(in))
 	if err != nil {
 		return SetStateResponse{}, err
 	}
@@ -681,7 +681,7 @@ func (c *Client) SetState(in SetStateRequestInput) (SetStateResponse, error) {
 }
 
 func (c *Client) ReadVolumeFileStatus(in ReadVolumeFileStatusRequestInput) (ReadVolumeFileStatusResponse, error) {
-	_, body, err := c.rpc.ReadVolumeFileStatus(NewReadVolumeFileStatusRequest(in))
+	_, body, err := c.rpc.ReadVolumeFileStatus(context.Background(), NewReadVolumeFileStatusRequest(in))
 	if err != nil {
 		return ReadVolumeFileStatusResponse{}, err
 	}
@@ -689,7 +689,7 @@ func (c *Client) ReadVolumeFileStatus(in ReadVolumeFileStatusRequestInput) (Read
 }
 
 func (c *Client) ReadNeedleBlob(in ReadNeedleBlobRequestInput) (ReadNeedleBlobResponse, error) {
-	_, body, err := c.rpc.ReadNeedleBlob(NewReadNeedleBlobRequest(in))
+	_, body, err := c.rpc.ReadNeedleBlob(context.Background(), NewReadNeedleBlobRequest(in))
 	if err != nil {
 		return ReadNeedleBlobResponse{}, err
 	}
@@ -697,7 +697,7 @@ func (c *Client) ReadNeedleBlob(in ReadNeedleBlobRequestInput) (ReadNeedleBlobRe
 }
 
 func (c *Client) ReadNeedleMeta(in ReadNeedleMetaRequestInput) (ReadNeedleMetaResponse, error) {
-	_, body, err := c.rpc.ReadNeedleMeta(NewReadNeedleMetaRequest(in))
+	_, body, err := c.rpc.ReadNeedleMeta(context.Background(), NewReadNeedleMetaRequest(in))
 	if err != nil {
 		return ReadNeedleMetaResponse{}, err
 	}
@@ -705,7 +705,7 @@ func (c *Client) ReadNeedleMeta(in ReadNeedleMetaRequestInput) (ReadNeedleMetaRe
 }
 
 func (c *Client) WriteNeedleBlob(in WriteNeedleBlobRequestInput) (WriteNeedleBlobResponse, error) {
-	_, body, err := c.rpc.WriteNeedleBlob(NewWriteNeedleBlobRequest(in))
+	_, body, err := c.rpc.WriteNeedleBlob(context.Background(), NewWriteNeedleBlobRequest(in))
 	if err != nil {
 		return WriteNeedleBlobResponse{}, err
 	}
@@ -713,7 +713,7 @@ func (c *Client) WriteNeedleBlob(in WriteNeedleBlobRequestInput) (WriteNeedleBlo
 }
 
 func (c *Client) VolumeTailReceiver(in VolumeTailReceiverRequestInput) (VolumeTailReceiverResponse, error) {
-	_, body, err := c.rpc.VolumeTailReceiver(NewVolumeTailReceiverRequest(in))
+	_, body, err := c.rpc.VolumeTailReceiver(context.Background(), NewVolumeTailReceiverRequest(in))
 	if err != nil {
 		return VolumeTailReceiverResponse{}, err
 	}
@@ -721,7 +721,7 @@ func (c *Client) VolumeTailReceiver(in VolumeTailReceiverRequestInput) (VolumeTa
 }
 
 func (c *Client) VolumeEcShardsGenerate(in VolumeEcShardsGenerateRequestInput) (VolumeEcShardsGenerateResponse, error) {
-	_, body, err := c.rpc.VolumeEcShardsGenerate(NewVolumeEcShardsGenerateRequest(in))
+	_, body, err := c.rpc.VolumeEcShardsGenerate(context.Background(), NewVolumeEcShardsGenerateRequest(in))
 	if err != nil {
 		return VolumeEcShardsGenerateResponse{}, err
 	}
@@ -729,7 +729,7 @@ func (c *Client) VolumeEcShardsGenerate(in VolumeEcShardsGenerateRequestInput) (
 }
 
 func (c *Client) VolumeEcShardsRebuild(in VolumeEcShardsRebuildRequestInput) (VolumeEcShardsRebuildResponse, error) {
-	_, body, err := c.rpc.VolumeEcShardsRebuild(NewVolumeEcShardsRebuildRequest(in))
+	_, body, err := c.rpc.VolumeEcShardsRebuild(context.Background(), NewVolumeEcShardsRebuildRequest(in))
 	if err != nil {
 		return VolumeEcShardsRebuildResponse{}, err
 	}
@@ -737,7 +737,7 @@ func (c *Client) VolumeEcShardsRebuild(in VolumeEcShardsRebuildRequestInput) (Vo
 }
 
 func (c *Client) VolumeEcShardsCopy(in VolumeEcShardsCopyRequestInput) (VolumeEcShardsCopyResponse, error) {
-	_, body, err := c.rpc.VolumeEcShardsCopy(NewVolumeEcShardsCopyRequest(in))
+	_, body, err := c.rpc.VolumeEcShardsCopy(context.Background(), NewVolumeEcShardsCopyRequest(in))
 	if err != nil {
 		return VolumeEcShardsCopyResponse{}, err
 	}
@@ -745,7 +745,7 @@ func (c *Client) VolumeEcShardsCopy(in VolumeEcShardsCopyRequestInput) (VolumeEc
 }
 
 func (c *Client) VolumeEcShardsDelete(in VolumeEcShardsDeleteRequestInput) (VolumeEcShardsDeleteResponse, error) {
-	_, body, err := c.rpc.VolumeEcShardsDelete(NewVolumeEcShardsDeleteRequest(in))
+	_, body, err := c.rpc.VolumeEcShardsDelete(context.Background(), NewVolumeEcShardsDeleteRequest(in))
 	if err != nil {
 		return VolumeEcShardsDeleteResponse{}, err
 	}
@@ -753,7 +753,7 @@ func (c *Client) VolumeEcShardsDelete(in VolumeEcShardsDeleteRequestInput) (Volu
 }
 
 func (c *Client) VolumeEcShardsMount(in VolumeEcShardsMountRequestInput) (VolumeEcShardsMountResponse, error) {
-	_, body, err := c.rpc.VolumeEcShardsMount(NewVolumeEcShardsMountRequest(in))
+	_, body, err := c.rpc.VolumeEcShardsMount(context.Background(), NewVolumeEcShardsMountRequest(in))
 	if err != nil {
 		return VolumeEcShardsMountResponse{}, err
 	}
@@ -761,7 +761,7 @@ func (c *Client) VolumeEcShardsMount(in VolumeEcShardsMountRequestInput) (Volume
 }
 
 func (c *Client) VolumeEcShardsUnmount(in VolumeEcShardsUnmountRequestInput) (VolumeEcShardsUnmountResponse, error) {
-	_, body, err := c.rpc.VolumeEcShardsUnmount(NewVolumeEcShardsUnmountRequest(in))
+	_, body, err := c.rpc.VolumeEcShardsUnmount(context.Background(), NewVolumeEcShardsUnmountRequest(in))
 	if err != nil {
 		return VolumeEcShardsUnmountResponse{}, err
 	}
@@ -769,7 +769,7 @@ func (c *Client) VolumeEcShardsUnmount(in VolumeEcShardsUnmountRequestInput) (Vo
 }
 
 func (c *Client) VolumeEcBlobDelete(in VolumeEcBlobDeleteRequestInput) (VolumeEcBlobDeleteResponse, error) {
-	_, body, err := c.rpc.VolumeEcBlobDelete(NewVolumeEcBlobDeleteRequest(in))
+	_, body, err := c.rpc.VolumeEcBlobDelete(context.Background(), NewVolumeEcBlobDeleteRequest(in))
 	if err != nil {
 		return VolumeEcBlobDeleteResponse{}, err
 	}
@@ -777,7 +777,7 @@ func (c *Client) VolumeEcBlobDelete(in VolumeEcBlobDeleteRequestInput) (VolumeEc
 }
 
 func (c *Client) VolumeEcShardsToVolume(in VolumeEcShardsToVolumeRequestInput) (VolumeEcShardsToVolumeResponse, error) {
-	_, body, err := c.rpc.VolumeEcShardsToVolume(NewVolumeEcShardsToVolumeRequest(in))
+	_, body, err := c.rpc.VolumeEcShardsToVolume(context.Background(), NewVolumeEcShardsToVolumeRequest(in))
 	if err != nil {
 		return VolumeEcShardsToVolumeResponse{}, err
 	}
@@ -785,7 +785,7 @@ func (c *Client) VolumeEcShardsToVolume(in VolumeEcShardsToVolumeRequestInput) (
 }
 
 func (c *Client) VolumeEcShardsInfo(in VolumeEcShardsInfoRequestInput) (VolumeEcShardsInfoResponse, error) {
-	_, body, err := c.rpc.VolumeEcShardsInfo(NewVolumeEcShardsInfoRequest(in))
+	_, body, err := c.rpc.VolumeEcShardsInfo(context.Background(), NewVolumeEcShardsInfoRequest(in))
 	if err != nil {
 		return VolumeEcShardsInfoResponse{}, err
 	}
@@ -793,7 +793,7 @@ func (c *Client) VolumeEcShardsInfo(in VolumeEcShardsInfoRequestInput) (VolumeEc
 }
 
 func (c *Client) VolumeServerStatus(in VolumeServerStatusRequestInput) (VolumeServerStatusResponse, error) {
-	_, body, err := c.rpc.VolumeServerStatus(NewVolumeServerStatusRequest(in))
+	_, body, err := c.rpc.VolumeServerStatus(context.Background(), NewVolumeServerStatusRequest(in))
 	if err != nil {
 		return VolumeServerStatusResponse{}, err
 	}
@@ -801,7 +801,7 @@ func (c *Client) VolumeServerStatus(in VolumeServerStatusRequestInput) (VolumeSe
 }
 
 func (c *Client) VolumeServerLeave(in VolumeServerLeaveRequestInput) (VolumeServerLeaveResponse, error) {
-	_, body, err := c.rpc.VolumeServerLeave(NewVolumeServerLeaveRequest(in))
+	_, body, err := c.rpc.VolumeServerLeave(context.Background(), NewVolumeServerLeaveRequest(in))
 	if err != nil {
 		return VolumeServerLeaveResponse{}, err
 	}
@@ -809,7 +809,7 @@ func (c *Client) VolumeServerLeave(in VolumeServerLeaveRequestInput) (VolumeServ
 }
 
 func (c *Client) FetchAndWriteNeedle(in FetchAndWriteNeedleRequestInput) (FetchAndWriteNeedleResponse, error) {
-	_, body, err := c.rpc.FetchAndWriteNeedle(NewFetchAndWriteNeedleRequest(in))
+	_, body, err := c.rpc.FetchAndWriteNeedle(context.Background(), NewFetchAndWriteNeedleRequest(in))
 	if err != nil {
 		return FetchAndWriteNeedleResponse{}, err
 	}
@@ -817,7 +817,7 @@ func (c *Client) FetchAndWriteNeedle(in FetchAndWriteNeedleRequestInput) (FetchA
 }
 
 func (c *Client) ScrubVolume(in ScrubVolumeRequestInput) (ScrubVolumeResponse, error) {
-	_, body, err := c.rpc.ScrubVolume(NewScrubVolumeRequest(in))
+	_, body, err := c.rpc.ScrubVolume(context.Background(), NewScrubVolumeRequest(in))
 	if err != nil {
 		return ScrubVolumeResponse{}, err
 	}
@@ -825,7 +825,7 @@ func (c *Client) ScrubVolume(in ScrubVolumeRequestInput) (ScrubVolumeResponse, e
 }
 
 func (c *Client) ScrubEcVolume(in ScrubEcVolumeRequestInput) (ScrubEcVolumeResponse, error) {
-	_, body, err := c.rpc.ScrubEcVolume(NewScrubEcVolumeRequest(in))
+	_, body, err := c.rpc.ScrubEcVolume(context.Background(), NewScrubEcVolumeRequest(in))
 	if err != nil {
 		return ScrubEcVolumeResponse{}, err
 	}
@@ -833,7 +833,7 @@ func (c *Client) ScrubEcVolume(in ScrubEcVolumeRequestInput) (ScrubEcVolumeRespo
 }
 
 func (c *Client) VolumeNeedleStatus(in VolumeNeedleStatusRequestInput) (VolumeNeedleStatusResponse, error) {
-	_, body, err := c.rpc.VolumeNeedleStatus(NewVolumeNeedleStatusRequest(in))
+	_, body, err := c.rpc.VolumeNeedleStatus(context.Background(), NewVolumeNeedleStatusRequest(in))
 	if err != nil {
 		return VolumeNeedleStatusResponse{}, err
 	}
@@ -841,7 +841,7 @@ func (c *Client) VolumeNeedleStatus(in VolumeNeedleStatusRequestInput) (VolumeNe
 }
 
 func (c *Client) Ping(in PingRequestInput) (PingResponse, error) {
-	_, body, err := c.rpc.Ping(NewPingRequest(in))
+	_, body, err := c.rpc.Ping(context.Background(), NewPingRequest(in))
 	if err != nil {
 		return PingResponse{}, err
 	}
