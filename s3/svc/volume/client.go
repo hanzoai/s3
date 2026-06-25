@@ -591,21 +591,24 @@ func (x *receiveFileClientStream) Send(in *volume_server_pb.ReceiveFileRequest) 
 }
 func (x *receiveFileClientStream) CloseSend() error {
 	if x.s == nil {
-		// No frame was ever sent; open with an empty init so the server sees a
-		// stream it can half-close cleanly (the handler's loop returns io.EOF
-		// with zero bytes written). This path is unused by the EC distributor,
-		// which always sends an info frame first, but keeps CloseSend total.
-		s, err := x.open(vsw.ReceiveFileRequestInput{})
-		if err != nil {
-			return err
-		}
-		x.s = s
+		// Nothing was ever sent, so there is no wire stream to half-close — the
+		// stream is opened lazily on the first Send. Opening one here with an
+		// empty init would replay a oneof-unset frame that the server's handler
+		// rejects as "unknown message type" (the init frame IS the first Recv,
+		// it is not drained). A CloseSend with no prior Send is a clean no-op.
+		return nil
 	}
 	return x.s.CloseSend()
 }
 func (x *receiveFileClientStream) CloseAndRecv() (*volume_server_pb.ReceiveFileResponse, error) {
 	if err := x.CloseSend(); err != nil {
 		return nil, err
+	}
+	if x.s == nil {
+		// Zero-Send upload: the wire stream is opened lazily on first Send, so
+		// nothing was opened and there is no server reply to read. Return an
+		// empty response (0 bytes) rather than dereferencing a nil stream.
+		return &volume_server_pb.ReceiveFileResponse{}, nil
 	}
 	v, err := x.s.Reply()
 	if err != nil {
