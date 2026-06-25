@@ -123,6 +123,8 @@ require (
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/jhump/protoreflect v1.18.0
 	github.com/linkedin/goavro/v2 v2.15.0
+	github.com/luxfi/database v1.19.0
+	github.com/luxfi/log v1.4.3
 	github.com/luxfi/zapdb v1.10.1
 	github.com/minio/crc64nvme v1.1.1
 	github.com/orcaman/concurrent-map/v2 v2.0.1
@@ -207,10 +209,8 @@ require (
 	github.com/luxfi/constants v1.5.8 // indirect
 	github.com/luxfi/container v0.0.4 // indirect
 	github.com/luxfi/crypto v1.19.22 // indirect
-	github.com/luxfi/database v1.19.0 // indirect
 	github.com/luxfi/geth v1.17.11 // indirect
 	github.com/luxfi/ids v1.2.15 // indirect
-	github.com/luxfi/log v1.4.3 // indirect
 	github.com/luxfi/math v1.4.1 // indirect
 	github.com/luxfi/math/big v0.1.0 // indirect
 	github.com/luxfi/mdns v0.1.1 // indirect
