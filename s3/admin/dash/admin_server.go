@@ -11,8 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc"
-
 	"github.com/hanzoai/s3/s3/admin/maintenance"
 	adminplugin "github.com/hanzoai/s3/s3/admin/plugin"
 	"github.com/hanzoai/s3/s3/cluster"
@@ -1667,65 +1665,59 @@ func (s *AdminServer) UpdateTopicRetention(namespace, name string, enabled bool,
 		return fmt.Errorf("no active brokers found")
 	}
 
-	// Create gRPC connection
-	conn, err := grpc.NewClient(brokerAddress, s.grpcDialOption.Grpc())
-	if err != nil {
-		return fmt.Errorf("failed to connect to broker: %w", err)
-	}
-	defer conn.Close()
+	// Reach the broker over the native ZAP transport (mqzap), the same seam every
+	// other broker caller uses; no gRPC dial.
+	return pb.WithBrokerGrpcClient(false, brokerAddress, s.grpcDialOption, func(client mq_pb.HanzoMessagingClient) error {
+		// First, get the current topic configuration to preserve existing settings
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 
-	client := mq_pb.NewHanzoMessagingClient(conn)
+		currentConfig, err := client.GetTopicConfiguration(ctx, &mq_pb.GetTopicConfigurationRequest{
+			Topic: &schema_pb.Topic{
+				Namespace: namespace,
+				Name:      name,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("failed to get current topic configuration: %w", err)
+		}
 
-	// First, get the current topic configuration to preserve existing settings
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+		// Create the topic configuration request, preserving all existing settings
+		configRequest := &mq_pb.ConfigureTopicRequest{
+			Topic: &schema_pb.Topic{
+				Namespace: namespace,
+				Name:      name,
+			},
+			// Preserve existing partition count - this is critical!
+			PartitionCount: currentConfig.PartitionCount,
+			// Preserve existing schema if it exists
+			MessageRecordType: currentConfig.MessageRecordType,
+			KeyColumns:        currentConfig.KeyColumns,
+		}
 
-	currentConfig, err := client.GetTopicConfiguration(ctx, &mq_pb.GetTopicConfigurationRequest{
-		Topic: &schema_pb.Topic{
-			Namespace: namespace,
-			Name:      name,
-		},
+		// Update only the retention configuration
+		if enabled {
+			configRequest.Retention = &mq_pb.TopicRetention{
+				RetentionSeconds: retentionSeconds,
+				Enabled:          true,
+			}
+		} else {
+			// Set retention to disabled
+			configRequest.Retention = &mq_pb.TopicRetention{
+				RetentionSeconds: 0,
+				Enabled:          false,
+			}
+		}
+
+		// Send the configuration request with preserved settings
+		if _, err = client.ConfigureTopic(ctx, configRequest); err != nil {
+			return fmt.Errorf("failed to update topic retention: %w", err)
+		}
+
+		glog.V(0).Infof("Updated topic %s.%s retention (enabled: %v, seconds: %d) while preserving %d partitions",
+			namespace, name, enabled, retentionSeconds, currentConfig.PartitionCount)
+		return nil
 	})
-	if err != nil {
-		return fmt.Errorf("failed to get current topic configuration: %w", err)
-	}
-
-	// Create the topic configuration request, preserving all existing settings
-	configRequest := &mq_pb.ConfigureTopicRequest{
-		Topic: &schema_pb.Topic{
-			Namespace: namespace,
-			Name:      name,
-		},
-		// Preserve existing partition count - this is critical!
-		PartitionCount: currentConfig.PartitionCount,
-		// Preserve existing schema if it exists
-		MessageRecordType: currentConfig.MessageRecordType,
-		KeyColumns:        currentConfig.KeyColumns,
-	}
-
-	// Update only the retention configuration
-	if enabled {
-		configRequest.Retention = &mq_pb.TopicRetention{
-			RetentionSeconds: retentionSeconds,
-			Enabled:          true,
-		}
-	} else {
-		// Set retention to disabled
-		configRequest.Retention = &mq_pb.TopicRetention{
-			RetentionSeconds: 0,
-			Enabled:          false,
-		}
-	}
-
-	// Send the configuration request with preserved settings
-	_, err = client.ConfigureTopic(ctx, configRequest)
-	if err != nil {
-		return fmt.Errorf("failed to update topic retention: %w", err)
-	}
-
-	glog.V(0).Infof("Updated topic %s.%s retention (enabled: %v, seconds: %d) while preserving %d partitions",
-		namespace, name, enabled, retentionSeconds, currentConfig.PartitionCount)
-	return nil
 }
 
 // Shutdown gracefully shuts down the admin server

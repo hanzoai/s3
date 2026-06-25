@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/s3/masterzap"
+	"github.com/hanzoai/s3/s3/svc/master"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
@@ -52,8 +52,8 @@ func (s *fakeLookupServer) LookupVolume(_ context.Context, req *master_pb.Lookup
 func startFakeMasterServer(t *testing.T, srv master_pb.HanzoServer) pb.ServerAddress {
 	t.Helper()
 	zapSrv, err := transport.ListenStream("tcp", "127.0.0.1:0",
-		masterwire.Dispatch(masterzap.NewServerBackend(srv)),
-		masterstream.Handler(masterzap.NewStreamServer(srv)))
+		masterwire.Dispatch(master.NewServerBackend(srv)),
+		masterstream.Handler(master.NewStreamServer(srv)))
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
