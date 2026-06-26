@@ -9,15 +9,15 @@ object store can be embedded and offered as a managed service without copyleft.
 
 ## S-Chain — engines on top
 
-Hanzo S3 is the platform's decentralized storage substrate — **"S-Chain"**: an open,
-content-addressed object store. Compute and query engines build on it:
+Hanzo S3 is the platform's distributed storage substrate — **"S-Chain"**: an open
+object store. Compute and query engines build on it:
 
 - **Datastore** — the OLAP (columnar) engine, a ClickHouse fork
   ([hanzoai/datastore](https://github.com/hanzoai/datastore)). Its `MergeTree` parts
-  live here as content-addressed objects, so stateless compute replicas share one
-  zero-copy copy of the data (proven PoC).
-- **Decentralized SQL** — the OLTP engine (SQLite/Base): one encrypted database file
-  per user or project, also stored here as content-addressed objects.
+  live here as objects, so stateless compute replicas share one zero-copy copy of the
+  data (proven PoC).
+- **Decentralized SQL** — the planned OLTP engine (SQLite/Base), designed not yet
+  built: one encrypted database file per user or project, also stored here as objects.
 
 Direction: a ZAP-native transport (the Cap'n-Proto-derived RPC) and Quasar
 (post-quantum, leaderless) consensus for the small commitments, with bulk data staying

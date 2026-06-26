@@ -77,8 +77,8 @@ func init() {
 
 var cmdUpdate = &Command{
 	UsageLine: "update [-dir=/path/to/dir] [-name=name] [-version=x.xx]",
-	Short:     "get latest or specific version from https://github.com/seaweedfs/seaweedfs",
-	Long:      `get latest or specific version from https://github.com/seaweedfs/seaweedfs`,
+	Short:     "get latest or specific version from https://github.com/hanzoai/s3",
+	Long:      `get latest or specific version from https://github.com/hanzoai/s3`,
 }
 
 func runUpdate(cmd *Command, args []string) bool {
@@ -120,7 +120,7 @@ func runUpdate(cmd *Command, args []string) bool {
 
 func downloadRelease(ctx context.Context, target string, ver string) (version string, err error) {
 	currentVersion := swv.VERSION_NUMBER
-	rel, err := GitHubLatestRelease(ctx, ver, "seaweedfs", "seaweedfs")
+	rel, err := GitHubLatestRelease(ctx, ver, "hanzoai", "s3")
 	if err != nil {
 		return "", err
 	}
