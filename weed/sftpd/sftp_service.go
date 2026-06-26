@@ -106,7 +106,7 @@ func (s *SFTPService) buildSSHConfig() (*ssh.ServerConfig, error) {
 	config.BannerCallback = func(conn ssh.ConnMetadata) string {
 		return s.options.BannerMessage
 	}
-	config.ServerVersion = "SSH-2.0-SeaweedFS-SFTP" // Custom server version
+	config.ServerVersion = "SSH-2.0-HanzoS3-SFTP" // Custom server version
 
 	hostKeysAdded := 0
 	// Add legacy host key if specified
