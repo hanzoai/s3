@@ -101,7 +101,7 @@ func isSOSAPIObject(object string) bool {
 func generateSystemXML() ([]byte, error) {
 	si := SystemInfo{
 		ProtocolVersion: sosAPIProtocolVersion,
-		ModelName:       "\"SeaweedFS " + version.VERSION_NUMBER + "\"",
+		ModelName:       "\"Hanzo S3 " + version.VERSION_NUMBER + "\"",
 	}
 
 	// Enable capacity reporting capability

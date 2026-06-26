@@ -850,7 +850,7 @@ func (e *EmbeddedIamApi) CreatePolicyVersion(ctx context.Context, values url.Val
 	// SetAsDefault=false stages a non-default version without activating it; we
 	// can't honor that, so reject it rather than silently changing permissions.
 	if !strings.EqualFold(values.Get("SetAsDefault"), "true") {
-		return resp, &iamError{Code: iam.ErrCodeInvalidInputException, Error: fmt.Errorf("SetAsDefault must be true: SeaweedFS stores a single managed policy version")}
+		return resp, &iamError{Code: iam.ErrCodeInvalidInputException, Error: fmt.Errorf("SetAsDefault must be true: Hanzo S3 stores a single managed policy version")}
 	}
 	if e.credentialManager == nil {
 		return resp, &iamError{Code: iam.ErrCodeServiceFailureException, Error: fmt.Errorf("credential manager not configured")}

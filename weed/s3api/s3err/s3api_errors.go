@@ -497,7 +497,7 @@ var errorCodeResponse = map[ErrorCode]APIError{
 	},
 	ErrAuthNotSetup: {
 		Code:           "InvalidRequest",
-		Description:    "Signed request requires setting up SeaweedFS S3 authentication",
+		Description:    "Signed request requires setting up Hanzo S3 authentication",
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 	ErrNotImplemented: {
