@@ -7,7 +7,7 @@ import (
 	"image/jpeg"
 	"log"
 
-	"github.com/seaweedfs/goexif/exif"
+	"github.com/hanzoai/goexif/exif"
 )
 
 // many code is copied from http://camlistore.org/pkg/images/images.go

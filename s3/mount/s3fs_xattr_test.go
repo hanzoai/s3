@@ -5,7 +5,7 @@ package mount
 import (
 	"testing"
 
-	"github.com/seaweedfs/go-fuse/v2/fuse"
+	"github.com/hanzoai/go-fuse/v2/fuse"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/util"
 )
