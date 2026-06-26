@@ -120,7 +120,7 @@ func runUpdate(cmd *Command, args []string) bool {
 
 func downloadRelease(ctx context.Context, target string, ver string) (version string, err error) {
 	currentVersion := swv.VERSION_NUMBER
-	rel, err := GitHubLatestRelease(ctx, ver, "hanzo", "hanzo")
+	rel, err := GitHubLatestRelease(ctx, ver, "hanzoai", "s3")
 	if err != nil {
 		return "", err
 	}

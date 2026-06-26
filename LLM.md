@@ -3,9 +3,9 @@
 ## Overview
 Go module: `github.com/hanzoai/s3`
 
-**Upstream**: [Hanzo](https://github.com/hanzo/hanzo) (Apache-2.0). Branded as **Hanzo S3** — S3-compatible object storage. Replaced the former MinIO fork (MinIO killed; migrated to Hanzo).
+**Upstream**: [SeaweedFS](https://github.com/seaweedfs/seaweedfs) (Apache-2.0). Hanzo S3 is the Apache-2.0 SeaweedFS fork, branded **Hanzo S3** — S3-compatible object storage. It replaced the former AGPL-3.0 MinIO fork (dropped). Attribution to SeaweedFS is retained in `NOTICE`.
 
-The binary is **`s3`** (renamed from upstream `s3`). All imports are on `github.com/hanzoai/s3`; upstream `hanzo/{raft,goexif,go-fuse,cockroachdb-parser}` remain external deps.
+The binary is **`s3`** (renamed from upstream `weed`). All internal code imports `github.com/hanzoai/s3`; the only deps still under the SeaweedFS org are the small Apache-2.0 utility libs `github.com/seaweedfs/{goexif,go-fuse}` (forking those is the one step left to drop the `seaweedfs` name entirely).
 
 ## Build & Run
 ```bash
@@ -15,6 +15,23 @@ CGO_ENABLED=0 go build -trimpath -o s3 ./s3
 
 ## Image
 `ghcr.io/hanzoai/s3` — built by `.github/workflows/docker-build.yml` via the shared `hanzoai/.github` reusable. `ENTRYPOINT ["s3"]`; default `CMD` runs the all-in-one server with the S3 gateway on `:9000`.
+
+## S-Chain — engines on top
+
+Hanzo S3 is the platform's distributed object-storage substrate, **"S-Chain"**. Query
+and compute engines build on it, both storing their data here as objects:
+
+- **Datastore** — the OLAP (columnar) engine, a ClickHouse fork
+  ([hanzoai/datastore](https://github.com/hanzoai/datastore)). Its `MergeTree` parts
+  live here, so stateless compute replicas share one zero-copy copy of the data
+  (proven PoC: 5M-row table on S3, two compute nodes, one physical copy).
+- **Decentralized SQL** — the planned OLTP engine (SQLite/Base), designed not yet
+  built: one encrypted database file per user/project, also stored here.
+
+Direction (not yet shipped): Quasar (post-quantum, leaderless) consensus for the small
+commitments, with bulk data staying in S-Chain object storage. Hanzo S3's own transport
+is already ZAP-native (see the gRPC-rip section below). See the Datastore design paper,
+`hanzo-datastore/` in [hanzoai/papers](https://github.com/hanzoai/papers).
 
 ## Filer metadata store: zapdb (leveldb ripped)
 The filer's on-disk metadata `FilerStore` is **zapdb** (`github.com/luxfi/zapdb`, a
