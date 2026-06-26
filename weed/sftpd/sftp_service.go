@@ -85,7 +85,7 @@ func (s *SFTPService) Serve(listener net.Listener) error {
 		return fmt.Errorf("failed to create SSH config: %w", err)
 	}
 
-	glog.V(0).Infof("Starting Seaweed SFTP service on %s", listener.Addr().String())
+	glog.V(0).Infof("Starting Hanzo S3 SFTP service on %s", listener.Addr().String())
 
 	for {
 		conn, err := listener.Accept()
