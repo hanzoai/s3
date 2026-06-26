@@ -4,9 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
-
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/stats"
@@ -18,17 +15,10 @@ import (
 
 // fakeVolumeCopyStream is a no-op VolumeServer_VolumeCopyServer; VolumeCopy
 // errors out before sending anything in this test.
-type fakeVolumeCopyStream struct {
-	grpc.ServerStream
-}
+type fakeVolumeCopyStream struct{}
 
 func (s *fakeVolumeCopyStream) Send(*volume_server_pb.VolumeCopyResponse) error { return nil }
 func (s *fakeVolumeCopyStream) Context() context.Context                        { return context.Background() }
-func (s *fakeVolumeCopyStream) SetHeader(metadata.MD) error                     { return nil }
-func (s *fakeVolumeCopyStream) SendHeader(metadata.MD) error                    { return nil }
-func (s *fakeVolumeCopyStream) SetTrailer(metadata.MD)                          {}
-func (s *fakeVolumeCopyStream) SendMsg(any) error                               { return nil }
-func (s *fakeVolumeCopyStream) RecvMsg(any) error                               { return nil }
 
 // TestVolumeCopy_KeepsExistingReplicaWhenSourceUnreachable verifies the
 // verify-before-destroy invariant: a pre-existing healthy local replica must

@@ -19,8 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -42,7 +40,7 @@ func (s *policyStoreTestFilerServer) LookupDirectoryEntry(_ context.Context, req
 
 	entry, found := s.entries[policyStoreTestEntryKey(req.Directory, req.Name)]
 	if !found {
-		return nil, status.Error(codes.NotFound, filer_pb.ErrNotFound.Error())
+		return nil, fmt.Errorf("NotFound: %s", filer_pb.ErrNotFound.Error())
 	}
 
 	return &filer_pb.LookupDirectoryEntryResponse{Entry: clonePolicyStoreEntry(entry)}, nil
@@ -54,7 +52,7 @@ func (s *policyStoreTestFilerServer) CreateEntry(_ context.Context, req *filer_p
 
 	key := policyStoreTestEntryKey(req.Directory, req.Entry.Name)
 	if _, found := s.entries[key]; found {
-		return nil, status.Error(codes.AlreadyExists, "entry already exists")
+		return nil, fmt.Errorf("AlreadyExists: entry already exists")
 	}
 
 	s.entries[key] = clonePolicyStoreEntry(req.Entry)
@@ -67,7 +65,7 @@ func (s *policyStoreTestFilerServer) UpdateEntry(_ context.Context, req *filer_p
 
 	key := policyStoreTestEntryKey(req.Directory, req.Entry.Name)
 	if _, found := s.entries[key]; !found {
-		return nil, status.Error(codes.NotFound, filer_pb.ErrNotFound.Error())
+		return nil, fmt.Errorf("NotFound: %s", filer_pb.ErrNotFound.Error())
 	}
 
 	s.entries[key] = clonePolicyStoreEntry(req.Entry)
@@ -111,7 +109,7 @@ func (s *policyStoreTestFilerServer) DeleteEntry(_ context.Context, req *filer_p
 
 	key := policyStoreTestEntryKey(req.Directory, req.Name)
 	if _, found := s.entries[key]; !found {
-		return nil, status.Error(codes.NotFound, filer_pb.ErrNotFound.Error())
+		return nil, fmt.Errorf("NotFound: %s", filer_pb.ErrNotFound.Error())
 	}
 
 	delete(s.entries, key)
@@ -274,7 +272,7 @@ func TestCopyPolicyDocumentClonesConditionState(t *testing.T) {
 }
 
 func TestIsAlreadyExistsPolicyStoreErrorUsesStatusCode(t *testing.T) {
-	assert.True(t, isAlreadyExistsPolicyStoreError(status.Error(codes.AlreadyExists, "entry already exists")))
+	assert.True(t, isAlreadyExistsPolicyStoreError(fmt.Errorf("AlreadyExists: entry already exists")))
 	assert.False(t, isAlreadyExistsPolicyStoreError(fmt.Errorf("entry already exists")))
 }
 

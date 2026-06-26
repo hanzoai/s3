@@ -2,10 +2,8 @@ package s3api
 
 import (
 	"context"
+	"fmt"
 	"testing"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func TestShouldWriteStreamingErrorResponse(t *testing.T) {
@@ -31,12 +29,12 @@ func TestShouldWriteStreamingErrorResponse(t *testing.T) {
 		},
 		{
 			name:     "grpc canceled",
-			err:      status.Error(codes.Canceled, "client connection is closing"),
+			err:      fmt.Errorf("Canceled: client connection is closing"),
 			expected: false,
 		},
 		{
 			name:     "wrapped grpc canceled",
-			err:      &StreamError{Err: status.Error(codes.Canceled, "client connection is closing")},
+			err:      &StreamError{Err: fmt.Errorf("Canceled: client connection is closing")},
 			expected: false,
 		},
 		{

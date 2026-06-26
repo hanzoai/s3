@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
-	"google.golang.org/grpc/metadata"
 )
 
 // MockSubscribeStream implements mq_pb.HanzoMessaging_SubscribeMessageClient for testing
@@ -28,11 +27,7 @@ func (m *MockSubscribeStream) CloseSend() error {
 	return nil
 }
 
-func (m *MockSubscribeStream) Header() (metadata.MD, error) { return nil, nil }
-func (m *MockSubscribeStream) Trailer() metadata.MD         { return nil }
-func (m *MockSubscribeStream) Context() context.Context     { return context.Background() }
-func (m *MockSubscribeStream) SendMsg(m2 interface{}) error { return nil }
-func (m *MockSubscribeStream) RecvMsg(m2 interface{}) error { return nil }
+func (m *MockSubscribeStream) Context() context.Context { return context.Background() }
 
 // TestNeedsRestart tests the NeedsRestart logic
 func TestNeedsRestart(t *testing.T) {

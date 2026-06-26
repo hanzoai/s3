@@ -26,9 +26,9 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
+	masterclient "github.com/hanzoai/s3/s3/svc/master"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/zap-proto/go/transport"
 )
 
 const (
@@ -392,13 +392,13 @@ func (c *distributedLockCluster) waitForS3Ready(client *s3.Client, timeout time.
 }
 
 func (c *distributedLockCluster) waitForFilerCount(expected int, timeout time.Duration) error {
-	conn, err := grpc.NewClient(c.masterGRPCAddress(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := transport.Dial("tcp", pb.ServerAddress(c.masterGRPCAddress()).ToMasterZapAddress())
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	client := master_pb.NewHanzoClient(conn)
+	client := masterclient.New(conn, nil)
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -478,20 +478,20 @@ func (c *distributedLockCluster) convergenceKeysPerPrimary(ring *lock_manager.Ha
 // checkLockMutualExclusion acquires a lock via filer0, then tries the same lock via filer1.
 // Returns true if mutual exclusion holds (second attempt is denied).
 func (c *distributedLockCluster) checkLockMutualExclusion(testKey string) (bool, error) {
-	conn0, err := grpc.NewClient(c.filerGRPCAddress(0), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn0, err := transport.Dial("tcp", c.filerGRPCAddress(0))
 	if err != nil {
 		return false, err
 	}
 	defer conn0.Close()
 
-	conn1, err := grpc.NewClient(c.filerGRPCAddress(1), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn1, err := transport.Dial("tcp", c.filerGRPCAddress(1))
 	if err != nil {
 		return false, err
 	}
 	defer conn1.Close()
 
-	client0 := filer_pb.NewHanzoFilerClient(conn0)
-	client1 := filer_pb.NewHanzoFilerClient(conn1)
+	client0 := pb.NewZapFilerClient(conn0)
+	client1 := pb.NewZapFilerClient(conn1)
 
 	// Acquire lock via filer0
 	ctx0, cancel0 := context.WithTimeout(context.Background(), 2*time.Second)

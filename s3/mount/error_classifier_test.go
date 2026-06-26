@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/seaweedfs/go-fuse/v2/fuse"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // A Canceled error from a closing filer connection must surface as ETIMEDOUT (a
@@ -17,7 +15,7 @@ import (
 // caller. wfs_save.go wraps with %w; the ZAP classifier matches the "Canceled"
 // code name the filer tags onto the error string.
 func TestGrpcErrorToFuseStatusUnwrapsCanceledThroughFmtErrorf(t *testing.T) {
-	grpcErr := status.Error(codes.Canceled, "grpc: the client connection is closing")
+	grpcErr := fmt.Errorf("Canceled: grpc: the client connection is closing")
 
 	wrapped := fmt.Errorf("UpdateEntry dir /some/path: %w", grpcErr)
 
@@ -35,7 +33,7 @@ func TestGrpcErrorToFuseStatusUnwrapsCanceledThroughFmtErrorf(t *testing.T) {
 // verb-agnostic ZAP contract so a future change can't reintroduce status-object
 // unwrapping that would make %v drop to EIO again.
 func TestGrpcErrorToFuseStatusClassifiesCanceledThroughPercentV(t *testing.T) {
-	grpcErr := status.Error(codes.Canceled, "grpc: the client connection is closing")
+	grpcErr := fmt.Errorf("Canceled: grpc: the client connection is closing")
 
 	wrapped := fmt.Errorf("UpdateEntry dir /some/path: %v", grpcErr)
 
@@ -53,20 +51,20 @@ func TestIsRetryableFilerError(t *testing.T) {
 		want bool
 	}{
 		{"nil", nil, false},
-		{"canceled", status.Error(codes.Canceled, "grpc: the client connection is closing"), true},
-		{"unavailable", status.Error(codes.Unavailable, "connection refused"), true},
-		{"deadline_exceeded", status.Error(codes.DeadlineExceeded, "deadline exceeded"), true},
-		{"resource_exhausted", status.Error(codes.ResourceExhausted, "too many concurrent requests"), true},
-		{"internal", status.Error(codes.Internal, "server crashed"), true},
-		{"not_found", status.Error(codes.NotFound, "entry missing"), false},
-		{"already_exists", status.Error(codes.AlreadyExists, "duplicate"), false},
-		{"invalid_argument", status.Error(codes.InvalidArgument, "bad request"), false},
-		{"permission_denied", status.Error(codes.PermissionDenied, "no access"), false},
-		{"unauthenticated", status.Error(codes.Unauthenticated, "missing creds"), false},
-		{"failed_precondition", status.Error(codes.FailedPrecondition, "not empty"), false},
+		{"canceled", fmt.Errorf("Canceled: grpc: the client connection is closing"), true},
+		{"unavailable", fmt.Errorf("Unavailable: connection refused"), true},
+		{"deadline_exceeded", fmt.Errorf("DeadlineExceeded: deadline exceeded"), true},
+		{"resource_exhausted", fmt.Errorf("ResourceExhausted: too many concurrent requests"), true},
+		{"internal", fmt.Errorf("Internal: server crashed"), true},
+		{"not_found", fmt.Errorf("NotFound: entry missing"), false},
+		{"already_exists", fmt.Errorf("AlreadyExists: duplicate"), false},
+		{"invalid_argument", fmt.Errorf("InvalidArgument: bad request"), false},
+		{"permission_denied", fmt.Errorf("PermissionDenied: no access"), false},
+		{"unauthenticated", fmt.Errorf("Unauthenticated: missing creds"), false},
+		{"failed_precondition", fmt.Errorf("FailedPrecondition: not empty"), false},
 		{"plain_error_retries", errors.New("random network glitch"), true},
-		{"wrapped_canceled_still_retries", fmt.Errorf("ctx: %w", status.Error(codes.Canceled, "closing")), true},
-		{"wrapped_not_found_still_skipped", fmt.Errorf("ctx: %w", status.Error(codes.NotFound, "gone")), false},
+		{"wrapped_canceled_still_retries", fmt.Errorf("ctx: %w", fmt.Errorf("Canceled: closing")), true},
+		{"wrapped_not_found_still_skipped", fmt.Errorf("ctx: %w", fmt.Errorf("NotFound: gone")), false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -90,7 +88,7 @@ func TestRetryMetadataFlushIfShortCircuitsOnPermanentError(t *testing.T) {
 	}
 
 	attempts := 0
-	permanent := status.Error(codes.NotFound, "entry missing")
+	permanent := fmt.Errorf("NotFound: entry missing")
 	err := retryMetadataFlushIf(func() error {
 		attempts++
 		return permanent
@@ -114,7 +112,7 @@ func TestRetryMetadataFlushIfRetriesTransientErrors(t *testing.T) {
 	metadataFlushSleep = func(_ time.Duration) {}
 
 	attempts := 0
-	transient := status.Error(codes.Canceled, "grpc: the client connection is closing")
+	transient := fmt.Errorf("Canceled: grpc: the client connection is closing")
 	err := retryMetadataFlushIf(func() error {
 		attempts++
 		return transient

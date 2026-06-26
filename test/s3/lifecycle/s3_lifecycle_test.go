@@ -31,10 +31,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/zap-proto/go/transport"
 )
 
 const (
@@ -180,9 +180,9 @@ func ensureClusterWritable(t *testing.T, c *s3.Client) {
 func filerClient(t *testing.T) (filer_pb.HanzoFilerClient, func()) {
 	t.Helper()
 	addr := envOr("FILER_GRPC_ADDRESS", defaultFilerGRPC)
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := transport.Dial("tcp", addr)
 	require.NoError(t, err)
-	return filer_pb.NewHanzoFilerClient(conn), func() { conn.Close() }
+	return pb.NewZapFilerClient(conn), func() { conn.Close() }
 }
 
 // uniqueBucket returns a fresh bucket name; the shell command picks up all

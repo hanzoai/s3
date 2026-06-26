@@ -11,8 +11,6 @@ import (
 	"strings"
 	"sync"
 
-	"google.golang.org/grpc/credentials/tls/certprovider"
-
 	"github.com/hanzoai/s3/s3/security/certreload"
 	util "github.com/hanzoai/s3/s3/util"
 	"github.com/spf13/viper"
@@ -28,7 +26,7 @@ type HTTPClient struct {
 	expectHttpsScheme bool
 	// certProvider, when non-nil, owns a background refresh goroutine for
 	// the client mTLS cert/key pair. Close() must be called to stop it.
-	certProvider certprovider.Provider
+	certProvider *certreload.Provider
 }
 
 // Close stops any background cert refresh goroutine. Safe to call on a

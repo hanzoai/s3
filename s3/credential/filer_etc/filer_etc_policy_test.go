@@ -2,6 +2,7 @@ package filer_etc
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -21,8 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -59,7 +58,7 @@ func (s *policyTestFilerServer) LookupDirectoryEntry(ctx context.Context, req *f
 
 	entry, found := s.entries[filerEntryKey(req.Directory, req.Name)]
 	if !found {
-		return nil, status.Error(codes.NotFound, filer_pb.ErrNotFound.Error())
+		return nil, fmt.Errorf("NotFound: %s", filer_pb.ErrNotFound.Error())
 	}
 
 	return &filer_pb.LookupDirectoryEntryResponse{Entry: cloneEntry(entry)}, nil
@@ -135,7 +134,7 @@ func (s *policyTestFilerServer) DeleteEntry(_ context.Context, req *filer_pb.Del
 
 	key := filerEntryKey(req.Directory, req.Name)
 	if _, found := s.entries[key]; !found {
-		return nil, status.Error(codes.NotFound, filer_pb.ErrNotFound.Error())
+		return nil, fmt.Errorf("NotFound: %s", filer_pb.ErrNotFound.Error())
 	}
 
 	delete(s.entries, key)
@@ -302,7 +301,7 @@ func TestFilerEtcStoreLoadManagedPoliciesRespectsReadContext(t *testing.T) {
 	server.beforeLookup = func(ctx context.Context, dir string, name string) error {
 		if dir == filer.IamConfigDirectory+"/"+IamPoliciesDirectory && name == "cancel-me.json" {
 			cancel()
-			return status.Error(codes.Canceled, context.Canceled.Error())
+			return fmt.Errorf("Canceled: %s", context.Canceled.Error())
 		}
 		return nil
 	}

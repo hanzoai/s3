@@ -14,8 +14,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/storage/erasure_coding"
 	"github.com/hanzoai/s3/s3/storage/needle"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func TestEcMaintenanceModeRejections(t *testing.T) {
@@ -546,8 +544,8 @@ func TestEcShardsToVolumeMissingShardAndNoLiveEntries(t *testing.T) {
 		if err == nil {
 			t.Fatalf("VolumeEcShardsToVolume expected failed-precondition error when no live entries")
 		}
-		if status.Code(err) != codes.FailedPrecondition {
-			t.Fatalf("VolumeEcShardsToVolume no-live-entries expected FailedPrecondition, got %v (%v)", status.Code(err), err)
+		if !strings.Contains(err.Error(), "FailedPrecondition") {
+			t.Fatalf("VolumeEcShardsToVolume no-live-entries expected FailedPrecondition, got: %v", err)
 		}
 		if !strings.Contains(err.Error(), erasure_coding.EcNoLiveEntriesSubstring) {
 			t.Fatalf("VolumeEcShardsToVolume no-live-entries error should mention %q, got %v", erasure_coding.EcNoLiveEntriesSubstring, err)
