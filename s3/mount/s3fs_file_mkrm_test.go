@@ -18,7 +18,7 @@ import (
 	"github.com/hanzoai/s3/s3/util"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
-	"github.com/seaweedfs/go-fuse/v2/fuse"
+	"github.com/hanzoai/go-fuse/v2/fuse"
 	"github.com/zap-proto/go/transport"
 )
 

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/seaweedfs/go-fuse/v2/fuse"
+	"github.com/hanzoai/go-fuse/v2/fuse"
 )
 
 // lockRange represents a single held POSIX byte-range lock.

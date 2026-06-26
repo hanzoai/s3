@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/seaweedfs/go-fuse/v2/fuse"
+	"github.com/hanzoai/go-fuse/v2/fuse"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/util"
 )
