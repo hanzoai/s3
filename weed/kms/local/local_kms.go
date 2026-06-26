@@ -109,7 +109,7 @@ func (p *LocalKMSProvider) createDefaultKey() (*LocalKey, error) {
 	key := &LocalKey{
 		KeyID:       keyID,
 		ARN:         fmt.Sprintf("arn:aws:kms:local:000000000000:key/%s", keyID),
-		Description: "Default local KMS key for SeaweedFS",
+		Description: "Default local KMS key for Hanzo S3",
 		KeyMaterial: keyMaterial,
 		KeyUsage:    kms.KeyUsageEncryptDecrypt,
 		KeyState:    kms.KeyStateEnabled,

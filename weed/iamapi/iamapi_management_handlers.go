@@ -724,7 +724,7 @@ func (iama *IamApiServer) CreatePolicyVersion(s3cfg *iam_pb.S3ApiConfiguration, 
 	// SetAsDefault=false stages a non-default version without activating it; we
 	// can't honor that, so reject it rather than silently changing permissions.
 	if !strings.EqualFold(values.Get("SetAsDefault"), "true") {
-		return resp, &IamError{Code: iam.ErrCodeInvalidInputException, Error: fmt.Errorf("SetAsDefault must be true: SeaweedFS stores a single managed policy version")}
+		return resp, &IamError{Code: iam.ErrCodeInvalidInputException, Error: fmt.Errorf("SetAsDefault must be true: Hanzo S3 stores a single managed policy version")}
 	}
 	policyDocument, err := GetPolicyDocument(&policyDocumentString)
 	if err != nil {
