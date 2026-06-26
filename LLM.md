@@ -5,7 +5,7 @@ Go module: `github.com/hanzoai/s3`
 
 **Upstream**: [SeaweedFS](https://github.com/seaweedfs/seaweedfs) (Apache-2.0). Hanzo S3 is the Apache-2.0 SeaweedFS fork, branded **Hanzo S3** — S3-compatible object storage. It replaced the former AGPL-3.0 MinIO fork (dropped). Attribution to SeaweedFS is retained in `NOTICE`.
 
-The binary is **`s3`** (renamed from upstream `weed`). All internal code imports `github.com/hanzoai/s3`; the only deps still under the SeaweedFS org are the small Apache-2.0 utility libs `github.com/seaweedfs/{goexif,go-fuse}` (forking those is the one step left to drop the `seaweedfs` name entirely).
+The binary is **`s3`** (renamed from upstream `weed`). All internal code imports `github.com/hanzoai/s3`. The former external SeaweedFS-org utility libs are now Hanzo forks too: `github.com/hanzoai/goexif` (v1.0.4) and `github.com/hanzoai/go-fuse/v2` (v2.9.4) — so **no `seaweedfs`-org import paths remain**. Each fork retains its upstream license verbatim: `goexif` under **BSD-2-Clause** (Robert Carlsen), `go-fuse` under **BSD-3-Clause** (the Go-FUSE Authors / hanwen + AUTHORS) — neither has a `NOTICE`. (The s3 codebase itself is Apache-2.0 with a `NOTICE` crediting upstream SeaweedFS — that's separate from these two BSD libs.)
 
 ## Build & Run
 ```bash

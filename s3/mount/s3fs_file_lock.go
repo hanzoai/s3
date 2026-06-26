@@ -3,7 +3,7 @@ package mount
 import (
 	"syscall"
 
-	"github.com/seaweedfs/go-fuse/v2/fuse"
+	"github.com/hanzoai/go-fuse/v2/fuse"
 )
 
 // GetLk queries for a conflicting lock on the file.
