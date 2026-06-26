@@ -15,8 +15,6 @@ import (
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
 	masterstream "github.com/hanzoai/s3/s3/wire/master/masterstream"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // fakeLookupServer returns Unavailable for the first N calls, then succeeds.
@@ -29,7 +27,7 @@ type fakeLookupServer struct {
 func (s *fakeLookupServer) LookupVolume(_ context.Context, req *master_pb.LookupVolumeRequest) (*master_pb.LookupVolumeResponse, error) {
 	n := s.callCount.Add(1)
 	if n <= s.unavailableCount {
-		return nil, status.Errorf(codes.Unavailable, "master is warming up")
+		return nil, fmt.Errorf("Unavailable: master is warming up")
 	}
 	resp := &master_pb.LookupVolumeResponse{}
 	for _, vid := range req.VolumeOrFileIds {

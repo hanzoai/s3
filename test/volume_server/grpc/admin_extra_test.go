@@ -8,9 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"github.com/hanzoai/s3/test/volume_server/framework"
 	"github.com/hanzoai/s3/test/volume_server/matrix"
 	"github.com/hanzoai/s3/s3/cluster"
@@ -415,8 +412,8 @@ func TestPingUnknownAndUnreachableTargetPaths(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Ping unknown target type should be rejected by admission")
 	}
-	if got := status.Code(err); got != codes.InvalidArgument {
-		t.Fatalf("Ping unknown target type expected InvalidArgument, got %s: %v", got, err)
+	if !strings.Contains(err.Error(), "InvalidArgument") {
+		t.Fatalf("Ping unknown target type expected InvalidArgument, got: %v", err)
 	}
 
 	// Empty target stays as an unauthenticated self-liveness probe.
@@ -440,8 +437,8 @@ func TestPingUnknownAndUnreachableTargetPaths(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Ping master target should be rejected when not in the known-peer set")
 	}
-	if got := status.Code(err); got != codes.InvalidArgument {
-		t.Fatalf("Ping unknown master expected InvalidArgument, got %s: %v", got, err)
+	if !strings.Contains(err.Error(), "InvalidArgument") {
+		t.Fatalf("Ping unknown master expected InvalidArgument, got: %v", err)
 	}
 
 	// Volume servers do not carry a peer-filer list at all; any filer target
@@ -453,8 +450,8 @@ func TestPingUnknownAndUnreachableTargetPaths(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Ping filer target should be rejected by admission")
 	}
-	if got := status.Code(err); got != codes.InvalidArgument {
-		t.Fatalf("Ping filer expected InvalidArgument, got %s: %v", got, err)
+	if !strings.Contains(err.Error(), "InvalidArgument") {
+		t.Fatalf("Ping filer expected InvalidArgument, got: %v", err)
 	}
 }
 

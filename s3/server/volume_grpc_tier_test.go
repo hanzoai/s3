@@ -1,14 +1,13 @@
 package s3server
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
-
-	"google.golang.org/grpc"
 
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
@@ -22,12 +21,14 @@ import (
 
 const tierTimestampTestBackendName = "tier_timestamp_test.default"
 
-type discardServerStream[T any] struct {
-	grpc.ServerStream
-}
+type discardServerStream[T any] struct{}
 
 func (s *discardServerStream[T]) Send(*T) error {
 	return nil
+}
+
+func (s *discardServerStream[T]) Context() context.Context {
+	return context.Background()
 }
 
 type tierTimestampTestBackend struct {

@@ -3,13 +3,8 @@ package s3server
 import (
 	"context"
 	"fmt"
-	"net"
 	"path/filepath"
 	"time"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/status"
 
 	"github.com/hanzoai/s3/s3/util/version"
 
@@ -27,53 +22,37 @@ import (
 	"github.com/hanzoai/s3/s3/storage/types"
 )
 
-// checkGrpcAdminAuth verifies the gRPC caller is authorized for destructive
-// admin operations by checking the peer address against the guard's whitelist.
+// checkGrpcAdminAuth authorizes destructive volume admin operations.
 //
-// IP extraction prefers a typed *net.TCPAddr where available, falling back to
-// SplitHostPort on the string form, then to the raw string. The fallback
-// chain matters because in-process/passthrough connections used in tests
-// surface as unparseable strings like "@"; with an empty whitelist the
-// allow-all branch in IsWhiteListed accepts them, with a whitelist they're
-// denied as expected.
+// All volume RPCs now arrive over the native ZAP mesh, whose per-call context
+// carries no peer address (unlike gRPC's peer.FromContext, which is gone with the
+// volume gRPC server). There is therefore never a caller IP to match against the
+// guard's write whitelist here.
 //
-// Failed authorization attempts are logged so an operator running with a
-// configured whitelist can spot misconfigured callers and probe attempts.
+// FAIL CLOSED (the v2026.3.1 hotfix that closed the ZAP admin authz bypass —
+// Red CRITICAL): the prior code returned nil on the peerless path BEFORE
+// consulting the whitelist, so every ZAP admin RPC (DeleteCollection,
+// AllocateVolume, VolumeDelete, EC destroys) was a categorical authz bypass — over
+// plaintext ZAP any unauthenticated TCP caller could run destructive ops. We
+// instead admit only when the whitelist is empty (allow-all / dev,
+// IsWhiteListed("")==true); when the operator configured a write whitelist they
+// asked for a restriction we cannot honor over ZAP (no source IP), so we DENY
+// rather than silently bypass it. For authenticated ZAP admin authz use the
+// transport's PQ-mTLS allowed-CN gate (grpc.volume.allowed_commonNames), which
+// pb.ServerTLSConfig requires and verifies against the CA — not IP.
+//
+// When no guard is configured at all the call is a local / dev path and is
+// likewise allowed.
 func (vs *VolumeServer) checkGrpcAdminAuth(ctx context.Context) error {
+	_ = ctx // ZAP carries no per-call peer; authorization is whitelist + transport mTLS.
 	if vs.guard == nil {
 		return nil
 	}
-	pr, ok := peer.FromContext(ctx)
-	if !ok {
-		// No gRPC peer = the call arrived over the native ZAP mesh (the backend
-		// dispatches with a peerless context). The IP whitelist CANNOT be
-		// evaluated here — there is no caller IP. FAIL CLOSED: allow only when the
-		// whitelist is empty (allow-all / dev, IsWhiteListed("")==true). If the
-		// operator configured a whitelist they want a restriction we cannot honor
-		// over ZAP (no IP), so deny rather than silently bypass it — the prior
-		// blanket `return nil` was a categorical authz bypass on every ZAP admin
-		// RPC (CVE-class). For authenticated ZAP admin authz use the transport's
-		// PQ-mTLS allowed-CN gate (grpc.<c>.allowed_commonNames), not IP.
-		if vs.guard.IsWhiteListed("") {
-			return nil
-		}
-		glog.V(0).Infof("gRPC admin auth: denied — no peer IP over ZAP and a whitelist is configured; use grpc.volume.allowed_commonNames (PQ-mTLS CN) for ZAP admin authz")
-		return status.Error(codes.PermissionDenied, "admin RPC over ZAP: IP whitelist cannot be evaluated without a peer; configure mTLS allowed_commonNames")
+	if vs.guard.IsWhiteListed("") {
+		return nil
 	}
-	addr := pr.Addr.String()
-	var host string
-	if tcpAddr, ok := pr.Addr.(*net.TCPAddr); ok {
-		host = tcpAddr.IP.String()
-	} else if h, _, splitErr := net.SplitHostPort(addr); splitErr == nil {
-		host = h
-	} else {
-		host = addr
-	}
-	if !vs.guard.IsWhiteListed(host) {
-		glog.V(0).Infof("gRPC admin auth failed: %s is not whitelisted (remote: %s)", host, addr)
-		return status.Errorf(codes.PermissionDenied, "not authorized: %s", host)
-	}
-	return nil
+	glog.V(0).Infof("admin auth: denied — no peer IP over ZAP and a write whitelist is configured; use grpc.volume.allowed_commonNames (PQ-mTLS CN) for ZAP admin authz")
+	return fmt.Errorf("admin RPC over ZAP: IP whitelist cannot be evaluated without a peer; configure mTLS allowed_commonNames")
 }
 
 func (vs *VolumeServer) DeleteCollection(ctx context.Context, req *volume_server_pb.DeleteCollectionRequest) (*volume_server_pb.DeleteCollectionResponse, error) {
@@ -479,7 +458,7 @@ func (vs *VolumeServer) Ping(ctx context.Context, req *volume_server_pb.PingRequ
 	// Empty target is a self-liveness probe and stays unauthenticated.
 	if req.Target != "" && !vs.isKnownPingTarget(req.Target, req.TargetType) {
 		resp.StopTimeNs = time.Now().UnixNano()
-		return resp, status.Errorf(codes.InvalidArgument, "unknown ping target %s of type %s", req.Target, req.TargetType)
+		return resp, fmt.Errorf("InvalidArgument: unknown ping target %s of type %s", req.Target, req.TargetType)
 	}
 	if req.TargetType == cluster.FilerType {
 		pingErr = pb.WithFilerClient(false, 0, pb.ServerAddress(req.Target), vs.grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
