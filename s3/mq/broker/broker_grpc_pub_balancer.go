@@ -5,14 +5,12 @@ import (
 
 	"github.com/hanzoai/s3/s3/mq/pub_balancer"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // PublisherToPubBalancer receives connections from brokers and collects stats
 func (b *MessageQueueBroker) PublisherToPubBalancer(stream mq_pb.HanzoMessaging_PublisherToPubBalancerServer) error {
 	if !b.isLockOwner() {
-		return status.Errorf(codes.Unavailable, "not current broker balancer")
+		return fmt.Errorf("Unavailable: not current broker balancer")
 	}
 	req, err := stream.Recv()
 	if err != nil {
@@ -25,7 +23,7 @@ func (b *MessageQueueBroker) PublisherToPubBalancer(stream mq_pb.HanzoMessaging_
 	if initMessage != nil {
 		brokerStats = b.PubBalancer.AddBroker(initMessage.Broker)
 	} else {
-		return status.Errorf(codes.InvalidArgument, "balancer init message is empty")
+		return fmt.Errorf("InvalidArgument: balancer init message is empty")
 	}
 	defer func() {
 		b.PubBalancer.RemoveBroker(initMessage.Broker, brokerStats)
@@ -38,7 +36,7 @@ func (b *MessageQueueBroker) PublisherToPubBalancer(stream mq_pb.HanzoMessaging_
 			return fmt.Errorf("receive stats message from %s: %v", initMessage.Broker, err)
 		}
 		if !b.isLockOwner() {
-			return status.Errorf(codes.Unavailable, "not current broker balancer")
+			return fmt.Errorf("Unavailable: not current broker balancer")
 		}
 		if receivedStats := req.GetStats(); receivedStats != nil {
 			b.PubBalancer.OnBrokerStatsUpdated(initMessage.Broker, brokerStats, receivedStats)

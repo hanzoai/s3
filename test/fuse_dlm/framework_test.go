@@ -17,9 +17,9 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
+	masterclient "github.com/hanzoai/s3/s3/svc/master"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/zap-proto/go/transport"
 )
 
 const filerGroup = "fuse-dlm-test"
@@ -325,13 +325,13 @@ func (c *dlmTestCluster) filerGRPCAddress(idx int) string {
 
 func (c *dlmTestCluster) waitForFilerCount(expected int, timeout time.Duration) error {
 	addr := fmt.Sprintf("127.0.0.1:%d", c.masterGrpcPort)
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := transport.Dial("tcp", pb.ServerAddress(addr).ToMasterZapAddress())
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	client := master_pb.NewHanzoClient(conn)
+	client := masterclient.New(conn, nil)
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -399,13 +399,13 @@ func convergenceKeysPerPrimary(ring *lock_manager.HashRing, owners []pb.ServerAd
 
 func (c *dlmTestCluster) checkLockMutualExclusion(key string) (bool, error) {
 	// Try to lock via filer0
-	conn0, err := grpc.NewClient(c.filerGRPCAddress(0), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn0, err := transport.Dial("tcp", c.filerGRPCAddress(0))
 	if err != nil {
 		return false, err
 	}
 	defer conn0.Close()
 
-	client0 := filer_pb.NewHanzoFilerClient(conn0)
+	client0 := pb.NewZapFilerClient(conn0)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	resp0, err := client0.DistributedLock(ctx, &filer_pb.LockRequest{
@@ -421,13 +421,13 @@ func (c *dlmTestCluster) checkLockMutualExclusion(key string) (bool, error) {
 	}
 
 	// Try to lock via filer1 — should fail (already locked)
-	conn1, err := grpc.NewClient(c.filerGRPCAddress(1), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn1, err := transport.Dial("tcp", c.filerGRPCAddress(1))
 	if err != nil {
 		return false, err
 	}
 	defer conn1.Close()
 
-	client1 := filer_pb.NewHanzoFilerClient(conn1)
+	client1 := pb.NewZapFilerClient(conn1)
 	resp1, err := client1.DistributedLock(ctx, &filer_pb.LockRequest{
 		Name:          key,
 		SecondsToLock: 5,

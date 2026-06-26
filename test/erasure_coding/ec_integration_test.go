@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,7 +24,6 @@ import (
 	"github.com/hanzoai/s3/s3/wdclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 )
 
 // TestECEncodingVolumeLocationTimingBug tests the actual bug we fixed
@@ -497,7 +497,7 @@ func findS3Binary() string {
 func waitForServer(address string, timeout time.Duration) error {
 	start := time.Now()
 	for time.Since(start) < timeout {
-		if conn, err := grpc.NewClient(address, grpc.WithInsecure()); err == nil {
+		if conn, err := net.Dial("tcp", address); err == nil {
 			conn.Close()
 			return nil
 		}

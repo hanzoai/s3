@@ -8,7 +8,6 @@ import (
 	"github.com/hanzoai/s3/s3/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/ptrie"
-	"google.golang.org/grpc"
 )
 
 func TestPtrie(t *testing.T) {
@@ -36,7 +35,6 @@ func TestPtrie(t *testing.T) {
 }
 
 type captureTraverseStream struct {
-	grpc.ServerStream
 	ctx     context.Context
 	visited []string
 }

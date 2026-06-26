@@ -10,9 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
@@ -35,36 +32,32 @@ func isCanceledErr(err error) bool {
 	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return true
 	}
-	if statusErr, ok := status.FromError(err); ok {
-		switch statusErr.Code() {
-		case codes.Canceled, codes.DeadlineExceeded:
-			return true
-		}
-	}
-	return false
+	// The master is served over the native ZAP transport, which carries only the
+	// error string — a gRPC status Code does not survive the wire. Recognize the
+	// transported "Canceled"/"DeadlineExceeded" status text (gRPC's code string
+	// constants) the same way the filer matches its ErrNotFound string.
+	msg := err.Error()
+	return strings.Contains(msg, "Canceled") || strings.Contains(msg, "DeadlineExceeded")
 }
 
 // isUnavailableErr reports whether err signals a transient "master unavailable"
 // condition (e.g. master warming up after restart), retried by LookupVolumeIds.
 // The master service is served over the native ZAP transport, which carries only
-// the error's string — the gRPC status Code does not survive the wire. So this
-// recognizes Unavailable both as a gRPC status (the in-process / locally
-// generated path, e.g. "no master available") AND as the ZAP-transported error
-// string. This mirrors the filer's ErrNotFound string match across the same
-// transport.
+// the error's string — a gRPC status Code does not survive the wire. So this
+// matches the transported "Unavailable" status text (gRPC's code string constant),
+// which covers both the locally generated "Unavailable: no master available" and
+// any remote Unavailable. This mirrors the filer's ErrNotFound string match across
+// the same transport.
 func isUnavailableErr(err error) bool {
 	if err == nil {
 		return false
 	}
-	if st, ok := status.FromError(err); ok && st.Code() == codes.Unavailable {
-		return true
-	}
-	return strings.Contains(err.Error(), codes.Unavailable.String())
+	return strings.Contains(err.Error(), "Unavailable")
 }
 
 // LookupVolumeIds queries the master for volume locations (fallback when cache misses).
 // Returns partial results with aggregated errors for volumes that failed.
-// Retries on codes.Unavailable (e.g. master warming up after restart) with backoff.
+// Retries on transient "Unavailable" (e.g. master warming up after restart) with backoff.
 func (p *masterVolumeProvider) LookupVolumeIds(ctx context.Context, volumeIds []string) (map[string][]Location, error) {
 	var result map[string][]Location
 	var lookupErrors []error
@@ -87,7 +80,9 @@ func (p *masterVolumeProvider) LookupVolumeIds(ctx context.Context, volumeIds []
 				if ctx.Err() != nil {
 					return ctx.Err()
 				}
-				return status.Errorf(codes.Unavailable, "no master available")
+				// "Unavailable" prefix so isUnavailableErr classifies this as
+				// transient and the backoff keeps retrying (master not yet known).
+				return fmt.Errorf("Unavailable: no master available")
 			}
 
 			return pb.WithMasterClient(timeoutCtx, false, master, p.masterClient.grpcDialOption, false, func(client master_pb.HanzoClient) error {

@@ -12,8 +12,6 @@ import (
 	"github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/storage/needle"
 	"github.com/hanzoai/s3/s3/util"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type VolumeAssignRequest struct {
@@ -69,27 +67,19 @@ func Assign(ctx context.Context, masterFn GetMasterFn, grpcDialOption pb.DialOpt
 
 		lastError = util.RetryWithBackoff(deadlineCtx, "assign", remaining,
 			func(err error) bool {
-				// The master is reached over ZAP now: a gRPC status Code does
-				// NOT cross the wire — only the error STRING does (the wire
-				// error carries "rpc error: code = Unavailable desc = ..."). So
-				// classify on the text, with status.Code() as a fallback for any
-				// residual in-process gRPC error.
-				if st, ok := status.FromError(err); ok {
-					switch st.Code() {
-					case codes.Unavailable:
-						return true
-					case codes.Canceled, codes.DeadlineExceeded:
-						return deadlineCtx.Err() == nil
-					}
-				}
+				// The master is reached over ZAP: a gRPC status Code does NOT
+				// cross the wire — only the error STRING does (the wire error
+				// carries "rpc error: code = Unavailable desc = ..."). Classify on
+				// the text. The code names are gRPC's status string constants
+				// ("Unavailable"/"Canceled"/"DeadlineExceeded"), matched verbatim.
 				msg := err.Error()
-				if strings.Contains(msg, codes.Unavailable.String()) {
+				if strings.Contains(msg, "Unavailable") {
 					// master warming up / topology still loading — ride out the
 					// retry budget instead of failing the write fast.
 					return true
 				}
-				if strings.Contains(msg, codes.Canceled.String()) ||
-					strings.Contains(msg, codes.DeadlineExceeded.String()) {
+				if strings.Contains(msg, "Canceled") ||
+					strings.Contains(msg, "DeadlineExceeded") {
 					// A stale pooled conn (e.g. master restart behind a k8s VIP)
 					// can surface Canceled/DeadlineExceeded while the caller ctx
 					// is still live; retry so the next attempt redials.

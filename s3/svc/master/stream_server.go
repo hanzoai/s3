@@ -36,7 +36,6 @@ import (
 	master_pb "github.com/hanzoai/s3/s3/pb/master_pb"
 	masterwire "github.com/hanzoai/s3/s3/wire/master"
 	masterstream "github.com/hanzoai/s3/s3/wire/master/masterstream"
-	"google.golang.org/grpc"
 )
 
 // streamServerBackend adapts a master_pb.HanzoServer to masterstream.Server.
@@ -64,14 +63,10 @@ func (b streamServerBackend) StreamAssign(_ masterwire.AssignRequest, s *masters
 	return b.ms.StreamAssign(&assignStreamAdapter{ctx: s.Context(), s: s})
 }
 
-// heartbeatStreamAdapter implements grpc.BidiStreamingServer[Heartbeat,
-// HeartbeatResponse] (= master_pb.Hanzo_SendHeartbeatServer): Recv decodes the
-// next Heartbeat frame off the ZAP stream, Send ships a HeartbeatResponse frame.
-// The embedded grpc.ServerStream supplies the interface's remaining methods
-// (SetHeader/SendHeader/SetTrailer/SendMsg/RecvMsg), which the master engine does
-// not call on this path.
+// heartbeatStreamAdapter implements master_pb.Hanzo_SendHeartbeatServer (the
+// grpc-free bidi seam: Send/Recv/Context): Recv decodes the next Heartbeat frame
+// off the ZAP stream, Send ships a HeartbeatResponse frame.
 type heartbeatStreamAdapter struct {
-	grpc.ServerStream
 	ctx context.Context
 	s   *masterstream.HeartbeatStream
 }
@@ -88,10 +83,9 @@ func (a *heartbeatStreamAdapter) Send(resp *master_pb.HeartbeatResponse) error {
 }
 func (a *heartbeatStreamAdapter) Context() context.Context { return a.ctx }
 
-// keepConnectedStreamAdapter implements grpc.BidiStreamingServer[
-// KeepConnectedRequest, KeepConnectedResponse].
+// keepConnectedStreamAdapter implements master_pb.Hanzo_KeepConnectedServer (the
+// grpc-free bidi seam: Send/Recv/Context).
 type keepConnectedStreamAdapter struct {
-	grpc.ServerStream
 	ctx context.Context
 	s   *masterstream.KeepConnectedStream
 }
@@ -108,11 +102,11 @@ func (a *keepConnectedStreamAdapter) Send(resp *master_pb.KeepConnectedResponse)
 }
 func (a *keepConnectedStreamAdapter) Context() context.Context { return a.ctx }
 
-// assignStreamAdapter implements grpc.BidiStreamingServer[AssignRequest,
-// AssignResponse]. StreamAssign carries the same messages as the unary Assign,
-// so it reuses assignReqFromView (request) and AssignRespToWire (response).
+// assignStreamAdapter implements master_pb.Hanzo_StreamAssignServer (the
+// grpc-free bidi seam: Send/Recv/Context). StreamAssign carries the same messages
+// as the unary Assign, so it reuses assignReqFromView (request) and
+// AssignRespToWire (response).
 type assignStreamAdapter struct {
-	grpc.ServerStream
 	ctx context.Context
 	s   *masterstream.AssignStream
 }

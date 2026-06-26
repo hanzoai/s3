@@ -16,7 +16,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
-	"google.golang.org/grpc/reflection"
 
 	stats_collect "github.com/hanzoai/s3/s3/stats"
 
@@ -214,22 +213,10 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	r.HandleFunc("/cluster/status", ms.ClusterStatusHandler).Methods(http.MethodGet, http.MethodHead)
 	r.HandleFunc("/cluster/healthz", ms.ClusterHealthzHandler).Methods(http.MethodGet, http.MethodHead)
 
-	// starting grpc server — the master service rides the native ZAP transport
-	// below; this gRPC server now carries only reflection (the raft consensus
-	// service that used to live here is gone).
+	// grpcPort derives the master's ZAP listen port (pb.ZapPort offset); the
+	// master serves its whole service over ZAP — no gRPC listener is opened. The
+	// vestigial reflection-only gRPC server is gone with the rest of the raft path.
 	grpcPort := *masterOption.portGrpc
-	grpcL, grpcLocalL, err := util.NewIpAndLocalListeners(*masterOption.ipBind, grpcPort, 0)
-	if err != nil {
-		glog.Fatalf("master failed to listen on grpc port %d: %v", grpcPort, err)
-	}
-	grpcS := pb.NewGrpcServer(security.LoadServerTLS(util.GetViper(), "grpc.master"))
-	reflection.Register(grpcS)
-	glog.V(0).Infof("Start Hanzo S3 Master %s grpc server at %s:%d", version.Version(), *masterOption.ipBind, grpcPort)
-	if grpcLocalL != nil {
-		go grpcS.Serve(grpcLocalL)
-	}
-	go grpcS.Serve(grpcL)
-	pb.ServeGrpcOnLocalSocket(grpcS, grpcPort)
 
 	// Serve the WHOLE Hanzo master service (21 unary + 3 streaming RPCs) over the
 	// native ZAP transport on the deterministic grpcPort+10000 offset
@@ -322,12 +309,10 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 	}
 
 	grace.OnInterrupt(ms.Shutdown)
-	grace.OnInterrupt(grpcS.Stop)
 	grace.OnReload(ms.Reload)
 	if masterOption.shutdownCtx != nil {
 		<-masterOption.shutdownCtx.Done()
 		ms.Shutdown()
-		grpcS.Stop()
 	} else {
 		select {}
 	}

@@ -14,8 +14,6 @@ import (
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
 	"github.com/zap-proto/go/transport"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type fsMvTestFilerServer struct {
@@ -36,7 +34,7 @@ func (s *fsMvTestFilerServer) LookupDirectoryEntry(_ context.Context, req *filer
 			},
 		}, nil
 	}
-	return nil, status.Error(codes.NotFound, "not found")
+	return nil, fmt.Errorf("NotFound: not found")
 }
 
 func (s *fsMvTestFilerServer) AtomicRenameEntry(_ context.Context, req *filer_pb.AtomicRenameEntryRequest) (*filer_pb.AtomicRenameEntryResponse, error) {

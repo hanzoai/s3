@@ -10,8 +10,6 @@ import (
 	"github.com/hanzoai/s3/s3/mq/topic"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -33,7 +31,7 @@ func (b *MessageQueueBroker) ConfigureTopic(ctx context.Context, request *mq_pb.
 	// Validate flat schema format
 	if request.MessageRecordType != nil && len(request.KeyColumns) > 0 {
 		if err := schema.ValidateKeyColumns(request.MessageRecordType, request.KeyColumns); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid key columns: %v", err)
+			return nil, fmt.Errorf("invalid key columns: %v", err)
 		}
 	}
 
@@ -110,7 +108,7 @@ func (b *MessageQueueBroker) ConfigureTopic(ctx context.Context, request *mq_pb.
 	}
 	resp = &mq_pb.ConfigureTopicResponse{}
 	if b.PubBalancer.Brokers.IsEmpty() {
-		return nil, status.Errorf(codes.Unavailable, "no broker available: %v", pub_balancer.ErrNoBroker)
+		return nil, fmt.Errorf("Unavailable: no broker available: %v", pub_balancer.ErrNoBroker)
 	}
 	resp.BrokerPartitionAssignments = pub_balancer.AllocateTopicPartitions(b.PubBalancer.Brokers, request.PartitionCount)
 	// Set flat schema format

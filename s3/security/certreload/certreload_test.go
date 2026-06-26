@@ -45,16 +45,16 @@ func TestServerGetCertificatePicksUpNewFile(t *testing.T) {
 		t.Fatalf("want CN=first, got %q", first.Subject.CommonName)
 	}
 
-	// Rotate the files. pemfile watches mtime; sleep so the new files have
-	// a later mtime even on filesystems with 1s granularity.
+	// Rotate the files. The provider watches mtime/size; sleep so the new files
+	// have a later mtime even on filesystems with 1s granularity.
 	time.Sleep(1100 * time.Millisecond)
 	if err := writeSelfSigned(certPath, keyPath, "second"); err != nil {
 		t.Fatalf("write second cert: %v", err)
 	}
 
-	// The pemfile poller can briefly observe a mismatched cert/key pair
-	// during rotation (cert written before key). Tolerate transient errors
-	// and only fail at the deadline; keep the last error for diagnostics.
+	// The poller can briefly observe a mismatched cert/key pair during rotation
+	// (cert written before key). Tolerate transient errors and only fail at the
+	// deadline; keep the last error for diagnostics.
 	var lastErr error
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {

@@ -2,18 +2,17 @@ package broker
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/mq/sub_coordinator"
 	"github.com/hanzoai/s3/s3/pb/mq_pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // SubscriberToSubCoordinator coordinates the subscribers
 func (b *MessageQueueBroker) SubscriberToSubCoordinator(stream mq_pb.HanzoMessaging_SubscriberToSubCoordinatorServer) error {
 	if !b.isLockOwner() {
-		return status.Errorf(codes.Unavailable, "not current broker balancer")
+		return fmt.Errorf("Unavailable: not current broker balancer")
 	}
 	req, err := stream.Recv()
 	if err != nil {
@@ -27,11 +26,11 @@ func (b *MessageQueueBroker) SubscriberToSubCoordinator(stream mq_pb.HanzoMessag
 	if initMessage != nil {
 		cg, cgi, err = b.SubCoordinator.AddSubscriber(initMessage)
 		if err != nil {
-			return status.Errorf(codes.InvalidArgument, "failed to add subscriber: %v", err)
+			return fmt.Errorf("InvalidArgument: failed to add subscriber: %v", err)
 		}
 		glog.V(0).Infof("subscriber %s/%s/%s connected", initMessage.ConsumerGroup, initMessage.ConsumerGroupInstanceId, initMessage.Topic)
 	} else {
-		return status.Errorf(codes.InvalidArgument, "subscriber init message is empty")
+		return fmt.Errorf("InvalidArgument: subscriber init message is empty")
 	}
 	defer func() {
 		b.SubCoordinator.RemoveSubscriber(initMessage)

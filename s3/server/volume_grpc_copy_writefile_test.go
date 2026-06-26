@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"google.golang.org/grpc/metadata"
-
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/s3/util"
 )
@@ -38,12 +36,7 @@ func (s *fakeCopyFileStream) Recv() (*volume_server_pb.CopyFileResponse, error) 
 	return r, nil
 }
 
-func (s *fakeCopyFileStream) Header() (metadata.MD, error) { return metadata.MD{}, nil }
-func (s *fakeCopyFileStream) Trailer() metadata.MD         { return metadata.MD{} }
-func (s *fakeCopyFileStream) CloseSend() error             { return nil }
-func (s *fakeCopyFileStream) Context() context.Context     { return context.Background() }
-func (s *fakeCopyFileStream) SendMsg(any) error            { return nil }
-func (s *fakeCopyFileStream) RecvMsg(any) error            { return nil }
+func (s *fakeCopyFileStream) Context() context.Context { return context.Background() }
 
 func TestWriteToFile_RemovesPartialFileOnStreamError(t *testing.T) {
 	dir := t.TempDir()

@@ -22,9 +22,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/types"
 	"github.com/hanzoai/s3/s3/storage/volume_info"
 	"github.com/hanzoai/s3/s3/util"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 /*
@@ -922,7 +919,7 @@ func (vs *VolumeServer) VolumeEcShardsToVolume(ctx context.Context, req *volume_
 		return nil, fmt.Errorf("HasLiveNeedles %s: %w", indexBaseFileName, err)
 	}
 	if !hasLive {
-		return nil, status.Errorf(codes.FailedPrecondition, "ec volume %d %s", req.VolumeId, erasure_coding.EcNoLiveEntriesSubstring)
+		return nil, fmt.Errorf("ec volume %d %s", req.VolumeId, erasure_coding.EcNoLiveEntriesSubstring)
 	}
 
 	// calculate .dat file size

@@ -2,6 +2,7 @@ package s3server
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -18,8 +19,6 @@ import (
 	"github.com/hanzoai/s3/s3/storage/needle"
 	"github.com/hanzoai/s3/s3/storage/types"
 	"github.com/hanzoai/s3/s3/util"
-
-	"google.golang.org/grpc"
 )
 
 const tierTestBackendName = "tier_test_local_dir.default"
@@ -133,12 +132,14 @@ func (f *tierTestBackendFile) GetStat() (int64, time.Time, error) {
 }
 
 // fakeTierStream is a no-op server stream for the tier-download RPC.
-type fakeTierStream struct {
-	grpc.ServerStream
-}
+type fakeTierStream struct{}
 
 func (s *fakeTierStream) Send(*volume_server_pb.VolumeTierMoveDatFromRemoteResponse) error {
 	return nil
+}
+
+func (s *fakeTierStream) Context() context.Context {
+	return context.Background()
 }
 
 func newTierTestStore(t *testing.T, dir string) *storage.Store {
