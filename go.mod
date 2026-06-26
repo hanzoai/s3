@@ -32,6 +32,7 @@ require (
 	github.com/google/wire v0.7.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.22.0 // indirect
 	github.com/gorilla/mux v1.8.1
+	github.com/hanzoai/goexif v1.0.4
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
@@ -62,7 +63,6 @@ require (
 	github.com/prometheus/procfs v0.20.1
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/seaweedfs/goexif v1.0.3
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
@@ -115,6 +115,7 @@ require (
 	github.com/go-ldap/ldap/v3 v3.4.13
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/flatbuffers/go v0.0.0-20230108230133-3b8644d32c50
+	github.com/hanzoai/go-fuse/v2 v2.9.4
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/jhump/protoreflect v1.18.0
 	github.com/linkedin/goavro/v2 v2.15.0
@@ -128,7 +129,6 @@ require (
 	github.com/rclone/rclone v1.74.3
 	github.com/rdleal/intervalst v1.5.0
 	github.com/schollz/progressbar/v3 v3.19.0
-	github.com/seaweedfs/go-fuse/v2 v2.9.3
 	github.com/shirou/gopsutil/v4 v4.26.3
 	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/xeipuuv/gojsonschema v1.2.0

@@ -28,7 +28,7 @@ import (
 	"github.com/hanzoai/s3/s3/security"
 	"github.com/hanzoai/s3/s3/storage/types"
 	mountwire "github.com/hanzoai/s3/s3/wire/mount"
-	"github.com/seaweedfs/go-fuse/v2/fuse"
+	"github.com/hanzoai/go-fuse/v2/fuse"
 	"github.com/zap-proto/go/transport"
 
 	"github.com/hanzoai/s3/s3/util"
