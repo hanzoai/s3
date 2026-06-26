@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/seaweedfs/go-fuse/v2/fuse"
+	"github.com/hanzoai/go-fuse/v2/fuse"
 	"github.com/hanzoai/s3/s3/mount/meta_cache"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
