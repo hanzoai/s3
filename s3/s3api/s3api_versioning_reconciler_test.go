@@ -10,8 +10,6 @@ import (
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // TestVersionsHealQueue_DedupOnEnqueue ensures multiple enqueues of the
@@ -148,7 +146,7 @@ func TestRetryFilerOp_TerminalErrorsShortCircuit(t *testing.T) {
 	}{
 		{"filer_pb.ErrNotFound", filer_pb.ErrNotFound},
 		{"wrapped filer_pb.ErrNotFound", fmt.Errorf("wrap: %w", filer_pb.ErrNotFound)},
-		{"grpc NotFound status", status.Error(codes.NotFound, "missing")},
+		{"grpc NotFound status", fmt.Errorf("NotFound: %s", filer_pb.ErrNotFound.Error())},
 		{"context canceled", context.Canceled},
 		{"context deadline exceeded", context.DeadlineExceeded},
 	}

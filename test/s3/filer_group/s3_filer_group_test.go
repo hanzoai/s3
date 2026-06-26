@@ -15,10 +15,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"github.com/zap-proto/go/transport"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
+	masterclient "github.com/hanzoai/s3/s3/svc/master"
 )
 
 // TestConfig holds configuration for filer group S3 tests
@@ -79,10 +80,10 @@ func getS3Client(t *testing.T) *s3.Client {
 }
 
 func getMasterClient(t *testing.T) master_pb.HanzoClient {
-	conn, err := grpc.NewClient(testConfig.MasterAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := transport.Dial("tcp", pb.ServerAddress(testConfig.MasterAddress).ToMasterZapAddress())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
-	return master_pb.NewHanzoClient(conn)
+	return masterclient.New(conn, nil)
 }
 
 func getNewBucketName() string {
