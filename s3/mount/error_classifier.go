@@ -4,7 +4,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/seaweedfs/go-fuse/v2/fuse"
+	"github.com/hanzoai/go-fuse/v2/fuse"
 )
 
 // grpcErrorToFuseStatus maps a filer RPC error to a FUSE status. The filer

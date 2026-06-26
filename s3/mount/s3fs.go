@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/seaweedfs/go-fuse/v2/fuse"
+	"github.com/hanzoai/go-fuse/v2/fuse"
 	"github.com/zap-proto/go/transport"
 
 	"github.com/hanzoai/s3/s3/cluster"
@@ -29,7 +29,7 @@ import (
 	"github.com/hanzoai/s3/s3/util/version"
 	"github.com/hanzoai/s3/s3/wdclient"
 
-	"github.com/seaweedfs/go-fuse/v2/fs"
+	"github.com/hanzoai/go-fuse/v2/fs"
 )
 
 type Option struct {

@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/seaweedfs/go-fuse/v2/fuse"
+	"github.com/hanzoai/go-fuse/v2/fuse"
 	"github.com/hanzoai/s3/s3/cluster"
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/glog"

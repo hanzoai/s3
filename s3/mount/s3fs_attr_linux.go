@@ -1,7 +1,7 @@
 package mount
 
 import (
-	"github.com/seaweedfs/go-fuse/v2/fuse"
+	"github.com/hanzoai/go-fuse/v2/fuse"
 )
 
 func setBlksize(out *fuse.Attr, size uint32) {
