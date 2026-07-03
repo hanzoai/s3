@@ -33,6 +33,54 @@ commitments, with bulk data staying in S-Chain object storage. Hanzo S3's own tr
 is already ZAP-native (see the gRPC-rip section below). See the Datastore design paper,
 `hanzo-datastore/` in [hanzoai/papers](https://github.com/hanzoai/papers).
 
+## Master consensus: leaderless pinned-writer (raft deleted)
+hashicorp/seaweedfs **raft is gone** (commit `8ac2c5465`) — no raft dep in `go.mod`/
+`go.sum`, no `server/raft_hashicorp.go`, no election. Coordination is a leaderless,
+deterministic **pinned writer**: the `topology.Coordinator` interface serializes the two
+non-commutative allocations (volume ids, file ids) and pins exactly ONE writer per
+cluster as a *pure function of the membership* (lowest-address live member), so every
+master computes the same writer with zero rounds and re-pins the instant the live set
+changes. Two impls, selected by env, never both:
+- **`topology.LocalCoordinator`** (default) — in-process pinned-writer over the `-peers`
+  universe, projected to the LIVE subset by `server.publishLiveMembers`. Standalone
+  master = sole writer. `ErrNotWriter` replaces `raft.NotLeaderError` (clients back off +
+  redirect to the advertised `Writer`).
+- **Writer failure detector** — `server.ReconcileWriterMembership` is a 2s per-master
+  ticker (multi-master only) that re-probes every peer via `pb.WithMasterClient` (pooled,
+  honors grpc.master PQ-TLS — a raw plaintext probe would false-negative under mTLS and
+  split-brain) and republishes the live set. This is the piece raft's heartbeat/election
+  provided: peer-LEAVE events are disseminated by the writer, so a dead WRITER is
+  invisible to followers via `OnPeerUpdate` alone; the independent probe lets every
+  survivor notice it and deterministically re-pin the lowest live address (verified end
+  to end: writer re-pins in ~2s, `test/multi_master`). `OnPeerUpdate` and the reconciler
+  share `pingMaster`/`publishLiveMembers` — one liveness check, one publish path.
+- **`s3server.schainCoordinator`** (production, `master.coordinator.schain_endpoint`) —
+  composes `LocalCoordinator` for writer selection and routes id allocation through the
+  schain storage VM's owner-gated, ML-DSA-verified `AllocateTx` over ZAP (single-writer
+  *per range*, durable). **Fails CLOSED** (`ErrSchainNotWired`) until the schain ZAP
+  service descriptor from the separate `luxfi/chains` module is wired in — never invents
+  an id the chain has not agreed. **Remaining seam #1** (production durability).
+- `/cluster/status` reports `IsWriter`/`Writer`/`Members` (not `IsLeader`). The
+  `Raft{List,Add,Remove}*`/`RaftLeadershipTransfer` RPCs are retained as **advisory,
+  leaderless** membership hints (wire-compat with the admin dashboard); transfer is
+  refused (the writer is pinned, not hand-transferable).
+- **Availability without quorum**: losing 2 of 3 masters does NOT block writes — the lone
+  survivor drops the dead peers and pins itself. This is a deliberate trade vs raft's
+  quorum; cross-partition id-collision safety is the schain VM's job, not the local pin.
+- **TopologyId** is minted only by the writer (`EnsureTopologyId`) and is neither
+  propagated to followers nor persisted; followers surface it by proxying `/dir/status`
+  to the writer. So it is consistent at any settled moment but a new writer promoted on
+  failover mints a FRESH id (not preserved across a writer change). Not a data-correctness
+  issue — id uniqueness is the Coordinator's job. **Remaining seam #2**: preserve it by
+  adding a field to `GetMasterConfigurationResponse`/`VolumeLocation`, having followers
+  adopt it, and persisting it to `-mdir`.
+- Tests: fast unit invariants in `s3/topology/coordinator_test.go` +
+  `s3/server/{schain_coordinator,master_grpc_server_membership}_test.go` (deterministic
+  pin, non-writer refusal, concurrent-allocation uniqueness, fail-closed schain,
+  membership RPCs — 15 tests). The end-to-end suite `test/multi_master/` (writer failover,
+  survivor-keeps-writing-without-quorum, full-restart, writer-consistency) is gated behind
+  `MULTI_MASTER_IT=1` and builds the master `CGO_ENABLED=0 GOWORK=off`.
+
 ## Filer metadata store: zapdb (leveldb ripped)
 The filer's on-disk metadata `FilerStore` is **zapdb** (`github.com/luxfi/zapdb`, a
 transactional LSM-tree KV — Badger-derived; its Go package is `package badger`, so
@@ -85,10 +133,6 @@ gRPC is still **load-bearing** in (these legitimately import grpc — leave them
 - **Volume server RPC** — still gRPC-served (`command/volume.go`, `server/volume_grpc_*.go`,
   `pb/volume_server_pb/volume_server_grpc.pb.go`). Its `status.Errorf(codes.X)` producers
   must stay so gRPC clients get real codes; `peer.FromContext` works over gRPC.
-- **Raft transport** — hashicorp/seaweedfs raft rides the master's gRPC listener
-  (`server/raft_hashicorp.go`, the `pb.NewGrpcServer` + `reflection.Register` in
-  `command/master.go` and `master_follower.go`). The master's own service is ZAP; the
-  gRPC listener carries raft only.
 - **Strangler client seam** `volumezap/client.go` — implements the
   `volume_server_pb.*Client` interface, whose generated signatures use `grpc.{CallOption,
   *StreamingClient}` and `metadata.MD`. Bound to grpc until that `*_pb` interface is
