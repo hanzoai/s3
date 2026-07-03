@@ -7,163 +7,175 @@ import (
 	"github.com/hanzoai/s3/s3/pb"
 )
 
+// These tests exercise the leaderless, deterministic pinned-writer coordination
+// that replaced raft. There is no election and no quorum: every master pins the
+// writer to the lowest-address live member (the Coordinator), so failover is a
+// pure re-computation the instant OnPeerUpdate changes the membership. The old
+// raft assertions ("a lost quorum means no leader") are deliberately inverted —
+// the leaderless model trades quorum for availability and relies on the pinned
+// writer (and, in production, the schain VM's chain-agreed allocation) for
+// single-writer correctness.
+
 const (
-	// Election timeout is 3s in our cluster config; allow generous margin.
-	leaderElectionTimeout = 20 * time.Second
+	// Generous margin for the survivor's liveness probe + membership re-pin to
+	// propagate. Failover itself is instantaneous (a pure re-computation); this
+	// covers cluster peer-update detection latency.
+	failoverTimeout = 30 * time.Second
 )
 
-// TestLeaderDownAndRecoverQuickly verifies that when the leader is stopped and
-// restarted quickly, the cluster re-elects a leader and the restarted node
-// rejoins as a follower. TopologyId must be consistent across all nodes.
-func TestLeaderDownAndRecoverQuickly(t *testing.T) {
+// TestWriterDownAndRecoverQuickly stops the pinned writer and verifies a
+// survivor re-pins as the new writer, then that the cluster re-converges to a
+// single writer when the old one restarts. TopologyId stays consistent.
+func TestWriterDownAndRecoverQuickly(t *testing.T) {
 	mc := StartMasterCluster(t)
 
-	// Record initial state.
-	leaderIdx, leaderAddr := mc.FindLeader()
-	if leaderIdx < 0 {
-		t.Fatal("no leader found after cluster start")
+	writerIdx, writerAddr := mc.FindWriter()
+	if writerIdx < 0 {
+		t.Fatal("no pinned writer after cluster start")
 	}
-	t.Logf("initial leader: node %d at %s", leaderIdx, leaderAddr)
+	t.Logf("initial writer: node %d at %s", writerIdx, writerAddr)
 
-	topologyId, err := mc.GetTopologyId(leaderIdx)
+	topologyId, err := mc.GetTopologyId(writerIdx)
 	if err != nil || topologyId == "" {
 		t.Fatalf("failed to get initial TopologyId: %v", err)
 	}
 	t.Logf("initial TopologyId: %s", topologyId)
 
-	// Stop the leader.
-	mc.StopNode(leaderIdx)
-	t.Logf("stopped leader node %d", leaderIdx)
+	// Stop the writer.
+	mc.StopNode(writerIdx)
+	t.Logf("stopped writer node %d", writerIdx)
 
-	// Wait for a new leader from the remaining 2 nodes.
-	newLeaderIdx, newLeaderAddr, err := mc.WaitForNewLeader(leaderAddr, leaderElectionTimeout)
+	// A survivor must re-pin as the writer — no election, just the next-lowest
+	// live address taking over once the dead writer is dropped from membership.
+	newWriterIdx, newWriterAddr, err := mc.WaitForNewWriter(writerAddr, failoverTimeout)
 	if err != nil {
 		mc.DumpLogs()
-		t.Fatalf("new leader not elected after stopping old leader: %v", err)
+		t.Fatalf("survivor did not re-pin as writer after stopping the writer: %v", err)
 	}
-	t.Logf("new leader: node %d at %s", newLeaderIdx, newLeaderAddr)
+	t.Logf("new writer: node %d at %s", newWriterIdx, newWriterAddr)
 
-	// Restart the old leader quickly.
-	mc.StartNode(leaderIdx)
-	if err := mc.WaitForNodeReady(leaderIdx, waitTimeout); err != nil {
+	// Restart the old writer quickly.
+	mc.StartNode(writerIdx)
+	if err := mc.WaitForNodeReady(writerIdx, waitTimeout); err != nil {
 		mc.DumpLogs()
-		t.Fatalf("restarted node %d not ready: %v", leaderIdx, err)
+		t.Fatalf("restarted node %d not ready: %v", writerIdx, err)
 	}
-	t.Logf("restarted node %d", leaderIdx)
+	t.Logf("restarted node %d", writerIdx)
 
-	// Give raft time to settle.
-	time.Sleep(3 * time.Second)
-
-	// Verify leader is stable.
-	finalLeaderIdx, _ := mc.FindLeader()
-	if finalLeaderIdx < 0 {
+	// The membership re-converges to exactly one writer (deterministically the
+	// lowest-address member across all three live nodes).
+	if err := mc.WaitForWriter(failoverTimeout); err != nil {
 		mc.DumpLogs()
-		t.Fatal("no leader after restarting old leader node")
+		t.Fatalf("cluster did not re-converge to a single writer: %v", err)
 	}
 
-	// Verify TopologyId is consistent across all nodes.
 	assertTopologyIdConsistent(t, mc, topologyId)
 }
 
-// TestLeaderDownSlowRecover verifies that when the leader goes down and takes
-// a long time to come back, the remaining 2 nodes elect a new leader and the
-// cluster continues to function. When the slow node returns, it rejoins.
-func TestLeaderDownSlowRecover(t *testing.T) {
+// TestWriterDownSlowRecover verifies that with one master down for an extended
+// period, the surviving two keep a single stable writer and continue serving,
+// and that the slow node rejoins cleanly.
+func TestWriterDownSlowRecover(t *testing.T) {
 	mc := StartMasterCluster(t)
 
-	leaderIdx, leaderAddr := mc.FindLeader()
-	if leaderIdx < 0 {
-		t.Fatal("no leader found")
+	writerIdx, writerAddr := mc.FindWriter()
+	if writerIdx < 0 {
+		t.Fatal("no writer found")
 	}
-	topologyId, err := mc.GetTopologyId(leaderIdx)
+	topologyId, err := mc.GetTopologyId(writerIdx)
 	if err != nil || topologyId == "" {
 		t.Fatalf("failed to get initial TopologyId: %v", err)
 	}
-	t.Logf("initial leader: node %d, TopologyId: %s", leaderIdx, topologyId)
+	t.Logf("initial writer: node %d, TopologyId: %s", writerIdx, topologyId)
 
-	// Stop the leader.
-	mc.StopNode(leaderIdx)
+	mc.StopNode(writerIdx)
 
-	// Wait for a new leader.
-	newLeaderIdx, _, err := mc.WaitForNewLeader(leaderAddr, leaderElectionTimeout)
+	newWriterIdx, _, err := mc.WaitForNewWriter(writerAddr, failoverTimeout)
 	if err != nil {
 		mc.DumpLogs()
-		t.Fatalf("new leader not elected: %v", err)
+		t.Fatalf("new writer not pinned: %v", err)
 	}
-	t.Logf("new leader: node %d", newLeaderIdx)
+	t.Logf("new writer: node %d", newWriterIdx)
 
-	// Verify cluster functions with only 2 nodes (quorum is 2/3).
-	cs, err := mc.GetClusterStatus(newLeaderIdx)
+	// Confirm the new writer self-reports as the writer over the whole outage.
+	cs, err := mc.GetClusterStatus(newWriterIdx)
 	if err != nil {
 		mc.DumpLogs()
-		t.Fatalf("cannot get cluster status from new leader: %v", err)
+		t.Fatalf("cannot get cluster status from new writer: %v", err)
 	}
-	if !cs.IsLeader {
-		t.Fatalf("node %d claims not to be leader", newLeaderIdx)
+	if !cs.IsWriter {
+		t.Fatalf("node %d claims not to be the writer", newWriterIdx)
 	}
 
-	// Simulate slow recovery: wait significantly longer than election timeout.
+	// Extended outage: the two-node set must hold a single stable writer.
 	t.Log("simulating slow recovery (10 seconds)...")
 	time.Sleep(10 * time.Second)
-
-	// Verify leader is still stable during the outage.
-	stableLeaderIdx, _ := mc.FindLeader()
-	if stableLeaderIdx < 0 {
+	if mc.CountWriters() != 1 {
 		mc.DumpLogs()
-		t.Fatal("leader lost during extended outage of one node")
+		t.Fatalf("writer not stable during extended outage: %d writers", mc.CountWriters())
 	}
 
 	// Restart the downed node.
-	mc.StartNode(leaderIdx)
-	if err := mc.WaitForNodeReady(leaderIdx, waitTimeout); err != nil {
+	mc.StartNode(writerIdx)
+	if err := mc.WaitForNodeReady(writerIdx, waitTimeout); err != nil {
 		mc.DumpLogs()
-		t.Fatalf("slow-recovered node %d not ready: %v", leaderIdx, err)
+		t.Fatalf("slow-recovered node %d not ready: %v", writerIdx, err)
 	}
 
-	time.Sleep(3 * time.Second)
+	if err := mc.WaitForWriter(failoverTimeout); err != nil {
+		mc.DumpLogs()
+		t.Fatalf("cluster did not re-converge to a single writer: %v", err)
+	}
 	assertTopologyIdConsistent(t, mc, topologyId)
 }
 
-// TestTwoMastersDownAndRestart verifies that when 2 of 3 masters go down
-// (losing quorum), the cluster cannot elect a leader. When both restart,
-// a leader is elected and TopologyId is preserved.
-func TestTwoMastersDownAndRestart(t *testing.T) {
+// TestSurvivorKeepsWritingWithoutQuorum is the deliberate inversion of the old
+// raft TestTwoMastersDownAndRestart. Under raft, losing 2 of 3 lost quorum and
+// no leader could be elected. Leaderless coordination has no quorum: the lone
+// survivor drops the dead peers from its writer-eligible set and, as the sole
+// live member, pins ITSELF as the writer and keeps serving. When the two
+// restart, the cluster re-converges to a single writer and preserves TopologyId.
+func TestSurvivorKeepsWritingWithoutQuorum(t *testing.T) {
 	mc := StartMasterCluster(t)
 
-	leaderIdx, _ := mc.FindLeader()
-	if leaderIdx < 0 {
-		t.Fatal("no leader found")
+	writerIdx, _ := mc.FindWriter()
+	if writerIdx < 0 {
+		t.Fatal("no writer found")
 	}
-	topologyId, err := mc.GetTopologyId(leaderIdx)
+	topologyId, err := mc.GetTopologyId(writerIdx)
 	if err != nil || topologyId == "" {
 		t.Fatalf("failed to get initial TopologyId: %v", err)
 	}
 	t.Logf("initial TopologyId: %s", topologyId)
 
-	// Determine which 2 nodes to stop (stop the leader + one follower).
-	down1 := leaderIdx
-	down2 := (leaderIdx + 1) % 3
-	survivor := (leaderIdx + 2) % 3
+	// Stop two of three, keeping one survivor.
+	down1 := writerIdx
+	down2 := (writerIdx + 1) % 3
+	survivor := (writerIdx + 2) % 3
 	t.Logf("stopping nodes %d and %d, keeping node %d", down1, down2, survivor)
 
 	mc.StopNode(down1)
 	mc.StopNode(down2)
 
-	// The surviving node alone cannot form a quorum — no leader expected.
-	// Wait long enough for any stale leadership to expire (election timeout
-	// is 3s in our config, quorum check fires every election timeout).
-	time.Sleep(5 * time.Second)
-	soloLeaderIdx, _ := mc.FindLeader()
-	if soloLeaderIdx >= 0 {
-		// It's possible the survivor briefly thinks it's leader before stepping down.
-		// Give it time to realize it lost quorum.
-		time.Sleep(5 * time.Second)
-		soloLeaderIdx, _ = mc.FindLeader()
+	// The survivor must become the writer — availability without quorum. It
+	// takes over once its liveness probes drop the two dead peers.
+	deadline := time.Now().Add(failoverTimeout)
+	for time.Now().Before(deadline) {
+		if cs, err := mc.GetClusterStatus(survivor); err == nil && cs.IsWriter {
+			break
+		}
+		time.Sleep(waitTick)
 	}
-	if soloLeaderIdx >= 0 {
+	cs, err := mc.GetClusterStatus(survivor)
+	if err != nil {
 		mc.DumpLogs()
-		t.Fatalf("expected no leader with only 1 of 3 nodes, but node %d claims leadership", soloLeaderIdx)
+		t.Fatalf("cannot reach survivor node %d: %v", survivor, err)
 	}
+	if !cs.IsWriter {
+		mc.DumpLogs()
+		t.Fatalf("survivor node %d did not become the writer (leaderless model keeps writing without quorum)", survivor)
+	}
+	t.Logf("survivor node %d is the writer with no quorum", survivor)
 
 	// Restart both downed nodes.
 	mc.StartNode(down1)
@@ -175,44 +187,36 @@ func TestTwoMastersDownAndRestart(t *testing.T) {
 		}
 	}
 
-	// Wait for leader election.
-	if err := mc.WaitForLeader(leaderElectionTimeout); err != nil {
+	if err := mc.WaitForWriter(failoverTimeout); err != nil {
 		mc.DumpLogs()
-		t.Fatalf("no leader after restarting 2 downed nodes: %v", err)
+		t.Fatalf("no single writer after restarting the two downed nodes: %v", err)
 	}
-
-	time.Sleep(3 * time.Second)
 	assertTopologyIdConsistent(t, mc, topologyId)
 }
 
-// TestAllMastersDownAndRestart verifies that when all 3 masters are stopped
-// and restarted, the cluster elects a leader and all nodes agree on a
-// TopologyId. With RaftResumeState=false (default), raft state is cleared on
-// restart. The TopologyId is recovered from snapshots when available; on a
-// short-lived cluster that hasn't taken snapshots on all nodes, a new
-// TopologyId may be generated — but all nodes must still agree.
+// TestAllMastersDownAndRestart verifies that after a full stop/restart the set
+// re-pins a single writer and all nodes agree on a TopologyId. With no durable
+// raft log, TopologyId is recovered from persisted topology state when present;
+// a short-lived cluster may mint a fresh one — but all nodes must still agree.
 func TestAllMastersDownAndRestart(t *testing.T) {
 	mc := StartMasterCluster(t)
 
-	leaderIdx, _ := mc.FindLeader()
-	if leaderIdx < 0 {
-		t.Fatal("no leader found")
+	writerIdx, _ := mc.FindWriter()
+	if writerIdx < 0 {
+		t.Fatal("no writer found")
 	}
-	topologyId, _ := mc.GetTopologyId(leaderIdx)
+	topologyId, _ := mc.GetTopologyId(writerIdx)
 	if topologyId == "" {
-		t.Fatal("no TopologyId on initial leader")
+		t.Fatal("no TopologyId on initial writer")
 	}
 	t.Logf("initial TopologyId: %s", topologyId)
 
-	// Stop all nodes.
 	for i := range 3 {
 		mc.StopNode(i)
 	}
 	t.Log("all nodes stopped")
-
 	time.Sleep(2 * time.Second)
 
-	// Restart all nodes.
 	for i := range 3 {
 		mc.StartNode(i)
 	}
@@ -223,20 +227,15 @@ func TestAllMastersDownAndRestart(t *testing.T) {
 		}
 	}
 
-	// Wait for leader.
-	if err := mc.WaitForLeader(leaderElectionTimeout); err != nil {
+	if err := mc.WaitForWriter(failoverTimeout); err != nil {
 		mc.DumpLogs()
-		t.Fatalf("no leader after full cluster restart: %v", err)
+		t.Fatalf("no single writer after full cluster restart: %v", err)
 	}
 
-	newLeaderIdx, _ := mc.FindLeader()
-	t.Logf("leader after full restart: node %d", newLeaderIdx)
+	newWriterIdx, _ := mc.FindWriter()
+	t.Logf("writer after full restart: node %d", newWriterIdx)
 
-	time.Sleep(3 * time.Second)
-
-	// All nodes must agree on a TopologyId (may differ from original if
-	// snapshots were not yet taken on all nodes before shutdown).
-	newTopologyId, err := mc.GetTopologyId(newLeaderIdx)
+	newTopologyId, err := mc.GetTopologyId(newWriterIdx)
 	if err != nil || newTopologyId == "" {
 		mc.DumpLogs()
 		t.Fatal("no TopologyId after full restart")
@@ -244,52 +243,56 @@ func TestAllMastersDownAndRestart(t *testing.T) {
 	if newTopologyId == topologyId {
 		t.Logf("TopologyId preserved across full restart: %s", topologyId)
 	} else {
-		t.Logf("TopologyId changed (expected for short-lived cluster without snapshots): %s -> %s", topologyId, newTopologyId)
+		t.Logf("TopologyId changed (expected for short-lived cluster without persisted topology): %s -> %s", topologyId, newTopologyId)
 	}
 	assertTopologyIdConsistent(t, mc, newTopologyId)
 }
 
-// TestLeaderConsistencyAcrossNodes verifies that all nodes agree on who the
-// leader is and report the same TopologyId.
-func TestLeaderConsistencyAcrossNodes(t *testing.T) {
+// TestWriterConsistencyAcrossNodes verifies that all nodes agree on exactly one
+// writer and report the same TopologyId — the deterministic-pin invariant that
+// every master computes the same writer from the same membership.
+func TestWriterConsistencyAcrossNodes(t *testing.T) {
 	mc := StartMasterCluster(t)
 
-	// Allow cluster to stabilize.
 	time.Sleep(3 * time.Second)
 
-	leaderIdx, leaderAddr := mc.FindLeader()
-	if leaderIdx < 0 {
-		t.Fatal("no leader found")
+	writerIdx, writerAddr := mc.FindWriter()
+	if writerIdx < 0 {
+		t.Fatal("no writer found")
 	}
-	t.Logf("leader: node %d at %s", leaderIdx, leaderAddr)
+	t.Logf("writer: node %d at %s", writerIdx, writerAddr)
 
-	// Every node should agree on the leader.
+	if got := mc.CountWriters(); got != 1 {
+		mc.DumpLogs()
+		t.Fatalf("%d nodes claim to be the writer, want exactly 1", got)
+	}
+
+	// Every node must name the same writer address.
 	for i := range 3 {
 		cs, err := mc.GetClusterStatus(i)
 		if err != nil {
 			t.Fatalf("node %d cluster/status error: %v", i, err)
 		}
-		if i == leaderIdx {
-			if !cs.IsLeader {
-				t.Errorf("node %d should be leader but IsLeader=false", i)
+		if i == writerIdx {
+			if !cs.IsWriter {
+				t.Errorf("node %d should be the writer but IsWriter=false", i)
 			}
-		} else {
-			if cs.IsLeader {
-				t.Errorf("node %d should not be leader but IsLeader=true", i)
-			}
-			// cs.Leader is a ServerAddress like "127.0.0.1:10000.20000";
-			// convert to HTTP address for comparison with leaderAddr.
-			leaderHttp := pb.ServerAddress(cs.Leader).ToHttpAddress()
-			if leaderHttp != leaderAddr {
-				t.Errorf("node %d reports leader %q (http: %s), expected %q", i, cs.Leader, leaderHttp, leaderAddr)
-			}
+			continue
+		}
+		if cs.IsWriter {
+			t.Errorf("node %d should not be the writer but IsWriter=true", i)
+		}
+		// cs.Writer is a ServerAddress like "127.0.0.1:10000.20000"; compare
+		// its HTTP form against the discovered writer's HTTP address.
+		writerHttp := pb.ServerAddress(cs.Writer).ToHttpAddress()
+		if writerHttp != writerAddr {
+			t.Errorf("node %d names writer %q (http: %s), expected %q", i, cs.Writer, writerHttp, writerAddr)
 		}
 	}
 
-	// All nodes should have the same TopologyId.
-	topologyId, _ := mc.GetTopologyId(leaderIdx)
+	topologyId, _ := mc.GetTopologyId(writerIdx)
 	if topologyId == "" {
-		t.Fatal("leader has no TopologyId")
+		t.Fatal("writer has no TopologyId")
 	}
 	assertTopologyIdConsistent(t, mc, topologyId)
 }
