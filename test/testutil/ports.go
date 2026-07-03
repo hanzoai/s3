@@ -100,8 +100,17 @@ func AllocateMiniPorts(count int) ([]int, error) {
 		for i := 0; i < 1000; i++ {
 			port := minPort + rand.Intn(maxPort-minPort)
 			grpcPort := port + GrpcPortOffset
+			// Every ZAP-native service (master, filer, IAM) serves its native
+			// transport on grpcPort+GrpcPortOffset (pb.ZapPort). Reserve that third
+			// port too — otherwise two nodes in one cluster can collide on a ZAP
+			// port and the loser Fatalf's on its ZAP listener at startup. Require it
+			// in-range so the reserved port equals the actual (un-rotated) ZAP port.
+			zapPort := grpcPort + GrpcPortOffset
+			if zapPort > 65535 {
+				continue
+			}
 
-			if reserved[port] || reserved[grpcPort] {
+			if reserved[port] || reserved[grpcPort] || reserved[zapPort] {
 				continue
 			}
 
@@ -116,9 +125,17 @@ func AllocateMiniPorts(count int) ([]int, error) {
 				continue
 			}
 
-			listeners = append(listeners, l1, l2)
+			l3, err := net.Listen("tcp", fmt.Sprintf(":%d", zapPort))
+			if err != nil {
+				l1.Close()
+				l2.Close()
+				continue
+			}
+
+			listeners = append(listeners, l1, l2, l3)
 			reserved[port] = true
 			reserved[grpcPort] = true
+			reserved[zapPort] = true
 			ports = append(ports, port)
 			found = true
 			break
