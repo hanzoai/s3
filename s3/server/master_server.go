@@ -32,7 +32,6 @@ import (
 	util_http "github.com/hanzoai/s3/s3/util/http"
 	"github.com/hanzoai/s3/s3/util/version"
 	"github.com/hanzoai/s3/s3/wdclient"
-	masterwire "github.com/hanzoai/s3/s3/wire/master"
 )
 
 const (
@@ -418,11 +417,13 @@ func (ms *MasterServer) createSequencer(option *MasterOption) sequence.Sequencer
 	return seq
 }
 
-// OnPeerUpdate keeps the Coordinator's writer-eligible membership in sync with
-// the live master set. A joining master is added; a departing one is dropped
-// only after it fails a ZAP liveness probe, so a transient blip does not re-pin
-// the writer. The pinned writer is recomputed (lowest live address) on every
-// change — this is the leaderless failover that replaces raft re-election.
+// OnPeerUpdate keeps the Coordinator's writer-eligible universe in sync with the
+// cluster's join/leave notifications: a joining master is added; a departing one
+// is dropped only after it fails a liveness probe, so a transient blip does not
+// evict it. It then republishes the LIVE membership so the pinned writer is
+// recomputed. Peer-leave notifications are disseminated BY the writer, so this
+// path alone cannot notice the writer's OWN death — ReconcileWriterMembership is
+// the independent per-master detector that closes that gap.
 func (ms *MasterServer) OnPeerUpdate(update *master_pb.ClusterNodeUpdate, startFrom time.Time) {
 	if update.NodeType != cluster.MasterType {
 		return
@@ -430,33 +431,90 @@ func (ms *MasterServer) OnPeerUpdate(update *master_pb.ClusterNodeUpdate, startF
 	glog.V(4).Infof("OnPeerUpdate: %+v", update)
 
 	peerAddress := pb.ServerAddress(update.Address)
-	ms.coordinatorPeersLock.Lock()
 	if update.IsAdd {
+		ms.coordinatorPeersLock.Lock()
 		ms.coordinatorPeers[string(peerAddress)] = peerAddress
-	} else {
-		// Probe the departing peer over the native ZAP transport (the whole master
-		// service is served over ZAP); only drop it when it is truly unreachable.
-		pingFailed := false
-		if zapClient, dialErr := masterwire.Dial("tcp", peerAddress.ToMasterZapAddress()); dialErr != nil {
-			pingFailed = true
-		} else {
-			_, pErr := zapClient.Ping(context.Background(), masterwire.PingRequestInput{Target: string(peerAddress), TargetType: cluster.MasterType})
-			zapClient.Close()
-			pingFailed = pErr != nil
-		}
-		if pingFailed {
-			delete(ms.coordinatorPeers, string(peerAddress))
-			glog.V(0).Infof("master %s unreachable; dropped from writer-eligible set", peerAddress)
-		} else {
-			glog.V(0).Infof("master %s responded to ping; keeping in writer-eligible set", peerAddress)
-		}
+		ms.coordinatorPeersLock.Unlock()
+	} else if !ms.pingMaster(peerAddress) {
+		ms.coordinatorPeersLock.Lock()
+		delete(ms.coordinatorPeers, string(peerAddress))
+		ms.coordinatorPeersLock.Unlock()
+		glog.V(0).Infof("master %s unreachable; dropped from writer-eligible set", peerAddress)
 	}
-	members := make([]pb.ServerAddress, 0, len(ms.coordinatorPeers))
+	ms.publishLiveMembers()
+}
+
+const (
+	// writerReconcileInterval is how often each master re-probes the live master
+	// set and republishes the pinned writer. Short enough that a writer crash is
+	// noticed within a couple of seconds (the leaderless analogue of a raft
+	// election timeout), long enough to be negligible probe traffic for the
+	// handful of masters a cluster runs.
+	writerReconcileInterval = 2 * time.Second
+	// masterProbeTimeout bounds a single peer liveness probe so one unreachable
+	// master cannot stall the reconcile sweep.
+	masterProbeTimeout = 2 * time.Second
+)
+
+// pingMaster reports whether peer answers a master Ping over its native ZAP
+// transport, honoring the same (PQ-)TLS every other master-to-master link uses
+// (pb.WithMasterClient / DialMasterZapAddr) — a raw plaintext probe would
+// false-negative under grpc.master mTLS and split-brain the writer. This is the
+// one liveness check shared by OnPeerUpdate and the writer reconciler.
+func (ms *MasterServer) pingMaster(peer pb.ServerAddress) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), masterProbeTimeout)
+	defer cancel()
+	err := pb.WithMasterClient(ctx, false, peer, ms.grpcDialOption, false, func(client master_pb.HanzoClient) error {
+		_, e := client.Ping(ctx, &master_pb.PingRequest{})
+		return e
+	})
+	return err == nil
+}
+
+// publishLiveMembers probes every writer-eligible peer and pins the writer over
+// the LIVE subset only (self is always live). Because every master probes
+// directly, all survivors converge on the same live set and deterministically
+// re-pin the lowest live address — no election, and crucially even when the dead
+// peer is the writer itself. It is the single membership-publish path; SetMembers
+// on the Coordinator is a pure function of this set.
+func (ms *MasterServer) publishLiveMembers() {
+	self := ms.option.Master
+	ms.coordinatorPeersLock.Lock()
+	universe := make([]pb.ServerAddress, 0, len(ms.coordinatorPeers))
 	for _, p := range ms.coordinatorPeers {
-		members = append(members, p)
+		universe = append(universe, p)
 	}
 	ms.coordinatorPeersLock.Unlock()
-	ms.Topo.Coordinator.SetMembers(ms.option.Master, members)
+
+	live := make([]pb.ServerAddress, 0, len(universe)+1)
+	live = append(live, self)
+	for _, p := range universe {
+		if p == self {
+			continue
+		}
+		if ms.pingMaster(p) {
+			live = append(live, p)
+		}
+	}
+	ms.Topo.Coordinator.SetMembers(self, live)
+}
+
+// ReconcileWriterMembership periodically republishes the live membership so the
+// pinned writer tracks the live master set. This is the leaderless replacement
+// for raft's heartbeat-driven leader failure detector: because peer-leave events
+// flow through the writer, a dead writer would otherwise be invisible to its
+// followers and no survivor would ever re-pin. Runs until ctx is cancelled.
+func (ms *MasterServer) ReconcileWriterMembership(ctx context.Context) {
+	ticker := time.NewTicker(writerReconcileInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			ms.publishLiveMembers()
+		}
+	}
 }
 
 // Shutdown is a no-op: the leaderless Coordinator holds no durable raft state to
