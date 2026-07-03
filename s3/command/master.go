@@ -210,6 +210,13 @@ func startMaster(masterOption MasterOptions, masterWhiteList []string) {
 		glog.V(0).Infof("master coordination backed by schain VM at %s", endpoint)
 	}
 	ms.ConfigureCoordinator(myMasterAddress, masterPeers)
+	if len(masterPeers) > 1 {
+		// Multi-master: run the independent writer failure detector so a dead
+		// writer is noticed by its followers and the lowest live master re-pins
+		// (leaderless failover; the initial ConfigureCoordinator membership is
+		// optimistic — every configured peer assumed live until first probed).
+		go ms.ReconcileWriterMembership(context.Background())
+	}
 	r.HandleFunc("/cluster/status", ms.ClusterStatusHandler).Methods(http.MethodGet, http.MethodHead)
 	r.HandleFunc("/cluster/healthz", ms.ClusterHealthzHandler).Methods(http.MethodGet, http.MethodHead)
 
