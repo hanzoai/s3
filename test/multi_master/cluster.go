@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/test/testutil"
 )
 
@@ -35,7 +36,10 @@ type masterNode struct {
 	stopped  bool
 }
 
-// MasterCluster manages a 3-node master raft cluster for integration tests.
+// MasterCluster manages a 3-node leaderless master set for integration tests.
+// There is no raft and no election: each master pins the writer to the
+// lowest-address live member (the Coordinator), so failover is a pure
+// re-computation the instant the membership changes.
 type MasterCluster struct {
 	t          testing.TB
 	s3Binary string
@@ -50,16 +54,29 @@ type MasterCluster struct {
 	peersStr string
 }
 
-// clusterStatus is the JSON returned by /cluster/status.
+// clusterStatus is the JSON returned by /cluster/status. The leaderless master
+// reports the pinned writer, not a raft leader (see ClusterStatusResult).
 type clusterStatus struct {
-	IsLeader bool     `json:"IsLeader"`
-	Leader   string   `json:"Leader"`
-	Peers    []string `json:"Peers"`
+	IsWriter bool               `json:"IsWriter"`
+	Writer   pb.ServerAddress   `json:"Writer"`
+	Members  []pb.ServerAddress `json:"Members"`
 }
 
-// StartMasterCluster boots a 3-node master raft cluster and waits for a leader.
+// StartMasterCluster boots a 3-node leaderless master set and waits for a
+// pinned writer.
 func StartMasterCluster(t testing.TB) *MasterCluster {
 	t.Helper()
+
+	// This is a heavy end-to-end suite: it builds the master binary and spawns
+	// three master processes with the full ZAP transport and cluster peer
+	// discovery. Gate it so a plain `go test ./...` (unit run) does not pay that
+	// cost or fail on a host without a build toolchain. The Coordinator's
+	// correctness invariants are covered by the fast in-process unit tests in
+	// s3/topology and s3/server; this suite proves the leaderless failover
+	// end-to-end.
+	if os.Getenv("MULTI_MASTER_IT") != "1" {
+		t.Skip("set MULTI_MASTER_IT=1 to run the multi-master integration suite")
+	}
 
 	s3Binary, err := findOrBuildS3Binary()
 	if err != nil {
@@ -107,10 +124,10 @@ func StartMasterCluster(t testing.TB) *MasterCluster {
 		mc.StartNode(i)
 	}
 
-	if err := mc.WaitForLeader(waitTimeout); err != nil {
+	if err := mc.WaitForWriter(waitTimeout); err != nil {
 		mc.DumpLogs()
 		mc.StopAll()
-		t.Fatalf("cluster did not elect a leader: %v", err)
+		t.Fatalf("cluster did not pin a writer: %v", err)
 	}
 
 	// Wait for TopologyId to be generated and propagated. This is async
@@ -151,7 +168,6 @@ func (mc *MasterCluster) StartNode(i int) {
 		"-port.grpc=" + strconv.Itoa(n.grpcPort),
 		"-mdir=" + n.dataDir,
 		"-peers=" + mc.peersStr,
-		"-electionTimeout=3s",
 		"-volumeSizeLimitMB=32",
 		"-defaultReplication=000",
 	}
@@ -262,9 +278,11 @@ func (mc *MasterCluster) GetTopologyId(i int) (string, error) {
 	return "", nil
 }
 
-// FindLeader returns the index of the leader node and its address.
-// Returns -1 if no leader is found.
-func (mc *MasterCluster) FindLeader() (int, string) {
+// FindWriter returns the index of the pinned-writer node and its HTTP address.
+// Returns -1 if no running node currently claims to be the writer. Unlike raft,
+// there is no election: the writer is the lowest-address live member, so a
+// running node answers immediately.
+func (mc *MasterCluster) FindWriter() (int, string) {
 	for i := range 3 {
 		if !mc.IsNodeRunning(i) {
 			continue
@@ -273,43 +291,61 @@ func (mc *MasterCluster) FindLeader() (int, string) {
 		if err != nil {
 			continue
 		}
-		if cs.IsLeader {
+		if cs.IsWriter {
 			return i, mc.NodeAddress(i)
 		}
 	}
 	return -1, ""
 }
 
-// WaitForLeader polls until a leader is elected or timeout.
-func (mc *MasterCluster) WaitForLeader(timeout time.Duration) error {
+// CountWriters returns how many running nodes currently claim to be the writer.
+// After the membership converges this must be exactly 1; it may transiently be
+// 0 or 2 while a stop/start propagates through the coordination membership.
+func (mc *MasterCluster) CountWriters() int {
+	n := 0
+	for i := range 3 {
+		if !mc.IsNodeRunning(i) {
+			continue
+		}
+		if cs, err := mc.GetClusterStatus(i); err == nil && cs.IsWriter {
+			n++
+		}
+	}
+	return n
+}
+
+// WaitForWriter polls until exactly one running node is the pinned writer, or
+// timeout — the leaderless analogue of waiting for a leader to be elected.
+func (mc *MasterCluster) WaitForWriter(timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		if idx, _ := mc.FindLeader(); idx >= 0 {
+		if mc.CountWriters() == 1 {
 			return nil
 		}
 		time.Sleep(waitTick)
 	}
-	return fmt.Errorf("no leader elected within %v", timeout)
+	return fmt.Errorf("no single pinned writer within %v", timeout)
 }
 
-// WaitForNewLeader waits for a leader that is different from the given address.
-func (mc *MasterCluster) WaitForNewLeader(oldLeaderAddr string, timeout time.Duration) (int, string, error) {
+// WaitForNewWriter waits for a writer at a different address than the given one
+// — the failover assertion: after the old writer leaves, a survivor re-pins.
+func (mc *MasterCluster) WaitForNewWriter(oldWriterAddr string, timeout time.Duration) (int, string, error) {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		idx, addr := mc.FindLeader()
-		if idx >= 0 && addr != oldLeaderAddr {
+		idx, addr := mc.FindWriter()
+		if idx >= 0 && addr != oldWriterAddr {
 			return idx, addr, nil
 		}
 		time.Sleep(waitTick)
 	}
-	return -1, "", fmt.Errorf("no new leader (different from %s) within %v", oldLeaderAddr, timeout)
+	return -1, "", fmt.Errorf("no new writer (different from %s) within %v", oldWriterAddr, timeout)
 }
 
-// WaitForTopologyId waits until the leader reports a non-empty TopologyId.
+// WaitForTopologyId waits until the pinned writer reports a non-empty TopologyId.
 func (mc *MasterCluster) WaitForTopologyId(timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		if idx, _ := mc.FindLeader(); idx >= 0 {
+		if idx, _ := mc.FindWriter(); idx >= 0 {
 			if id, err := mc.GetTopologyId(idx); err == nil && id != "" {
 				return nil
 			}
@@ -384,6 +420,11 @@ func findOrBuildS3Binary() (string, error) {
 
 	cmd := exec.Command("go", "build", "-o", binPath, ".")
 	cmd.Dir = filepath.Join(repoRoot, "s3")
+	// Build the module directly (GOWORK=off — the s3 module is intentionally not
+	// in ~/work/hanzo/go.work) and without cgo so the master binary links on
+	// hosts that lack the luxcpp/accel C toolchain; the coordination path is
+	// pure Go.
+	cmd.Env = append(os.Environ(), "GOWORK=off", "CGO_ENABLED=0")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
