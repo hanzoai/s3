@@ -116,6 +116,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/flatbuffers/go v0.0.0-20230108230133-3b8644d32c50
 	github.com/hanzoai/go-fuse/v2 v2.9.4
+	github.com/hanzoai/sqlite v0.2.4
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/jhump/protoreflect v1.18.0
 	github.com/linkedin/goavro/v2 v2.15.0
@@ -223,6 +224,7 @@ require (
 	github.com/luxfi/zap v1.1.0 // indirect
 	github.com/luxfi/zapdb v1.10.1 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
+	github.com/mattn/go-sqlite3 v1.14.47 // indirect
 	github.com/miekg/dns v1.1.72 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
