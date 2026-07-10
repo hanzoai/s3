@@ -589,6 +589,8 @@ github.com/hanzoai/go-fuse/v2 v2.9.4 h1:YXaupO/1B7fALRkg6pDWmHum+8a+ifle5h7c6oKG
 github.com/hanzoai/go-fuse/v2 v2.9.4/go.mod h1:pRX+kEVWURcVG/xZtvaG9LIw+AQiIvX/IjEL8nzwtXU=
 github.com/hanzoai/goexif v1.0.4 h1:ttNObsfiO3z8A4jA91l3YtMELGAXyMfVr8ckgNm9AwE=
 github.com/hanzoai/goexif v1.0.4/go.mod h1:eZsa4Rlv4Vqf/hGAjq5kRGBQTDDiZdkqsw6vEXTs3p4=
+github.com/hanzoai/sqlite v0.2.4 h1:P/t/RC4PmpOiV7PviFrXHOg7wAMe4gjqkhunGMd7lVQ=
+github.com/hanzoai/sqlite v0.2.4/go.mod h1:jhU6OMiNmNmjFHOgfIskse/RImYEe7rUTm6+rMKMRzg=
 github.com/hanzoai/vfs v0.4.3 h1:QN9SemEQBq9x1l/toi51/TZWctbt3i3mgUJfz5RPALY=
 github.com/hanzoai/vfs v0.4.3/go.mod h1:wTHfTpJ/165yz0qfPBNFcYRg+tGw8YDwPu+xgps88zU=
 github.com/hanzos3/go-sdk v1.0.2 h1:EOJQGVnwclkzIyRJyWqtqmA2muyaSsF4y+7KYC4Vhdw=
@@ -802,6 +804,8 @@ github.com/mattn/go-isatty v0.0.22/go.mod h1:ZXfXG4SQHsB/w3ZeOYbR0PrPwLy+n6xiMrJ
 github.com/mattn/go-runewidth v0.0.3/go.mod h1:LwmH8dsx7+W8Uxz3IHJYH5QSwggIsqBzpuz5H//U1FU=
 github.com/mattn/go-runewidth v0.0.22 h1:76lXsPn6FyHtTY+jt2fTTvsMUCZq1k0qwRsAMuxzKAk=
 github.com/mattn/go-runewidth v0.0.22/go.mod h1:XBkDxAl56ILZc9knddidhrOlY5R/pDhgLpndooCuJAs=
+github.com/mattn/go-sqlite3 v1.14.47 h1:jOBI62gS7nKeZv+as1oGEy0+1qISgXwH/QBlR6KbfIo=
+github.com/mattn/go-sqlite3 v1.14.47/go.mod h1:6JTjA44L93a0QCyJef5YvlPoKXntQPjzWv5gtm9sB6w=
 github.com/miekg/dns v1.1.27/go.mod h1:KNUDUusw/aVsxyTYZM1oqvCicbwhgbNgztCETuNZ7xM=
 github.com/miekg/dns v1.1.72 h1:vhmr+TF2A3tuoGNkLDFK9zi36F2LS+hKTRW0Uf8kbzI=
 github.com/miekg/dns v1.1.72/go.mod h1:+EuEPhdHOsfk6Wk5TT2CzssZdqkmFhf8r+aVyDEToIs=
