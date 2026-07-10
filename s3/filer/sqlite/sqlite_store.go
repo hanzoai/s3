@@ -12,7 +12,7 @@ import (
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/filer/abstract_sql"
 	"github.com/hanzoai/s3/s3/util"
-	_ "modernc.org/sqlite"
+	_ "github.com/hanzoai/sqlite"
 )
 
 func init() {
