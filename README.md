@@ -1,6 +1,8 @@
 <p align="center"><img src=".github/hero.svg" alt="s3" width="880"></p>
 
-# Hanzo
+# Hanzo S3
+
+S3-compatible distributed object storage — store billions of files and serve them fast.
 
 
 [![Slack](https://img.shields.io/badge/slack-purple)](https://join.slack.com/t/hanzo/shared_invite/enQtMzI4MTMwMjU2MzA3LTEyYzZmZWYzOGQ3MDJlZWMzYmI0OTE4OTJiZjJjODBmMzUxNmYwODg0YjY3MTNlMjBmZDQ1NzQ5NDJhZWI2ZmY)
@@ -120,7 +122,7 @@ Same behavior as the `s3 mini` command above — the S3 endpoint is at http://lo
 
 # Introduction #
 
-Hanzo is a simple and highly scalable distributed file system. There are two objectives:
+Hanzo S3 is a simple and highly scalable distributed file system. There are two objectives:
 
 1. to store billions of files!
 2. to serve the files fast!
