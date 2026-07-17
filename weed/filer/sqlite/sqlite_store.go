@@ -13,7 +13,7 @@ import (
 	"github.com/seaweedfs/seaweedfs/weed/filer/abstract_sql"
 	"github.com/seaweedfs/seaweedfs/weed/filer/mysql"
 	"github.com/seaweedfs/seaweedfs/weed/util"
-	_ "modernc.org/sqlite"
+	_ "github.com/hanzoai/sqlite"
 )
 
 func init() {
