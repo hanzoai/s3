@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/hanzoai/s3/s3/filer"
@@ -43,7 +44,13 @@ func NewCircuitBreaker(option *S3ApiServerOption) *CircuitBreaker {
 
 	// Use WithOneOfGrpcFilerClients to support multiple filers with failover
 	err := pb.WithOneOfGrpcFilerClients(false, option.Filers, option.GrpcDialOption, func(client filer_pb.HanzoFilerClient) error {
-		content, err := filer.ReadInsideFiler(context.Background(), client, s3_constants.CircuitBreakerConfigDir, s3_constants.CircuitBreakerConfigFile)
+		// Bound the startup read: a filer whose port is dialable (TCP accepted by
+		// kube endpoints on a cold/co-restart) but not yet answering RPCs must not
+		// block gateway startup indefinitely. On deadline the fail-open path below
+		// (circuit breaker disabled) runs and :8333 binds.
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		content, err := filer.ReadInsideFiler(ctx, client, s3_constants.CircuitBreakerConfigDir, s3_constants.CircuitBreakerConfigFile)
 		if errors.Is(err, filer_pb.ErrNotFound) {
 			return nil
 		}
