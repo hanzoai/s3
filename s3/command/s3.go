@@ -296,7 +296,13 @@ func (s3opt *S3Options) startS3Server() bool {
 
 	for {
 		err := pb.WithOneOfGrpcFilerClients(false, filerAddresses, grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
-			resp, err := client.GetFilerConfiguration(context.Background(), &filer_pb.GetFilerConfigurationRequest{})
+			// Bound each attempt so this required-config read cannot block forever
+			// when a filer accepts TCP (kube endpoints on a cold/co-restart) but is
+			// not yet answering RPCs. On deadline the enclosing for-loop sleeps and
+			// retries — the intended behavior, which an unbounded ctx defeats.
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			resp, err := client.GetFilerConfiguration(ctx, &filer_pb.GetFilerConfigurationRequest{})
 			if err != nil {
 				return fmt.Errorf("get filer configuration: %v", err)
 			}
