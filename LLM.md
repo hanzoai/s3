@@ -81,28 +81,31 @@ dials ZAP via `brokerPool`. The last gRPC broker dial (`admin/dash/admin_server.
 (`mq/broker/broker_grpc_*.go`) keep their `mq_pb.HanzoMessaging_*Server` signatures —
 those names are now plain `Send/Recv/Context` interfaces, not grpc generic streams.
 
-gRPC is still **load-bearing** in (these legitimately import grpc — leave them):
-- **Volume server RPC** — still gRPC-served (`command/volume.go`, `server/volume_grpc_*.go`,
-  `pb/volume_server_pb/volume_server_grpc.pb.go`). Its `status.Errorf(codes.X)` producers
-  must stay so gRPC clients get real codes; `peer.FromContext` works over gRPC.
-- **Raft transport** — hashicorp/seaweedfs raft rides the master's gRPC listener
-  (`server/raft_hashicorp.go`, the `pb.NewGrpcServer` + `reflection.Register` in
-  `command/master.go` and `master_follower.go`). The master's own service is ZAP; the
-  gRPC listener carries raft only.
-- **Strangler client seam** `volumezap/client.go` — implements the
-  `volume_server_pb.*Client` interface, whose generated signatures use `grpc.{CallOption,
-  *StreamingClient}` and `metadata.MD`. Bound to grpc until that `*_pb` interface is
-  regenerated grpc-free. (`mqzap/client.go` is now grpc-free — see above.)
-- **Core dial/server + request-id** — `pb/grpc_client_server.go` (volume dials,
-  `NewGrpcServer`), `operation/grpc_client.go`, `server/common.go` (grpc metadata).
-- **TLS cert hot-reload** — `security/tls.go`, `security/certreload/certreload.go`,
-  `security/tls_reload.go`, `util/http/client/http_client.go` reuse grpc's
-  `credentials/tls/certprovider` + `pemfile` as a generic file-watching cert provider;
-  `tls.go` also returns `grpc.ServerOption` for the remaining gRPC servers.
+gRPC has been ripped from **every** RPC path. **Zero `.go` files in the main module
+import `google.golang.org/grpc`** — `grep -rl google.golang.org/grpc s3/` returns 0.
+The items previously listed here as "still load-bearing" (volume RPC, raft, cert
+hot-reload, core dial/server, request-id) are all now native/ZAP:
+- **Volume server RPC** rides ZAP: `pb/volume_server_pb/volume_server_grpc.pb.go` is
+  grpc-free (client iface returns `pb/rpc` stream seams; server iface is a plain method
+  set). `volumezap/client.go` and `server/raft_hashicorp.go` are gone.
+- **Cert hot-reload** (`security/certreload/certreload.go`) is a native file-watching
+  provider — no grpc `certprovider`/`pemfile`; the surviving "grpc" mentions there are
+  comments naming only what it replaced.
+- Error semantics still cross the wire as the PascalCase code-name STRING (see above),
+  classified by `strings.Contains` — never reintroduce `google.golang.org/grpc/{codes,status}`.
 
-Full `go.mod` grpc removal is unreachable until volume RPC is ported to ZAP (regen its
-`*_pb` interface grpc-free, switch the server to ZAP dispatch) and cert hot-reload drops
-grpc's certprovider. (Filer, master, and MQ broker are already ported.)
+**The residual `google.golang.org/grpc v1.x // indirect` in `go.mod` is not an RPC-path
+dep.** It is pulled transitively by the optional Google Cloud client family — `go mod why
+grpc` traces `s3/kms/gcp → cloud.google.com/go/kms/apiv1 → grpc`; `cloud.google.com/go/pubsub`
+and `cloud.google.com/go/storage` pull it the same way, and `otelgrpc` rides in via
+`google.golang.org/api/transport/grpc`. These SDKs are grpc-transport-native but are
+**never dialed in a Hanzo (no-GCP) deployment** — the wire is 100% ZAP. Reaching literal
+zero grpc in `go.mod` means ripping the whole GCP integration surface (5 files: `kms/gcp`,
+`notification/google_pub_sub`, `replication/sub/notification_google_pub_sub.go`,
+`remote_storage/gcs`, `replication/sink/gcssink`; blank-imported from
+`s3api/auth_credentials.go`, `server/filer_server.go`, `command/imports.go`) plus dropping
+the `cloud.google.com/go/{kms,pubsub,storage}` + `google.golang.org/api` direct deps — a
+CTO-gated de-fork (Hanzo never uses GCP), not an RPC-transport change.
 
 ### ZAP listener ports — derive via `pb.ZapPort` (overflow-safe)
 The master and IAM services serve ZAP on a port offset from their gRPC port by

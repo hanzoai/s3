@@ -96,7 +96,7 @@ require (
 	google.golang.org/protobuf v1.36.11
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.50.0
+	modernc.org/sqlite v1.50.0 // indirect
 )
 
 require (
@@ -172,7 +172,6 @@ require (
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v1.0.0-rc.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1 // indirect
 	github.com/dgraph-io/ristretto/v2 v2.4.0 // indirect
 	github.com/diskfs/go-diskfs v1.7.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
@@ -210,7 +209,6 @@ require (
 	github.com/luxfi/cache v1.2.1 // indirect
 	github.com/luxfi/compress v0.0.5 // indirect
 	github.com/luxfi/concurrent v0.0.3 // indirect
-	github.com/luxfi/container v0.0.4 // indirect
 	github.com/luxfi/crypto v1.20.0 // indirect
 	github.com/luxfi/geth v1.17.11 // indirect
 	github.com/luxfi/go-bip39 v1.1.2 // indirect
