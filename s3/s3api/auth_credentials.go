@@ -29,10 +29,8 @@ import (
 	"github.com/hanzoai/s3/s3/wdclient"
 
 	// Import KMS providers to register them
-	_ "github.com/hanzoai/s3/s3/kms/aws"
-	// _ "github.com/hanzoai/s3/s3/kms/azure"  // TODO: Fix Azure SDK compatibility issues
+	_ "github.com/hanzoai/s3/s3/kms/lux"
 	_ "github.com/hanzoai/s3/s3/kms/local"
-	_ "github.com/hanzoai/s3/s3/kms/openbao"
 )
 
 type Action string
