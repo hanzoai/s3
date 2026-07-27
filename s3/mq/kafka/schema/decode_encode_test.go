@@ -278,19 +278,14 @@ func TestSchemaDecodeEncode_Protobuf(t *testing.T) {
 	protobufData := []byte{0x0a, 0x04, 0x74, 0x65, 0x73, 0x74, 0x10, 0x7b}
 	envelope := createConfluentEnvelope(schemaID, protobufData)
 
-	// Test decode - should work with text .proto schema parsing
+	// The Protobuf decoder is gone; the envelope still parses as
+	// FormatProtobuf but decoding must be refused outright rather than
+	// silently producing a wrong RecordValue.
 	decoded, err := manager.DecodeMessage(envelope)
 
-	// Should successfully decode now that text .proto parsing is implemented
-	require.NoError(t, err)
-	assert.NotNil(t, decoded)
-	assert.Equal(t, uint32(schemaID), decoded.SchemaID)
-	assert.Equal(t, FormatProtobuf, decoded.SchemaFormat)
-	assert.NotNil(t, decoded.RecordValue)
-
-	// Verify the decoded fields
-	assert.Contains(t, decoded.RecordValue.Fields, "name")
-	assert.Contains(t, decoded.RecordValue.Fields, "id")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "protobuf schemas are not supported")
+	assert.Nil(t, decoded)
 }
 
 // TestSchemaDecodeEncode_ErrorHandling tests various error conditions
