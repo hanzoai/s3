@@ -174,6 +174,43 @@ implement `filer_pb.HanzoFilerClient`/`master_pb.HanzoClient` directly: no
 (seam in `s3/pb/rpc`), and the fake stream type implements just `Recv`/`Send`/`CloseSend`.
 DialOption in tests is `pb.DialOption{}` (the zero value), never `grpc.WithTransportCredentials`.
 
+## HTTP edge: gorilla/mux stays (zip evaluated, blocked on body streaming)
+Every HTTP surface is `gorilla/mux` on `net/http` — **277 route registrations across five
+servers**: **S3 API** 107 (`s3api/s3api_server.go` 85 + `s3api/s3api_tables.go` 22),
+**admin** 146 (`admin/handlers/admin_handlers.go` 144 + 2 static in `command/admin.go`),
+**master** 21 (`server/master_server.go` 17 incl. 2 static + 2 in `command/master.go`),
+**master follower** reuses 19 of those, **IAM** 3 (`iamapi/iamapi_server.go`; the
+standalone `s3 iam` command is deprecated — the IAM API is embedded in `s3 s3`). The S3
+API's 72 per-bucket routes are re-registered once per configured `-domainName`, so the
+runtime table is larger than the source count.
+
+`github.com/zap-proto/zip` is the fleet's Go web framework, but **hanzo/s3 does not run
+on it and must not until zip can carry object bytes.** zip serves on Fiber v3 / fasthttp;
+measured against zip v1.10.0 + `zap-proto/http` v0.3.0:
+- **`zip.Config.BodyLimit` never reaches the wire.** `transport.go`'s `httpServer` builds a
+  bare `fasthttp.Server`, and `applyConfig` copies only Read/WriteBufferSize, Concurrency
+  and ServerHeader — `MaxRequestBodySize` keeps fasthttp's 4 MiB default, so a 256 MiB PUT
+  is reset at the connection (`body size exceeds the given limit`) whatever `BodyLimit`
+  says. Replacing the `http` transport via `zip.RegisterTransport` does lift the cap.
+- **`zip.AdaptNetHTTP` materialises the whole request body.**
+  `fasthttpadaptor.ConvertRequest` sets `r.Body = bytes.NewReader(ctx.PostBody())` —
+  measured 256 MiB of heap for a 256 MiB upload. `StreamRequestBody: true` does not help;
+  `PostBody()` drains the stream.
+- **Responses are accumulated in `[]byte`** unless the handler calls `Flush()`: a 64 MiB
+  GET costs 56 ms TTFB and holds the whole object. Forcing the adaptor into its streaming
+  mode (auto-`Flush` on first write) **drops `Content-Length` and switches to
+  `Transfer-Encoding: chunked`** — the adaptor skips that header when streaming — which
+  AWS SDK `GetObject` will not accept. Correct S3 headers or streaming, never both.
+
+Every server here has at least one byte-carrying route — S3 GET/PUT, filer and volume
+wholesale, admin `/api/files/{upload,download,view}`, master `/submit` — so no subset can
+move today without turning object transfers into RAM.
+
+Unblocks when zip (1) propagates `Config.BodyLimit` to `fasthttp.Server.MaxRequestBodySize`,
+(2) hands adapted handlers the request body as a stream, and (3) can emit a streamed
+response with a known `Content-Length` (`ctx.SetBodyStream(r, size)` rather than
+`SetBodyStreamWriter`). The fix belongs in zip — do not grow a private adaptor here.
+
 ## Rebrand notes (one way, don't re-litigate)
 - `s3` → `s3`: binary + program name in `s3/s3.go` help. Internal package dir `s3/` retained (invisible to users; renaming it would churn 1900+ import paths for no user benefit).
 - Display brand `Hanzo` → `Hanzo S3` in user-facing strings only (HTTP `Server` header, version banner, admin title).
