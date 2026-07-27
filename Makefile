@@ -18,7 +18,7 @@ warp_install:
 	go install github.com/minio/warp@v0.7.6
 
 full_install: admin-generate
-	cd s3; go install -tags "elastic gocdk sqlite ydb tarantool tikv rclone"
+	cd s3; go install -tags "elastic gocdk sqlite ydb tarantool tikv"
 
 server: install
 	s3 -v 0 server -s3 -filer -filer.maxMB=64 -volume.max=0 -master.volumeSizeLimitMB=100 -volume.preStopSeconds=1 -s3.port=8000 -s3.allowDeleteBucketNotEmpty=true -s3.config=./docker/compose/s3.json -metricsPort=9324
@@ -38,7 +38,7 @@ benchmark_with_pprof: debug = 1
 benchmark_with_pprof: benchmark
 
 test: admin-generate
-	cd s3; go test -tags "elastic gocdk sqlite ydb tarantool tikv rclone" -v ./...
+	cd s3; go test -tags "elastic gocdk sqlite ydb tarantool tikv" -v ./...
 
 # Admin component targets
 admin-generate:

@@ -372,11 +372,7 @@ func (bc *BrokerClient) CreateRecordType(schemaID uint32, format Format) (*schem
 		return decoder.InferRecordType()
 
 	case FormatProtobuf:
-		decoder, err := bc.schemaManager.getProtobufDecoder(schemaID, cachedSchema.Schema)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create Protobuf decoder: %w", err)
-		}
-		return decoder.InferRecordType()
+		return nil, fmt.Errorf("protobuf schemas are not supported; use AVRO or JSON Schema")
 
 	default:
 		return nil, fmt.Errorf("unsupported schema format: %v", format)
