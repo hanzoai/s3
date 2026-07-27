@@ -5,6 +5,5 @@
 package all
 
 import (
-	_ "github.com/hanzoai/s3/s3/storage/backend/rclone_backend"
 	_ "github.com/hanzoai/s3/s3/storage/backend/s3_backend"
 )
