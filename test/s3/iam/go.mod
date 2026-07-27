@@ -1,6 +1,6 @@
 module github.com/hanzoai/s3/test/s3/iam
 
-go 1.24
+go 1.26.5
 
 require (
 	github.com/aws/aws-sdk-go v1.44.0
