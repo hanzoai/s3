@@ -1,8 +1,6 @@
 module github.com/hanzoai/s3/test/kafka/kafka-client-loadtest
 
-go 1.24.0
-
-toolchain go1.24.7
+go 1.26.5
 
 require (
 	github.com/IBM/sarama v1.46.1
