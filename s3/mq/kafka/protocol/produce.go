@@ -1245,35 +1245,8 @@ func (h *Handler) inferRecordTypeFromAvroSchema(avroSchema string) (*schema_pb.R
 	return recordType, nil
 }
 
-// inferRecordTypeFromProtobufSchema infers RecordType from Protobuf schema
-// Uses cache to avoid recreating expensive decoders
 func (h *Handler) inferRecordTypeFromProtobufSchema(protobufSchema string) (*schema_pb.RecordType, error) {
-	// Check cache first
-	cacheKey := "protobuf:" + protobufSchema
-	h.inferredRecordTypesMu.RLock()
-	if recordType, exists := h.inferredRecordTypes[cacheKey]; exists {
-		h.inferredRecordTypesMu.RUnlock()
-		return recordType, nil
-	}
-	h.inferredRecordTypesMu.RUnlock()
-
-	// Cache miss - create decoder and infer type
-	decoder, err := schema.NewProtobufDecoder([]byte(protobufSchema))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Protobuf decoder: %w", err)
-	}
-
-	recordType, err := decoder.InferRecordType()
-	if err != nil {
-		return nil, err
-	}
-
-	// Cache the result
-	h.inferredRecordTypesMu.Lock()
-	h.inferredRecordTypes[cacheKey] = recordType
-	h.inferredRecordTypesMu.Unlock()
-
-	return recordType, nil
+	return nil, fmt.Errorf("protobuf schemas are not supported; use AVRO or JSON Schema")
 }
 
 // inferRecordTypeFromJSONSchema infers RecordType from JSON Schema string

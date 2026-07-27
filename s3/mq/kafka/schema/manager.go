@@ -2,10 +2,8 @@ package schema
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
 
@@ -18,7 +16,6 @@ type Manager struct {
 
 	// Decoder cache
 	avroDecoders       map[uint32]*AvroDecoder       // schema ID -> decoder
-	protobufDecoders   map[uint32]*ProtobufDecoder   // schema ID -> decoder
 	jsonSchemaDecoders map[uint32]*JSONSchemaDecoder // schema ID -> decoder
 	decoderMu          sync.RWMutex
 
@@ -80,7 +77,6 @@ func NewManager(config ManagerConfig) (*Manager, error) {
 	return &Manager{
 		registryClient:     registryClient,
 		avroDecoders:       make(map[uint32]*AvroDecoder),
-		protobufDecoders:   make(map[uint32]*ProtobufDecoder),
 		jsonSchemaDecoders: make(map[uint32]*JSONSchemaDecoder),
 		evolutionChecker:   NewSchemaEvolutionChecker(),
 		config:             config,
@@ -193,36 +189,13 @@ func (m *Manager) decodeAvroMessage(envelope *ConfluentEnvelope, cachedSchema *C
 	return recordValue, recordType, nil
 }
 
-// decodeProtobufMessage decodes a Protobuf message using cached or new decoder
-func (m *Manager) decodeProtobufMessage(envelope *ConfluentEnvelope, cachedSchema *CachedSchema) (*schema_pb.RecordValue, *schema_pb.RecordType, error) {
-	// Get or create Protobuf decoder
-	decoder, err := m.getProtobufDecoder(envelope.SchemaID, cachedSchema.Schema)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get Protobuf decoder: %w", err)
-	}
-
-	// Decode to RecordValue
-	recordValue, err := decoder.DecodeToRecordValue(envelope.Payload)
-	if err != nil {
-		if m.config.ValidationMode == ValidationStrict {
-			return nil, nil, fmt.Errorf("strict validation failed: %w", err)
-		}
-		// In permissive mode, try to decode as much as possible
-		return nil, nil, fmt.Errorf("permissive decoding failed: %w", err)
-	}
-
-	// Get RecordType from descriptor
-	recordType, err := decoder.InferRecordType()
-	if err != nil {
-		// Fall back to inferring from the decoded map
-		if decodedMap, decodeErr := decoder.Decode(envelope.Payload); decodeErr == nil {
-			recordType = InferRecordTypeFromMap(decodedMap)
-		} else {
-			return nil, nil, fmt.Errorf("failed to infer record type: %w", err)
-		}
-	}
-
-	return recordValue, recordType, nil
+// decodeProtobufMessage refuses: this build carries no protobuf schema decoder.
+//
+// Decoding one meant parsing .proto descriptors at runtime through
+// jhump/protoreflect, which drags protobuf and gRPC into every binary. Avro and
+// JSON Schema cover the registry surface we use.
+func (m *Manager) decodeProtobufMessage(_ *ConfluentEnvelope, _ *CachedSchema) (*schema_pb.RecordValue, *schema_pb.RecordType, error) {
+	return nil, nil, fmt.Errorf("protobuf schemas are not supported; use AVRO or JSON Schema")
 }
 
 // decodeJSONSchemaMessage decodes a JSON Schema message using cached or new decoder
@@ -281,44 +254,6 @@ func (m *Manager) getAvroDecoder(schemaID uint32, schemaStr string) (*AvroDecode
 	return decoder, nil
 }
 
-// getProtobufDecoder gets or creates a Protobuf decoder for the given schema
-func (m *Manager) getProtobufDecoder(schemaID uint32, schemaStr string) (*ProtobufDecoder, error) {
-	// Check cache first
-	m.decoderMu.RLock()
-	if decoder, exists := m.protobufDecoders[schemaID]; exists {
-		m.decoderMu.RUnlock()
-		return decoder, nil
-	}
-	m.decoderMu.RUnlock()
-
-	// In Confluent Schema Registry, Protobuf schemas can be stored as:
-	// 1. Text .proto format (most common)
-	// 2. Binary FileDescriptorSet
-	// Try to detect which format we have
-	var decoder *ProtobufDecoder
-	var err error
-
-	// Check if it looks like text .proto (contains "syntax", "message", etc.)
-	if strings.Contains(schemaStr, "syntax") || strings.Contains(schemaStr, "message") {
-		// Parse as text .proto
-		decoder, err = NewProtobufDecoderFromString(schemaStr)
-	} else {
-		// Try binary format
-		schemaBytes := []byte(schemaStr)
-		decoder, err = NewProtobufDecoder(schemaBytes)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Cache the decoder
-	m.decoderMu.Lock()
-	m.protobufDecoders[schemaID] = decoder
-	m.decoderMu.Unlock()
-
-	return decoder, nil
-}
 
 // getJSONSchemaDecoder gets or creates a JSON Schema decoder for the given schema
 func (m *Manager) getJSONSchemaDecoder(schemaID uint32, schemaStr string) (*JSONSchemaDecoder, error) {
@@ -400,7 +335,6 @@ func (m *Manager) ListSubjects() ([]string, error) {
 func (m *Manager) ClearCache() {
 	m.decoderMu.Lock()
 	m.avroDecoders = make(map[uint32]*AvroDecoder)
-	m.protobufDecoders = make(map[uint32]*ProtobufDecoder)
 	m.jsonSchemaDecoders = make(map[uint32]*JSONSchemaDecoder)
 	m.decoderMu.Unlock()
 
@@ -410,7 +344,7 @@ func (m *Manager) ClearCache() {
 // GetCacheStats returns cache statistics
 func (m *Manager) GetCacheStats() (decoders, schemas, subjects int) {
 	m.decoderMu.RLock()
-	decoders = len(m.avroDecoders) + len(m.protobufDecoders) + len(m.jsonSchemaDecoders)
+	decoders = len(m.avroDecoders) + len(m.jsonSchemaDecoders)
 	m.decoderMu.RUnlock()
 
 	schemas, subjects, _ = m.registryClient.GetCacheStats()
@@ -460,39 +394,8 @@ func (m *Manager) encodeAvroMessage(recordValue *schema_pb.RecordValue, schemaID
 	return envelope, nil
 }
 
-// encodeProtobufMessage encodes a RecordValue back to Protobuf binary format
 func (m *Manager) encodeProtobufMessage(recordValue *schema_pb.RecordValue, schemaID uint32) ([]byte, error) {
-	// Get schema from registry
-	cachedSchema, err := m.registryClient.GetSchemaByID(schemaID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get schema for encoding: %w", err)
-	}
-
-	// Get decoder (which contains the descriptor)
-	decoder, err := m.getProtobufDecoder(schemaID, cachedSchema.Schema)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get decoder for encoding: %w", err)
-	}
-
-	// Convert RecordValue back to Go map
-	goMap := recordValueToMap(recordValue)
-
-	// Create a new message instance and populate it
-	msg := decoder.msgType.New()
-	if err := m.populateProtobufMessage(msg, goMap, decoder.descriptor); err != nil {
-		return nil, fmt.Errorf("failed to populate Protobuf message: %w", err)
-	}
-
-	// Encode using Protobuf
-	binary, err := proto.Marshal(msg.Interface())
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode to Protobuf binary: %w", err)
-	}
-
-	// Create Confluent envelope (with indexes if needed)
-	envelope := CreateConfluentEnvelope(FormatProtobuf, schemaID, nil, binary)
-
-	return envelope, nil
+	return nil, fmt.Errorf("protobuf schemas are not supported; use AVRO or JSON Schema")
 }
 
 // encodeJSONSchemaMessage encodes a RecordValue back to JSON Schema format
