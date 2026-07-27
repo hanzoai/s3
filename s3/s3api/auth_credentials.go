@@ -31,7 +31,6 @@ import (
 	// Import KMS providers to register them
 	_ "github.com/hanzoai/s3/s3/kms/aws"
 	// _ "github.com/hanzoai/s3/s3/kms/azure"  // TODO: Fix Azure SDK compatibility issues
-	_ "github.com/hanzoai/s3/s3/kms/gcp"
 	_ "github.com/hanzoai/s3/s3/kms/local"
 	_ "github.com/hanzoai/s3/s3/kms/openbao"
 )
