@@ -1,6 +1,35 @@
-Storage
+Hanzo S3
 Copyright (c) 2026 Hanzo AI, Inc.
 
 This product includes software from SeaweedFS (https://github.com/seaweedfs/seaweedfs), licensed under Apache-2.0:
 
     Copyright 2014-2026 Chris Lu
+
+Forked from https://github.com/seaweedfs/seaweedfs at the 4.34 release series.
+
+Upstream SeaweedFS ships no NOTICE file, so there are no Apache-2.0 §4(d)
+attributions to propagate beyond the copyright above.
+
+DEVIATIONS
+
+  - Go module path renamed from github.com/seaweedfs/seaweedfs to
+    github.com/hanzoai/s3. No residual upstream import paths remain in the Go
+    sources.
+  - Package tree relocated from the upstream weed/ directory to s3/; the CLI
+    entrypoint is s3/s3.go.
+  - Command binary renamed from weed to s3 (Makefile BINARY = s3); the CLI
+    banner and subcommand descriptions are branded "Hanzo S3".
+  - gRPC service identifiers renamed to Hanzo-prefixed names (for example
+    HanzoClient, HanzoFilerClient, HanzoIdentityAccessManagementClient) under
+    s3/wire/.
+  - Versioning is independent of upstream's. Releases run on their own 1.0.x
+    line (s3/util/version/constants.go) and no longer track upstream's 4.34.x
+    numbering, so a version this binary reports does not name an upstream
+    release.
+  - SQLite is linked through github.com/hanzoai/sqlite, which registers the
+    hanzoai/sqlcipher codec VFS; modernc.org/sqlite is present only as that
+    module's dependency.
+  - LICENSE preface augmented with a Hanzo AI, Inc. copyright line while
+    preserving Chris Lu's copyright and the complete Apache-2.0 license text.
+  - The S3-compatible object storage API under s3/s3api/ is retained as the
+    primary product surface.
