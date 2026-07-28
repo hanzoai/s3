@@ -16,7 +16,7 @@ import (
 func runBackendRoundTrip(t *testing.T, backend string) {
 	t.Helper()
 	store := &LuxDBStore{}
-	if err := store.initialize(backend, t.TempDir()); err != nil {
+	if err := store.initialize(backend, t.TempDir(), ""); err != nil {
 		t.Fatalf("init %s: %v", backend, err)
 	}
 	defer store.Shutdown()
