@@ -112,6 +112,12 @@ type S3ApiServer struct {
 
 type objectWriteLock interface {
 	StopShortLivedLock() error
+	// IsLocked reports whether this lock is actually HELD right now. It is part
+	// of the interface because a conditional write's correctness depends on the
+	// answer: acquisition can fail, and a lock object that exists is not the same
+	// as a lock that is held. Callers that evaluate a precondition must refuse to
+	// write when this is false — see withObjectWriteLock.
+	IsLocked() bool
 }
 
 const (
