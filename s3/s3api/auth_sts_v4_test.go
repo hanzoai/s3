@@ -79,7 +79,7 @@ func TestAuthorizeWithIAMSessionTokenExtraction(t *testing.T) {
 			Header: http.Header{
 				"X-Hanzo-Session-Token": {"jwt-preferred"},
 				"X-Hanzo-Principal":     {"arn:aws:iam::user/jwt-user"},
-				"X-Amz-Security-Token":      {"sts-fallback"},
+				"X-Amz-Security-Token":  {"sts-fallback"},
 			},
 			URL: &url.URL{},
 		}
