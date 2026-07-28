@@ -17,12 +17,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
-	"github.com/pquerna/cachecontrol/cacheobject"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
 	stats_collect "github.com/hanzoai/s3/s3/stats"
+	"github.com/pquerna/cachecontrol/cacheobject"
 )
 
 const (

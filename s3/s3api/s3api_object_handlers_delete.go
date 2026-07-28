@@ -290,7 +290,9 @@ func (s3a *S3ApiServer) DeleteObjectHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 	if !deleteHandled {
-		deleteCode = s3a.withObjectWriteLock(bucket, object, func() s3err.ErrorCode {
+		// Conditional exactly when the request carries If-Match; an unconditional
+		// DELETE has nothing to be atomic with and must not require the lock.
+		deleteCode = s3a.withObjectWriteLock(bucket, object, r.Header.Get(s3_constants.IfMatch) != "", func() s3err.ErrorCode {
 			return s3a.checkDeleteIfMatch(bucket, object, versionId, versioningState, r.Header.Get(s3_constants.IfMatch), s3err.ErrPreconditionFailed)
 		}, func() s3err.ErrorCode {
 			if versioningConfigured {
@@ -450,7 +452,9 @@ func (s3a *S3ApiServer) DeleteMultipleObjectsHandler(w http.ResponseWriter, r *h
 			}
 
 			var deleteResult deleteMutationResult
-			deleteCode := s3a.withObjectWriteLock(bucket, object.Key, func() s3err.ErrorCode {
+			// Same rule for multi-delete, where the condition rides the request body's
+			// per-object ETag rather than a header.
+			deleteCode := s3a.withObjectWriteLock(bucket, object.Key, object.ETag != "", func() s3err.ErrorCode {
 				return s3a.checkDeleteIfMatch(bucket, object.Key, object.VersionId, versioningState, object.ETag, s3err.ErrNoSuchKey)
 			}, func() s3err.ErrorCode {
 				if versioningConfigured {

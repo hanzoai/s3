@@ -254,7 +254,7 @@ func (s3a *S3ApiServer) CopyObjectHandler(w http.ResponseWriter, r *http.Request
 				updateCode = selfCopyBody()
 			}
 		} else {
-			updateCode = s3a.withObjectWriteLock(dstBucket, dstObject, func() s3err.ErrorCode {
+			updateCode = s3a.withObjectWriteLock(dstBucket, dstObject, requestIsConditional(r), func() s3err.ErrorCode {
 				return s3a.checkConditionalHeaders(r, dstBucket, dstObject)
 			}, selfCopyBody)
 		}
@@ -407,7 +407,7 @@ func (s3a *S3ApiServer) CopyObjectHandler(w http.ResponseWriter, r *http.Request
 	var dstVersionId string
 	var etag string
 
-	finalizeCode := s3a.withObjectWriteLock(dstBucket, dstObject, func() s3err.ErrorCode {
+	finalizeCode := s3a.withObjectWriteLock(dstBucket, dstObject, requestIsConditional(r), func() s3err.ErrorCode {
 		return s3a.checkConditionalHeaders(r, dstBucket, dstObject)
 	}, func() s3err.ErrorCode {
 		var finalizeErr error

@@ -73,7 +73,7 @@ func TestSSES3EndToEndSmallFile(t *testing.T) {
 			// For inline files, data is in Content, metadata in Extended
 			mockEntry := &filer_pb.Entry{
 				Extended: map[string][]byte{
-					s3_constants.HanzoSSES3Key:       serializedMetadata,
+					s3_constants.HanzoSSES3Key:           serializedMetadata,
 					s3_constants.AmzServerSideEncryption: []byte("AES256"),
 				},
 				Content: encryptedData,
@@ -183,7 +183,7 @@ func TestSSES3EndToEndChunkedFile(t *testing.T) {
 	// Create mock entry with chunks
 	mockEntry := &filer_pb.Entry{
 		Extended: map[string][]byte{
-			s3_constants.HanzoSSES3Key:       serializedObjMeta,
+			s3_constants.HanzoSSES3Key:           serializedObjMeta,
 			s3_constants.AmzServerSideEncryption: []byte("AES256"),
 		},
 		Chunks: []*filer_pb.FileChunk{
