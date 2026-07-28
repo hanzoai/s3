@@ -22,7 +22,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/golang/snappy v1.0.0
 	github.com/google/btree v1.1.3
-	github.com/google/uuid v1.6.0
+	github.com/google/uuid v1.6.1-0.20241114170450-2d3c2a9cc518
 	github.com/gorilla/mux v1.8.1
 	github.com/hanzoai/goexif v1.0.4
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -65,17 +65,17 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.2.0
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	golang.org/x/crypto v0.52.0
+	golang.org/x/crypto v0.54.0
 	golang.org/x/exp v0.0.0-20260529124908-c761662dc8c9
 	golang.org/x/image v0.41.0
-	golang.org/x/net v0.55.0
-	golang.org/x/sys v0.45.0
-	golang.org/x/text v0.37.0 // indirect
-	golang.org/x/tools v0.45.0 // indirect
+	golang.org/x/net v0.56.0
+	golang.org/x/sys v0.47.0
+	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/tools v0.47.0 // indirect
 	google.golang.org/protobuf v1.36.11
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.50.0
+	modernc.org/sqlite v1.51.0 // indirect
 )
 
 require (
@@ -93,6 +93,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/flatbuffers/go v0.0.0-20230108230133-3b8644d32c50
 	github.com/hanzoai/go-fuse/v2 v2.9.4
+	github.com/hanzoai/sqlite v0.4.0
 	github.com/linkedin/goavro/v2 v2.15.0
 	github.com/luxfi/database v1.21.1
 	github.com/luxfi/kms v1.12.10
@@ -107,7 +108,7 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0
 	github.com/zap-proto/go v1.8.2
 	go.uber.org/atomic v1.11.0
-	golang.org/x/sync v0.21.0
+	golang.org/x/sync v0.22.0
 	golang.org/x/tools/godoc v0.1.0-deprecated
 )
 
@@ -130,9 +131,10 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.4.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.8-0.20250403174932-29230038a667 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
-	github.com/google/pprof v0.0.0-20260302011040-a15ffb7f9dcc // indirect
 	github.com/gorilla/rpc v1.2.1 // indirect
 	github.com/grandcat/zeroconf v1.0.0 // indirect
+	github.com/hanzoai/csqlite v0.1.0 // indirect
+	github.com/hanzoai/sqlcipher v0.1.1 // indirect
 	github.com/hanzoai/vfs v0.4.3 // indirect
 	github.com/hanzos3/go-sdk v1.0.2 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -169,7 +171,7 @@ require (
 	go.uber.org/mock v0.6.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/mod v0.36.0 // indirect
+	golang.org/x/mod v0.37.0 // indirect
 )
 
 require (
@@ -234,11 +236,11 @@ require (
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
-	golang.org/x/term v0.43.0
+	golang.org/x/term v0.45.0
 	golang.org/x/time v0.15.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	modernc.org/libc v1.72.0 // indirect
+	modernc.org/libc v1.72.3 // indirect
 )
 
 replace github.com/tyler-smith/go-bip39 => ./third_party/go-bip39
