@@ -57,7 +57,7 @@ func (store *LuxDBStore) Initialize(configuration s3_util.Configuration, prefix 
 	return store.initialize(backend, dir, configuration.GetString(prefix+"syncWrites"))
 }
 
-func (store *LuxDBStore) initialize(backend, dir string, syncWrites ...string) (err error) {
+func (store *LuxDBStore) initialize(backend, dir, syncWrites string) (err error) {
 	if backend == "" {
 		backend = defaultBackend
 	}
@@ -84,8 +84,8 @@ func (store *LuxDBStore) initialize(backend, dir string, syncWrites ...string) (
 	// Passing nil config here is what made it unreachable, so an operator could
 	// set filer.toml's syncWrites and nothing happened.
 	var cfgJSON []byte
-	if len(syncWrites) > 0 {
-		switch strings.ToLower(strings.TrimSpace(syncWrites[0])) {
+	{
+		switch strings.ToLower(strings.TrimSpace(syncWrites)) {
 		case "false", "0", "off", "no":
 			cfgJSON = []byte(`{"syncWrites": false}`)
 			glog.V(0).Infof("filer luxdb store: syncWrites=false (durability relaxed by config)")
@@ -94,7 +94,7 @@ func (store *LuxDBStore) initialize(backend, dir string, syncWrites ...string) (
 		case "":
 			// unset: keep the backend default
 		default:
-			return fmt.Errorf("filer luxdb: invalid syncWrites %q (want true or false)", syncWrites[0])
+			return fmt.Errorf("filer luxdb: invalid syncWrites %q (want true or false)", syncWrites)
 		}
 	}
 

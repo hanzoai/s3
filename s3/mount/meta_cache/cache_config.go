@@ -17,10 +17,19 @@ type cacheConfig struct {
 }
 
 func (c cacheConfig) GetString(key string) string {
-	if strings.HasSuffix(key, "backend") {
+	// Answer only what this cache actually configures. The previous form
+	// returned c.dir for EVERY key that did not end in "backend", so any new
+	// store option silently received a filesystem path as its value — a store
+	// reading a "syncWrites" key got "/tmp/<id>/meta" and refused to start.
+	// An unknown key has no value here; say so.
+	switch {
+	case strings.HasSuffix(key, "backend"):
 		return c.backend
+	case strings.HasSuffix(key, "dir"):
+		return c.dir
+	default:
+		return ""
 	}
-	return c.dir
 }
 
 func (c cacheConfig) GetBool(key string) bool {
