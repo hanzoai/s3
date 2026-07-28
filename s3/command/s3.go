@@ -37,9 +37,12 @@ var (
 	s3StandaloneOptions S3Options
 )
 
-// S3Options holds CLI flags for the S3 gateway.
-// Flags are registered in multiple commands: s3.go (standalone), server.go, filer.go, and mini.go.
-// When adding a new field, update all four flag registration sites.
+// S3Options holds CLI flags for the S3 gateway. Every field is a pointer, and the
+// code below dereferences them through the s3opt receiver without a nil check —
+// so a field this struct gains must be registered by all four commands that build
+// one (s3.go standalone, server.go, filer.go, mini.go) or that command segfaults
+// the moment it starts S3. TestS3OptionsRegisteredEverywhere enforces exactly
+// that, reading the required set out of this file rather than from a list.
 type S3Options struct {
 	filer                     *string
 	bindIp                    *string
