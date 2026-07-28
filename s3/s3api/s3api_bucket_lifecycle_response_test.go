@@ -124,4 +124,3 @@ func (f failingReadCloser) Read(_ []byte) (int, error) {
 func (f failingReadCloser) Close() error {
 	return nil
 }
-

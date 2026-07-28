@@ -12,11 +12,11 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/filer"
-	filersvc "github.com/hanzoai/s3/s3/svc/filer"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
 	"github.com/hanzoai/s3/s3/pb/filerstub"
 	"github.com/hanzoai/s3/s3/s3api/s3_constants"
+	filersvc "github.com/hanzoai/s3/s3/svc/filer"
 	filerwire "github.com/hanzoai/s3/s3/wire/filer"
 	"github.com/hanzoai/s3/s3/wire/filer/filerstream"
 	"github.com/stretchr/testify/assert"

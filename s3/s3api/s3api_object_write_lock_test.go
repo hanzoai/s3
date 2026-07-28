@@ -42,7 +42,7 @@ func TestWithObjectWriteLock_PreconditionRefusesWhenLockNotHeld(t *testing.T) {
 			s3a := &S3ApiServer{newObjectWriteLock: tc.lock}
 
 			preconditionRan, wrote := false, false
-			code := s3a.withObjectWriteLock("b", "o",
+			code := s3a.withObjectWriteLock("b", "o", true,
 				func() s3err.ErrorCode { preconditionRan = true; return s3err.ErrNone },
 				func() s3err.ErrorCode { wrote = true; return s3err.ErrNone },
 			)
@@ -64,7 +64,7 @@ func TestWithObjectWriteLock_HeldLockRunsPreconditionThenWrite(t *testing.T) {
 	s3a := &S3ApiServer{newObjectWriteLock: func(string, string) objectWriteLock { return lock }}
 
 	var order []string
-	code := s3a.withObjectWriteLock("b", "o",
+	code := s3a.withObjectWriteLock("b", "o", true,
 		func() s3err.ErrorCode { order = append(order, "precondition"); return s3err.ErrNone },
 		func() s3err.ErrorCode { order = append(order, "write"); return s3err.ErrNone },
 	)
@@ -85,7 +85,7 @@ func TestWithObjectWriteLock_FailedPreconditionBlocksWrite(t *testing.T) {
 		return &fakeObjectWriteLock{held: true}
 	}}
 	wrote := false
-	code := s3a.withObjectWriteLock("b", "o",
+	code := s3a.withObjectWriteLock("b", "o", true,
 		func() s3err.ErrorCode { return s3err.ErrPreconditionFailed },
 		func() s3err.ErrorCode { wrote = true; return s3err.ErrNone },
 	)
@@ -94,6 +94,27 @@ func TestWithObjectWriteLock_FailedPreconditionBlocksWrite(t *testing.T) {
 	}
 	if code != s3err.ErrPreconditionFailed {
 		t.Fatalf("code = %v, want ErrPreconditionFailed", code)
+	}
+}
+
+// The regression this signature exists to prevent, and it is not hypothetical —
+// it was nearly shipped. The real caller builds preconditionFn UNCONDITIONALLY and
+// lets it no-op when the request carries no conditional headers, so inferring
+// "is this conditional?" from `preconditionFn != nil` reads TRUE on every single
+// PUT. That would demand a held lock for ordinary writes and fail the whole object
+// path closed. A non-nil precondition with needsSerialization=false must still
+// write, lock or no lock.
+func TestWithObjectWriteLock_NonNilPreconditionIsNotItselfAConditionalRequest(t *testing.T) {
+	s3a := &S3ApiServer{newObjectWriteLock: func(string, string) objectWriteLock {
+		return &fakeObjectWriteLock{held: false} // no lock available
+	}}
+	wrote := false
+	code := s3a.withObjectWriteLock("b", "o", false,
+		func() s3err.ErrorCode { return s3err.ErrNone }, // always-present, no-op closure
+		func() s3err.ErrorCode { wrote = true; return s3err.ErrNone },
+	)
+	if !wrote || code != s3err.ErrNone {
+		t.Fatalf("plain PUT blocked (wrote=%v code=%v) — a no-op precondition closure must not make a write conditional", wrote, code)
 	}
 }
 
@@ -113,7 +134,7 @@ func TestWithObjectWriteLock_UnconditionalWriteNeedsNoLock(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			s3a := &S3ApiServer{newObjectWriteLock: tc.lock}
 			wrote := false
-			code := s3a.withObjectWriteLock("b", "o", nil,
+			code := s3a.withObjectWriteLock("b", "o", false, nil,
 				func() s3err.ErrorCode { wrote = true; return s3err.ErrNone })
 			if !wrote || code != s3err.ErrNone {
 				t.Fatalf("unconditional write blocked (wrote=%v code=%v) — plain PUTs must not need the lock", wrote, code)
