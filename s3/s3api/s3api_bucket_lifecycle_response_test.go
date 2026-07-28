@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,7 @@ func TestGetBucketLifecycleConfigurationHandlerUsesStoredLifecycleConfig(t *test
 		Name: bucket,
 		Entry: &filer_pb.Entry{
 			Extended: map[string][]byte{
-				bucketLifecycleConfigurationXMLKey:            []byte(lifecycleXML),
+				s3_constants.ExtLifecycleConfigurationXMLKey:  []byte(lifecycleXML),
 				bucketLifecycleTransitionMinimumObjectSizeKey: []byte("varies_by_storage_class"),
 			},
 		},
@@ -54,7 +55,7 @@ func TestGetBucketLifecycleConfigurationHandlerDefaultsTransitionMinimumObjectSi
 		Name: bucket,
 		Entry: &filer_pb.Entry{
 			Extended: map[string][]byte{
-				bucketLifecycleConfigurationXMLKey: []byte(lifecycleXML),
+				s3_constants.ExtLifecycleConfigurationXMLKey: []byte(lifecycleXML),
 			},
 		},
 	})
