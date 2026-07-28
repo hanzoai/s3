@@ -6,6 +6,7 @@ import (
 	"math"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/hanzoai/s3/s3/glog"
@@ -60,17 +61,23 @@ func NewBucketRegistry(s3a *S3ApiServer) *BucketRegistry {
 		notFound:      make(map[string]struct{}),
 		s3a:           s3a,
 	}
-	err := br.init()
-	if err != nil {
-		glog.Fatal("init bucket registry failed", err)
-		return nil
+	// Fail-open: a filer that is unresponsive at gateway startup must not crash
+	// the S3 gateway (glog.Fatal -> CrashLoopBackOff). init() only warms the
+	// metadata cache; the registry populates lazily via GetBucketMetadata ->
+	// LoadBucketMetadataFromFiler, so a cold start stays correct.
+	if err := br.init(); err != nil {
+		glog.Warningf("bucket registry warm-up skipped (filer unavailable at startup, will warm lazily): %v", err)
 	}
 	return br
 }
 
 func (r *BucketRegistry) init() error {
 	var bucketCount int
-	err := filer_pb.List(context.Background(), r.s3a, r.s3a.option.BucketsPath, "", func(entry *filer_pb.Entry, isLast bool) error {
+	// Bound the warm-up list so an unresponsive filer at startup cannot block
+	// gateway startup indefinitely; on deadline we fail open (see NewBucketRegistry).
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	err := filer_pb.List(ctx, r.s3a, r.s3a.option.BucketsPath, "", func(entry *filer_pb.Entry, isLast bool) error {
 		if entry != nil && strings.HasPrefix(entry.Name, ".") {
 			return nil
 		}
