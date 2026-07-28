@@ -1,6 +1,6 @@
 module github.com/hanzoai/s3
 
-go 1.26.4
+go 1.26.5
 
 require (
 	github.com/Shopify/sarama v1.38.1
@@ -105,7 +105,7 @@ require (
 	github.com/schollz/progressbar/v3 v3.19.0
 	github.com/shirou/gopsutil/v4 v4.26.3
 	github.com/xeipuuv/gojsonschema v1.2.0
-	github.com/zap-proto/go v1.8.1
+	github.com/zap-proto/go v1.8.2
 	go.uber.org/atomic v1.11.0
 	golang.org/x/sync v0.21.0
 	golang.org/x/tools/godoc v0.1.0-deprecated

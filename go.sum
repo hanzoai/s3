@@ -563,6 +563,8 @@ github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 github.com/zap-proto/go v1.8.1 h1:iLYQEFbW4wcBfvRugMYgiLIiAwzu15KXqbQflayaWtc=
 github.com/zap-proto/go v1.8.1/go.mod h1:dJ394C6tzk6sm67JmnAWVyPjvMZ3JvFz0ujxoy0wR4A=
+github.com/zap-proto/go v1.8.2 h1:2OlTkS1XJ4iXV/hmEEPIRu6uwN1MO8P0Gm4+v7W0wGo=
+github.com/zap-proto/go v1.8.2/go.mod h1:fbNeWcssRRbTkQEDCrmUmzqJA1gKcAlgi1z4QrtEFZg=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
 go.opentelemetry.io/otel v1.44.0 h1:JjwHmHpA4iZ3wBxluu2fbbE7j4kqlE8jXyAyPXH7HqU=
