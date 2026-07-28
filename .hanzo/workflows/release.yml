@@ -155,15 +155,22 @@ jobs:
           done
           echo "::error::image ${v} not pullable after push — refusing to tag git"; exit 1
       - name: Tag the release (image ⇔ tag invariant)
+        # This repo is a MIRROR on the forge, so `git push origin <tag>` is
+        # rejected — "remote: mirror repository is read-only", 403 — and run #1
+        # died here having already built, pushed and verified v1.0.6. GitHub is
+        # the writable side of a mirror, so the tag goes there and the forge
+        # picks it up on its next sync. (hanzoai/app pushes to origin because it
+        # is a native forge repo, not a mirror; same invariant, opposite
+        # direction of travel.)
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           set -euo pipefail
-          git tag "${{ steps.ver.outputs.version_v }}"
-          git push origin "${{ steps.ver.outputs.version_v }}"
-          # Mirror the tag to GitHub so both remotes agree on the release lineage.
-          # Fail-soft: a mirror hiccup must not invalidate the pushed image+tag.
-          if [ -n "${GH_PAT:-}" ]; then
-            git push "https://hanzo-dev:${GH_PAT}@github.com/hanzoai/s3.git" \
-              "${{ steps.ver.outputs.version_v }}" || echo "github tag mirror failed (image+tag already good)"
+          v="${{ steps.ver.outputs.version_v }}"
+          if [ -z "${GH_PAT:-}" ]; then
+            echo "::error::GH_PAT unset — cannot tag the authoritative remote, and an untagged image breaks the tag ⇔ image invariant"
+            exit 1
           fi
+          git tag "$v"
+          git push "https://hanzo-dev:${GH_PAT}@github.com/hanzoai/s3.git" "$v"
+          echo "tagged $v on github.com/hanzoai/s3 — the forge mirror follows on its next sync"
