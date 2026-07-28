@@ -95,7 +95,7 @@ require (
 	github.com/hanzoai/go-fuse/v2 v2.9.4
 	github.com/hanzoai/sqlite v0.4.0
 	github.com/linkedin/goavro/v2 v2.15.0
-	github.com/luxfi/database v1.21.1
+	github.com/luxfi/database v1.21.2
 	github.com/luxfi/kms v1.12.10
 	github.com/luxfi/log v1.4.3
 	github.com/minio/crc64nvme v1.1.1
