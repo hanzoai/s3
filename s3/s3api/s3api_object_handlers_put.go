@@ -17,7 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pquerna/cachecontrol/cacheobject"
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/operation"
@@ -28,6 +27,7 @@ import (
 	s3server "github.com/hanzoai/s3/s3/server"
 	stats_collect "github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/util/constants"
+	"github.com/pquerna/cachecontrol/cacheobject"
 )
 
 // Object lock validation errors
@@ -324,17 +324,38 @@ func (s3a *S3ApiServer) withObjectWriteLock(bucket, object string, preconditionF
 		return preconditionFn()
 	}
 
+	// A precondition is only worth anything if NOTHING can write between evaluating
+	// it and committing. This function evaluates, then runs fn — and on the PUT path
+	// fn is a full body upload plus a CreateEntry, so the window is wide. Serialize
+	// that window or two racers both pass the check and both commit: a
+	// compare-and-swap that silently admits two winners, which is the one thing a
+	// conditional PUT exists to prevent.
+	//
+	// So an unheld lock is FAIL-CLOSED here, not fall-through. It used to fall
+	// through — no lock configured, a nil lock, or (below) a lock whose acquisition
+	// failed all ran precondition-then-write unserialized, and nothing said so. The
+	// visible symptom was a caller proving the store's atomicity and being told
+	// "update-race admitted 2 writers (want 1)", after which it correctly refused to
+	// use the store as a fence at all.
+	//
+	// Unconditional writes are unaffected: with no precondition there is nothing to
+	// be atomic WITH, last-writer-wins is the defined S3 semantic, and taking the
+	// lock away from them would serialize the whole object path for no benefit.
+	needsSerialization := preconditionFn != nil
+
 	if object == "" || s3a.newObjectWriteLock == nil {
-		if errCode := runPrecondition(); errCode != s3err.ErrNone {
-			return errCode
+		if needsSerialization {
+			glog.Errorf("withObjectWriteLock: %s/%s has a precondition but no object write lock is configured; refusing rather than writing unserialized", bucket, object)
+			return s3err.ErrInternalError
 		}
 		return fn()
 	}
 
 	lock := s3a.newObjectWriteLock(bucket, object)
 	if lock == nil {
-		if errCode := runPrecondition(); errCode != s3err.ErrNone {
-			return errCode
+		if needsSerialization {
+			glog.Errorf("withObjectWriteLock: %s/%s has a precondition but the lock could not be created; refusing rather than writing unserialized", bucket, object)
+			return s3err.ErrInternalError
 		}
 		return fn()
 	}
@@ -343,6 +364,15 @@ func (s3a *S3ApiServer) withObjectWriteLock(bucket, object string, preconditionF
 			glog.Warningf("withObjectWriteLock: failed to release lock for %s/%s: %v", bucket, object, err)
 		}
 	}()
+
+	// Having a lock OBJECT is not holding the lock. Acquisition can fail — the lock
+	// server may be unreachable, or another writer may hold the key — and the
+	// constructor hands the object back either way, so this is the only place the
+	// distinction can still be made before we act on it.
+	if needsSerialization && !lock.IsLocked() {
+		glog.Errorf("withObjectWriteLock: %s/%s has a precondition but the lock is not held; refusing rather than writing unserialized", bucket, object)
+		return s3err.ErrInternalError
+	}
 
 	if errCode := runPrecondition(); errCode != s3err.ErrNone {
 		return errCode
