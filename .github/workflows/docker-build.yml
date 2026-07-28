@@ -20,9 +20,14 @@ permissions:
 
 jobs:
   build:
-    # amd64 self-hosted runner (evo); arm64 is produced via buildx/QEMU since the
-    # Dockerfile is pure-Go (CGO_ENABLED=0) and cross-builds cleanly.
-    runs-on: [self-hosted, linux, amd64]
+    # GitHub-hosted; arm64 is produced via buildx/QEMU since the Dockerfile is
+    # pure-Go (CGO_ENABLED=0) and cross-builds cleanly.
+    #
+    # This asked for [self-hosted, linux, amd64] and no such runner is registered
+    # to this repo, so every build queued forever instead of failing -- five of
+    # them were stacked up, including two release tags, and the images they were
+    # supposed to publish silently never appeared.
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
