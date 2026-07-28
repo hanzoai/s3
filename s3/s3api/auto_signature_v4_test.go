@@ -487,14 +487,24 @@ func TestSignatureV4WithoutProxy(t *testing.T) {
 			expectedHost: "::1",
 		},
 		{
-			name:         "IPv6 HTTP without port",
-			host:         "::1",
+			name: "IPv6 HTTP without port",
+			// Bracketed, because that is what an IPv6 host looks like in a URL
+			// authority AND in a Host header — "::1" bare is not parseable as
+			// either ("invalid port \"::1\" after host"), so this case used to
+			// fail on its own fixture rather than on the code it tests.
+			// extractHostHeader strips the brackets, hence expectedHost.
+			host:         "[::1]",
 			proto:        "http",
 			expectedHost: "::1",
 		},
 		{
-			name:         "IPv6 HTTPS without port",
-			host:         "::1",
+			name: "IPv6 HTTPS without port",
+			// Bracketed, because that is what an IPv6 host looks like in a URL
+			// authority AND in a Host header — "::1" bare is not parseable as
+			// either ("invalid port \"::1\" after host"), so this case used to
+			// fail on its own fixture rather than on the code it tests.
+			// extractHostHeader strips the brackets, hence expectedHost.
+			host:         "[::1]",
 			proto:        "https",
 			expectedHost: "::1",
 		},
