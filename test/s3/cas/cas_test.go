@@ -22,22 +22,24 @@
 // reliably provokes it. These tests run wider and repeat, because a single green
 // round of a nondeterministic race is not evidence.
 //
-// # WHAT THESE TESTS DO NOT COVER, and why it matters
+// # EVERY RACER MUST WRITE DISTINCT BYTES, and that is not a detail
 //
-// Everything here signs its payload the ordinary way. That is not the only way an
-// S3 client writes: over plain HTTP, minio-go — and so hanzoai/s3-go, which cloud's
-// fence uses — signs with STREAMING-AWS4-HMAC-SHA256-PAYLOAD and sends an
-// aws-chunked body. The two spellings take DIFFERENT paths through this gateway,
-// and only one of them is atomic. Measured against both the deployed 4.34.6 and a
-// build of this tree:
+// On a store whose version is the content hash — which is what an S3 ETag is —
+// two racers that write IDENTICAL bytes both legitimately succeed: the first
+// commit leaves the ETag unchanged, so the second's If-Match still holds. That is
+// correct S3 behaviour, not a violation, but it breaks the "exactly one winner"
+// assumption every CAS probe is built on.
 //
-//	plain signature      15,700 conditional PUTs   0 over-admitted
-//	streaming signature      ~300 races            ~30-40% over-admitted, up to 3 of 4
+// This is not hypothetical. cloud's org.ProbeCAS raced four fixed payloads
+// (cas-probe0..3) and reused the same four across BOTH of its phases, so a 1-in-4
+// draw rewrote bytes that were already there, left the ETag unmoved, and let every
+// remaining racer's If-Match still hold. It reported the store non-atomic 56 times
+// in 300 runs against production and kept the durability fence disabled on a
+// gateway that was behaving correctly the whole time. Binding each payload to the
+// probe key and the raced version fixed it: 0 in 400.
 //
-// So a green run here says nothing about the streaming path, and the fence runs on
-// the streaming path. Covering it needs a client that emits aws-chunked bodies;
-// aws-sdk-go-v2 will not do it for a seekable body over http. Until then, the
-// reproducer is cloud's own TestProbeCASSoak_Staging, which drives the real client.
+// So race() stamps every body with the racer index and a nanosecond timestamp.
+// Do not "simplify" that to a constant.
 //
 // Run against a live gateway:
 //
@@ -45,7 +47,7 @@
 //	go test ./test/s3/cas/ -v
 //
 // Knobs: S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, CAS_BUCKET, CAS_RACERS,
-// CAS_ROUNDS, CAS_KEY=fresh, CAS_ETAG=raw.
+// CAS_ROUNDS, CAS_KEY=fresh.
 package cas
 
 import (
@@ -150,17 +152,13 @@ type precondition func(*s3.PutObjectInput)
 func mustNotExist(in *s3.PutObjectInput) { in.IfNoneMatch = aws.String("*") }
 func unconditional(*s3.PutObjectInput)   {}
 
-// atVersion conditions a write on an ETag. RFC 9110 entity-tags are quoted, and
-// that is how the AWS SDK hands them back — but S3 clients differ: minio-go (and
-// so hanzoai/s3-go, which cloud's fence uses) strips the quotes before putting the
-// value in the header. Both spellings name the same version, so a gateway must
-// treat them identically. CAS_ETAG=raw sends the unquoted form to check that it
-// does, because a gateway that fails to PARSE a precondition and then proceeds as
-// if none was given turns a compare-and-swap into a blind overwrite.
+// atVersion conditions a write on an ETag. RFC 9110 entity-tags are quoted and the
+// AWS SDK hands them back that way, while minio-go strips the quotes — both name
+// the same version, and the gateway is expected to treat them identically. Verified
+// against production over 400 conditional PUTs in the unquoted spelling; the
+// gateway agreed, so this sends whatever the store gave us rather than carrying a
+// knob for a difference that turned out not to exist.
 func atVersion(etag string) precondition {
-	if os.Getenv("CAS_ETAG") == "raw" {
-		etag = strings.Trim(etag, `"`)
-	}
 	return func(in *s3.PutObjectInput) { in.IfMatch = aws.String(etag) }
 }
 
