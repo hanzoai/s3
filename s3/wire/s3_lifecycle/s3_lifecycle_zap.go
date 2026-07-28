@@ -18,6 +18,14 @@ const (
 // correlated Response.
 type HanzoS3LifecycleInternalChannel interface {
 	Call(envelope []byte) (rpc.Response, error)
+	// NextPromiseID allocates a call's PromiseID from the CONNECTION rather than
+	// from a per-client counter. PromiseID is the connection's demultiplexing
+	// key: the transport keys its in-flight table by it, and OpenStream already
+	// allocates stream IDs the same way. A client that numbered its own calls
+	// would restart at 1 on every construction, so two clients sharing a pooled
+	// conn collide — the transport overwrites the first waiter's slot and its
+	// response is dropped, blocking that caller for as long as its context runs.
+	NextPromiseID() uint32
 }
 
 // HanzoS3LifecycleInternalClient is a typed RPC client for the
@@ -27,13 +35,12 @@ type HanzoS3LifecycleInternalChannel interface {
 type HanzoS3LifecycleInternalClient struct {
 	ch   HanzoS3LifecycleInternalChannel
 	cap  []byte
-	sess *rpc.Session
 }
 
 // NewHanzoS3LifecycleInternalClient returns a client that issues calls over ch,
 // attaching cap (which may be nil) to every request.
 func NewHanzoS3LifecycleInternalClient(ch HanzoS3LifecycleInternalChannel, capability []byte) *HanzoS3LifecycleInternalClient {
-	return &HanzoS3LifecycleInternalClient{ch: ch, cap: capability, sess: rpc.NewSession()}
+	return &HanzoS3LifecycleInternalClient{ch: ch, cap: capability}
 }
 
 func (c *HanzoS3LifecycleInternalClient) LifecycleDelete(req []byte) (rpc.Promise, []byte, error) {
@@ -48,7 +55,7 @@ func (c *HanzoS3LifecycleInternalClient) LifecycleDeleteOn(on rpc.Promise) (rpc.
 }
 
 func (c *HanzoS3LifecycleInternalClient) invokeLifecycleDelete(target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
 		Method:    HanzoS3LifecycleInternalLifecycleDeleteOrdinal,
 		PromiseID: p.ID,
