@@ -19,6 +19,14 @@ const (
 // MountPeerChannel ships one Call envelope and awaits its correlated Response.
 type MountPeerChannel interface {
 	Call(envelope []byte) (rpc.Response, error)
+	// NextPromiseID allocates a call's PromiseID from the CONNECTION rather than
+	// from a per-client counter. PromiseID is the connection's demultiplexing
+	// key: the transport keys its in-flight table by it, and OpenStream already
+	// allocates stream IDs the same way. A client that numbered its own calls
+	// would restart at 1 on every construction, so two clients sharing a pooled
+	// conn collide — the transport overwrites the first waiter's slot and its
+	// response is dropped, blocking that caller for as long as its context runs.
+	NextPromiseID() uint32
 }
 
 // MountPeerClient is a typed RPC client for the MountPeer service over a ZAP
@@ -28,13 +36,12 @@ type MountPeerChannel interface {
 type MountPeerClient struct {
 	ch   MountPeerChannel
 	cap  []byte
-	sess *rpc.Session
 }
 
 // NewMountPeerClient returns a client that issues calls over ch, attaching cap
 // (which may be nil) to every request.
 func NewMountPeerClient(ch MountPeerChannel, capability []byte) *MountPeerClient {
-	return &MountPeerClient{ch: ch, cap: capability, sess: rpc.NewSession()}
+	return &MountPeerClient{ch: ch, cap: capability}
 }
 
 func (c *MountPeerClient) ChunkAnnounce(req []byte) (rpc.Promise, []byte, error) {
@@ -49,7 +56,7 @@ func (c *MountPeerClient) ChunkAnnounceOn(on rpc.Promise) (rpc.Promise, []byte, 
 }
 
 func (c *MountPeerClient) invokeChunkAnnounce(target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
 		Method:    MountPeerChunkAnnounceOrdinal,
 		PromiseID: p.ID,
@@ -83,7 +90,7 @@ func (c *MountPeerClient) ChunkLookupOn(on rpc.Promise) (rpc.Promise, []byte, er
 }
 
 func (c *MountPeerClient) invokeChunkLookup(target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
 		Method:    MountPeerChunkLookupOrdinal,
 		PromiseID: p.ID,
@@ -122,7 +129,7 @@ func (c *MountPeerClient) FetchChunkOn(on rpc.Promise) (rpc.Promise, []byte, err
 }
 
 func (c *MountPeerClient) invokeFetchChunk(target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.Call(rpc.BuildRequest(rpc.Call{
 		Method:    MountPeerFetchChunkOrdinal,
 		PromiseID: p.ID,

@@ -68,6 +68,14 @@ type VolumeServerChannel interface {
 	// CallContext is Call that also aborts when ctx is done (transport.Conn
 	// satisfies both).
 	CallContext(ctx context.Context, envelope []byte) (rpc.Response, error)
+	// NextPromiseID allocates a call's PromiseID from the CONNECTION rather than
+	// from a per-client counter. PromiseID is the connection's demultiplexing
+	// key: the transport keys its in-flight table by it, and OpenStream already
+	// allocates stream IDs the same way. A client that numbered its own calls
+	// would restart at 1 on every construction, so two clients sharing a pooled
+	// conn collide — the transport overwrites the first waiter's slot and its
+	// response is dropped, blocking that caller for as long as its context runs.
+	NextPromiseID() uint32
 }
 
 // VolumeServerClient is a typed RPC client for the VolumeServer service over a
@@ -77,13 +85,12 @@ type VolumeServerChannel interface {
 type VolumeServerClient struct {
 	ch   VolumeServerChannel
 	cap  []byte
-	sess *rpc.Session
 }
 
 // NewVolumeServerClient returns a client that issues calls over ch, attaching
 // cap (which may be nil) to every request.
 func NewVolumeServerClient(ch VolumeServerChannel, capability []byte) *VolumeServerClient {
-	return &VolumeServerClient{ch: ch, cap: capability, sess: rpc.NewSession()}
+	return &VolumeServerClient{ch: ch, cap: capability}
 }
 
 func (c *VolumeServerClient) BatchDelete(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
@@ -98,7 +105,7 @@ func (c *VolumeServerClient) BatchDeleteOn(ctx context.Context, on rpc.Promise) 
 }
 
 func (c *VolumeServerClient) invokeBatchDelete(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerBatchDeleteOrdinal,
 		PromiseID: p.ID,
@@ -132,7 +139,7 @@ func (c *VolumeServerClient) VacuumVolumeCheckOn(ctx context.Context, on rpc.Pro
 }
 
 func (c *VolumeServerClient) invokeVacuumVolumeCheck(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVacuumVolumeCheckOrdinal,
 		PromiseID: p.ID,
@@ -169,7 +176,7 @@ func (c *VolumeServerClient) VacuumVolumeCompactOn(ctx context.Context, on rpc.P
 }
 
 func (c *VolumeServerClient) invokeVacuumVolumeCompact(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVacuumVolumeCompactOrdinal,
 		PromiseID: p.ID,
@@ -203,7 +210,7 @@ func (c *VolumeServerClient) VacuumVolumeCommitOn(ctx context.Context, on rpc.Pr
 }
 
 func (c *VolumeServerClient) invokeVacuumVolumeCommit(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVacuumVolumeCommitOrdinal,
 		PromiseID: p.ID,
@@ -237,7 +244,7 @@ func (c *VolumeServerClient) VacuumVolumeCleanupOn(ctx context.Context, on rpc.P
 }
 
 func (c *VolumeServerClient) invokeVacuumVolumeCleanup(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVacuumVolumeCleanupOrdinal,
 		PromiseID: p.ID,
@@ -271,7 +278,7 @@ func (c *VolumeServerClient) DeleteCollectionOn(ctx context.Context, on rpc.Prom
 }
 
 func (c *VolumeServerClient) invokeDeleteCollection(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerDeleteCollectionOrdinal,
 		PromiseID: p.ID,
@@ -305,7 +312,7 @@ func (c *VolumeServerClient) AllocateVolumeOn(ctx context.Context, on rpc.Promis
 }
 
 func (c *VolumeServerClient) invokeAllocateVolume(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerAllocateVolumeOrdinal,
 		PromiseID: p.ID,
@@ -339,7 +346,7 @@ func (c *VolumeServerClient) VolumeSyncStatusOn(ctx context.Context, on rpc.Prom
 }
 
 func (c *VolumeServerClient) invokeVolumeSyncStatus(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeSyncStatusOrdinal,
 		PromiseID: p.ID,
@@ -376,7 +383,7 @@ func (c *VolumeServerClient) VolumeIncrementalCopyOn(ctx context.Context, on rpc
 }
 
 func (c *VolumeServerClient) invokeVolumeIncrementalCopy(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeIncrementalCopyOrdinal,
 		PromiseID: p.ID,
@@ -410,7 +417,7 @@ func (c *VolumeServerClient) VolumeMountOn(ctx context.Context, on rpc.Promise) 
 }
 
 func (c *VolumeServerClient) invokeVolumeMount(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeMountOrdinal,
 		PromiseID: p.ID,
@@ -444,7 +451,7 @@ func (c *VolumeServerClient) VolumeUnmountOn(ctx context.Context, on rpc.Promise
 }
 
 func (c *VolumeServerClient) invokeVolumeUnmount(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeUnmountOrdinal,
 		PromiseID: p.ID,
@@ -478,7 +485,7 @@ func (c *VolumeServerClient) VolumeDeleteOn(ctx context.Context, on rpc.Promise)
 }
 
 func (c *VolumeServerClient) invokeVolumeDelete(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeDeleteOrdinal,
 		PromiseID: p.ID,
@@ -512,7 +519,7 @@ func (c *VolumeServerClient) VolumeMarkReadonlyOn(ctx context.Context, on rpc.Pr
 }
 
 func (c *VolumeServerClient) invokeVolumeMarkReadonly(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeMarkReadonlyOrdinal,
 		PromiseID: p.ID,
@@ -546,7 +553,7 @@ func (c *VolumeServerClient) VolumeMarkWritableOn(ctx context.Context, on rpc.Pr
 }
 
 func (c *VolumeServerClient) invokeVolumeMarkWritable(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeMarkWritableOrdinal,
 		PromiseID: p.ID,
@@ -580,7 +587,7 @@ func (c *VolumeServerClient) VolumeConfigureOn(ctx context.Context, on rpc.Promi
 }
 
 func (c *VolumeServerClient) invokeVolumeConfigure(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeConfigureOrdinal,
 		PromiseID: p.ID,
@@ -614,7 +621,7 @@ func (c *VolumeServerClient) VolumeStatusOn(ctx context.Context, on rpc.Promise)
 }
 
 func (c *VolumeServerClient) invokeVolumeStatus(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeStatusOrdinal,
 		PromiseID: p.ID,
@@ -648,7 +655,7 @@ func (c *VolumeServerClient) GetStateOn(ctx context.Context, on rpc.Promise) (rp
 }
 
 func (c *VolumeServerClient) invokeGetState(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerGetStateOrdinal,
 		PromiseID: p.ID,
@@ -682,7 +689,7 @@ func (c *VolumeServerClient) SetStateOn(ctx context.Context, on rpc.Promise) (rp
 }
 
 func (c *VolumeServerClient) invokeSetState(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerSetStateOrdinal,
 		PromiseID: p.ID,
@@ -719,7 +726,7 @@ func (c *VolumeServerClient) VolumeCopyOn(ctx context.Context, on rpc.Promise) (
 }
 
 func (c *VolumeServerClient) invokeVolumeCopy(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeCopyOrdinal,
 		PromiseID: p.ID,
@@ -753,7 +760,7 @@ func (c *VolumeServerClient) ReadVolumeFileStatusOn(ctx context.Context, on rpc.
 }
 
 func (c *VolumeServerClient) invokeReadVolumeFileStatus(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerReadVolumeFileStatusOrdinal,
 		PromiseID: p.ID,
@@ -790,7 +797,7 @@ func (c *VolumeServerClient) CopyFileOn(ctx context.Context, on rpc.Promise) (rp
 }
 
 func (c *VolumeServerClient) invokeCopyFile(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerCopyFileOrdinal,
 		PromiseID: p.ID,
@@ -827,7 +834,7 @@ func (c *VolumeServerClient) ReceiveFileOn(ctx context.Context, on rpc.Promise) 
 }
 
 func (c *VolumeServerClient) invokeReceiveFile(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerReceiveFileOrdinal,
 		PromiseID: p.ID,
@@ -861,7 +868,7 @@ func (c *VolumeServerClient) ReadNeedleBlobOn(ctx context.Context, on rpc.Promis
 }
 
 func (c *VolumeServerClient) invokeReadNeedleBlob(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerReadNeedleBlobOrdinal,
 		PromiseID: p.ID,
@@ -895,7 +902,7 @@ func (c *VolumeServerClient) ReadNeedleMetaOn(ctx context.Context, on rpc.Promis
 }
 
 func (c *VolumeServerClient) invokeReadNeedleMeta(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerReadNeedleMetaOrdinal,
 		PromiseID: p.ID,
@@ -929,7 +936,7 @@ func (c *VolumeServerClient) WriteNeedleBlobOn(ctx context.Context, on rpc.Promi
 }
 
 func (c *VolumeServerClient) invokeWriteNeedleBlob(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerWriteNeedleBlobOrdinal,
 		PromiseID: p.ID,
@@ -966,7 +973,7 @@ func (c *VolumeServerClient) ReadAllNeedlesOn(ctx context.Context, on rpc.Promis
 }
 
 func (c *VolumeServerClient) invokeReadAllNeedles(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerReadAllNeedlesOrdinal,
 		PromiseID: p.ID,
@@ -1003,7 +1010,7 @@ func (c *VolumeServerClient) VolumeTailSenderOn(ctx context.Context, on rpc.Prom
 }
 
 func (c *VolumeServerClient) invokeVolumeTailSender(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeTailSenderOrdinal,
 		PromiseID: p.ID,
@@ -1037,7 +1044,7 @@ func (c *VolumeServerClient) VolumeTailReceiverOn(ctx context.Context, on rpc.Pr
 }
 
 func (c *VolumeServerClient) invokeVolumeTailReceiver(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeTailReceiverOrdinal,
 		PromiseID: p.ID,
@@ -1071,7 +1078,7 @@ func (c *VolumeServerClient) VolumeEcShardsGenerateOn(ctx context.Context, on rp
 }
 
 func (c *VolumeServerClient) invokeVolumeEcShardsGenerate(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsGenerateOrdinal,
 		PromiseID: p.ID,
@@ -1105,7 +1112,7 @@ func (c *VolumeServerClient) VolumeEcShardsRebuildOn(ctx context.Context, on rpc
 }
 
 func (c *VolumeServerClient) invokeVolumeEcShardsRebuild(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsRebuildOrdinal,
 		PromiseID: p.ID,
@@ -1139,7 +1146,7 @@ func (c *VolumeServerClient) VolumeEcShardsCopyOn(ctx context.Context, on rpc.Pr
 }
 
 func (c *VolumeServerClient) invokeVolumeEcShardsCopy(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsCopyOrdinal,
 		PromiseID: p.ID,
@@ -1173,7 +1180,7 @@ func (c *VolumeServerClient) VolumeEcShardsDeleteOn(ctx context.Context, on rpc.
 }
 
 func (c *VolumeServerClient) invokeVolumeEcShardsDelete(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsDeleteOrdinal,
 		PromiseID: p.ID,
@@ -1207,7 +1214,7 @@ func (c *VolumeServerClient) VolumeEcShardsMountOn(ctx context.Context, on rpc.P
 }
 
 func (c *VolumeServerClient) invokeVolumeEcShardsMount(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsMountOrdinal,
 		PromiseID: p.ID,
@@ -1241,7 +1248,7 @@ func (c *VolumeServerClient) VolumeEcShardsUnmountOn(ctx context.Context, on rpc
 }
 
 func (c *VolumeServerClient) invokeVolumeEcShardsUnmount(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsUnmountOrdinal,
 		PromiseID: p.ID,
@@ -1278,7 +1285,7 @@ func (c *VolumeServerClient) VolumeEcShardReadOn(ctx context.Context, on rpc.Pro
 }
 
 func (c *VolumeServerClient) invokeVolumeEcShardRead(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardReadOrdinal,
 		PromiseID: p.ID,
@@ -1312,7 +1319,7 @@ func (c *VolumeServerClient) VolumeEcBlobDeleteOn(ctx context.Context, on rpc.Pr
 }
 
 func (c *VolumeServerClient) invokeVolumeEcBlobDelete(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcBlobDeleteOrdinal,
 		PromiseID: p.ID,
@@ -1346,7 +1353,7 @@ func (c *VolumeServerClient) VolumeEcShardsToVolumeOn(ctx context.Context, on rp
 }
 
 func (c *VolumeServerClient) invokeVolumeEcShardsToVolume(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsToVolumeOrdinal,
 		PromiseID: p.ID,
@@ -1380,7 +1387,7 @@ func (c *VolumeServerClient) VolumeEcShardsInfoOn(ctx context.Context, on rpc.Pr
 }
 
 func (c *VolumeServerClient) invokeVolumeEcShardsInfo(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeEcShardsInfoOrdinal,
 		PromiseID: p.ID,
@@ -1417,7 +1424,7 @@ func (c *VolumeServerClient) VolumeTierMoveDatToRemoteOn(ctx context.Context, on
 }
 
 func (c *VolumeServerClient) invokeVolumeTierMoveDatToRemote(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeTierMoveDatToRemoteOrdinal,
 		PromiseID: p.ID,
@@ -1454,7 +1461,7 @@ func (c *VolumeServerClient) VolumeTierMoveDatFromRemoteOn(ctx context.Context, 
 }
 
 func (c *VolumeServerClient) invokeVolumeTierMoveDatFromRemote(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeTierMoveDatFromRemoteOrdinal,
 		PromiseID: p.ID,
@@ -1488,7 +1495,7 @@ func (c *VolumeServerClient) VolumeServerStatusOn(ctx context.Context, on rpc.Pr
 }
 
 func (c *VolumeServerClient) invokeVolumeServerStatus(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeServerStatusOrdinal,
 		PromiseID: p.ID,
@@ -1522,7 +1529,7 @@ func (c *VolumeServerClient) VolumeServerLeaveOn(ctx context.Context, on rpc.Pro
 }
 
 func (c *VolumeServerClient) invokeVolumeServerLeave(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeServerLeaveOrdinal,
 		PromiseID: p.ID,
@@ -1556,7 +1563,7 @@ func (c *VolumeServerClient) FetchAndWriteNeedleOn(ctx context.Context, on rpc.P
 }
 
 func (c *VolumeServerClient) invokeFetchAndWriteNeedle(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerFetchAndWriteNeedleOrdinal,
 		PromiseID: p.ID,
@@ -1590,7 +1597,7 @@ func (c *VolumeServerClient) ScrubVolumeOn(ctx context.Context, on rpc.Promise) 
 }
 
 func (c *VolumeServerClient) invokeScrubVolume(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerScrubVolumeOrdinal,
 		PromiseID: p.ID,
@@ -1624,7 +1631,7 @@ func (c *VolumeServerClient) ScrubEcVolumeOn(ctx context.Context, on rpc.Promise
 }
 
 func (c *VolumeServerClient) invokeScrubEcVolume(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerScrubEcVolumeOrdinal,
 		PromiseID: p.ID,
@@ -1661,7 +1668,7 @@ func (c *VolumeServerClient) QueryOn(ctx context.Context, on rpc.Promise) (rpc.P
 }
 
 func (c *VolumeServerClient) invokeQuery(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerQueryOrdinal,
 		PromiseID: p.ID,
@@ -1695,7 +1702,7 @@ func (c *VolumeServerClient) VolumeNeedleStatusOn(ctx context.Context, on rpc.Pr
 }
 
 func (c *VolumeServerClient) invokeVolumeNeedleStatus(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerVolumeNeedleStatusOrdinal,
 		PromiseID: p.ID,
@@ -1729,7 +1736,7 @@ func (c *VolumeServerClient) PingOn(ctx context.Context, on rpc.Promise) (rpc.Pr
 }
 
 func (c *VolumeServerClient) invokePing(ctx context.Context, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    VolumeServerPingOrdinal,
 		PromiseID: p.ID,
