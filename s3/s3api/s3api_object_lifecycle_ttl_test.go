@@ -216,14 +216,14 @@ func TestPopulateBucketConfigDerivedFields_RefreshesLifecycleTTL(t *testing.T) {
 	}
 
 	// 2) Add: 7d.
-	cfg.Entry.Extended[bucketLifecycleConfigurationXMLKey] = xmlAdd
+	cfg.Entry.Extended[s3_constants.ExtLifecycleConfigurationXMLKey] = xmlAdd
 	s.populateBucketConfigDerivedFields(cfg)
 	if got := cfg.LifecycleTTL.Resolve("logs/foo", 1); got != 7*86400 {
 		t.Fatalf("after add, want 7d, got %d", got)
 	}
 
 	// 3) Replace: 30d. The previous resolver must NOT linger.
-	cfg.Entry.Extended[bucketLifecycleConfigurationXMLKey] = xmlReplace
+	cfg.Entry.Extended[s3_constants.ExtLifecycleConfigurationXMLKey] = xmlReplace
 	s.populateBucketConfigDerivedFields(cfg)
 	if got := cfg.LifecycleTTL.Resolve("logs/foo", 1); got != 30*86400 {
 		t.Fatalf("after replace, want 30d, got %d (stale resolver?)", got)
@@ -232,7 +232,7 @@ func TestPopulateBucketConfigDerivedFields_RefreshesLifecycleTTL(t *testing.T) {
 	// 4) Delete: nil resolver. The most dangerous regression — leaving
 	//    the old resolver here would keep stamping irreversible volume
 	//    TTL onto writes after the policy was removed.
-	delete(cfg.Entry.Extended, bucketLifecycleConfigurationXMLKey)
+	delete(cfg.Entry.Extended, s3_constants.ExtLifecycleConfigurationXMLKey)
 	s.populateBucketConfigDerivedFields(cfg)
 	if cfg.LifecycleTTL != nil {
 		t.Fatalf("after delete, want nil resolver, got %v", cfg.LifecycleTTL)
@@ -250,9 +250,9 @@ func TestPopulateBucketConfigDerivedFields_ObjectLockTreatedAsVersioned(t *testi
 	cfg := &BucketConfig{
 		Name: "bk",
 		Entry: &filer_pb.Entry{Extended: map[string][]byte{
-			s3_constants.ExtObjectLockEnabledKey:    []byte(s3_constants.ObjectLockEnabled),
-			s3_constants.ExtLifecycleTtlFastPathKey: []byte("true"),
-			bucketLifecycleConfigurationXMLKey:      xml,
+			s3_constants.ExtObjectLockEnabledKey:         []byte(s3_constants.ObjectLockEnabled),
+			s3_constants.ExtLifecycleTtlFastPathKey:      []byte("true"),
+			s3_constants.ExtLifecycleConfigurationXMLKey: xml,
 		}},
 	}
 	s.populateBucketConfigDerivedFields(cfg)
@@ -273,7 +273,7 @@ func TestPopulateBucketConfigDerivedFields_TtlFastPathOptIn(t *testing.T) {
 
 	// XML present but flag off → nil resolver (worker drives expiration).
 	cfg := &BucketConfig{Name: "bk", Entry: &filer_pb.Entry{Extended: map[string][]byte{
-		bucketLifecycleConfigurationXMLKey: xml,
+		s3_constants.ExtLifecycleConfigurationXMLKey: xml,
 	}}}
 	s.populateBucketConfigDerivedFields(cfg)
 	if cfg.LifecycleTTL != nil {

@@ -435,7 +435,7 @@ func (s3a *S3ApiServer) populateBucketConfigDerivedFields(config *BucketConfig) 
 		// entirely when off. nil on parse error so the PUT path falls
 		// through to "no TTL" rather than rejecting writes.
 		if bytes.Equal(entry.Extended[s3_constants.ExtLifecycleTtlFastPathKey], []byte("true")) {
-			if xmlBytes, ok := entry.Extended[bucketLifecycleConfigurationXMLKey]; ok && len(xmlBytes) > 0 {
+			if xmlBytes, ok := entry.Extended[s3_constants.ExtLifecycleConfigurationXMLKey]; ok && len(xmlBytes) > 0 {
 				if rules, err := lifecycle_xml.ParseCanonical(xmlBytes); err == nil {
 					// Object Lock requires versioning, so an ObjectLockConfig
 					// implies the bucket is versioned even when the explicit

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hanzoai/s3/s3/s3api/s3_constants"
 	"github.com/hanzoai/s3/s3/s3api/s3err"
 )
 
 const (
-	bucketLifecycleConfigurationXMLKey               = "s3-bucket-lifecycle-configuration-xml"
 	bucketLifecycleTransitionMinimumObjectSizeKey    = "s3-bucket-lifecycle-transition-default-minimum-object-size"
 	bucketLifecycleTransitionMinimumObjectSizeHeader = "X-Amz-Transition-Default-Minimum-Object-Size"
 	defaultLifecycleTransitionMinimumObjectSize      = "all_storage_classes_128K"
@@ -32,7 +32,7 @@ func (s3a *S3ApiServer) getStoredBucketLifecycleConfiguration(bucket string) ([]
 		return nil, "", false, s3err.ErrNone
 	}
 
-	lifecycleXML, found := config.Entry.Extended[bucketLifecycleConfigurationXMLKey]
+	lifecycleXML, found := config.Entry.Extended[s3_constants.ExtLifecycleConfigurationXMLKey]
 	if !found || len(lifecycleXML) == 0 {
 		return nil, "", false, s3err.ErrNone
 	}
@@ -53,7 +53,7 @@ func (s3a *S3ApiServer) storeBucketLifecycleConfiguration(bucket string, lifecyc
 			config.Entry.Extended = make(map[string][]byte)
 		}
 
-		config.Entry.Extended[bucketLifecycleConfigurationXMLKey] = append([]byte(nil), lifecycleXML...)
+		config.Entry.Extended[s3_constants.ExtLifecycleConfigurationXMLKey] = append([]byte(nil), lifecycleXML...)
 		config.Entry.Extended[bucketLifecycleTransitionMinimumObjectSizeKey] = []byte(
 			normalizeBucketLifecycleTransitionMinimumObjectSize(transitionMinimumObjectSize),
 		)
@@ -68,7 +68,7 @@ func (s3a *S3ApiServer) clearStoredBucketLifecycleConfiguration(bucket string) s
 			return fmt.Errorf("bucket %s is missing its filer entry", bucket)
 		}
 
-		delete(config.Entry.Extended, bucketLifecycleConfigurationXMLKey)
+		delete(config.Entry.Extended, s3_constants.ExtLifecycleConfigurationXMLKey)
 		delete(config.Entry.Extended, bucketLifecycleTransitionMinimumObjectSizeKey)
 		return nil
 	})
