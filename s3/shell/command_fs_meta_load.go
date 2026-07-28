@@ -90,12 +90,37 @@ func (c *commandFsMetaLoad) Do(args []string, commandEnv *CommandEnv, writer io.
 	var dirCount, fileCount uint64
 	lastLogTime := time.Now()
 
-	err = commandEnv.WithFilerClient(false, func(client filer_pb.HanzoFilerClient) error {
+	err = commandEnv.WithFilerClient(false, func(client filer_pb.HanzoFilerClient) (loadErr error) {
 
 		sizeBuf := make([]byte, 4)
 		waitChan := make(chan struct{}, *concurrency)
-		defer close(waitChan)
 		var wg sync.WaitGroup
+
+		// File entries are written on their own goroutines, so EVERY exit from
+		// this function — including the EOF that ends a *successful* load — has
+		// to wait for them first. The caller closes the filer connection as soon
+		// as this returns, so returning early abandoned the in-flight writes:
+		// their CreateEntry calls died against a torn-down connection, the
+		// entries were silently lost, and the command still printed "is loaded".
+		//
+		// At the default concurrency of 1 that dropped the tail of every load.
+		// It is why a restored tree came back with its directories present and
+		// its files missing — directories are created synchronously just below,
+		// files were not.
+		var mu sync.Mutex
+		var asyncErr error
+		firstAsyncErr := func() error {
+			mu.Lock()
+			defer mu.Unlock()
+			return asyncErr
+		}
+		defer func() {
+			wg.Wait()
+			close(waitChan)
+			if loadErr == nil {
+				loadErr = firstAsyncErr()
+			}
+		}()
 
 		for {
 			if _, err := io.ReadFull(dst, sizeBuf); err != nil {
@@ -150,17 +175,25 @@ func (c *commandFsMetaLoad) Do(args []string, commandEnv *CommandEnv, writer io.
 				wg.Add(1)
 				waitChan <- struct{}{}
 				go func(entry *filer_pb.FullEntry) {
+					defer wg.Done()
+					defer func() { <-waitChan }()
 					if errEntry := filer_pb.CreateEntry(context.Background(), client, &filer_pb.CreateEntryRequest{
 						Directory: entry.Dir,
 						Entry:     entry.Entry,
 					}); errEntry != nil {
-						err = errEntry
+						// Keep the FIRST failure and keep it off the outer err:
+						// several of these run at once, and assigning to the
+						// enclosing error from each was a data race that could
+						// also erase a real failure with a later success.
+						mu.Lock()
+						if asyncErr == nil {
+							asyncErr = errEntry
+						}
+						mu.Unlock()
 					}
-					defer wg.Done()
-					<-waitChan
 				}(fullEntry)
-				if err != nil {
-					return err
+				if e := firstAsyncErr(); e != nil {
+					return e
 				}
 				fileCount++
 			}
