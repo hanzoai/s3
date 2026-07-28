@@ -104,6 +104,28 @@ func ZapPort(grpcPort int) int {
 	return (grpcPort-1+ZapPortOffset)%maxPort + 1
 }
 
+// ToFilerZapAddress returns the address of the filer's native ZAP transport
+// endpoint.
+//
+// The filer did not gain a ZAP listener alongside its gRPC one -- it replaced
+// it. command/filer.go binds this port with transport.ListenStream and the whole
+// filer (28 unary + 5 streaming RPCs) answers over ZAP there; no
+// RegisterHanzoFilerServer exists in this tree. The port therefore kept its old
+// number while its protocol changed, which is why the address was still being
+// reached for as ToGrpcAddress(): the name outlived the thing it named. A gRPC
+// client that dials it does not get a service-name error, it gets its HTTP/2
+// preface reset, because nothing there speaks gRPC.
+//
+// Callers wanting the filer over ZAP should say so. This is that name.
+//
+// Note the offset differs from ToMasterZapAddress/ToIamZapAddress deliberately:
+// those add a NEW ZAP listener at ZapPort(grpcPort) while a legacy gRPC listener
+// still serves raft, so they sit one offset further out. The filer, having
+// finished its migration, is simply here.
+func (sa ServerAddress) ToFilerZapAddress() string {
+	return sa.ToGrpcAddress()
+}
+
 // ToIamZapAddress returns the address of the filer's IAM ZAP transport
 // endpoint. The IAM service no longer rides the shared gRPC port; it serves on
 // its own ZAP listener at ZapPort(grpcPort), the same deterministic offset
