@@ -131,6 +131,7 @@ func init() {
 	filerS3Options.port = cmdFiler.Flag.Int("s3.port", 8333, "s3 server http listen port")
 	filerS3Options.portHttps = cmdFiler.Flag.Int("s3.port.https", 0, "s3 server https listen port")
 	filerS3Options.portGrpc = cmdFiler.Flag.Int("s3.port.grpc", 0, "s3 server grpc listen port")
+	filerS3Options.zapPort = cmdFiler.Flag.Int("s3.zap.port", 0, "native ZAP service-mesh listen port for in-cloud callers (0 disables; external S3 clients use the HTTPS S3 API)")
 	filerS3Options.domainName = cmdFiler.Flag.String("s3.domainName", "", "suffix of the host name in comma separated list, {bucket}.{domainName}")
 	filerS3Options.allowedOrigins = cmdFiler.Flag.String("s3.allowedOrigins", "*", "comma separated list of allowed origins")
 	filerS3Options.dataCenter = cmdFiler.Flag.String("s3.dataCenter", "", "prefer to read and write to volumes in this data center")
