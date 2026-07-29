@@ -1,6 +1,6 @@
 module github.com/hanzoai/s3
 
-go 1.26.4
+go 1.26.5
 
 require (
 	github.com/Shopify/sarama v1.38.1
