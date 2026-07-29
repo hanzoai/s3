@@ -1,6 +1,6 @@
 module s3-rdma-sidecar
 
-go 1.26.4
+go 1.26.5
 
 require (
 	github.com/hanzoai/s3 v0.0.0-00010101000000-000000000000
