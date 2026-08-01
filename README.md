@@ -93,6 +93,17 @@ stores, erasure coding for warm data, and a built-in Iceberg REST catalog so Spa
 DuckDB and friends can read tables without a separate metastore. Kubernetes manifests are
 in [`k8s/`](k8s/), Docker Compose files in [`docker/`](docker/).
 
+## Clients
+
+Any S3 client works. Ours for Go is [`hanzoai/s3-go`](https://github.com/hanzoai/s3-go),
+module `github.com/hanzos3/go`. This repository is the server.
+
+## One name
+
+The product is **Hanzo S3**. `hanzoai/storage` and `hanzoai/storage-go` are old paths that
+redirect here and to `hanzoai/s3-go` — renames, not separate products. "Hanzo Storage"
+anywhere in our copy is stale, not a second thing.
+
 ## Docs
 
 [`LLM.md`](LLM.md) in this repository is the deep reference: architecture, the filer
