@@ -14,7 +14,30 @@ CGO_ENABLED=0 go build -trimpath -o s3 ./s3
 ```
 
 ## Image
-`ghcr.io/hanzoai/s3` — built by `.github/workflows/docker-build.yml` via the shared `hanzoai/.github` reusable. `ENTRYPOINT ["s3"]`; default `CMD` runs the all-in-one server with the S3 gateway on `:9000`.
+`ghcr.io/hanzoai/s3` — built from the root `Dockerfile` by `.hanzo/workflows/release.yml` on the
+git.hanzo.ai runner (`hanzo-build-linux-amd64`). There is no `.github/workflows` here: the GitHub
+runner fleet is offline, so the forge is the only builder. `ENTRYPOINT ["s3"]`; default `CMD` runs
+the all-in-one server with the S3 gateway on `:9000`.
+
+### Go builder stages — pin ≥ go.mod, and always `GOTOOLCHAIN=auto`
+The official `golang` images ship `ENV GOTOOLCHAIN=local`. A builder stage older than the governing
+`go.mod` directive therefore dies instead of upgrading:
+`go: go.mod requires go >= 1.26.5 (running go 1.26.4; GOTOOLCHAIN=local)`.
+Every Go builder stage in this repo pins an exact `golang:<version>-<variant>` **and** sets
+`ENV GOTOOLCHAIN=auto`, so a later bump to the directive downloads a checksum-verified toolchain
+(sum.golang.org) rather than hard-failing. Two independent halves — keep both.
+
+This is a **multi-module** repo, so "the governing `go.mod`" is decided by the image's *build
+context*, not by where the Dockerfile sits. `test/kafka/Dockerfile.s3` and
+`test/kafka/Dockerfile.kafka-gateway` live under `test/` but build with `context: ../..` and so are
+governed by the **root** `go.mod`. The rule is transitive as well: `test/kafka` declares `go 1.25.0`
+yet `replace github.com/hanzoai/s3 => ../../`, and a *dependency* whose directive outranks the
+toolchain fails identically (`module ../../ requires go >= 1.26.5`). Read the compose/Makefile
+context before choosing a base.
+
+`docker/Dockerfile.foundationdb_large` is deliberately left on its old base: nothing builds it —
+no `docker/Makefile` target, no compose service, no workflow. Its only mention repo-wide is a
+help string echoed by `docker/get_fdb_checksum.sh`.
 
 ## S-Chain — engines on top
 
