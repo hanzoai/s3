@@ -79,7 +79,8 @@ func VerifyKeyCommitment(key []byte, iv []byte, algorithm string, commitment []b
 }
 
 // isValidKMSKeyID performs basic validation of KMS key identifiers.
-// Following Minio's approach: be permissive and accept any reasonable key format.
+// Be permissive and accept any reasonable key format, matching the de-facto
+// behaviour of the S3 ecosystem.
 // Only reject keys with leading/trailing spaces or other obvious issues.
 //
 // This function is used across multiple S3 API handlers to ensure consistent
@@ -90,7 +91,7 @@ func isValidKMSKeyID(keyID string) bool {
 		return false
 	}
 
-	// Following Minio's validation: reject keys with leading/trailing spaces
+	// Reject keys with leading/trailing spaces
 	if strings.HasPrefix(keyID, " ") || strings.HasSuffix(keyID, " ") {
 		return false
 	}

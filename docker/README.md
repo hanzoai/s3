@@ -54,8 +54,17 @@ docker buildx build --pull --push --platform linux/386,linux/amd64,linux/arm64,l
 docker buildx stop $BUILDER
 ```
 
-## Minio debugging
+## S3 request debugging
+
+Point the AWS CLI at the local gateway:
+```bash
+AWS_ACCESS_KEY_ID=some_access_key1 AWS_SECRET_ACCESS_KEY=some_secret_key1 \
+  aws --endpoint-url http://127.0.0.1:8333 s3 ls
 ```
-mc config host add local http://127.0.0.1:9000 some_access_key1 some_secret_key1
-mc admin trace --all --verbose local
+
+To trace every S3 request server-side, start the gateway with verbose logging
+(`-v 9`), or enable the structured audit log:
+```bash
+s3 server -s3 -v 9
+s3 server -s3 -s3.auditLogConfig=/etc/s3/audit.json
 ```

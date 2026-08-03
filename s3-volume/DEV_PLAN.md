@@ -29,7 +29,7 @@ All phases from the original plan are complete:
 - **Phase 6** — Advanced gRPC: ScrubVolume, ScrubEcVolume, Query, FetchAndWriteNeedle,
   VolumeTierMoveDat (error paths)
 - **Phase 7** — Remote Storage: S3-compatible backend via aws-sdk-s3,
-  FetchAndWriteNeedle reads from S3/MinIO/Hanzo S3 and writes locally.
+  FetchAndWriteNeedle reads from any S3-compatible backend and writes locally.
   Supports all S3-compatible providers (AWS, Wasabi, Backblaze, Aliyun, etc.)
 - **Master Heartbeat** — Bidirectional streaming SendHeartbeat RPC, volume/EC registration,
   leader changes, shutdown deregistration. Tested end-to-end with Go master.

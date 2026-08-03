@@ -243,7 +243,7 @@ func resolveObjectLevelAction(method string, baseAction string) string {
 
 	case http.MethodPut:
 		if baseAction == s3_constants.ACTION_WRITE {
-			// Note: CopyObject operations also use s3:PutObject permission (same as MinIO/AWS)
+			// Note: CopyObject operations also use s3:PutObject permission (same as AWS)
 			// Copy requires s3:PutObject on destination and s3:GetObject on source
 			return s3_constants.S3_ACTION_PUT_OBJECT
 		}

@@ -14,8 +14,8 @@ import (
 // CertificateAuthenticator authenticates clients that present an OpenSSH
 // user certificate signed by one of the configured trusted CA public keys.
 //
-// Behaviour mirrors MinIO's --sftp=trusted-user-ca-key option and OpenSSH's
-// TrustedUserCAKeys directive: when enabled, only key blobs of type
+// Behaviour mirrors OpenSSH's TrustedUserCAKeys directive: when enabled,
+// only key blobs of type
 // *ssh.Certificate are accepted on the public-key channel. Plain public
 // keys are rejected. The SSH login username must appear in the cert's
 // ValidPrincipals list and must resolve to an existing user in the store.
