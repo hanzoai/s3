@@ -176,10 +176,6 @@ dataset = pads.dataset('bucket/dataset', filesystem=s3)  # ✅
   - Confirms files written by either can be read by the other
   - Test methodology and detailed results
 
-- **`MINIO_DIRECTORY_HANDLING.md`** - Comparison with MinIO
-  - How MinIO handles directory markers
-  - Differences in implementation approaches
-
 ## The Implicit Directory Fix
 
 ### Problem

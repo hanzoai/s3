@@ -54,7 +54,7 @@ var cmdIam = &Command{
 	which provides both S3 and IAM APIs on the same port (enabled by default with -iam=true).
 	
 	This simplifies deployment by running a single server instead of two separate servers,
-	following the pattern used by MinIO and Ceph RGW.
+	following the pattern used by Ceph RGW.
 	
 	To use the embedded IAM API:
 	  s3 s3 -port=8333          # IAM API is available on the same port

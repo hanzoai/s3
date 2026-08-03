@@ -1,6 +1,6 @@
 //! S3-compatible remote storage client.
 //!
-//! Works with AWS S3, MinIO, Hanzo S3, and all S3-compatible providers.
+//! Works with Hanzo S3, AWS S3, and all S3-compatible providers.
 
 use aws_sdk_s3::config::{BehaviorVersion, Credentials, Region};
 use aws_sdk_s3::primitives::ByteStream;

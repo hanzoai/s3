@@ -71,7 +71,7 @@ func (s3a *S3ApiServer) mapCopyErrorToS3Error(err error) s3err.ErrorCode {
 	// Uses errors.Is() to properly detect wrapped errors
 	if errors.Is(err, s3server.ErrReadOnly) {
 		// Bucket is read-only due to quota enforcement or other configuration
-		// Return 403 Forbidden per S3 semantics (similar to MinIO's quota enforcement)
+		// Return 403 Forbidden per S3 semantics
 		return s3err.ErrAccessDenied
 	}
 

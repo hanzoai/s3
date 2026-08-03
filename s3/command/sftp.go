@@ -72,7 +72,7 @@ func init() {
 	sftpOptionsStandalone.clientAliveInterval = cmdSftp.Flag.Duration("clientAliveInterval", 5*time.Second, "interval for sending keep-alive messages")
 	sftpOptionsStandalone.clientAliveCountMax = cmdSftp.Flag.Int("clientAliveCountMax", 3, "maximum number of missed keep-alive messages before disconnecting")
 	sftpOptionsStandalone.userStoreFile = cmdSftp.Flag.String("userStoreFile", "", "path to JSON file containing user credentials and permissions")
-	sftpOptionsStandalone.trustedUserCAKeysFile = cmdSftp.Flag.String("trustedUserCAKeysFile", "", "path to a file with trusted user CA public keys (OpenSSH authorized_keys format); required when 'certificate' is in -authMethods. Analogous to OpenSSH TrustedUserCAKeys and MinIO --sftp=trusted-user-ca-key")
+	sftpOptionsStandalone.trustedUserCAKeysFile = cmdSftp.Flag.String("trustedUserCAKeysFile", "", "path to a file with trusted user CA public keys (OpenSSH authorized_keys format); required when 'certificate' is in -authMethods. Analogous to OpenSSH TrustedUserCAKeys")
 	sftpOptionsStandalone.dataCenter = cmdSftp.Flag.String("dataCenter", "", "prefer to read and write to volumes in this data center")
 	sftpOptionsStandalone.metricsHttpPort = cmdSftp.Flag.Int("metricsPort", 0, "Prometheus metrics listen port")
 	sftpOptionsStandalone.metricsHttpIp = cmdSftp.Flag.String("metricsIp", "", "metrics listen ip. If empty, default to same as -ip.bind option.")

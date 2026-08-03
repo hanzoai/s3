@@ -70,7 +70,6 @@ Table of Contents
     * [Compared to GlusterFS, Ceph](#compared-to-glusterfs-ceph)
     * [Compared to GlusterFS](#compared-to-glusterfs)
     * [Compared to Ceph](#compared-to-ceph)
-    * [Compared to Minio](#compared-to-minio)
 * [Dev Plan](#dev-plan)
 * [Installation Guide](#installation-guide)
 * [Disk Related Topics](#disk-related-topics)
@@ -468,7 +467,6 @@ The architectures are mostly the same. Hanzo aims to store and read files fast, 
 | GlusterFS      | hashing          |                  | FUSE, NFS          |          |                           |
 | Ceph           | hashing + rules  |                  | FUSE               | Yes      |                           |
 | MooseFS        | in memory        |                  | FUSE               |       | No                          |
-| MinIO          | separate meta file for each file  |                  |         | Yes   | No                          |
 
 [Back to TOC](#table-of-contents)
 
@@ -509,25 +507,6 @@ Hanzo Filer uses off-the-shelf stores, such as MySql, Postgres, Sqlite, Mongodb,
 | Filer  | Ceph FS | linearly scalable, Customizable, O(1) or O(logN) |
 
 [Back to TOC](#table-of-contents)
-
-### Compared to MinIO ###
-
-Please note, as Apr 25, 2026 MinIO ceased developement. It's strongly discouraged to use that unmaintained software with multiple security bugs.
-
-MinIO followed AWS S3 closely and was ideal for testing for S3 API. It had good UI, policies, versionings, etc. Hanzo is trying to catch up here. 
-
-MinIO metadata were in simple files. Each file write will incur extra writes to corresponding meta file.
-
-MinIO did not have optimization for lots of small files. The files were simply stored as is to local disks.
-Plus the extra meta file and shards for erasure coding, it only amplifies the LOSF problem.
-
-MinIO had multiple disk IO to read one file. Hanzo has O(1) disk reads, even for erasure coded files.
-
-MinIO had full-time erasure coding. Hanzo uses replication on hot data for faster speed and optionally applies erasure coding on warm data.
-
-MinIO did not have POSIX-like API support.
-
-MinIO had specific requirements on storage layout. It is not flexible to adjust capacity. In Hanzo, just start one volume server pointing to the master. That's all.
 
 ## Dev Plan ##
 

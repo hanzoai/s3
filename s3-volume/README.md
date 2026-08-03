@@ -74,7 +74,7 @@ Set `SEAWEED_WRITE_QUEUE=1` to enable batched async write processing.
 - **JWT authentication** -- signing key configuration via `security.toml` with token source precedence (query > header > cookie), file_id claims validation, and separate read/write keys.
 - **TLS** -- HTTPS for the HTTP API and mTLS for gRPC, configured through `security.toml`.
 - **Erasure coding** -- Reed-Solomon EC shard management: mount/unmount, read, rebuild, copy, delete, and shard-to-volume reconstruction.
-- **S3 remote storage** -- `FetchAndWriteNeedle` reads from any S3-compatible backend (AWS, MinIO, Wasabi, Backblaze, etc.) and writes locally. Supports `VolumeTierMoveDatToRemote`/`FromRemote` for tiered storage.
+- **S3 remote storage** -- `FetchAndWriteNeedle` reads from any S3-compatible backend (Hanzo S3, AWS, Wasabi, Backblaze, etc.) and writes locally. Supports `VolumeTierMoveDatToRemote`/`FromRemote` for tiered storage.
 - **Needle map backends** -- in-memory HashMap, LevelDB (via `rusty-leveldb`), or redb (pure Rust disk-backed) needle maps.
 - **Image processing** -- on-the-fly resize/crop, JPEG EXIF orientation auto-fix, WebP support.
 - **Streaming reads** -- large files (>1MB) are streamed via `spawn_blocking` to avoid blocking the async runtime.

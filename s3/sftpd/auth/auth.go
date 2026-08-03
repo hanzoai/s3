@@ -72,7 +72,7 @@ func (m *Manager) GetSSHServerConfig() *ssh.ServerConfig {
 	}
 
 	// Wire the public-key channel. Certificate auth, when enabled, takes
-	// over the channel entirely (MinIO/OpenSSH-style): plain public keys
+	// over the channel entirely (OpenSSH-style): plain public keys
 	// are rejected even if "publickey" is also listed in enabledAuthMethods.
 	switch {
 	case m.certificateAuth.Enabled():

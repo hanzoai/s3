@@ -42,13 +42,32 @@ services:
         condition: service_healthy
       server-right:
         condition: service_healthy
-  minio-warp:
-    image: minio/warp
-    command: 'mixed --duration 5s --obj.size=6mb --md5 --objects 10 --concurrent 2'
+  # Mixed read/write/delete workload against server-left, so filer-backup has
+  # changes to replicate to server-right. Object size (6MB) exceeds
+  # -filer.maxMB 5 on server-left, which is what exercises the multi-chunk
+  # backup path.
+  s3-load:
+    image: amazon/aws-cli:2.32.0
     restart: on-failure
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        E="--endpoint-url http://server-left:8333"
+        aws $$E s3 mb s3://loadtest || true
+        head -c 6291456 /dev/urandom > /tmp/obj
+        for i in $$(seq 1 10); do
+          aws $$E s3 cp /tmp/obj s3://loadtest/obj-$$i --only-show-errors
+        done
+        aws $$E s3 ls s3://loadtest/
+        for i in 1 2 3; do
+          aws $$E s3 cp s3://loadtest/obj-$$i /tmp/get-$$i --only-show-errors
+          aws $$E s3 rm s3://loadtest/obj-$$i --only-show-errors
+        done
+        echo "s3-load complete"
     environment:
-      WARP_HOST: "server-left:8333"
-      WARP_ACCESS_KEY: "some_access_key1"
-      WARP_SECRET_KEY: "some_secret_key1"
+      AWS_ACCESS_KEY_ID: "some_access_key1"
+      AWS_SECRET_ACCESS_KEY: "some_secret_key1"
+      AWS_DEFAULT_REGION: "us-east-1"
     depends_on:
       - filer-backup

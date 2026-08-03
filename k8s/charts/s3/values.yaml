@@ -1158,7 +1158,7 @@ sftp:
   existingSshConfigSecret: null
 
   # SSH user-certificate authentication (CA-signed user certs). Mirrors
-  # OpenSSH `TrustedUserCAKeys` and MinIO `--sftp=trusted-user-ca-key`.
+  # OpenSSH `TrustedUserCAKeys`.
   # Add "certificate" to `authMethods` to activate; when active, plain
   # public keys are rejected on the public-key channel.
   #
