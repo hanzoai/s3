@@ -5,6 +5,37 @@ Go module: `github.com/hanzoai/s3`
 
 **Upstream**: [SeaweedFS](https://github.com/seaweedfs/seaweedfs) (Apache-2.0). Hanzo S3 is the Apache-2.0 SeaweedFS fork, branded **Hanzo S3** — S3-compatible object storage. It replaced the former AGPL-3.0 MinIO fork (dropped). Attribution to SeaweedFS is retained in `NOTICE`.
 
+### We are not MinIO — and what that does *not* license you to delete
+
+Hanzo S3 is SeaweedFS-derived. We run no MinIO anywhere. But a bulk
+`sed -i 's/minio//gi'` over this repo would break it in three separate ways.
+Before removing any occurrence, classify it:
+
+1. **Apache-2.0 attribution — legally required, never remove.** Several files
+   are genuinely copied from MinIO under Apache-2.0 and carry its copyright
+   notice. Apache-2.0 §4 requires retaining them, exactly like the SeaweedFS
+   attribution in `NOTICE`: `s3/s3api/s3err/s3-error.go`,
+   `s3/s3api/s3_constants/header.go`, `s3/s3api/policy/postpolicyform.go`,
+   `s3/s3api/policy/post-policy_test.go`, `s3/s3api/chunked_reader_v4.go`,
+   `s3/s3api/auth_signature_v{2,4}.go`.
+2. **`github.com/minio/crc64nvme` is a load-bearing dependency.** It is
+   imported by `s3/s3api/chunked_reader_v4.go` and implements
+   `x-amz-checksum-crc64nvme` — part of the AWS S3 additional-checksums spec,
+   not a MinIO feature. Removing it breaks S3 checksum compatibility.
+   `github.com/minio/md5-simd` is transitive (`hanzos3/go-sdk` →
+   `luxfi/zapdb` → …), not directly ours to drop.
+3. **False positives.** A *case-insensitive* grep for `minio` matches
+   `miniOptions` — "min" + "iO". `s3/command/mini.go` has **53** such hits and
+   **zero** real MinIO references; it is the `mini` command's options struct.
+   Always grep case-sensitively for `minio`/`MinIO`/`Minio`.
+
+Removed in the purge: the `## Compared to MinIO` competitive section in
+`README.md`, the MinIO half of the `local-registry-compose.yml` A/B harness,
+and the `minio/warp` benchmark (`warp_install` + `benchmark` +
+`benchmark_with_pprof` Makefile targets — warp is MinIO's AGPL-3.0 benchmark).
+**There is currently no S3 benchmark target**; reinstating one needs a
+non-MinIO benchmark chosen deliberately.
+
 The binary is **`s3`** (renamed from upstream `weed`). All internal code imports `github.com/hanzoai/s3`. The former external SeaweedFS-org utility libs are now Hanzo forks too: `github.com/hanzoai/goexif` (v1.0.4) and `github.com/hanzoai/go-fuse/v2` (v2.9.4) — so **no `seaweedfs`-org import paths remain**. Each fork retains its upstream license verbatim: `goexif` under **BSD-2-Clause** (Robert Carlsen), `go-fuse` under **BSD-3-Clause** (the Go-FUSE Authors / hanwen + AUTHORS) — neither has a `NOTICE`. (The s3 codebase itself is Apache-2.0 with a `NOTICE` crediting upstream SeaweedFS — that's separate from these two BSD libs.)
 
 ## Build & Run

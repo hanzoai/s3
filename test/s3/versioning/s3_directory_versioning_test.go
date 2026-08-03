@@ -19,7 +19,7 @@ import (
 )
 
 // TestListObjectVersionsIncludesDirectories tests that directories are included in list-object-versions response
-// This ensures compatibility with Minio and AWS S3 behavior
+// This ensures compatibility with AWS S3 behavior
 func TestListObjectVersionsIncludesDirectories(t *testing.T) {
 	bucketName := "test-versioning-directories"
 
