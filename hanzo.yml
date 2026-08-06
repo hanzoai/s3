@@ -1,0 +1,22 @@
+# Canonical CI/CD config for hanzoai/s3 — the one file both the hanzoai/ci
+# reusable (.hanzo/workflows/cicd.yml) and platform.hanzo.ai read.
+#
+# GATE ONLY. ghcr.io/hanzoai/s3 already has exactly one builder,
+# .hanzo/workflows/release.yml, and it is tag-shaped on purpose: a git tag
+# v<X.Y.Z> maps to the image universe pins in infra/k8s/s3/s3.yaml. Declaring
+# `images:` here would publish a second image per push behind that contract.
+#
+# The gate is that release's own test job, and its SCOPE is the considered part,
+# not laziness: a full `go test ./...` on this tree pulls in the FUSE, message-
+# queue and Kafka suites, which need services no runner has — and a gate nobody
+# can keep green is a gate everyone learns to ignore. What runs is the S3
+# surface, the filer's transaction/condition path, and the command wiring.
+# ./s3/command carries TestS3OptionsRegisteredEverywhere, which is the only
+# thing standing between a forgotten flag registration and `s3 mini`
+# segfaulting on startup the way it did before v1.0.5.
+test:
+  - name: build
+    run: |
+      set -e
+      go vet ./s3/s3api/... ./s3/server/... ./s3/command/...
+      go test -count=1 ./s3/s3api/... ./s3/server/... ./s3/command/... ./s3/filer/...
