@@ -94,11 +94,11 @@ require (
 	github.com/google/flatbuffers/go v0.0.0-20230108230133-3b8644d32c50
 	github.com/hanzoai/go-fuse/v2 v2.9.4
 	github.com/hanzoai/sqlite v0.4.0
+	github.com/hanzos3/crc64nvme v1.1.2
 	github.com/linkedin/goavro/v2 v2.15.0
 	github.com/luxfi/database v1.21.2
 	github.com/luxfi/kms v1.12.10
 	github.com/luxfi/log v1.4.3
-	github.com/minio/crc64nvme v1.1.1
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/parquet-go/parquet-go v0.30.1
 	github.com/pkg/sftp v1.13.10
@@ -136,7 +136,8 @@ require (
 	github.com/hanzoai/csqlite v0.1.0 // indirect
 	github.com/hanzoai/sqlcipher v0.1.1 // indirect
 	github.com/hanzoai/vfs v0.4.3 // indirect
-	github.com/hanzos3/go-sdk v1.0.2 // indirect
+	github.com/hanzos3/go v1.0.1 // indirect
+	github.com/hanzos3/md5-simd v1.1.3 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
@@ -157,9 +158,8 @@ require (
 	github.com/luxfi/metric v1.8.1 // indirect
 	github.com/luxfi/mock v0.1.1 // indirect
 	github.com/luxfi/zap v1.2.6 // indirect
-	github.com/luxfi/zapdb v1.10.1 // indirect
+	github.com/luxfi/zapdb v1.10.4 // indirect
 	github.com/miekg/dns v1.1.72 // indirect
-	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/mr-tron/base58 v1.3.0 // indirect
 	github.com/parquet-go/bitpack v1.0.0 // indirect
 	github.com/parquet-go/jsonlite v1.0.0 // indirect
