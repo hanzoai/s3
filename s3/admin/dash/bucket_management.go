@@ -430,8 +430,10 @@ func (s *AdminServer) CreateS3BucketWithObjectLock(bucketName string, quotaBytes
 			return fmt.Errorf("failed to create /buckets directory: %w", err)
 		}
 
-		// Check if bucket already exists
-		_, err = client.LookupDirectoryEntry(context.Background(), &filer_pb.LookupDirectoryEntryRequest{
+		// Check if bucket already exists. The filer answers a missing name with an
+		// empty OK response rather than a transport error; LookupEntry is what maps
+		// that back to ErrNotFound, so a nil error here means the bucket is real.
+		_, err = filer_pb.LookupEntry(context.Background(), client, &filer_pb.LookupDirectoryEntryRequest{
 			Directory: "/buckets",
 			Name:      bucketName,
 		})
