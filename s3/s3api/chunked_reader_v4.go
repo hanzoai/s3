@@ -38,7 +38,7 @@ import (
 	"github.com/hanzoai/s3/s3/s3api/s3err"
 
 	"github.com/dustin/go-humanize"
-	"github.com/minio/crc64nvme"
+	"github.com/hanzos3/crc64nvme"
 )
 
 // calculateSeedSignature - Calculate seed signature in accordance with
