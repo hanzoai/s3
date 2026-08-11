@@ -371,7 +371,7 @@ templ S3Buckets(data dash.S3BucketsData) {
                             <label for="bucketName" class="form-label">Bucket Name</label>
                             <input type="text" class="form-control" id="bucketName" name="name" 
                                    placeholder="my-bucket-name" required
-                                   pattern="[a-z0-9.-]+" 
+                                   pattern="[a-z0-9.\-]+" 
                                    title="Bucket name must contain only lowercase letters, numbers, dots, and hyphens">
                             <div class="form-text">
                                 Bucket names must be between 3 and 63 characters, contain only lowercase letters, numbers, dots, and hyphens.

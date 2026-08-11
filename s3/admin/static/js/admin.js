@@ -388,12 +388,6 @@ window.Dashboard = {
 
 // Initialize event handlers
 function initializeEventHandlers() {
-    // S3 Bucket Management
-    const createBucketForm = document.getElementById('createBucketForm');
-    if (createBucketForm) {
-        createBucketForm.addEventListener('submit', handleCreateBucket);
-    }
-
     // Delete bucket buttons
     document.addEventListener('click', function (e) {
         if (e.target.closest('.delete-bucket-btn')) {
@@ -451,58 +445,6 @@ function setupFormValidation() {
     const bucketNameInput = document.getElementById('bucketName');
     if (bucketNameInput) {
         bucketNameInput.addEventListener('input', validateBucketName);
-    }
-}
-
-// S3 Bucket Management Functions
-
-// Handle create bucket form submission
-async function handleCreateBucket(event) {
-    event.preventDefault();
-
-    const form = event.target;
-    const formData = new FormData(form);
-    const bucketData = {
-        name: formData.get('name'),
-        region: formData.get('region') || 'us-east-1',
-        quota_enabled: formData.get('quota_enabled') === 'on',
-        quota_size: parseInt(formData.get('quota_size')) || 0,
-        quota_unit: formData.get('quota_unit') || 'MB'
-    };
-
-    try {
-        const response = await fetch(basePath('/api/s3/buckets'), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(bucketData)
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            // Success
-            showAlert(`Bucket "${bucketData.name}" created successfully!`, 'success');
-
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('createBucketModal'));
-            modal.hide();
-
-            // Reset form
-            form.reset();
-
-            // Refresh the page after a short delay
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
-        } else {
-            // Error
-            showAlert(result.error || 'Failed to create bucket', 'danger');
-        }
-    } catch (error) {
-        console.error('Error creating bucket:', error);
-        showAlert('Network error occurred while creating bucket', 'danger');
     }
 }
 
