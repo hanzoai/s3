@@ -42,13 +42,18 @@ services:
         condition: service_healthy
       server-right:
         condition: service_healthy
-  minio-warp:
-    image: minio/warp
-    command: 'mixed --duration 5s --obj.size=6mb --md5 --objects 10 --concurrent 2'
+  # Writes 10x6MB under /buckets on server-left, which is the tree filer.backup
+  # watches, so every object lands on server-right through the S3 sink.
+  load:
+    image: chrislusf/hanzo:local
+    entrypoint: >
+      /bin/sh -c "
+      mkdir -p /tmp/load;
+      i=0; while [ $$i -lt 10 ]; do
+      dd if=/dev/urandom of=/tmp/load/obj-$$i bs=1M count=6 2>/dev/null;
+      i=$$((i+1)); done;
+      s3 filer.copy /tmp/load http://server-left:8888/buckets/backup/;
+      "
     restart: on-failure
-    environment:
-      WARP_HOST: "server-left:8333"
-      WARP_ACCESS_KEY: "some_access_key1"
-      WARP_SECRET_KEY: "some_secret_key1"
     depends_on:
       - filer-backup
