@@ -7,18 +7,24 @@ an S3 gateway, all in one Go binary called `s3`.
 
 ## Install
 
-Download a binary for your platform from
-[Releases](https://github.com/hanzoai/s3/releases/latest) — `s3-linux-amd64`,
-`s3-linux-arm64`, `s3-darwin-amd64`, `s3-darwin-arm64`, `s3-windows-amd64.exe` — or build
-it yourself:
+Every release is an image, tagged `v<X.Y.Z>`:
 
 ```bash
-go install github.com/hanzoai/s3/s3@latest
+docker pull ghcr.io/hanzoai/s3:v1.0.24
 ```
 
-There is also an image at `ghcr.io/hanzoai/s3`.
+Or build the `s3` binary from a clone:
 
-On macOS, if the downloaded binary is quarantined: `xattr -d com.apple.quarantine ./s3`.
+```bash
+git clone https://git.hanzo.ai/hanzoai/s3
+cd s3 && go build -o s3 ./s3
+```
+
+`go install github.com/hanzoai/s3/s3@latest` will not work. This tree replaces
+`github.com/tyler-smith/go-bip39`, whose upstream repository was deleted, and Go refuses
+replace directives when installing at a version.
+
+On macOS, if a downloaded binary is quarantined: `xattr -d com.apple.quarantine ./s3`.
 
 ## First run
 
