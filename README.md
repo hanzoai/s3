@@ -101,7 +101,9 @@ anywhere it is reachable. `-readOnlyUser`/`-readOnlyPassword` add a view-only ac
 `-dataDir` persists console configuration and maintenance state across restarts.
 
 For administration from a terminal, `s3 shell` is an interactive shell over the same
-cluster, with commands for volumes, erasure coding, the filer tree and remote tiering.
+cluster: buckets and their lifecycle, quota, versioning and object lock; IAM users, groups,
+policies, access keys and service accounts; volumes, erasure coding, the filer tree and
+remote tiering. `help` lists them all.
 
 Beyond the S3 API, the filer gives you POSIX-shaped directories over HTTP, FUSE mounting
 (`s3 mount`), WebDAV, cross-cluster replication (`s3 filer.sync`), tiering to remote object
