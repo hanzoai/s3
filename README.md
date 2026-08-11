@@ -87,6 +87,22 @@ Add volume servers to add capacity — each one registers with the master and st
 writes. `s3 -h` lists every command; `s3 <command> -h` lists its flags. `s3 scaffold`
 writes starter config files.
 
+## Console
+
+`s3 admin` serves the web console on port 23646 — cluster topology, volume and collection
+management, a file browser, users, policies and service accounts, and scheduled maintenance:
+
+```bash
+s3 admin -master=<master_host>:9333 -adminPassword=<password> -dataDir=/var/lib/s3-admin
+```
+
+Leave `-adminPassword` unset and the console runs with no authentication, so set one
+anywhere it is reachable. `-readOnlyUser`/`-readOnlyPassword` add a view-only account.
+`-dataDir` persists console configuration and maintenance state across restarts.
+
+For administration from a terminal, `s3 shell` is an interactive shell over the same
+cluster, with commands for volumes, erasure coding, the filer tree and remote tiering.
+
 Beyond the S3 API, the filer gives you POSIX-shaped directories over HTTP, FUSE mounting
 (`s3 mount`), WebDAV, cross-cluster replication (`s3 filer.sync`), tiering to remote object
 stores, erasure coding for warm data, and a built-in Iceberg REST catalog so Spark, Trino,
