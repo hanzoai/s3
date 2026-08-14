@@ -45,8 +45,12 @@ docker run -p 8333:8333 \
   -e AWS_ACCESS_KEY_ID=admin \
   -e AWS_SECRET_ACCESS_KEY=secret \
   -e S3_BUCKET=my-bucket \
-  ghcr.io/hanzoai/s3
+  ghcr.io/hanzoai/s3 mini -dir=/data
 ```
+
+`mini` is what reads `S3_BUCKET` and what listens on 8333. The image's default
+command is `server -s3 -s3.port=9000`, which serves S3 on 9000 and creates no
+bucket — so name `mini` explicitly, or map 9000 and create the bucket yourself.
 
 Point any S3 client at it:
 
@@ -119,14 +123,21 @@ in [`k8s/`](k8s/), Docker Compose files in [`docker/`](docker/).
 
 ## Clients
 
-Any S3 client works. Ours for Go is [`hanzoai/s3-go`](https://github.com/hanzoai/s3-go),
+Any S3 client works. Ours for Go is [`hanzos3/go`](https://github.com/hanzos3/go),
 module `github.com/hanzos3/go`. This repository is the server.
 
 ## One name
 
-The product is **Hanzo S3**. `hanzoai/storage` and `hanzoai/storage-go` are old paths that
-redirect here and to `hanzoai/s3-go` — renames, not separate products. "Hanzo Storage"
-anywhere in our copy is stale, not a second thing.
+The product is **Hanzo S3**. The source repo `hanzoai/storage` redirects here — a rename,
+not a separate product. "Hanzo Storage" in our copy is stale wording, not a second server.
+
+The **image** `ghcr.io/hanzoai/storage` is a different matter, and the repo rename does not
+carry over to it: live compose files still pull it and start it with `minio server`, so it
+is not this server. Read a `hanzoai/storage` image reference as MinIO until it is retired.
+
+`hanzoai/storage-go` and `hanzoai/s3-go` were earlier names for the Go client and are
+**deleted, not redirected** — a Go module path cannot redirect, so anything still pinning
+them fails to resolve. `github.com/hanzos3/go` is the one that exists.
 
 ## Docs
 
