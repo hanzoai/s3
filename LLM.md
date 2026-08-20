@@ -45,7 +45,30 @@ CGO_ENABLED=0 go build -trimpath -o s3 ./s3
 ```
 
 ## Image
-`ghcr.io/hanzoai/s3` — built by `.github/workflows/docker-build.yml` via the shared `hanzoai/.github` reusable. `ENTRYPOINT ["s3"]`; default `CMD` runs the all-in-one server with the S3 gateway on `:9000`.
+`ghcr.io/hanzoai/s3` — built from the root `Dockerfile` by `.hanzo/workflows/release.yml` on the
+git.hanzo.ai runner (`hanzo-build-linux-amd64`). There is no `.github/workflows` here: the GitHub
+runner fleet is offline, so the forge is the only builder. `ENTRYPOINT ["s3"]`; default `CMD` runs
+the all-in-one server with the S3 gateway on `:9000`.
+
+### Go builder stages — pin ≥ go.mod, and always `GOTOOLCHAIN=auto`
+The official `golang` images ship `ENV GOTOOLCHAIN=local`. A builder stage older than the governing
+`go.mod` directive therefore dies instead of upgrading:
+`go: go.mod requires go >= 1.26.5 (running go 1.26.4; GOTOOLCHAIN=local)`.
+Every Go builder stage in this repo pins an exact `golang:<version>-<variant>` **and** sets
+`ENV GOTOOLCHAIN=auto`, so a later bump to the directive downloads a checksum-verified toolchain
+(sum.golang.org) rather than hard-failing. Two independent halves — keep both.
+
+This is a **multi-module** repo, so "the governing `go.mod`" is decided by the image's *build
+context*, not by where the Dockerfile sits. `test/kafka/Dockerfile.s3` and
+`test/kafka/Dockerfile.kafka-gateway` live under `test/` but build with `context: ../..` and so are
+governed by the **root** `go.mod`. The rule is transitive as well: `test/kafka` declares `go 1.25.0`
+yet `replace github.com/hanzoai/s3 => ../../`, and a *dependency* whose directive outranks the
+toolchain fails identically (`module ../../ requires go >= 1.26.5`). Read the compose/Makefile
+context before choosing a base.
+
+`docker/Dockerfile.foundationdb_large` is deliberately left on its old base: nothing builds it —
+no `docker/Makefile` target, no compose service, no workflow. Its only mention repo-wide is a
+help string echoed by `docker/get_fdb_checksum.sh`.
 
 ## S-Chain — engines on top
 
@@ -63,54 +86,6 @@ Direction (not yet shipped): Quasar (post-quantum, leaderless) consensus for the
 commitments, with bulk data staying in S-Chain object storage. Hanzo S3's own transport
 is already ZAP-native (see the gRPC-rip section below). See the Datastore design paper,
 `hanzo-datastore/` in [hanzoai/papers](https://github.com/hanzoai/papers).
-
-## Master consensus: leaderless pinned-writer (raft deleted)
-hashicorp/seaweedfs **raft is gone** (commit `8ac2c5465`) — no raft dep in `go.mod`/
-`go.sum`, no `server/raft_hashicorp.go`, no election. Coordination is a leaderless,
-deterministic **pinned writer**: the `topology.Coordinator` interface serializes the two
-non-commutative allocations (volume ids, file ids) and pins exactly ONE writer per
-cluster as a *pure function of the membership* (lowest-address live member), so every
-master computes the same writer with zero rounds and re-pins the instant the live set
-changes. Two impls, selected by env, never both:
-- **`topology.LocalCoordinator`** (default) — in-process pinned-writer over the `-peers`
-  universe, projected to the LIVE subset by `server.publishLiveMembers`. Standalone
-  master = sole writer. `ErrNotWriter` replaces `raft.NotLeaderError` (clients back off +
-  redirect to the advertised `Writer`).
-- **Writer failure detector** — `server.ReconcileWriterMembership` is a 2s per-master
-  ticker (multi-master only) that re-probes every peer via `pb.WithMasterClient` (pooled,
-  honors grpc.master PQ-TLS — a raw plaintext probe would false-negative under mTLS and
-  split-brain) and republishes the live set. This is the piece raft's heartbeat/election
-  provided: peer-LEAVE events are disseminated by the writer, so a dead WRITER is
-  invisible to followers via `OnPeerUpdate` alone; the independent probe lets every
-  survivor notice it and deterministically re-pin the lowest live address (verified end
-  to end: writer re-pins in ~2s, `test/multi_master`). `OnPeerUpdate` and the reconciler
-  share `pingMaster`/`publishLiveMembers` — one liveness check, one publish path.
-- **`s3server.schainCoordinator`** (production, `master.coordinator.schain_endpoint`) —
-  composes `LocalCoordinator` for writer selection and routes id allocation through the
-  schain storage VM's owner-gated, ML-DSA-verified `AllocateTx` over ZAP (single-writer
-  *per range*, durable). **Fails CLOSED** (`ErrSchainNotWired`) until the schain ZAP
-  service descriptor from the separate `luxfi/chains` module is wired in — never invents
-  an id the chain has not agreed. **Remaining seam #1** (production durability).
-- `/cluster/status` reports `IsWriter`/`Writer`/`Members` (not `IsLeader`). The
-  `Raft{List,Add,Remove}*`/`RaftLeadershipTransfer` RPCs are retained as **advisory,
-  leaderless** membership hints (wire-compat with the admin dashboard); transfer is
-  refused (the writer is pinned, not hand-transferable).
-- **Availability without quorum**: losing 2 of 3 masters does NOT block writes — the lone
-  survivor drops the dead peers and pins itself. This is a deliberate trade vs raft's
-  quorum; cross-partition id-collision safety is the schain VM's job, not the local pin.
-- **TopologyId** is minted only by the writer (`EnsureTopologyId`) and is neither
-  propagated to followers nor persisted; followers surface it by proxying `/dir/status`
-  to the writer. So it is consistent at any settled moment but a new writer promoted on
-  failover mints a FRESH id (not preserved across a writer change). Not a data-correctness
-  issue — id uniqueness is the Coordinator's job. **Remaining seam #2**: preserve it by
-  adding a field to `GetMasterConfigurationResponse`/`VolumeLocation`, having followers
-  adopt it, and persisting it to `-mdir`.
-- Tests: fast unit invariants in `s3/topology/coordinator_test.go` +
-  `s3/server/{schain_coordinator,master_grpc_server_membership}_test.go` (deterministic
-  pin, non-writer refusal, concurrent-allocation uniqueness, fail-closed schain,
-  membership RPCs — 15 tests). The end-to-end suite `test/multi_master/` (writer failover,
-  survivor-keeps-writing-without-quorum, full-restart, writer-consistency) is gated behind
-  `MULTI_MASTER_IT=1` and builds the master `CGO_ENABLED=0 GOWORK=off`.
 
 ## Filer metadata store: zapdb (leveldb ripped)
 The filer's on-disk metadata `FilerStore` is **zapdb** (`github.com/luxfi/zapdb`, a
@@ -160,24 +135,31 @@ dials ZAP via `brokerPool`. The last gRPC broker dial (`admin/dash/admin_server.
 (`mq/broker/broker_grpc_*.go`) keep their `mq_pb.HanzoMessaging_*Server` signatures —
 those names are now plain `Send/Recv/Context` interfaces, not grpc generic streams.
 
-gRPC is still **load-bearing** in (these legitimately import grpc — leave them):
-- **Volume server RPC** — still gRPC-served (`command/volume.go`, `server/volume_grpc_*.go`,
-  `pb/volume_server_pb/volume_server_grpc.pb.go`). Its `status.Errorf(codes.X)` producers
-  must stay so gRPC clients get real codes; `peer.FromContext` works over gRPC.
-- **Strangler client seam** `volumezap/client.go` — implements the
-  `volume_server_pb.*Client` interface, whose generated signatures use `grpc.{CallOption,
-  *StreamingClient}` and `metadata.MD`. Bound to grpc until that `*_pb` interface is
-  regenerated grpc-free. (`mqzap/client.go` is now grpc-free — see above.)
-- **Core dial/server + request-id** — `pb/grpc_client_server.go` (volume dials,
-  `NewGrpcServer`), `operation/grpc_client.go`, `server/common.go` (grpc metadata).
-- **TLS cert hot-reload** — `security/tls.go`, `security/certreload/certreload.go`,
-  `security/tls_reload.go`, `util/http/client/http_client.go` reuse grpc's
-  `credentials/tls/certprovider` + `pemfile` as a generic file-watching cert provider;
-  `tls.go` also returns `grpc.ServerOption` for the remaining gRPC servers.
+gRPC has been ripped from **every** RPC path. **Zero `.go` files in the main module
+import `google.golang.org/grpc`** — `grep -rl google.golang.org/grpc s3/` returns 0.
+The items previously listed here as "still load-bearing" (volume RPC, raft, cert
+hot-reload, core dial/server, request-id) are all now native/ZAP:
+- **Volume server RPC** rides ZAP: `pb/volume_server_pb/volume_server_grpc.pb.go` is
+  grpc-free (client iface returns `pb/rpc` stream seams; server iface is a plain method
+  set). `volumezap/client.go` and `server/raft_hashicorp.go` are gone.
+- **Cert hot-reload** (`security/certreload/certreload.go`) is a native file-watching
+  provider — no grpc `certprovider`/`pemfile`; the surviving "grpc" mentions there are
+  comments naming only what it replaced.
+- Error semantics still cross the wire as the PascalCase code-name STRING (see above),
+  classified by `strings.Contains` — never reintroduce `google.golang.org/grpc/{codes,status}`.
 
-Full `go.mod` grpc removal is unreachable until volume RPC is ported to ZAP (regen its
-`*_pb` interface grpc-free, switch the server to ZAP dispatch) and cert hot-reload drops
-grpc's certprovider. (Filer, master, and MQ broker are already ported.)
+**`google.golang.org/grpc` is not in the module graph at all** — zero lines in
+`go.mod` AND `go.sum`, and `go mod why` answers "main module does not need package
+google.golang.org/grpc". The last thing holding it in was the optional Google Cloud
+client family, and that surface is gone: `kms/gcp`, `notification/google_pub_sub`,
+`remote_storage/gcs` and `replication/sink/gcssink` no longer exist, so the
+`cloud.google.com/go/{kms,pubsub,storage}` deps left with them. The single surviving
+`cloud.google.com/go/compute/metadata // indirect` arrives via
+`viant/toolbox → golang.org/x/oauth2/google` and pulls no grpc.
+
+If a future change reintroduces a grpc-transport SDK, that line comes back — treat its
+reappearance in `go.mod` as the signal, not the `.go` imports, which is what made this
+easy to miss the first time.
 
 ### ZAP listener ports — derive via `pb.ZapPort` (overflow-safe)
 The master and IAM services serve ZAP on a port offset from their gRPC port by
@@ -204,43 +186,6 @@ implement `filer_pb.HanzoFilerClient`/`master_pb.HanzoClient` directly: no
 `opts ...grpc.CallOption`; streaming methods return `rpc.ServerStream[...]`/`rpc.BidiStream[...]`
 (seam in `s3/pb/rpc`), and the fake stream type implements just `Recv`/`Send`/`CloseSend`.
 DialOption in tests is `pb.DialOption{}` (the zero value), never `grpc.WithTransportCredentials`.
-
-## HTTP edge: gorilla/mux stays (zip evaluated, blocked on body streaming)
-Every HTTP surface is `gorilla/mux` on `net/http` — **277 route registrations across five
-servers**: **S3 API** 107 (`s3api/s3api_server.go` 85 + `s3api/s3api_tables.go` 22),
-**admin** 146 (`admin/handlers/admin_handlers.go` 144 + 2 static in `command/admin.go`),
-**master** 21 (`server/master_server.go` 17 incl. 2 static + 2 in `command/master.go`),
-**master follower** reuses 19 of those, **IAM** 3 (`iamapi/iamapi_server.go`; the
-standalone `s3 iam` command is deprecated — the IAM API is embedded in `s3 s3`). The S3
-API's 72 per-bucket routes are re-registered once per configured `-domainName`, so the
-runtime table is larger than the source count.
-
-`github.com/zap-proto/zip` is the fleet's Go web framework, but **hanzo/s3 does not run
-on it and must not until zip can carry object bytes.** zip serves on Fiber v3 / fasthttp;
-measured against zip v1.10.0 + `zap-proto/http` v0.3.0:
-- **`zip.Config.BodyLimit` never reaches the wire.** `transport.go`'s `httpServer` builds a
-  bare `fasthttp.Server`, and `applyConfig` copies only Read/WriteBufferSize, Concurrency
-  and ServerHeader — `MaxRequestBodySize` keeps fasthttp's 4 MiB default, so a 256 MiB PUT
-  is reset at the connection (`body size exceeds the given limit`) whatever `BodyLimit`
-  says. Replacing the `http` transport via `zip.RegisterTransport` does lift the cap.
-- **`zip.AdaptNetHTTP` materialises the whole request body.**
-  `fasthttpadaptor.ConvertRequest` sets `r.Body = bytes.NewReader(ctx.PostBody())` —
-  measured 256 MiB of heap for a 256 MiB upload. `StreamRequestBody: true` does not help;
-  `PostBody()` drains the stream.
-- **Responses are accumulated in `[]byte`** unless the handler calls `Flush()`: a 64 MiB
-  GET costs 56 ms TTFB and holds the whole object. Forcing the adaptor into its streaming
-  mode (auto-`Flush` on first write) **drops `Content-Length` and switches to
-  `Transfer-Encoding: chunked`** — the adaptor skips that header when streaming — which
-  AWS SDK `GetObject` will not accept. Correct S3 headers or streaming, never both.
-
-Every server here has at least one byte-carrying route — S3 GET/PUT, filer and volume
-wholesale, admin `/api/files/{upload,download,view}`, master `/submit` — so no subset can
-move today without turning object transfers into RAM.
-
-Unblocks when zip (1) propagates `Config.BodyLimit` to `fasthttp.Server.MaxRequestBodySize`,
-(2) hands adapted handlers the request body as a stream, and (3) can emit a streamed
-response with a known `Content-Length` (`ctx.SetBodyStream(r, size)` rather than
-`SetBodyStreamWriter`). The fix belongs in zip — do not grow a private adaptor here.
 
 ## Rebrand notes (one way, don't re-litigate)
 - `s3` → `s3`: binary + program name in `s3/s3.go` help. Internal package dir `s3/` retained (invisible to users; renaming it would churn 1900+ import paths for no user benefit).

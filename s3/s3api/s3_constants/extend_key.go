@@ -33,6 +33,12 @@ const (
 	// removed or lengthened) the way worker-driven expiration does.
 	ExtLifecycleTtlFastPathKey = "Hanzo-X-Amz-Lifecycle-Ttl-Fast-Path"
 
+	// The bucket's S3 lifecycle policy, stored verbatim as the XML the
+	// PutBucketLifecycleConfiguration request carried. Lives here rather than
+	// beside the handler so the shell can set the same policy the API does —
+	// two writers of one key, not two keys.
+	ExtLifecycleConfigurationXMLKey = "s3-bucket-lifecycle-configuration-xml"
+
 	// S3 checksum storage keys (use x-hanzo- prefix to avoid leaking in generic header loop)
 	ExtChecksumAlgorithm = "x-hanzo-checksum-algorithm"
 	ExtChecksumValue     = "x-hanzo-checksum-value"

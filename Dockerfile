@@ -1,6 +1,7 @@
 # Hanzo S3 — S3-compatible object storage (Hanzo engine).
 # Builds the `s3` binary from github.com/hanzoai/s3 (rebranded Hanzo).
-FROM golang:1.26-alpine AS build
+FROM golang:1.26.5-alpine AS build
+ENV GOTOOLCHAIN=auto
 RUN apk add --no-cache git
 WORKDIR /src
 COPY go.mod go.sum ./

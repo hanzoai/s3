@@ -111,7 +111,11 @@ func TestNewSignV4ChunkedReaderStreamingUnsignedPayloadTrailer(t *testing.T) {
 	runWithRequest(iam, req, t, expectedPayload)
 }
 
-func runWithRequest(iam IdentityAccessManagement, req *http.Request, t *testing.T, expectedPayload string) {
+// iam is taken by POINTER: IdentityAccessManagement carries a sync.RWMutex, and
+// copying it hands the callee a DIFFERENT lock from the one the value's own
+// methods take — the mutual exclusion silently stops existing. go vet's copylocks
+// check flags exactly this, and it flagged it here until this signature changed.
+func runWithRequest(iam *IdentityAccessManagement, req *http.Request, t *testing.T, expectedPayload string) {
 	reader, errCode := iam.newChunkedReader(req)
 	assert.NotNil(t, reader)
 	assert.Equal(t, s3err.ErrNone, errCode)
@@ -124,7 +128,7 @@ func runWithRequest(iam IdentityAccessManagement, req *http.Request, t *testing.
 	assert.Equal(t, expectedPayload, string(data))
 }
 
-func setupIam() IdentityAccessManagement {
+func setupIam() *IdentityAccessManagement {
 	// Create an IdentityAccessManagement instance
 	// Add default access keys and secrets
 
@@ -156,7 +160,7 @@ func setupIam() IdentityAccessManagement {
 	})
 
 	iam.accessKeyIdent[defaultAccessKeyId] = iam.identities[0]
-	return iam
+	return &iam
 }
 
 // TestSignedStreamingUpload tests streaming uploads with signed chunks

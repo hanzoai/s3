@@ -51,6 +51,14 @@ const (
 type HanzoChannel interface {
 	Call(envelope []byte) (rpc.Response, error)
 	CallContext(ctx context.Context, envelope []byte) (rpc.Response, error)
+	// NextPromiseID allocates a call's PromiseID from the CONNECTION rather than
+	// from a per-client counter. PromiseID is the connection's demultiplexing
+	// key: the transport keys its in-flight table by it, and OpenStream already
+	// allocates stream IDs the same way. A client that numbered its own calls
+	// would restart at 1 on every construction, so two clients sharing a pooled
+	// conn collide — the transport overwrites the first waiter's slot and its
+	// response is dropped, blocking that caller for as long as its context runs.
+	NextPromiseID() uint32
 }
 
 // HanzoClient is a typed RPC client for the Hanzo service over a ZAP call
@@ -59,19 +67,18 @@ type HanzoChannel interface {
 type HanzoClient struct {
 	ch   HanzoChannel
 	cap  []byte
-	sess *rpc.Session
 }
 
 // NewHanzoClient returns a client that issues calls over ch, attaching cap
 // (which may be nil) to every request.
 func NewHanzoClient(ch HanzoChannel, capability []byte) *HanzoClient {
-	return &HanzoClient{ch: ch, cap: capability, sess: rpc.NewSession()}
+	return &HanzoClient{ch: ch, cap: capability}
 }
 
 // invoke issues one request to method and returns the response body. Shared by
 // every method's public entry points.
 func (c *HanzoClient) invoke(ctx context.Context, method, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    method,
 		PromiseID: p.ID,

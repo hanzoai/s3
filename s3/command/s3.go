@@ -37,9 +37,12 @@ var (
 	s3StandaloneOptions S3Options
 )
 
-// S3Options holds CLI flags for the S3 gateway.
-// Flags are registered in multiple commands: s3.go (standalone), server.go, filer.go, and mini.go.
-// When adding a new field, update all four flag registration sites.
+// S3Options holds CLI flags for the S3 gateway. Every field is a pointer, and the
+// code below dereferences them through the s3opt receiver without a nil check —
+// so a field this struct gains must be registered by all four commands that build
+// one (s3.go standalone, server.go, filer.go, mini.go) or that command segfaults
+// the moment it starts S3. TestS3OptionsRegisteredEverywhere enforces exactly
+// that, reading the required set out of this file rather than from a list.
 type S3Options struct {
 	filer                     *string
 	bindIp                    *string
@@ -296,7 +299,13 @@ func (s3opt *S3Options) startS3Server() bool {
 
 	for {
 		err := pb.WithOneOfGrpcFilerClients(false, filerAddresses, grpcDialOption, func(client filer_pb.HanzoFilerClient) error {
-			resp, err := client.GetFilerConfiguration(context.Background(), &filer_pb.GetFilerConfigurationRequest{})
+			// Bound each attempt so this required-config read cannot block forever
+			// when a filer accepts TCP (kube endpoints on a cold/co-restart) but is
+			// not yet answering RPCs. On deadline the enclosing for-loop sleeps and
+			// retries — the intended behavior, which an unbounded ctx defeats.
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			resp, err := client.GetFilerConfiguration(ctx, &filer_pb.GetFilerConfigurationRequest{})
 			if err != nil {
 				return fmt.Errorf("get filer configuration: %v", err)
 			}

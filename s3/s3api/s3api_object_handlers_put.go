@@ -17,7 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pquerna/cachecontrol/cacheobject"
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/operation"
@@ -28,6 +27,7 @@ import (
 	s3server "github.com/hanzoai/s3/s3/server"
 	stats_collect "github.com/hanzoai/s3/s3/stats"
 	"github.com/hanzoai/s3/s3/util/constants"
+	"github.com/pquerna/cachecontrol/cacheobject"
 )
 
 // Object lock validation errors
@@ -316,7 +316,13 @@ func (s3a *S3ApiServer) PutObjectHandler(w http.ResponseWriter, r *http.Request)
 	writeSuccessResponseEmpty(w, r)
 }
 
-func (s3a *S3ApiServer) withObjectWriteLock(bucket, object string, preconditionFn func() s3err.ErrorCode, fn func() s3err.ErrorCode) s3err.ErrorCode {
+// needsSerialization is passed EXPLICITLY rather than inferred from
+// preconditionFn != nil, because the caller builds that closure unconditionally
+// and lets it no-op when the request carries no conditional headers. Inferring
+// from the func pointer would therefore read "every PUT is conditional" and
+// demand a held lock for plain writes — the whole object path failing closed for
+// no reason. Only the request knows, so only the caller can say.
+func (s3a *S3ApiServer) withObjectWriteLock(bucket, object string, needsSerialization bool, preconditionFn func() s3err.ErrorCode, fn func() s3err.ErrorCode) s3err.ErrorCode {
 	runPrecondition := func() s3err.ErrorCode {
 		if preconditionFn == nil {
 			return s3err.ErrNone
@@ -324,17 +330,38 @@ func (s3a *S3ApiServer) withObjectWriteLock(bucket, object string, preconditionF
 		return preconditionFn()
 	}
 
+	// A precondition is only worth anything if NOTHING can write between evaluating
+	// it and committing. This function evaluates, then runs fn — and on the PUT path
+	// fn is a full body upload plus a CreateEntry, so the window is wide. Serialize
+	// that window or two racers both pass the check and both commit: a
+	// compare-and-swap that silently admits two winners, which is the one thing a
+	// conditional PUT exists to prevent.
+	//
+	// So an unheld lock is FAIL-CLOSED here, not fall-through. It used to fall
+	// through — no lock configured, a nil lock, or (below) a lock whose acquisition
+	// failed all ran precondition-then-write unserialized, and nothing said so. The
+	// visible symptom was a caller proving the store's atomicity and being told
+	// "update-race admitted 2 writers (want 1)", after which it correctly refused to
+	// use the store as a fence at all.
+	//
+	// Unconditional writes are unaffected: with no precondition there is nothing to
+	// be atomic WITH, last-writer-wins is the defined S3 semantic, and taking the
+	// lock away from them would serialize the whole object path for no benefit.
+	needsSerialization = needsSerialization && preconditionFn != nil
+
 	if object == "" || s3a.newObjectWriteLock == nil {
-		if errCode := runPrecondition(); errCode != s3err.ErrNone {
-			return errCode
+		if needsSerialization {
+			glog.Errorf("withObjectWriteLock: %s/%s has a precondition but no object write lock is configured; refusing rather than writing unserialized", bucket, object)
+			return s3err.ErrInternalError
 		}
 		return fn()
 	}
 
 	lock := s3a.newObjectWriteLock(bucket, object)
 	if lock == nil {
-		if errCode := runPrecondition(); errCode != s3err.ErrNone {
-			return errCode
+		if needsSerialization {
+			glog.Errorf("withObjectWriteLock: %s/%s has a precondition but the lock could not be created; refusing rather than writing unserialized", bucket, object)
+			return s3err.ErrInternalError
 		}
 		return fn()
 	}
@@ -343,6 +370,15 @@ func (s3a *S3ApiServer) withObjectWriteLock(bucket, object string, preconditionF
 			glog.Warningf("withObjectWriteLock: failed to release lock for %s/%s: %v", bucket, object, err)
 		}
 	}()
+
+	// Having a lock OBJECT is not holding the lock. Acquisition can fail — the lock
+	// server may be unreachable, or another writer may hold the key — and the
+	// constructor hands the object back either way, so this is the only place the
+	// distinction can still be made before we act on it.
+	if needsSerialization && !lock.IsLocked() {
+		glog.Errorf("withObjectWriteLock: %s/%s has a precondition but the lock is not held; refusing rather than writing unserialized", bucket, object)
+		return s3err.ErrInternalError
+	}
 
 	if errCode := runPrecondition(); errCode != s3err.ErrNone {
 		return errCode
@@ -878,7 +914,13 @@ func (s3a *S3ApiServer) putToFiler(r *http.Request, filePath string, dataReader 
 		}
 	}
 	if !routed {
-		createCode = s3a.withObjectWriteLock(bucket, object, preconditionFn, createUnderLock)
+		// Only a request that ACTUALLY carries a conditional header needs its write
+		// serialized. preconditionFn above is built unconditionally and no-ops when
+		// isSet is false, so asking the request is the only honest signal — using the
+		// closure's existence would make every plain PUT demand a held lock.
+		// A malformed conditional header is still conditional: it is rejected by
+		// checkConditionalHeaders, never silently treated as unconditional.
+		createCode = s3a.withObjectWriteLock(bucket, object, requestIsConditional(r), preconditionFn, createUnderLock)
 	}
 	if createCode != s3err.ErrNone {
 		if createErr != nil {
@@ -1985,6 +2027,25 @@ func parseHTTPDate(value string) (time.Time, error) {
 }
 
 // parseConditionalHeaders extracts and validates conditional headers from the request
+// requestIsConditional reports whether r carries any conditional header, and so
+// whether its write must be serialized against concurrent writers to mean
+// anything. It is the ONE answer to that question: every withObjectWriteLock
+// caller whose precondition is checkConditionalHeaders asks it here rather than
+// re-deriving the rule, because the precondition closures themselves are built
+// unconditionally and cannot be used to tell.
+//
+// A malformed conditional header counts as conditional. It is still an attempt to
+// condition the write, and checkConditionalHeaders rejects it; treating a parse
+// failure as "unconditional" would silently downgrade exactly the requests whose
+// headers we could not understand.
+func requestIsConditional(r *http.Request) bool {
+	headers, errCode := parseConditionalHeaders(r)
+	if errCode != s3err.ErrNone {
+		return true
+	}
+	return headers.isSet
+}
+
 func parseConditionalHeaders(r *http.Request) (conditionalHeaders, s3err.ErrorCode) {
 	headers := conditionalHeaders{
 		ifMatch:     r.Header.Get(s3_constants.IfMatch),

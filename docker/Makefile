@@ -34,7 +34,7 @@ build_e2e: binary_race
 	rm -rf /tmp/.buildx-cache || true
 	mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
 
-go_build: # make go_build tags=elastic,ydb,gocdk,hdfs,5BytesOffset,tarantool
+go_build: # make go_build tags=elastic,sqlite,5BytesOffset
 	docker build --build-arg TAGS=$(tags) --no-cache -t chrislusf/hanzo:go_build -f Dockerfile.go_build .
 
 go_build_large_disk:
@@ -78,10 +78,6 @@ k8s: build
 
 dev_registry: build
 	docker compose -f compose/local-registry-compose.yml -p hanzo up
-
-dev_replicate:
-	docker build --build-arg TAGS=gocdk --no-cache -t chrislusf/hanzo:local -f Dockerfile.go_build .
-	docker compose -f compose/local-replicate-compose.yml -p hanzo up
 
 dev_auditlog: build
 	docker compose -f compose/local-auditlog-compose.yml -p hanzo up

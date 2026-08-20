@@ -41,6 +41,16 @@ func (store *AbstractSqlStore) CanDropWholeBucket() bool {
 	return store.SupportBucketTable
 }
 func (store *AbstractSqlStore) OnBucketCreation(bucket string) {
+	// The bucket name arrives from a filer metadata event and becomes a table
+	// identifier in CreateTable's generated SQL, where it cannot be a bound
+	// parameter. Gate it through the same check getTxOrDB applies before it
+	// touches SQL; a malformed name (e.g. one carrying stacked statements from
+	// a peer filer or an unvalidated create) is refused, not executed.
+	if !isValidBucket(bucket) {
+		glog.Errorf("OnBucketCreation: refusing invalid bucket name %q", bucket)
+		return
+	}
+
 	store.dbsLock.Lock()
 	defer store.dbsLock.Unlock()
 
@@ -52,6 +62,11 @@ func (store *AbstractSqlStore) OnBucketCreation(bucket string) {
 	store.dbs[bucket] = true
 }
 func (store *AbstractSqlStore) OnBucketDeletion(bucket string) {
+	if !isValidBucket(bucket) {
+		glog.Errorf("OnBucketDeletion: refusing invalid bucket name %q", bucket)
+		return
+	}
+
 	store.dbsLock.Lock()
 	defer store.dbsLock.Unlock()
 

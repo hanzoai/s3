@@ -92,6 +92,17 @@ func NewPrefix(val string) Prefix { return Prefix{val: val, set: true} }
 // NewExpirationDays builds an Expiration with Days set.
 func NewExpirationDays(days int) Expiration { return Expiration{Days: days, set: true} }
 
+// NewExpirationDeleteMarker builds an Expiration that removes a delete
+// marker once it is an object's only remaining version.
+func NewExpirationDeleteMarker() Expiration {
+	return Expiration{DeleteMarker: ExpireDeleteMarker{val: true, set: true}, set: true}
+}
+
+// NewNoncurrentDays builds a NoncurrentVersionExpiration with NoncurrentDays set.
+func NewNoncurrentDays(days int) NoncurrentVersionExpiration {
+	return NoncurrentVersionExpiration{NoncurrentDays: days, set: true}
+}
+
 // Set reports whether this Filter is present in the XML.
 func (f Filter) Set() bool { return f.set }
 

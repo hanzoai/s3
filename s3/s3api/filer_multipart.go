@@ -825,7 +825,7 @@ func (s3a *S3ApiServer) completeMultipartUpload(r *http.Request, input *s3.Compl
 			finalizeCode = completionBody()
 		}
 	} else {
-		finalizeCode = s3a.withObjectWriteLock(*input.Bucket, *input.Key, func() s3err.ErrorCode {
+		finalizeCode = s3a.withObjectWriteLock(*input.Bucket, *input.Key, requestIsConditional(r), func() s3err.ErrorCode {
 			return s3a.checkConditionalHeaders(r, *input.Bucket, *input.Key)
 		}, completionBody)
 	}
