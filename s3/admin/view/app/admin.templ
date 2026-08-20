@@ -335,8 +335,8 @@ templ Admin(data dash.AdminData) {
                             </a>
                             <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in">
                                 <div class="dropdown-header">Actions:</div>
-                                <a class="dropdown-item" href={ dash.PUrl(ctx, "/volumes") }>View Details</a>
-                                <a class="dropdown-item" href={ dash.PUrl(ctx, "/cluster") }>Topology View</a>
+                                <a class="dropdown-item" href={ dash.PUrl(ctx, "/storage/volumes") }>View Details</a>
+                                <a class="dropdown-item" href={ dash.PUrl(ctx, "/cluster/masters") }>Topology View</a>
                             </div>
                         </div>
                     </div>
@@ -417,8 +417,8 @@ templ Admin(data dash.AdminData) {
                             </a>
                             <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in">
                                 <div class="dropdown-header">Actions:</div>
-                                <a class="dropdown-item" href={ dash.PUrl(ctx, "/filer") }>File Browser</a>
-                                <a class="dropdown-item" href={ dash.PUrl(ctx, "/cluster") }>Topology View</a>
+                                <a class="dropdown-item" href={ dash.PUrl(ctx, "/files") }>File Browser</a>
+                                <a class="dropdown-item" href={ dash.PUrl(ctx, "/cluster/masters") }>Topology View</a>
                             </div>
                         </div>
                     </div>

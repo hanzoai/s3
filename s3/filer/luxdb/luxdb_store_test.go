@@ -16,7 +16,7 @@ func TestCreateAndFind(t *testing.T) {
 	testFiler := filer.NewFiler(pb.ServerDiscovery{}, pb.DialOption{}, "", "", "", "", "", 255, nil)
 	dir := t.TempDir()
 	store := &LuxDBStore{}
-	if err := store.initialize("zapdb", dir); err != nil {
+	if err := store.initialize("zapdb", dir, ""); err != nil {
 		t.Fatalf("init store: %v", err)
 	}
 	testFiler.SetStore(store)
@@ -71,7 +71,7 @@ func TestEmptyRoot(t *testing.T) {
 	testFiler := filer.NewFiler(pb.ServerDiscovery{}, pb.DialOption{}, "", "", "", "", "", 255, nil)
 	dir := t.TempDir()
 	store := &LuxDBStore{}
-	if err := store.initialize("zapdb", dir); err != nil {
+	if err := store.initialize("zapdb", dir, ""); err != nil {
 		t.Fatalf("init store: %v", err)
 	}
 	testFiler.SetStore(store)
@@ -95,7 +95,7 @@ func BenchmarkInsertEntry(b *testing.B) {
 	testFiler := filer.NewFiler(pb.ServerDiscovery{}, pb.DialOption{}, "", "", "", "", "", 255, nil)
 	dir := b.TempDir()
 	store := &LuxDBStore{}
-	if err := store.initialize("zapdb", dir); err != nil {
+	if err := store.initialize("zapdb", dir, ""); err != nil {
 		b.Fatalf("init store: %v", err)
 	}
 	testFiler.SetStore(store)

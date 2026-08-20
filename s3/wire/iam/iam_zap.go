@@ -40,6 +40,14 @@ const (
 type HanzoIdentityAccessManagementChannel interface {
 	Call(envelope []byte) (rpc.Response, error)
 	CallContext(ctx context.Context, envelope []byte) (rpc.Response, error)
+	// NextPromiseID allocates a call's PromiseID from the CONNECTION rather than
+	// from a per-client counter. PromiseID is the connection's demultiplexing
+	// key: the transport keys its in-flight table by it, and OpenStream already
+	// allocates stream IDs the same way. A client that numbered its own calls
+	// would restart at 1 on every construction, so two clients sharing a pooled
+	// conn collide — the transport overwrites the first waiter's slot and its
+	// response is dropped, blocking that caller for as long as its context runs.
+	NextPromiseID() uint32
 }
 
 // HanzoIdentityAccessManagementClient is a typed RPC client for the
@@ -49,13 +57,12 @@ type HanzoIdentityAccessManagementChannel interface {
 type HanzoIdentityAccessManagementClient struct {
 	ch   HanzoIdentityAccessManagementChannel
 	cap  []byte
-	sess *rpc.Session
 }
 
 // NewHanzoIdentityAccessManagementClient returns a client that issues calls over
 // ch, attaching cap (which may be nil) to every request.
 func NewHanzoIdentityAccessManagementClient(ch HanzoIdentityAccessManagementChannel, capability []byte) *HanzoIdentityAccessManagementClient {
-	return &HanzoIdentityAccessManagementClient{ch: ch, cap: capability, sess: rpc.NewSession()}
+	return &HanzoIdentityAccessManagementClient{ch: ch, cap: capability}
 }
 
 func (c *HanzoIdentityAccessManagementClient) GetConfiguration(ctx context.Context, req []byte) (rpc.Promise, []byte, error) {
@@ -255,7 +262,7 @@ func (c *HanzoIdentityAccessManagementClient) GetServiceAccountByAccessKeyOn(ctx
 // invoke ships one call over the channel and unwraps its response. method is the
 // human-readable name used only for the status-error message.
 func (c *HanzoIdentityAccessManagementClient) invoke(ctx context.Context, ordinal uint32, method string, target uint32, payload []byte) (rpc.Promise, []byte, error) {
-	p := c.sess.Next()
+	p := rpc.Promise{ID: c.ch.NextPromiseID()}
 	resp, err := c.ch.CallContext(ctx, rpc.BuildRequest(rpc.Call{
 		Method:    ordinal,
 		PromiseID: p.ID,

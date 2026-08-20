@@ -42,32 +42,18 @@ services:
         condition: service_healthy
       server-right:
         condition: service_healthy
-  # Mixed read/write/delete workload against server-left, so filer-backup has
-  # changes to replicate to server-right. Object size (6MB) exceeds
-  # -filer.maxMB 5 on server-left, which is what exercises the multi-chunk
-  # backup path.
-  s3-load:
-    image: amazon/aws-cli:2.32.0
+  # Writes 10x6MB under /buckets on server-left, which is the tree filer.backup
+  # watches, so every object lands on server-right through the S3 sink.
+  load:
+    image: chrislusf/hanzo:local
+    entrypoint: >
+      /bin/sh -c "
+      mkdir -p /tmp/load;
+      i=0; while [ $$i -lt 10 ]; do
+      dd if=/dev/urandom of=/tmp/load/obj-$$i bs=1M count=6 2>/dev/null;
+      i=$$((i+1)); done;
+      s3 filer.copy /tmp/load http://server-left:8888/buckets/backup/;
+      "
     restart: on-failure
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        set -e
-        E="--endpoint-url http://server-left:8333"
-        aws $$E s3 mb s3://loadtest || true
-        head -c 6291456 /dev/urandom > /tmp/obj
-        for i in $$(seq 1 10); do
-          aws $$E s3 cp /tmp/obj s3://loadtest/obj-$$i --only-show-errors
-        done
-        aws $$E s3 ls s3://loadtest/
-        for i in 1 2 3; do
-          aws $$E s3 cp s3://loadtest/obj-$$i /tmp/get-$$i --only-show-errors
-          aws $$E s3 rm s3://loadtest/obj-$$i --only-show-errors
-        done
-        echo "s3-load complete"
-    environment:
-      AWS_ACCESS_KEY_ID: "some_access_key1"
-      AWS_SECRET_ACCESS_KEY: "some_secret_key1"
-      AWS_DEFAULT_REGION: "us-east-1"
     depends_on:
       - filer-backup

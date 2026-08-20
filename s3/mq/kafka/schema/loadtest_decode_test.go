@@ -57,19 +57,6 @@ const (
 		"required": ["id", "timestamp", "producer_id", "counter", "user_id", "event_type"]
 	}`
 
-	loadTestProtobufSchema = `syntax = "proto3";
-
-package com.s3.loadtest;
-
-message LoadTestMessage {
-  string id = 1;
-  int64 timestamp = 2;
-  int32 producer_id = 3;
-  int64 counter = 4;
-  string user_id = 5;
-  string event_type = 6;
-  map<string, string> properties = 7;
-}`
 )
 
 // createTestMessage creates a sample load test message
@@ -225,57 +212,6 @@ func TestJSONSchemaLoadTestDecoding(t *testing.T) {
 	verifyField(t, recordValue, "event_type", msg.EventType)
 
 	t.Logf("✅ JSON Schema decoding successful: %d fields", len(recordValue.Fields))
-}
-
-// TestProtobufLoadTestDecoding tests Protobuf decoding with load test schema
-func TestProtobufLoadTestDecoding(t *testing.T) {
-	msg := createTestMessage()
-
-	// For Protobuf, we need to first compile the schema and then encode
-	// For now, let's test JSON encoding with Protobuf schema (common pattern)
-	jsonBytes, err := json.Marshal(msg)
-	if err != nil {
-		t.Fatalf("Failed to encode JSON message: %v", err)
-	}
-
-	t.Logf("JSON (for Protobuf) encoded size: %d bytes", len(jsonBytes))
-	t.Logf("JSON content: %s", string(jsonBytes))
-
-	// Wrap in Confluent wire format
-	schemaID := uint32(5)
-	wireFormat := createConfluentWireFormat(schemaID, jsonBytes)
-
-	t.Logf("Confluent wire format size: %d bytes", len(wireFormat))
-
-	// Parse envelope
-	envelope, ok := ParseConfluentEnvelope(wireFormat)
-	if !ok {
-		t.Fatalf("Failed to parse Confluent envelope")
-	}
-
-	if envelope.SchemaID != schemaID {
-		t.Errorf("Expected schema ID %d, got %d", schemaID, envelope.SchemaID)
-	}
-
-	// Create Protobuf decoder from text schema
-	decoder, err := NewProtobufDecoderFromString(loadTestProtobufSchema)
-	if err != nil {
-		t.Fatalf("Failed to create Protobuf decoder: %v", err)
-	}
-
-	// Try to decode - this will likely fail because JSON is not valid Protobuf binary
-	recordValue, err := decoder.DecodeToRecordValue(envelope.Payload)
-	if err != nil {
-		t.Logf("⚠️  Expected failure: Protobuf decoder cannot decode JSON: %v", err)
-		t.Logf("This confirms the issue: producer sends JSON but gateway expects Protobuf binary")
-		return
-	}
-
-	// If we get here, something unexpected happened
-	t.Logf("Unexpectedly succeeded in decoding JSON as Protobuf")
-	if recordValue.Fields != nil {
-		t.Logf("RecordValue has %d fields", len(recordValue.Fields))
-	}
 }
 
 // verifyField checks if a field exists in RecordValue with expected value

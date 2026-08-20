@@ -179,7 +179,7 @@ var cmdMount = &Command{
   2) have a "s3 filer" running
   These 2 requirements can be achieved with one command "s3 server -filer=true"
 
-  This uses github.com/seaweedfs/fuse, which enables writing FUSE file systems on
+  This uses github.com/hanzoai/go-fuse, which enables writing FUSE file systems on
   Linux, and OS X.
 
   On OS X, it requires OSXFUSE (https://osxfuse.github.io/).

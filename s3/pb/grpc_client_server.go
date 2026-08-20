@@ -316,7 +316,7 @@ var filerPool = transport.NewPool(dialFilerZapAddr)
 // transport stream) nor a dial option. The connection is closed when fn returns.
 func WithGrpcFilerClient(streamingMode bool, signature int32, filerAddress ServerAddress, grpcDialOption DialOption, fn func(client filer_pb.HanzoFilerClient) error) error {
 	_, _, _ = streamingMode, signature, grpcDialOption
-	return filerPool.With(filerAddress.ToGrpcAddress(), func(conn transport.Conn) error {
+	return filerPool.With(filerAddress.ToFilerZapAddress(), func(conn transport.Conn) error {
 		return fn(NewZapFilerClient(conn))
 	})
 }
@@ -326,7 +326,7 @@ func WithGrpcFilerClient(streamingMode bool, signature int32, filerAddress Serve
 func WithOneOfGrpcFilerClients(streamingMode bool, filerAddresses []ServerAddress, grpcDialOption DialOption, fn func(client filer_pb.HanzoFilerClient) error) (err error) {
 	_, _ = streamingMode, grpcDialOption
 	for _, filerAddress := range filerAddresses {
-		err = filerPool.With(filerAddress.ToGrpcAddress(), func(conn transport.Conn) error {
+		err = filerPool.With(filerAddress.ToFilerZapAddress(), func(conn transport.Conn) error {
 			return fn(NewZapFilerClient(conn))
 		})
 		if err == nil {

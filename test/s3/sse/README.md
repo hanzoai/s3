@@ -10,16 +10,6 @@ The SSE integration tests cover three main encryption methods:
 - **SSE-KMS (Key Management Service)**: Server manages encryption keys through a KMS provider
 - **SSE-S3 (Server-Managed Keys)**: Server automatically manages encryption keys
 
-### 🆕 Real KMS Integration
-
-The tests now include **real KMS integration** with OpenBao, providing:
-- ✅ Actual encryption/decryption operations (not mock keys)
-- ✅ Multiple KMS keys for different security levels
-- ✅ Per-bucket KMS configuration testing
-- ✅ Performance benchmarking with real KMS operations
-
-See [README_KMS.md](README_KMS.md) for detailed KMS integration documentation.
-
 ## Why Integration Tests Matter
 
 These integration tests were created to address a **critical gap in test coverage** that previously existed. While the Hanzo codebase had comprehensive unit tests for SSE components, it lacked integration tests that validated the complete request flow:
@@ -110,15 +100,6 @@ make test-errors    # Error condition tests
 ```bash
 make benchmark      # Performance benchmarks
 make perf          # Various data size performance tests
-```
-
-### KMS Integration Testing
-
-```bash
-make setup-openbao          # Set up OpenBao KMS
-make test-with-kms          # Run all SSE tests with real KMS
-make test-ssekms-integration # Run SSE-KMS with OpenBao only
-make clean-kms             # Clean up KMS environment
 ```
 
 ### Development Testing
