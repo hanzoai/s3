@@ -116,7 +116,7 @@ test/s3/versioning/weed-test.log
 /docker/admin_integration/data
 docker/agent_pub_record
 docker/admin_integration/weed-local
-/seaweedfs-rdma-sidecar/bin
+/s3-rdma-sidecar/bin
 /test/s3/encryption/filerldb2
 /test/s3/sse/filerldb2
 test/s3/sse/weed-test.log
@@ -145,3 +145,14 @@ weed_bin
 telemetry/server/telemetry-server
 .aider*
 /seaweed-volume/docs
+
+# Compiled binaries built beside their source. ~121 MB of macOS arm64 executables
+# were committed here — useless to a linux/amd64 fleet, and cloned by everyone
+# forever. Ignore the build outputs by name so they cannot come back.
+/stress
+/s3-rdma-sidecar/demo-server
+/s3-rdma-sidecar/sidecar
+/test/kafka/kafka-client-loadtest/loadtest
+/test/kafka/kafka-client-loadtest/tools/simple-test
+/test/kafka/simple-consumer/simple-consumer
+/test/kafka/simple-publisher/simple-publisher

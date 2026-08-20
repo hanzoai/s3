@@ -1,4 +1,4 @@
-//go:build elastic && gocdk && rclone && sqlite && tarantool && tikv && ydb
+//go:build elastic && sqlite
 
 package command
 

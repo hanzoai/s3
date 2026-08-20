@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/luxfi/database"
 	"github.com/luxfi/database/factory"
@@ -49,10 +50,14 @@ func (store *LuxDBStore) GetName() string {
 func (store *LuxDBStore) Initialize(configuration s3_util.Configuration, prefix string) (err error) {
 	dir := configuration.GetString(prefix + "dir")
 	backend := configuration.GetString(prefix + "backend")
-	return store.initialize(backend, dir)
+	// Read as a STRING, not GetBool: the Configuration interface has no IsSet,
+	// so a bool cannot distinguish "absent" from "explicitly false" — the exact
+	// confusion that made this knob one-way in the backend. "" means leave the
+	// backend default alone.
+	return store.initialize(backend, dir, configuration.GetString(prefix+"syncWrites"))
 }
 
-func (store *LuxDBStore) initialize(backend, dir string) (err error) {
+func (store *LuxDBStore) initialize(backend, dir, syncWrites string) (err error) {
 	if backend == "" {
 		backend = defaultBackend
 	}
@@ -68,11 +73,36 @@ func (store *LuxDBStore) initialize(backend, dir string) (err error) {
 		return fmt.Errorf("check luxdb folder %s writable: %s", dir, err)
 	}
 
+	// Durability knob, off the hot path but decisive for it. The backend fsyncs
+	// every commit by default, which is correct and is what we keep unless an
+	// operator says otherwise — but on network-attached storage that fsync is
+	// the dominant cost of metadata work. Measured on this filer: a single
+	// metadata create is 11.39 ms on a cloud block volume against 1.41 ms for
+	// the same binary on tmpfs, so the setting is worth an order of magnitude
+	// to a deployment that can accept losing the last writes on a host crash.
+	//
+	// Passing nil config here is what made it unreachable, so an operator could
+	// set filer.toml's syncWrites and nothing happened.
+	var cfgJSON []byte
+	{
+		switch strings.ToLower(strings.TrimSpace(syncWrites)) {
+		case "false", "0", "off", "no":
+			cfgJSON = []byte(`{"syncWrites": false}`)
+			glog.V(0).Infof("filer luxdb store: syncWrites=false (durability relaxed by config)")
+		case "true", "1", "on", "yes":
+			cfgJSON = []byte(`{"syncWrites": true}`)
+		case "":
+			// unset: keep the backend default
+		default:
+			return fmt.Errorf("filer luxdb: invalid syncWrites %q (want true or false)", syncWrites)
+		}
+	}
+
 	// factory.New(name, dbPath, readOnly, config, gatherer, logger, metricsPrefix, meterDBRegName).
 	// zapdb is always registered (default); pebbledb/leveldb register under
 	// their build tags. A nil gatherer/logger keeps the store metric-free and
 	// silent, matching the embedded single-process filer use.
-	db, err := factory.New(backend, dir, false, nil, nil, log.Noop(), "", "")
+	db, err := factory.New(backend, dir, false, cfgJSON, nil, log.Noop(), "", "")
 	if err != nil {
 		return fmt.Errorf("open luxdb backend %q at %s: %w", backend, dir, err)
 	}

@@ -1,6 +1,7 @@
 //go:build (linux || darwin || windows) && sqlite
 
-// limited GOOS due to modernc.org/libc/unistd
+// limited GOOS due to modernc.org/libc/unistd, which hanzoai/sqlite's pure-Go
+// backend sits on.
 
 package sqlite
 
@@ -12,7 +13,14 @@ import (
 	"github.com/hanzoai/s3/s3/filer"
 	"github.com/hanzoai/s3/s3/filer/abstract_sql"
 	"github.com/hanzoai/s3/s3/util"
-	_ "modernc.org/sqlite"
+
+	// github.com/hanzoai/sqlite is the ONE Hanzo SQLite driver, and it is the
+	// facade — never an engine directly. It registers the "sqlite" driver name
+	// this store opens, and with it the hanzoai/sqlcipher codec VFS, so an
+	// encrypted store opens on the same path as a plain one. Importing
+	// modernc.org/sqlite here instead skipped the codec entirely and pinned a
+	// second engine into go.mod alongside the one the rest of the fleet links.
+	_ "github.com/hanzoai/sqlite"
 )
 
 func init() {

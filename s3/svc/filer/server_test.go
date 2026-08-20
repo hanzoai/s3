@@ -5,6 +5,7 @@ package filer
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	filer_pb "github.com/hanzoai/s3/s3/pb/filer_pb"
@@ -101,5 +102,41 @@ func TestServerBackendRoundTrip(t *testing.T) {
 	}
 	if afterDelete.Entry != nil {
 		t.Fatal("expected nil Entry (not-found) after delete")
+	}
+}
+
+// TestLookupEntryMapsMissingToNotFound pins the contract callers depend on to
+// tell "absent" from "present" over this transport. The raw client reports a
+// missing name as an OK response carrying a nil Entry, so err alone says only
+// that the filer was reached — reading it as existence reports every new name
+// as already taken. filer_pb.LookupEntry is the mapping back to ErrNotFound.
+func TestLookupEntryMapsMissingToNotFound(t *testing.T) {
+	fs := &fakeFiler{entries: map[string]*filer_pb.Entry{}}
+
+	srv, err := filerwire.Serve("tcp", "127.0.0.1:0", NewServerBackend(fs))
+	if err != nil {
+		t.Fatalf("Serve: %v", err)
+	}
+	defer srv.Close()
+
+	conn, err := transport.Dial("tcp", srv.Addr().String())
+	if err != nil {
+		t.Fatalf("Dial: %v", err)
+	}
+	defer conn.Close()
+	client := NewZapFilerClient(conn, nil)
+
+	req := &filer_pb.LookupDirectoryEntryRequest{Directory: "/buckets", Name: "never-created"}
+
+	raw, err := client.LookupDirectoryEntry(context.Background(), req)
+	if err != nil {
+		t.Fatalf("raw lookup of a missing name: got error %v, want nil", err)
+	}
+	if raw.GetEntry() != nil {
+		t.Fatalf("raw lookup of a missing name: got Entry %+v, want nil", raw.GetEntry())
+	}
+
+	if _, err := filer_pb.LookupEntry(context.Background(), client, req); !errors.Is(err, filer_pb.ErrNotFound) {
+		t.Fatalf("LookupEntry of a missing name: got %v, want ErrNotFound", err)
 	}
 }

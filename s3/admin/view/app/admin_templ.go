@@ -333,7 +333,7 @@ func Admin(data dash.AdminData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var19 templ.SafeURL
-		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(dash.PUrl(ctx, "/volumes"))
+		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinURLErrs(dash.PUrl(ctx, "/storage/volumes"))
 		if templ_7745c5c3_Err != nil {
 			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/app/admin.templ`, Line: 338, Col: 90}
 		}
@@ -346,7 +346,7 @@ func Admin(data dash.AdminData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var20 templ.SafeURL
-		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinURLErrs(dash.PUrl(ctx, "/cluster"))
+		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinURLErrs(dash.PUrl(ctx, "/cluster/masters"))
 		if templ_7745c5c3_Err != nil {
 			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/app/admin.templ`, Line: 339, Col: 90}
 		}
@@ -539,7 +539,7 @@ func Admin(data dash.AdminData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var32 templ.SafeURL
-		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinURLErrs(dash.PUrl(ctx, "/filer"))
+		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinURLErrs(dash.PUrl(ctx, "/files"))
 		if templ_7745c5c3_Err != nil {
 			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/app/admin.templ`, Line: 420, Col: 88}
 		}
@@ -552,7 +552,7 @@ func Admin(data dash.AdminData) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var33 templ.SafeURL
-		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinURLErrs(dash.PUrl(ctx, "/cluster"))
+		templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinURLErrs(dash.PUrl(ctx, "/cluster/masters"))
 		if templ_7745c5c3_Err != nil {
 			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/app/admin.templ`, Line: 421, Col: 90}
 		}
