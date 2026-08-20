@@ -55,6 +55,21 @@ func isUnavailableErr(err error) bool {
 	return strings.Contains(err.Error(), "Unavailable")
 }
 
+// errTopologyNotLoaded: the master answered but resolved none of the volumes.
+//
+// It builds its volume list from volume-server heartbeats, so before those land
+// it is up and knows nothing, and returns "volume id N not found" for every
+// volume. Per volume that is identical to a deleted one; across a batch it is
+// not, so we ask whether it resolved ANY. None means retry, not believe.
+//
+// No "Unavailable" prefix: isUnavailableErr matches that word, which would give
+// this the 30s budget instead of masterWarmup.
+var errTopologyNotLoaded = errors.New("master resolved no volumes, topology not loaded yet")
+
+// masterWarmup bounds that retry. Heartbeats take seconds, and a volume that is
+// really gone should not wait the full 30s transport budget to say so.
+const masterWarmup = 10 * time.Second
+
 // LookupVolumeIds queries the master for volume locations (fallback when cache misses).
 // Returns partial results with aggregated errors for volumes that failed.
 // Retries on transient "Unavailable" (e.g. master warming up after restart) with backoff.
@@ -64,8 +79,18 @@ func (p *masterVolumeProvider) LookupVolumeIds(ctx context.Context, volumeIds []
 
 	glog.V(2).Infof("Looking up %d volumes from master: %v", len(volumeIds), volumeIds)
 
+	// Two retryable conditions, two budgets: "Unavailable" waits for a master to
+	// exist (30s), a resolved-none answer waits for a live one to load (10s).
+	warmUntil := time.Now().Add(masterWarmup)
+	retryable := func(err error) bool {
+		if isUnavailableErr(err) {
+			return true
+		}
+		return errors.Is(err, errTopologyNotLoaded) && time.Now().Before(warmUntil)
+	}
+
 	retryErr := util.RetryWithBackoff(ctx, "lookup", 30*time.Second,
-		isUnavailableErr,
+		retryable,
 		func() error {
 			result = make(map[string][]Location)
 			lookupErrors = nil
@@ -129,10 +154,18 @@ func (p *masterVolumeProvider) LookupVolumeIds(ctx context.Context, volumeIds []
 						result[vidOnly] = locations
 					}
 				}
+
+				// Resolved nothing, errored on everything: topology not loaded.
+				// This used to return nil, so the retry stopped on attempt one.
+				if len(result) == 0 && len(lookupErrors) > 0 {
+					return errTopologyNotLoaded
+				}
 				return nil
 			})
 		})
-	if retryErr != nil {
+	// Giving up on errTopologyNotLoaded is not a transport failure — the master
+	// answered. Fall through so the caller gets its real per-volume errors below.
+	if retryErr != nil && !errors.Is(retryErr, errTopologyNotLoaded) {
 		return nil, retryErr
 	}
 
