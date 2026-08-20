@@ -155,12 +155,12 @@ jobs:
           done
           echo "::error::image ${v} not pullable after push — refusing to tag git"; exit 1
       - name: Tag the release (image ⇔ tag invariant)
-        # This repo is a MIRROR on the forge, so `git push origin <tag>` is
+        # This repo is a MIRROR on Hanzo Git, so `git push origin <tag>` is
         # rejected — "remote: mirror repository is read-only", 403 — and run #1
         # died here having already built, pushed and verified v1.0.6. GitHub is
-        # the writable side of a mirror, so the tag goes there and the forge
+        # the writable side of a mirror, so the tag goes there and Hanzo Git
         # picks it up on its next sync. (hanzoai/app pushes to origin because it
-        # is a native forge repo, not a mirror; same invariant, opposite
+        # is a native Hanzo Git repo, not a mirror; same invariant, opposite
         # direction of travel.)
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
