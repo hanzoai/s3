@@ -1,3 +1,10 @@
+> **Retired — this is a stale copy of `hanzoai/s3`.**
+>
+> Its 18 unique commits are carried into `hanzoai/s3` first — merged onto the default branch or pushed there as `carry/*` refs — so nothing here is lost. This copy has no push mirror, so those commits had reached nothing.
+>
+> It also declared `ghcr.io/hanzoai/s3`, the tag `hanzoai/s3` owns, so a push here
+> could have published over it. That declaration is removed.
+
 <p align="center"><img src=".github/hero.svg" alt="s3" width="880"></p>
 
 # Hanzo S3
