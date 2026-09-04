@@ -277,3 +277,29 @@ func TestLoadIAMManagerFromConfig_ExplicitFileEnforcesUserScopedPolicy(t *testin
 	assert.NoError(t, err)
 	assert.True(t, allowed, "user-scoped bucket creation should be allowed")
 }
+
+// TestOnIAMReceivesTheManager: an embedder gets the handle a command never
+// returns, and only when it asked for one.
+func TestOnIAMReceivesTheManager(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "iam_config.json")
+	config := `{"sts": {"providers": []}, "policy": {"storeType": "memory", "defaultEffect": "Deny"}}`
+	assert.NoError(t, os.WriteFile(configPath, []byte(config), 0o644))
+
+	filerProvider := func() string { return "localhost:8888" }
+	signingKeyProvider := func() string { return "default-secure-signing-key" }
+
+	var got *integration.IAMManager
+	OnIAM = func(m *integration.IAMManager) { got = m }
+	t.Cleanup(func() { OnIAM = nil })
+
+	manager, err := loadIAMManagerFromConfig(configPath, filerProvider, signingKeyProvider)
+	assert.NoError(t, err)
+	assert.Same(t, manager, got, "the embedder is handed the manager the server itself uses, not a second one")
+
+	// Unset, the load is unchanged: nothing to call, nothing to panic on.
+	OnIAM = nil
+	again, err := loadIAMManagerFromConfig(configPath, filerProvider, signingKeyProvider)
+	assert.NoError(t, err)
+	assert.NotNil(t, again)
+}
