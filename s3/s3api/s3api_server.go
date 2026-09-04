@@ -1210,8 +1210,23 @@ func loadIAMManagerFromConfig(configPath string, filerAddressProvider func() str
 
 	glog.V(1).Infof("Loaded %d providers, %d policies and %d roles from config", len(configRoot.Providers), len(configRoot.Policies), len(configRoot.Roles))
 
+	if OnIAM != nil {
+		OnIAM(iamManager)
+	}
 	return iamManager, nil
 }
+
+// OnIAM receives the IAM manager once it is built, for a process that EMBEDS
+// this server rather than running it as a command.
+//
+// A command's Run blocks for the life of the process and returns nothing, so an
+// embedder has no other handle on the manager. It needs one because roles here
+// are PER TENANT and tenants appear while the server runs: a config file can
+// only describe the tenants that existed when it was written, and rewriting it
+// per tenant would mean restarting the store to admit one.
+//
+// Unset — every command-line path — nothing happens.
+var OnIAM func(*integration.IAMManager)
 
 // AuthenticateRequest authenticates the request and returns the identity name and object
 func (s3a *S3ApiServer) AuthenticateRequest(r *http.Request) (string, interface{}, s3err.ErrorCode) {
