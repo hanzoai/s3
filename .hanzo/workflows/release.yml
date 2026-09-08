@@ -27,7 +27,7 @@ jobs:
   # FUSE, mq and kafka suites that need services no runner has, and a gate nobody
   # can keep green is a gate that gets ignored.
   test:
-    runs-on: [hanzo-build-linux-amd64]
+    runs-on: [linux-amd64]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -47,7 +47,7 @@ jobs:
   # it — the property only exists under concurrency, against a running server.
   cas:
     needs: test
-    runs-on: [hanzo-build-linux-amd64]
+    runs-on: [linux-amd64]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -84,7 +84,7 @@ jobs:
   # here can load the image locally.
   build:
     needs: cas
-    runs-on: [hanzo-build-linux-amd64]
+    runs-on: [linux-amd64]
     steps:
       - name: Checkout (full history + tags — version floor read from tags)
         uses: actions/checkout@v4
