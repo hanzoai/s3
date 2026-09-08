@@ -192,3 +192,7 @@ DialOption in tests is `pb.DialOption{}` (the zero value), never `grpc.WithTrans
 - Display brand `Hanzo` → `Hanzo S3` in user-facing strings only (HTTP `Server` header, version banner, admin title).
 - **Wire-protocol identifiers/headers stay `Hanzo*`** (`HanzoSessionTokenHeader`, SSE-S3/KMS key names, RDMA client, etc.) — renaming them breaks S3 compatibility. This is intentional.
 - Version: upstream Hanzo 4.34; image injects `COMMIT` via ldflags (empty COMMIT panics `s3 version`).
+
+## Image
+
+`FROM scratch`: the static binary, `/data`, the CA bundle and zoneinfo, running as 65532. The `mount` subcommand shells out to fusermount and is run from a host, never from this image.
