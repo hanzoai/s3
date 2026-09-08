@@ -6,7 +6,7 @@
 // inherited them.
 module github.com/hanzoai/s3/test/s3/spark
 
-go 1.26.4
+go 1.26.5
 
 // testutil lives in the parent repo; resolve it from the tree, not the registry.
 replace github.com/hanzoai/s3 => ../../..
