@@ -10,6 +10,83 @@ Forked from https://github.com/seaweedfs/seaweedfs at the 4.34 release series.
 Upstream SeaweedFS ships no NOTICE file, so there are no Apache-2.0 §4(d)
 attributions to propagate beyond the copyright above.
 
+INHERITED THIRD-PARTY SOURCE
+
+SeaweedFS carried third-party source of its own, and it is still here. Each
+file retains its original copyright header; the components are listed so a
+reader does not have to find them by grep.
+
+  MinIO — Apache-2.0. SeaweedFS built its S3 API on code copied from MinIO
+  while MinIO was Apache-2.0 licensed, and those files came across with the
+  rest of the engine:
+
+      Minio Cloud Storage, (C) 2016 Minio, Inc.
+      MinIO Cloud Storage, (C) 2015, 2016, 2017 MinIO, Inc.
+      MinIO Cloud Storage, (C) 2016, 2017, 2018 MinIO, Inc.
+      MinIO Cloud Storage, (C) 2019 MinIO, Inc.
+      MinIO Go Library for Amazon S3 Compatible Cloud Storage,
+          Copyright 2015-2017 MinIO, Inc.
+
+      s3/s3api/auth_signature_v2.go       s3/s3api/policy/postpolicyform.go
+      s3/s3api/auth_signature_v4.go       s3/s3api/policy/post-policy_test.go
+      s3/s3api/chunked_reader_v4.go       s3/s3api/s3_constants/header.go
+      s3/s3api/s3err/s3-error.go
+
+  This material is Apache-2.0 and is unrelated to MinIO's later AGPL-3.0
+  relicensing (see GIT HISTORY below), which post-dates every one of these
+  files.
+
+  Google — Apache-2.0. s3/glog is a vendored copy of golang/glog:
+
+      Copyright 2013 Google Inc. All Rights Reserved.
+
+  Its licence text is at s3/glog/LICENSE.
+
+  The Go Authors — BSD-3-Clause. Two components are forks of Go standard
+  library code:
+
+      s3/util/fla9                                   (Go's flag package)
+      s3/storage/backend/memory_map/os_overloads     (Go's windows syscall
+                                                      and os internals)
+
+      Copyright 2009 The Go Authors. All rights reserved.
+
+  Their headers point at "the LICENSE file", and upstream shipped none beside
+  them — the nearest LICENSE was Apache-2.0, which is not the licence those
+  files are under. A copy of the Go BSD-3-Clause text has been ADDED at
+  s3/util/fla9/LICENSE and
+  s3/storage/backend/memory_map/os_overloads/LICENSE so the conditions
+  BSD-3-Clause requires to be retained actually travel with the source. No
+  header was changed.
+
+  third_party/go-bip39 is not upstream code. It is a first-party shim that
+  re-exports github.com/luxfi/go-bip39 under the deleted
+  github.com/tyler-smith/go-bip39 module path; see its go.mod for why.
+
+GIT HISTORY — MinIO, AGPL-3.0
+
+This repository's git history is not SeaweedFS's. Before 2026-06-19 this repo
+held a fork of MinIO (github.com/minio/minio), and commit 466da88827 replaced
+that code wholesale with the SeaweedFS engine while keeping the history. The
+history root is MinIO's own first commit (397b887a87, 2014-10-30).
+
+MinIO relicensed from Apache-2.0 to AGPL-3.0 in commit b2f907a47b
+(2021-04-18, "update license change for MinIO"). Every commit from there
+through 466da88827^ therefore contains AGPL-3.0 MinIO source, reachable by
+checking out those revisions, in a repository whose current LICENSE is
+Apache-2.0.
+
+No AGPL-licensed code is present at HEAD, in any build, or in any published
+artifact: the s3 binary, the module github.com/hanzoai/s3, and every released
+image are built from the SeaweedFS-derived tree only. `grep` for the upstream
+MinIO import path in the Go sources returns nothing. The exposure is confined
+to historical revisions.
+
+This is recorded rather than resolved. Truncating or rewriting the history
+before the SeaweedFS import would remove it, at the cost of invalidating every
+commit hash anyone has ever referenced; that is a decision about the
+repository, not a metadata fix, and it is left open deliberately.
+
 DEVIATIONS
 
   - Go module path renamed from github.com/seaweedfs/seaweedfs to
