@@ -1,5 +1,5 @@
 # Test environment with Go and FoundationDB support
-FROM golang:1.26.5-bookworm
+FROM golang:1.26.8-bookworm
 ENV GOTOOLCHAIN=auto
 
 # Install system dependencies

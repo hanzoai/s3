@@ -1,6 +1,6 @@
 module github.com/hanzoai/s3/test/kafka
 
-go 1.26.5
+go 1.26.8
 
 require (
 	github.com/IBM/sarama v1.46.0

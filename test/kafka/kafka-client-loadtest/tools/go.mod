@@ -1,6 +1,6 @@
 module simple-test
 
-go 1.26.5
+go 1.26.8
 
 require github.com/segmentio/kafka-go v0.4.49
 
