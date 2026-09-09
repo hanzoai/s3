@@ -12,7 +12,7 @@ on:
     branches: [main]
     paths-ignore:
       - '.github/**'
-      - '.hanzo/workflows/**'
+      - '.github/workflows/**'
       - '**.md'
   workflow_dispatch:
 permissions:
