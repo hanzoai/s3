@@ -12,4 +12,10 @@ on:
 jobs:
   cicd:
     uses: hanzoai/ci/.github/workflows/build.yml@v1
+    # The door, not buildx on the runner. It schedules one BuildKit Job per
+    # platform and the cluster holds a node of each, so the arm64 half of
+    # `platforms:` in hanzo.yml is a native compile on spark instead of qemu on
+    # an amd64 runner. The gate still runs here; what this skips is buildx.
+    with:
+      mode: delegate
     secrets: inherit
