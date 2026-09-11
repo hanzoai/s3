@@ -1,19 +1,37 @@
 # Canonical CI/CD config for hanzoai/s3 — the one file both the hanzoai/ci
-# reusable (.hanzo/workflows/cicd.yml) and platform.hanzo.ai read.
+# reusable (.github/workflows/cicd.yml) and platform.hanzo.ai read.
 #
-# GATE ONLY. ghcr.io/hanzoai/s3 already has exactly one builder,
-# .hanzo/workflows/release.yml, and it is tag-shaped on purpose: a git tag
-# v<X.Y.Z> maps to the image universe pins in infra/k8s/s3/s3.yaml. Declaring
-# `images:` here would publish a second image per push behind that contract.
+# BOTH ARCHITECTURES, and that is the whole reason this section exists. Every
+# published tag through v1.0.28 is linux/amd64 alone, so the S3 gateway that the
+# whole object plane and every static site read from runs on spark (arm64) under
+# /usr/libexec/qemu-binfmt/x86_64-binfmt-P. Measured 2026-09-10: 1093m, the
+# largest CPU draw in the cluster, to serve a load its own arch answers in tens
+# of milliCPU. Emulating a storage gateway is paying a compiler to do I/O.
 #
-# The gate is that release's own test job, and its SCOPE is the considered part,
-# not laziness: a full `go test ./...` on this tree pulls in the FUSE, message-
-# queue and Kafka suites, which need services no runner has — and a gate nobody
-# can keep green is a gate everyone learns to ignore. What runs is the S3
-# surface, the filer's transaction/condition path, and the command wiring.
-# ./s3/command carries TestS3OptionsRegisteredEverywhere, which is the only
-# thing standing between a forgotten flag registration and `s3 mini`
-# segfaulting on startup the way it did before v1.0.5.
+# The lane is `mode: delegate` in the caller: it posts the build to the door on
+# api.hanzo.ai, which schedules one BuildKit Job per platform and the cluster
+# holds a node of each — so the arm64 leg is a native compile on spark, not
+# emulation on an amd64 runner. The Dockerfile is CGO-free Go onto scratch, so
+# nothing in it is arch-specific.
+#
+# This replaces .hanzo/workflows/release.yml, dropped at b4ca934fad for never
+# having run. Until now nothing built this image at all; the gate below ran and
+# published nothing.
+images:
+  - name: s3
+    context: .
+    dockerfile: Dockerfile
+    repo: ghcr.io/hanzoai/s3
+    platforms: [linux/amd64, linux/arm64]
+
+# The gate, and its SCOPE is the considered part, not laziness: a full
+# `go test ./...` on this tree pulls in the FUSE, message-queue and Kafka
+# suites, which need services no runner has — and a gate nobody can keep green
+# is a gate everyone learns to ignore. What runs is the S3 surface, the filer's
+# transaction/condition path, and the command wiring. ./s3/command carries
+# TestS3OptionsRegisteredEverywhere, which is the only thing standing between a
+# forgotten flag registration and `s3 mini` segfaulting on startup the way it
+# did before v1.0.5.
 test:
   - name: build
     run: |
