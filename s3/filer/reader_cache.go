@@ -68,8 +68,14 @@ func (rc *ReaderCache) MaybeCache(chunkViews *Interval[*ChunkView], count int) {
 	cached := 0
 	for x := chunkViews; x != nil && cached < count; x = x.Next {
 		chunkView := x.Value
-		if _, found := rc.downloaders[chunkView.FileId]; found {
-			continue
+		if existing, found := rc.downloaders[chunkView.FileId]; found {
+			if !existing.hasCompletedError() {
+				continue
+			}
+			// A failed entry would otherwise sit here, answer nothing, and stop
+			// the prefetch that is its only way back. It holds no buffer, so it
+			// is dropped rather than destroyed (see ReadChunkAt).
+			delete(rc.downloaders, chunkView.FileId)
 		}
 		if rc.chunkCache.IsInCache(chunkView.FileId, true) {
 			glog.V(4).Infof("%s is in cache", chunkView.FileId)
@@ -97,15 +103,31 @@ func (rc *ReaderCache) MaybeCache(chunkViews *Interval[*ChunkView], count int) {
 func (rc *ReaderCache) ReadChunkAt(ctx context.Context, buffer []byte, fileId string, cipherKey []byte, isGzipped bool, offset int64, chunkSize int, shouldCache bool) (int, error) {
 	rc.Lock()
 
+	// A download that FAILED is not an answer to remember. The error it holds was
+	// true when it was fetched -- a volume still registering, a server that
+	// blinked -- and the file id it names is usually fine a moment later. Kept,
+	// it answered every later read of that chunk with the original failure for
+	// the life of the process, while the lookup behind it had long since healed.
+	// So a failure is dropped and fetched again; a success is data, and a
+	// download still in flight is shared by the readers waiting on it.
+	//
+	// Dropped, not destroyed: a failed download holds no buffer (setError runs
+	// before one is allocated or after it is freed), and destroy would Wait on
+	// readers that may still be calling Add.
 	if cacher, found := rc.downloaders[fileId]; found {
-		rc.Unlock()
-		n, err := cacher.readChunkAt(ctx, buffer, offset)
-		if n > 0 || err != nil {
-			return n, err
+		if cacher.hasCompletedError() {
+			delete(rc.downloaders, fileId)
+		} else {
+			cacher.wg.Add(1) // under rc's lock, so no eviction can destroy it first
+			rc.Unlock()
+			n, err := cacher.readChunkAt(ctx, buffer, offset)
+			if n > 0 || err != nil {
+				return n, err
+			}
+			// n=0 and err=nil: the cacher had no data for this offset, so fall
+			// through to the chunk cache.
+			rc.Lock()
 		}
-		// If n=0 and err=nil, the cacher couldn't provide data for this offset.
-		// Fall through to try chunkCache.
-		rc.Lock()
 	}
 	if shouldCache || rc.lookupFileIdFn == nil {
 		n, err := rc.chunkCache.ReadChunkAt(buffer, fileId, uint64(offset))
@@ -137,6 +159,7 @@ func (rc *ReaderCache) ReadChunkAt(ctx context.Context, buffer []byte, fileId st
 	go cacher.startCaching()
 	<-cacher.cacheStartedCh
 	rc.downloaders[fileId] = cacher
+	cacher.wg.Add(1) // under rc's lock, as above
 	rc.Unlock()
 
 	return cacher.readChunkAt(ctx, buffer, offset)
@@ -198,9 +221,11 @@ func (s *SingleChunkCacher) startCaching() {
 	// Lookup file ID without holding the lock
 	urlStrings, err := s.parent.lookupFileIdFn(context.Background(), s.chunkFileId)
 	if err != nil {
-		s.Lock()
-		s.err = fmt.Errorf("operation LookupFileId %s failed, err: %v", s.chunkFileId, err)
-		s.Unlock()
+		s.setError(fmt.Errorf("operation LookupFileId %s failed: %w", s.chunkFileId, err))
+		return
+	}
+	if len(urlStrings) == 0 {
+		s.setError(fmt.Errorf("operation LookupFileId %s failed: urls not found", s.chunkFileId))
 		return
 	}
 
@@ -210,18 +235,40 @@ func (s *SingleChunkCacher) startCaching() {
 	_, fetchErr := util_http.RetriedFetchChunkData(context.Background(), data, urlStrings, s.cipherKey, s.isGzipped, true, 0, s.chunkFileId)
 
 	// Now acquire lock to update state
-	s.Lock()
 	if fetchErr != nil {
 		mem.Free(data)
-		s.err = fetchErr
-	} else {
-		s.data = data
-		if s.shouldCache {
-			s.parent.chunkCache.SetChunk(s.chunkFileId, s.data)
-		}
-		atomic.StoreInt64(&s.completedTimeNew, time.Now().UnixNano())
+		s.setError(fetchErr)
+		return
 	}
+	s.Lock()
+	s.data = data
+	if s.shouldCache {
+		s.parent.chunkCache.SetChunk(s.chunkFileId, s.data)
+	}
+	atomic.StoreInt64(&s.completedTimeNew, time.Now().UnixNano())
 	s.Unlock()
+}
+
+// setError records a failed download AND marks it complete. Without the stamp a
+// failed entry was indistinguishable from one still in flight: the size sweep
+// in ReadChunkAt evicts only completed entries, so a failure could never be
+// reclaimed, and it held a slot against the limit for good.
+func (s *SingleChunkCacher) setError(err error) {
+	s.Lock()
+	s.err = err
+	atomic.StoreInt64(&s.completedTimeNew, time.Now().UnixNano())
+	s.Unlock()
+}
+
+// hasCompletedError reports whether this download finished and failed. An
+// in-flight download is not a failure yet, so it answers false.
+func (s *SingleChunkCacher) hasCompletedError() bool {
+	if atomic.LoadInt64(&s.completedTimeNew) == 0 {
+		return false
+	}
+	s.Lock()
+	defer s.Unlock()
+	return s.err != nil
 }
 
 func (s *SingleChunkCacher) destroy() {
@@ -240,8 +287,12 @@ func (s *SingleChunkCacher) destroy() {
 // It waits for the download to complete if it's still in progress.
 // The ctx parameter allows the reader to cancel its wait (but the download continues
 // for other readers - see comment in startCaching about shared resource semantics).
+//
+// The caller registers the read with s.wg.Add(1) while still holding the parent
+// ReaderCache's lock. Registering here instead left a window between finding the
+// cacher and reading it in which UnCache or the size sweep could destroy the
+// buffer, and it made that Add race destroy's Wait.
 func (s *SingleChunkCacher) readChunkAt(ctx context.Context, buf []byte, offset int64) (int, error) {
-	s.wg.Add(1)
 	defer s.wg.Done()
 
 	// Wait for download to complete, but allow reader cancellation.

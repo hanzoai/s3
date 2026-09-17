@@ -436,30 +436,43 @@ func TestSingleChunkCacherMultipleReadersWaitForDownload(t *testing.T) {
 // TestReaderCacheDownloaderDedup tests that concurrent ReadChunkAt calls for
 // the same fileId result in only one network fetch (lookup call), because
 // the downloaders map deduplicates in-flight downloads.
+//
+// The download SUCCEEDS. This test once returned a lookup error "so we don't
+// need to mock the HTTP fetch", and it passed only because a failed download was
+// then cached and replayed to every later reader -- the defect
+// reader_cache_retry_test.go pins. A failure is now retried, so a reader that
+// arrives after it completes fetches again, and the count depended on goroutine
+// scheduling (green without -race, red with it). A success is data: readers
+// that join the flight share it and readers that arrive late reuse it, so one
+// lookup is the answer whatever the interleaving.
 func TestReaderCacheDownloaderDedup(t *testing.T) {
-	cache := newMockChunkCacheForReaderCache()
+	initHTTP()
+	want := payload(100)
+	srv, hits := chunkServer(t, want, 0)
+
 	var lookupCount int32
 	lookupGate := make(chan struct{})
-
 	lookupFn := func(ctx context.Context, fileId string) ([]string, error) {
 		atomic.AddInt32(&lookupCount, 1)
 		<-lookupGate
-		// Return an error so we don't need to mock the HTTP fetch.
-		return nil, fmt.Errorf("simulated lookup for %s", fileId)
+		return []string{srv.URL + "/" + fileId}, nil
 	}
 
-	rc := NewReaderCache(10, cache, lookupFn)
+	rc := NewReaderCache(10, newMockChunkCacheForReaderCache(), lookupFn)
 	defer rc.destroy()
 
 	const numReaders = 10
 	var wg sync.WaitGroup
 	wg.Add(numReaders)
-
+	var bad atomic.Int32
 	for i := 0; i < numReaders; i++ {
 		go func() {
 			defer wg.Done()
-			buffer := make([]byte, 100)
-			rc.ReadChunkAt(context.Background(), buffer, "dedup-file", nil, false, 0, 100, false)
+			buffer := make([]byte, len(want))
+			n, err := rc.ReadChunkAt(context.Background(), buffer, "dedup-file", nil, false, 0, len(want), false)
+			if err != nil || n != len(want) {
+				bad.Add(1)
+			}
 		}()
 	}
 
@@ -467,9 +480,14 @@ func TestReaderCacheDownloaderDedup(t *testing.T) {
 	close(lookupGate)
 	wg.Wait()
 
-	count := atomic.LoadInt32(&lookupCount)
-	if count != 1 {
+	if count := atomic.LoadInt32(&lookupCount); count != 1 {
 		t.Errorf("expected exactly 1 lookup call, got %d", count)
+	}
+	if got := hits.Load(); got != 1 {
+		t.Errorf("expected exactly 1 fetch, got %d", got)
+	}
+	if n := bad.Load(); n != 0 {
+		t.Errorf("%d readers did not get the chunk", n)
 	}
 }
 
