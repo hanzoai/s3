@@ -1,8 +1,8 @@
 package unit
 
 import (
-	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -56,7 +56,7 @@ func testGatewayAcceptsConnections(t *testing.T, addr string) {
 func testGatewayRefusesAfterClose(t *testing.T, gateway *testutil.GatewayTestServer) {
 	// Get the address from the gateway's listener
 	host, port := gateway.GetListenerAddr()
-	addr := fmt.Sprintf("%s:%d", host, port)
+	addr := net.JoinHostPort(host, strconv.Itoa(int(port)))
 
 	// Close the gateway
 	gateway.CleanupAndClose()

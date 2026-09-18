@@ -391,7 +391,7 @@ func (s *SaramaClient) ConsumeMessages(topicName string, partition int32, expect
 		case msg := <-partitionConsumer.Messages():
 			messages = append(messages, string(msg.Value))
 		case err := <-partitionConsumer.Errors():
-			return messages, fmt.Errorf("consumer error: %w", err)
+			return messages, fmt.Errorf("consumer error on %s/%d: %w", err.Topic, err.Partition, err.Err)
 		case <-timeout:
 			return messages, fmt.Errorf("timeout waiting for messages, got %d/%d", len(messages), expectedCount)
 		}

@@ -1,6 +1,6 @@
 module github.com/hanzoai/s3/telemetry/server
 
-go 1.26.8
+go 1.27.1
 
 require (
 	github.com/hanzoai/s3 v0.0.0-00010101000000-000000000000
@@ -16,7 +16,7 @@ require (
 	github.com/prometheus/common v0.67.5 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
-	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 )
 
 replace github.com/hanzoai/s3 => ../..
