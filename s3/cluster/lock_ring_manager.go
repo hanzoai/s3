@@ -7,6 +7,7 @@ import (
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/master_pb"
+	"google.golang.org/protobuf/proto"
 )
 
 const LockRingStabilizationInterval = 1 * time.Second
@@ -93,9 +94,9 @@ func (lrm *LockRingManager) GetLastUpdate(filerGroup FilerGroupName) *master_pb.
 	if !ok || update == nil {
 		return nil
 	}
-	cp := *update
-	cp.Servers = append([]string(nil), update.Servers...)
-	return &cp
+	// proto.Clone already deep-copies Servers, so the caller cannot reach the
+	// slice this manager holds.
+	return proto.Clone(update).(*master_pb.LockRingUpdate)
 }
 
 // scheduleBroadcast resets the stabilization timer. If another change arrives

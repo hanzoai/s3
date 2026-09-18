@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
+	"google.golang.org/protobuf/proto"
 )
 
 const defaultWorkerStaleTimeout = 2 * time.Minute
@@ -477,36 +478,19 @@ func cloneJobTypeCapability(in *plugin_pb.JobTypeCapability) *plugin_pb.JobTypeC
 	if in == nil {
 		return nil
 	}
-	out := *in
-	return &out
+	// proto.Clone, not a dereference: a generated message carries
+	// protoimpl.MessageState, and copying the struct copies that state — its
+	// mutex and its lazy-init bookkeeping — which is why vet refuses it.
+	return proto.Clone(in).(*plugin_pb.JobTypeCapability)
 }
 
 func cloneWorkerHeartbeat(in *plugin_pb.WorkerHeartbeat) *plugin_pb.WorkerHeartbeat {
 	if in == nil {
 		return nil
 	}
-	out := *in
-	if in.RunningWork != nil {
-		out.RunningWork = make([]*plugin_pb.RunningWork, 0, len(in.RunningWork))
-		for _, rw := range in.RunningWork {
-			if rw == nil {
-				continue
-			}
-			clone := *rw
-			out.RunningWork = append(out.RunningWork, &clone)
-		}
-	}
-	if in.QueuedJobsByType != nil {
-		out.QueuedJobsByType = make(map[string]int32, len(in.QueuedJobsByType))
-		for k, v := range in.QueuedJobsByType {
-			out.QueuedJobsByType[k] = v
-		}
-	}
-	if in.Metadata != nil {
-		out.Metadata = make(map[string]string, len(in.Metadata))
-		for k, v := range in.Metadata {
-			out.Metadata[k] = v
-		}
-	}
-	return &out
+	// proto.Clone does every part of this: the message, the repeated
+	// RunningWork and both maps. The hand-rolled version copied the struct and
+	// each RunningWork by dereference, which carries protoimpl.MessageState —
+	// a mutex and lazy-init bookkeeping — into the copy.
+	return proto.Clone(in).(*plugin_pb.WorkerHeartbeat)
 }

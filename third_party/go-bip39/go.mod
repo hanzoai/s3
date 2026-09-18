@@ -10,7 +10,7 @@
 // distinct module under the original path, so `go mod tidy` resolves cleanly.
 module github.com/tyler-smith/go-bip39
 
-go 1.25
+go 1.27.1
 
 require github.com/luxfi/go-bip39 v1.1.2
 

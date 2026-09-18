@@ -11,6 +11,7 @@ import (
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/plugin_pb"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -606,7 +607,10 @@ func deriveSchedulerAdminRuntime(
 	descriptor *plugin_pb.JobTypeDescriptor,
 ) *plugin_pb.AdminRuntimeConfig {
 	if cfg != nil && cfg.AdminRuntime != nil {
-		adminConfig := *cfg.AdminRuntime
+		// proto.Clone, not a dereference: copying a generated message copies
+		// protoimpl.MessageState with it — a mutex and lazy-init bookkeeping —
+		// which vet refuses and the proto runtime does not promise to survive.
+		adminConfig := proto.Clone(cfg.AdminRuntime).(*plugin_pb.AdminRuntimeConfig)
 		// Overlay descriptor defaults for any zero numeric fields. Persisted
 		// configs from older versions have no execution_timeout_seconds, and
 		// without this overlay the scheduler would fall back to the 90s
@@ -638,7 +642,7 @@ func deriveSchedulerAdminRuntime(
 				adminConfig.ExecutionTimeoutSeconds = defaults.ExecutionTimeoutSeconds
 			}
 		}
-		return &adminConfig
+		return adminConfig
 	}
 
 	if descriptor == nil || descriptor.AdminRuntimeDefaults == nil {

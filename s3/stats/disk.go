@@ -12,6 +12,7 @@ import (
 
 	"github.com/hanzoai/s3/s3/glog"
 	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
+	"google.golang.org/protobuf/proto"
 )
 
 type DiskIOProbeConfig struct {
@@ -79,8 +80,11 @@ type diskState struct {
 	statFailureCount int
 	statSuccessCount int
 	lastStatErr      error
-	lastGoodStatus   volume_server_pb.DiskStatus
-	hasLastGood      bool
+	// nil until a good status has been seen, which is the only thing the old
+	// hasLastGood flag said. A pointer also keeps protoimpl.MessageState out of
+	// this struct: storing a generated message by value copies its mutex and
+	// lazy-init bookkeeping on every assignment, which is what vet refused.
+	lastGoodStatus *volume_server_pb.DiskStatus
 
 	samples []ioSample
 
@@ -485,18 +489,19 @@ func (s *diskState) updateErrorLocked(disk *volume_server_pb.DiskStatus, config 
 }
 
 func (s *diskState) rememberGoodStatusLocked(disk *volume_server_pb.DiskStatus) {
-	s.lastGoodStatus = *disk
-	s.hasLastGood = true
+	s.lastGoodStatus = proto.Clone(disk).(*volume_server_pb.DiskStatus)
 }
 
 func (s *diskState) applyLastGoodStatusLocked(disk *volume_server_pb.DiskStatus) {
-	if !s.hasLastGood || disk.Error != "" {
+	if s.lastGoodStatus == nil || disk.Error != "" {
 		return
 	}
 
-	dir := disk.Dir
-	errorMessage := disk.Error
-	*disk = s.lastGoodStatus
+	// Reset then Merge is proto's own way to overwrite a message in place; an
+	// assignment would copy the message state along with the fields.
+	dir, errorMessage := disk.Dir, disk.Error
+	proto.Reset(disk)
+	proto.Merge(disk, s.lastGoodStatus)
 	disk.Dir = dir
 	disk.Error = errorMessage
 }

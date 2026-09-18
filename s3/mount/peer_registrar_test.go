@@ -7,6 +7,7 @@ import (
 
 	"github.com/hanzoai/s3/s3/pb"
 	"github.com/hanzoai/s3/s3/pb/filer_pb"
+	"google.golang.org/protobuf/proto"
 )
 
 // fakeFilerClient captures MountRegister/MountList calls and lets the test
@@ -15,23 +16,28 @@ import (
 type fakeFilerClient struct {
 	filer_pb.HanzoFilerClient // embed for methods we don't need
 
-	mu            sync.Mutex
-	registerCalls []filer_pb.MountRegisterRequest
-	listResponse  filer_pb.MountListResponse
+	mu sync.Mutex
+	// Pointers, and cloned on the way in and out: a generated message carries
+	// protoimpl.MessageState, so storing or returning one by value copies its
+	// mutex and lazy-init state with it.
+	registerCalls []*filer_pb.MountRegisterRequest
+	listResponse  *filer_pb.MountListResponse
 }
 
 func (f *fakeFilerClient) MountRegister(ctx context.Context, req *filer_pb.MountRegisterRequest) (*filer_pb.MountRegisterResponse, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.registerCalls = append(f.registerCalls, *req)
+	f.registerCalls = append(f.registerCalls, proto.Clone(req).(*filer_pb.MountRegisterRequest))
 	return &filer_pb.MountRegisterResponse{}, nil
 }
 
 func (f *fakeFilerClient) MountList(ctx context.Context, req *filer_pb.MountListRequest) (*filer_pb.MountListResponse, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	resp := f.listResponse // value copy
-	return &resp, nil
+	if f.listResponse == nil {
+		return &filer_pb.MountListResponse{}, nil
+	}
+	return proto.Clone(f.listResponse).(*filer_pb.MountListResponse), nil
 }
 
 // fakeFilerFleet maps each addr to its own fakeFilerClient so a test can
@@ -59,7 +65,7 @@ func singleFilerFleet(c *fakeFilerClient) ([]pb.ServerAddress, filerDialFn) {
 
 func TestPeerRegistrar_StartPopulatesSeedsFromFiler(t *testing.T) {
 	fc := &fakeFilerClient{
-		listResponse: filer_pb.MountListResponse{
+		listResponse: &filer_pb.MountListResponse{
 			Mounts: []*filer_pb.MountInfo{
 				{PeerAddr: "mount-a:18080", Rack: "r1"},
 				{PeerAddr: "mount-b:18080", Rack: "r2"},
@@ -151,12 +157,12 @@ func TestPeerRegistrar_RegisterBroadcastsToAllFilers(t *testing.T) {
 // lists both filers must see both mounts.
 func TestPeerRegistrar_ListMergesAcrossFilers(t *testing.T) {
 	fc1 := &fakeFilerClient{
-		listResponse: filer_pb.MountListResponse{
+		listResponse: &filer_pb.MountListResponse{
 			Mounts: []*filer_pb.MountInfo{{PeerAddr: "mount-a:18080", Rack: "r1", LastSeenNs: 200}},
 		},
 	}
 	fc2 := &fakeFilerClient{
-		listResponse: filer_pb.MountListResponse{
+		listResponse: &filer_pb.MountListResponse{
 			Mounts: []*filer_pb.MountInfo{{PeerAddr: "mount-b:18080", Rack: "r2", LastSeenNs: 200}},
 		},
 	}
@@ -186,12 +192,12 @@ func TestPeerRegistrar_ListMergesAcrossFilers(t *testing.T) {
 // the freshest LastSeenNs for liveness-ordering decisions.
 func TestPeerRegistrar_ListMergeKeepsNewestLastSeen(t *testing.T) {
 	fc1 := &fakeFilerClient{
-		listResponse: filer_pb.MountListResponse{
+		listResponse: &filer_pb.MountListResponse{
 			Mounts: []*filer_pb.MountInfo{{PeerAddr: "mount-a:18080", Rack: "r1", LastSeenNs: 100}},
 		},
 	}
 	fc2 := &fakeFilerClient{
-		listResponse: filer_pb.MountListResponse{
+		listResponse: &filer_pb.MountListResponse{
 			Mounts: []*filer_pb.MountInfo{{PeerAddr: "mount-a:18080", Rack: "r1", LastSeenNs: 500}},
 		},
 	}
