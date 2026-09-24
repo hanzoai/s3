@@ -156,3 +156,8 @@ telemetry/server/telemetry-server
 /test/kafka/kafka-client-loadtest/tools/simple-test
 /test/kafka/simple-consumer/simple-consumer
 /test/kafka/simple-publisher/simple-publisher
+
+# Local symlinks to LLM.md
+CLAUDE.md
+AGENTS.md
+GEMINI.md
