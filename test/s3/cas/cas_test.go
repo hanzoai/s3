@@ -153,7 +153,7 @@ func mustNotExist(in *s3.PutObjectInput) { in.IfNoneMatch = aws.String("*") }
 func unconditional(*s3.PutObjectInput)   {}
 
 // atVersion conditions a write on an ETag. RFC 9110 entity-tags are quoted and the
-// AWS SDK hands them back that way, while minio-go strips the quotes — both name
+// AWS SDK hands them back that way, while other SDKs strip the quotes — both name
 // the same version, and the gateway is expected to treat them identically. Verified
 // against production over 400 conditional PUTs in the unquoted spelling; the
 // gateway agreed, so this sends whatever the store gave us rather than carrying a

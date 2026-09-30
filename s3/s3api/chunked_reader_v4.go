@@ -1,7 +1,5 @@
 package s3api
 
-// the related code is copied and modified from minio source code
-
 /*
  * Minio Cloud Storage, (C) 2016 Minio, Inc.
  *

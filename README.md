@@ -131,10 +131,6 @@ module `github.com/hanzos3/go`. This repository is the server.
 The product is **Hanzo S3**. The source repo `hanzoai/storage` redirects here — a rename,
 not a separate product. "Hanzo Storage" in our copy is stale wording, not a second server.
 
-The **image** `ghcr.io/hanzoai/storage` is a different matter, and the repo rename does not
-carry over to it: live compose files still pull it and start it with `minio server`, so it
-is not this server. Read a `hanzoai/storage` image reference as MinIO until it is retired.
-
 `hanzoai/storage-go` and `hanzoai/s3-go` were earlier names for the Go client and are
 **deleted, not redirected** — a Go module path cannot redirect, so anything still pinning
 them fails to resolve. `github.com/hanzos3/go` is the one that exists.
@@ -145,14 +141,13 @@ them fails to resolve. `github.com/hanzos3/go` is the one that exists.
 metadata store, the ZAP transport, and how S3 fits the rest of the platform.
 [docs.hanzo.ai](https://docs.hanzo.ai/docs) covers the platform around it.
 
-## Lineage
+## Provenance
 
-Hanzo S3 is a fork of [SeaweedFS](https://github.com/seaweedfs/seaweedfs) at its 4.34
-release series, Apache-2.0, copyright Chris Lu — see [`NOTICE`](NOTICE). The upstream
-binary is `weed`; ours is `s3`, and every import path is `github.com/hanzoai/s3`. The
-storage design it inherits comes from Facebook's Haystack paper, with erasure coding after
-f4. Two support libraries are forked alongside it, each keeping its own upstream licence:
-`hanzoai/goexif` (BSD-2-Clause) and `hanzoai/go-fuse` (BSD-3-Clause).
+hanzoai/s3 is Hanzo's native object store, Apache-2.0. The binary is `s3` and every import
+path is `github.com/hanzoai/s3`. The storage design follows Facebook's Haystack paper, with
+erasure coding after f4. Third-party copyright notices the source carries are listed in
+[`NOTICE`](NOTICE). Two support libraries keep their own licences: `hanzoai/goexif`
+(BSD-2-Clause) and `hanzoai/go-fuse` (BSD-3-Clause).
 
 ## License
 

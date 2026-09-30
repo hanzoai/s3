@@ -1,6 +1,5 @@
 /*
- * The following code tries to reverse engineer the Amazon S3 APIs,
- * and is mostly copied from minio implementation.
+ * Amazon S3 request signing, derived from Apache-2.0 code listed in NOTICE.
  */
 
 // Licensed under the Apache License, Version 2.0 (the "License");

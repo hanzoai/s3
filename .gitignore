@@ -161,3 +161,4 @@ telemetry/server/telemetry-server
 CLAUDE.md
 AGENTS.md
 GEMINI.md
+/s3_bin
