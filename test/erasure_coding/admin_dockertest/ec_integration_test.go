@@ -228,7 +228,7 @@ func TestEcEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to marshal volume_balance config: %v", err)
 	}
-	req, err := http.NewRequest("PUT", AdminUrl+"/api/plugin/job-types/volume_balance/config", bytes.NewBuffer(jsonBody))
+	req, err := http.NewRequest("PUT", AdminUrl+"/v1/plugin/job-types/volume_balance/config", bytes.NewBuffer(jsonBody))
 	if err != nil {
 		t.Fatalf("Failed to create volume_balance config request: %v", err)
 	}
@@ -271,7 +271,7 @@ func TestEcEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to marshal erasure_coding config: %v", err)
 	}
-	req, err = http.NewRequest("PUT", AdminUrl+"/api/plugin/job-types/erasure_coding/config", bytes.NewBuffer(jsonBody))
+	req, err = http.NewRequest("PUT", AdminUrl+"/v1/plugin/job-types/erasure_coding/config", bytes.NewBuffer(jsonBody))
 	if err != nil {
 		t.Fatalf("Failed to create erasure_coding config request: %v", err)
 	}
@@ -363,7 +363,7 @@ func TestEcEndToEnd(t *testing.T) {
 		workerCount := 0
 		ecDetectorCount := 0
 		ecExecutorCount := 0
-		if err := fetchJSON(AdminUrl+"/api/plugin/workers", &workers); err == nil {
+		if err := fetchJSON(AdminUrl+"/v1/plugin/workers", &workers); err == nil {
 			workerCount = len(workers)
 			for _, worker := range workers {
 				capsValue, ok := mapFieldAny(worker, "capabilities", "Capabilities")
@@ -389,7 +389,7 @@ func TestEcEndToEnd(t *testing.T) {
 		taskCount := 0
 		ecTaskCount := 0
 		ecTaskStates := map[string]int{}
-		if err := fetchJSON(AdminUrl+"/api/plugin/jobs?limit=1000", &tasks); err == nil {
+		if err := fetchJSON(AdminUrl+"/v1/plugin/jobs?limit=1000", &tasks); err == nil {
 			taskCount = len(tasks)
 			for _, task := range tasks {
 				jobType, _ := task["job_type"].(string)
@@ -406,13 +406,13 @@ func TestEcEndToEnd(t *testing.T) {
 
 		if debugTick%3 == 0 {
 			var pluginStatus map[string]interface{}
-			if err := fetchJSON(AdminUrl+"/api/plugin/status", &pluginStatus); err == nil {
+			if err := fetchJSON(AdminUrl+"/v1/plugin/status", &pluginStatus); err == nil {
 				t.Logf("Plugin status: enabled=%v worker_count=%v worker_grpc_port=%v configured=%v",
 					pluginStatus["enabled"], pluginStatus["worker_count"], pluginStatus["worker_grpc_port"], pluginStatus["configured"])
 			}
 
 			var schedulerStatus map[string]interface{}
-			if err := fetchJSON(AdminUrl+"/api/plugin/scheduler-status", &schedulerStatus); err == nil {
+			if err := fetchJSON(AdminUrl+"/v1/plugin/scheduler-status", &schedulerStatus); err == nil {
 				if schedValue, ok := schedulerStatus["scheduler"].(map[string]interface{}); ok {
 					t.Logf("Scheduler status: current_job_type=%v phase=%v last_iteration_had_jobs=%v idle_sleep_seconds=%v last_iteration_done_at=%v next_detection_at=%v",
 						schedValue["current_job_type"], schedValue["current_phase"],
@@ -423,7 +423,7 @@ func TestEcEndToEnd(t *testing.T) {
 			}
 
 			var schedulerStates []map[string]interface{}
-			if err := fetchJSON(AdminUrl+"/api/plugin/scheduler-states", &schedulerStates); err == nil {
+			if err := fetchJSON(AdminUrl+"/v1/plugin/scheduler-states", &schedulerStates); err == nil {
 				for _, state := range schedulerStates {
 					if state["job_type"] == "erasure_coding" {
 						t.Logf("EC scheduler state: enabled=%v detection_in_flight=%v detector_available=%v executor_workers=%v next_detection_at=%v last_run_status=%v last_run_started_at=%v last_run_completed_at=%v",
@@ -436,7 +436,7 @@ func TestEcEndToEnd(t *testing.T) {
 			}
 
 			var jobTypes []map[string]interface{}
-			if err := fetchJSON(AdminUrl+"/api/plugin/job-types", &jobTypes); err == nil {
+			if err := fetchJSON(AdminUrl+"/v1/plugin/job-types", &jobTypes); err == nil {
 				var names []string
 				for _, jobType := range jobTypes {
 					if name, ok := jobType["job_type"].(string); ok && name != "" {
@@ -447,7 +447,7 @@ func TestEcEndToEnd(t *testing.T) {
 			}
 
 			var activities []map[string]interface{}
-			if err := fetchJSON(AdminUrl+"/api/plugin/activities?job_type=erasure_coding&limit=5", &activities); err == nil {
+			if err := fetchJSON(AdminUrl+"/v1/plugin/activities?job_type=erasure_coding&limit=5", &activities); err == nil {
 				for i := len(activities) - 1; i >= 0; i-- {
 					act := activities[i]
 					t.Logf("EC activity: stage=%v message=%v occurred_at=%v", act["stage"], act["message"], act["occurred_at"])

@@ -15,14 +15,14 @@ func TestSetupRoutes_RegistersPluginSchedulerStatesAPI_NoAuth(t *testing.T) {
 
 	newRouteTestAdminHandlers().SetupRoutes(router, false, "", "", "", "", true)
 
-	if !hasRoute(router, http.MethodGet, "/api/plugin/scheduler-states") {
-		t.Fatalf("expected GET /api/plugin/scheduler-states to be registered in no-auth mode")
+	if !hasRoute(router, http.MethodGet, "/v1/plugin/scheduler-states") {
+		t.Fatalf("expected GET /v1/plugin/scheduler-states to be registered in no-auth mode")
 	}
-	if !hasRoute(router, http.MethodGet, "/api/plugin/jobs/example/detail") {
-		t.Fatalf("expected GET /api/plugin/jobs/:jobId/detail to be registered in no-auth mode")
+	if !hasRoute(router, http.MethodGet, "/v1/plugin/jobs/example/detail") {
+		t.Fatalf("expected GET /v1/plugin/jobs/:jobId/detail to be registered in no-auth mode")
 	}
-	if !hasRoute(router, http.MethodPost, "/api/plugin/jobs/example/expire") {
-		t.Fatalf("expected POST /api/plugin/jobs/:jobId/expire to be registered in no-auth mode")
+	if !hasRoute(router, http.MethodPost, "/v1/plugin/jobs/example/expire") {
+		t.Fatalf("expected POST /v1/plugin/jobs/:jobId/expire to be registered in no-auth mode")
 	}
 }
 
@@ -31,14 +31,14 @@ func TestSetupRoutes_RegistersPluginSchedulerStatesAPI_WithAuth(t *testing.T) {
 
 	newRouteTestAdminHandlers().SetupRoutes(router, true, "admin", "password", "", "", true)
 
-	if !hasRoute(router, http.MethodGet, "/api/plugin/scheduler-states") {
-		t.Fatalf("expected GET /api/plugin/scheduler-states to be registered in auth mode")
+	if !hasRoute(router, http.MethodGet, "/v1/plugin/scheduler-states") {
+		t.Fatalf("expected GET /v1/plugin/scheduler-states to be registered in auth mode")
 	}
-	if !hasRoute(router, http.MethodGet, "/api/plugin/jobs/example/detail") {
-		t.Fatalf("expected GET /api/plugin/jobs/:jobId/detail to be registered in auth mode")
+	if !hasRoute(router, http.MethodGet, "/v1/plugin/jobs/example/detail") {
+		t.Fatalf("expected GET /v1/plugin/jobs/:jobId/detail to be registered in auth mode")
 	}
-	if !hasRoute(router, http.MethodPost, "/api/plugin/jobs/example/expire") {
-		t.Fatalf("expected POST /api/plugin/jobs/:jobId/expire to be registered in auth mode")
+	if !hasRoute(router, http.MethodPost, "/v1/plugin/jobs/example/expire") {
+		t.Fatalf("expected POST /v1/plugin/jobs/:jobId/expire to be registered in auth mode")
 	}
 }
 
@@ -112,5 +112,20 @@ func assertHasRoute(t *testing.T, router *mux.Router, method string, path string
 	t.Helper()
 	if !hasRoute(router, method, path) {
 		t.Fatalf("expected %s %s to be registered", method, path)
+	}
+}
+
+func TestSetupRoutes_ServesNothingUnderAPIPrefix(t *testing.T) {
+	for _, auth := range []bool{false, true} {
+		router := mux.NewRouter()
+		newRouteTestAdminHandlers().SetupRoutes(router, auth, "admin", "password", "", "", true)
+
+		assertHasRoute(t, router, http.MethodGet, "/v1/plugin/status")
+		retired := "/" + "api" // spelled apart so the source gate in s3/command does not flag the probe
+		for _, path := range []string{retired + "/plugin/status", retired + "/users", retired + "/s3/buckets"} {
+			if hasRoute(router, http.MethodGet, path) {
+				t.Fatalf("auth=%v: GET %s is registered; the admin API lives under /v1/", auth, path)
+			}
+		}
 	}
 }

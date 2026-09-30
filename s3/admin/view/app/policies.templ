@@ -368,7 +368,7 @@ templ Policies(data dash.PoliciesData) {
             document: policyDocument
         };
         
-        fetch(basePath('/api/object-store/policies'), {
+        fetch(basePath('/v1/object-store/policies'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -408,7 +408,7 @@ templ Policies(data dash.PoliciesData) {
         `;
         
         // Fetch policy data
-        fetch(basePath('/api/object-store/policies/' + encodeURIComponent(policyName)))
+        fetch(basePath('/v1/object-store/policies/' + encodeURIComponent(policyName)))
         .then(response => {
             if (!response.ok) {
                 throw new Error('Policy not found');
@@ -494,7 +494,7 @@ templ Policies(data dash.PoliciesData) {
         document.getElementById('editPolicyDocument').value = 'Loading...';
         
         // Fetch policy data
-        fetch(basePath('/api/object-store/policies/' + encodeURIComponent(policyName)))
+        fetch(basePath('/v1/object-store/policies/' + encodeURIComponent(policyName)))
         .then(response => {
             if (!response.ok) {
                 throw new Error('Policy not found');
@@ -534,7 +534,7 @@ templ Policies(data dash.PoliciesData) {
             document: policyDocument
         };
         
-        fetch(basePath('/api/object-store/policies/' + encodeURIComponent(policyName)), {
+        fetch(basePath('/v1/object-store/policies/' + encodeURIComponent(policyName)), {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -636,7 +636,7 @@ templ Policies(data dash.PoliciesData) {
     
     function deletePolicy(policyName) {
         showDeleteConfirm(policyName, function() {
-            fetch(basePath('/api/object-store/policies/' + encodeURIComponent(policyName)), {
+            fetch(basePath('/v1/object-store/policies/' + encodeURIComponent(policyName)), {
                 method: 'DELETE'
             })
             .then(response => response.json())

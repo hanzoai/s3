@@ -371,7 +371,7 @@ templ ClusterEcShards(data dash.ClusterEcShardsData) {
         }
 
         function exportEcShards() {
-            const url = new URL((window.__BASE_PATH__ || '') + '/api/storage/ec-shards/export', window.location.origin);
+            const url = new URL((window.__BASE_PATH__ || '') + '/v1/storage/ec-shards/export', window.location.origin);
             const params = new URLSearchParams(window.location.search);
             params.forEach((value, key) => {
                 url.searchParams.set(key, value);
@@ -393,7 +393,7 @@ templ ClusterEcShards(data dash.ClusterEcShardsData) {
             const button = event.target.closest('button');
             const volumeId = button.getAttribute('data-volume-id');
             showConfirm(`Are you sure you want to repair missing shards for volume ${volumeId}?`, function() {
-                fetch((window.__BASE_PATH__ || '') + `/api/storage/volumes/${volumeId}/repair`, {
+                fetch((window.__BASE_PATH__ || '') + `/v1/storage/volumes/${volumeId}/repair`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

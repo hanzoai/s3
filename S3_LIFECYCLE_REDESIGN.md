@@ -1792,9 +1792,9 @@ Admin UI (the existing plugin lane filter at `s3/admin/view/app/plugin_lane.temp
    - off-peak window indicator if `lifecycle.run_hours` is set
 
 3. **JSON API endpoints under `s3/admin/dash/`:**
-   - `GET  /api/s3/buckets/{name}/lifecycle/status` — decoded per-rule `state` files
-   - `POST /api/s3/buckets/{name}/lifecycle/run` — enqueue forced batch (optional `?rule_hash=`)
-   - `POST /api/s3/buckets/{name}/lifecycle/rebootstrap` — reset bootstrap for a rule
+   - `GET  /v1/s3/buckets/{name}/lifecycle/status` — decoded per-rule `state` files
+   - `POST /v1/s3/buckets/{name}/lifecycle/run` — enqueue forced batch (optional `?rule_hash=`)
+   - `POST /v1/s3/buckets/{name}/lifecycle/rebootstrap` — reset bootstrap for a rule
 
 4. **PUT XML editor (if/when it lands)**: warn on rules whose TTL exceeds meta-log retention with "Will run in scan_only mode at slower cadence."
 

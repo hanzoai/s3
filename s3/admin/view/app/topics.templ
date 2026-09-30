@@ -273,7 +273,7 @@ templ Topics(data dash.TopicsData) {
             };
             
             // Create the topic
-            fetch(basePath('/api/mq/topics/create'), {
+            fetch(basePath('/v1/mq/topics/create'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

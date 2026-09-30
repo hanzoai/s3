@@ -86,7 +86,7 @@ func (h *AdminHandlers) SetupRoutes(r *mux.Router, authRequired bool, adminUser,
 		protected.Use(dash.RequireAuth(h.sessionStore))
 		h.registerUIRoutes(protected)
 
-		api := r.PathPrefix("/api").Subrouter()
+		api := r.PathPrefix("/v1").Subrouter()
 		api.Use(dash.RequireAuthAPI(h.sessionStore))
 		h.registerAPIRoutes(api, true)
 		return
@@ -94,7 +94,7 @@ func (h *AdminHandlers) SetupRoutes(r *mux.Router, authRequired bool, adminUser,
 
 	// No authentication required - all routes are public
 	h.registerUIRoutes(r)
-	api := r.PathPrefix("/api").Subrouter()
+	api := r.PathPrefix("/v1").Subrouter()
 	h.registerAPIRoutes(api, false)
 }
 

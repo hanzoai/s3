@@ -377,9 +377,9 @@ func TestSignatureV4WithForwardedPrefixTrailingSlash(t *testing.T) {
 		},
 		{
 			name:            "root bucket with trailing slash",
-			forwardedPrefix: "/api/s3",
+			forwardedPrefix: "/v1/s3",
 			urlPath:         "/test-bucket/",
-			expectedPath:    "/api/s3/test-bucket/",
+			expectedPath:    "/v1/s3/test-bucket/",
 		},
 		{
 			name:            "nested folder with trailing slash",
@@ -890,9 +890,9 @@ func TestPresignedSignatureV4WithForwardedPrefixTrailingSlash(t *testing.T) {
 			strippedPath:    "/my-bucket/folder/",
 		},
 		{
-			name:            "api path with trailing slash",
-			forwardedPrefix: "/api/s3",
-			originalPath:    "/api/s3/test-bucket/",
+			name:            "two-segment prefix with trailing slash",
+			forwardedPrefix: "/v1/s3",
+			originalPath:    "/v1/s3/test-bucket/",
 			strippedPath:    "/test-bucket/",
 		},
 	}

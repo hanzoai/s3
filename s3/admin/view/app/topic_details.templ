@@ -597,7 +597,7 @@ templ TopicDetails(data dash.TopicDetailsData) {
             updateButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Updating...';
 
             // Send API request
-            fetch((window.__BASE_PATH__ || '') + '/api/mq/topics/retention/update', {
+            fetch((window.__BASE_PATH__ || '') + '/v1/mq/topics/retention/update', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

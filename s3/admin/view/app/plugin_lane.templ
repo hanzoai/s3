@@ -158,9 +158,9 @@ templ PluginLane(page string, lane string) {
         }
 
         function refresh() {
-            fetchAndRender('/api/plugin/scheduler-status?lane=' + lane, 'plugin-lane-scheduler-status', renderSchedulerStatus);
-            fetchAndRender('/api/plugin/scheduler-states?lane=' + lane, 'plugin-lane-job-types', renderJobTypes);
-            fetchAndRender('/api/plugin/workers?lane=' + lane, 'plugin-lane-workers', renderWorkers);
+            fetchAndRender('/v1/plugin/scheduler-status?lane=' + lane, 'plugin-lane-scheduler-status', renderSchedulerStatus);
+            fetchAndRender('/v1/plugin/scheduler-states?lane=' + lane, 'plugin-lane-job-types', renderJobTypes);
+            fetchAndRender('/v1/plugin/workers?lane=' + lane, 'plugin-lane-workers', renderWorkers);
         }
 
         refresh();

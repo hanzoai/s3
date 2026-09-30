@@ -45,7 +45,7 @@ func TestLifecycleAdminDispatchSucceedsWithCustomFilerGrpcPort(t *testing.T) {
 	require.NoError(t, err)
 	req, err := http.NewRequestWithContext(
 		context.Background(), http.MethodPost,
-		adminEndpoint+"/api/plugin/job-types/s3_lifecycle/run",
+		adminEndpoint+"/v1/plugin/job-types/s3_lifecycle/run",
 		bytes.NewReader(body),
 	)
 	require.NoError(t, err)
@@ -57,7 +57,7 @@ func TestLifecycleAdminDispatchSucceedsWithCustomFilerGrpcPort(t *testing.T) {
 
 	var payload map[string]any
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&payload))
-	t.Logf("admin /api/plugin/job-types/s3_lifecycle/run response: %v", payload)
+	t.Logf("admin /v1/plugin/job-types/s3_lifecycle/run response: %v", payload)
 	require.Equal(t, http.StatusOK, resp.StatusCode, "admin run endpoint failed: %v", payload)
 
 	require.GreaterOrEqual(t, jsonNumber(t, payload, "detected_count"), 1)
@@ -94,7 +94,7 @@ func waitForLifecycleWorkerReady(t *testing.T, adminEndpoint string) {
 	t.Helper()
 	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
-		req, err := http.NewRequest(http.MethodGet, adminEndpoint+"/api/plugin/scheduler-states", nil)
+		req, err := http.NewRequest(http.MethodGet, adminEndpoint+"/v1/plugin/scheduler-states", nil)
 		require.NoError(t, err)
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {

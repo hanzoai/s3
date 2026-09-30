@@ -398,22 +398,22 @@ templ FileBrowser(data dash.FileBrowserData) {
 	// File browser specific functions
 	function downloadFile(path) {
 		// Open download URL in new tab
-		window.open((window.__BASE_PATH__ || '') + '/api/files/download?path=' + encodeURIComponent(path), '_blank');
+		window.open((window.__BASE_PATH__ || '') + '/v1/files/download?path=' + encodeURIComponent(path), '_blank');
 	}
 
 	function viewFile(path) {
 		// Open file viewer in new tab
-		window.open((window.__BASE_PATH__ || '') + '/api/files/view?path=' + encodeURIComponent(path), '_blank');
+		window.open((window.__BASE_PATH__ || '') + '/v1/files/view?path=' + encodeURIComponent(path), '_blank');
 	}
 
 	function exportMetadata(path) {
 		// Download metadata as an fs.meta.load-compatible .meta.gz
-		window.open((window.__BASE_PATH__ || '') + '/api/files/metadata?path=' + encodeURIComponent(path), '_blank');
+		window.open((window.__BASE_PATH__ || '') + '/v1/files/metadata?path=' + encodeURIComponent(path), '_blank');
 	}
 
 	function showFileProperties(path) {
 		// Fetch file properties and show in modal
-		fetch((window.__BASE_PATH__ || '') + '/api/files/properties?path=' + encodeURIComponent(path))
+		fetch((window.__BASE_PATH__ || '') + '/v1/files/properties?path=' + encodeURIComponent(path))
 			.then(response => response.json())
 			.then(data => {
 				if (data.error) {

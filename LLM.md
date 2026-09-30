@@ -196,3 +196,12 @@ DialOption in tests is `pb.DialOption{}` (the zero value), never `grpc.WithTrans
 ## Image
 
 `FROM scratch`: the static binary, `/data`, the CA bundle and zoneinfo, running as 65532. The `mount` subcommand shells out to fusermount and is run from a host, never from this image.
+
+## HTTP paths
+
+The admin UI's JSON API (`s3 admin`, and `s3 mini`'s embedded admin) is mounted at
+`/v1/` (`s3/admin/handlers/admin_handlers.go`); workers poll `/v1/plugin/status`. The
+telemetry server serves `/v1/collect|stats|instances|metrics`. Nothing first-party is
+under `/api/` — `TestNoAPIPathPrefix` (`s3/command/v1_prefix_test.go`) fails if one
+returns. The S3 protocol (bucket/object paths) is untouched by this and never had a
+prefix. The live `server -filer -s3` process runs none of these routes.

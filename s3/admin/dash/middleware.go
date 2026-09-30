@@ -115,8 +115,8 @@ func RequireWriteAccess() mux.MiddlewareFunc {
 			role := RoleFromContext(r.Context())
 
 			if role != "admin" {
-				// Check if this is an API request (path starts with /api) or HTML request.
-				if strings.HasPrefix(r.URL.Path, "/api") {
+				// Check if this is an API request (path starts with /v1/) or HTML request.
+				if strings.HasPrefix(r.URL.Path, "/v1/") {
 					writeJSON(w, http.StatusForbidden, map[string]string{
 						"error":   "Insufficient permissions",
 						"message": "This operation requires admin access. Read-only users can only view data.",

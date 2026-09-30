@@ -610,7 +610,7 @@ templ ClusterVolumes(data dash.ClusterVolumesData) {
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
             // Send vacuum request
-            fetch((window.__BASE_PATH__ || '') + `/api/volumes/${volumeId}/${encodeURIComponent(server)}/vacuum`, {
+            fetch((window.__BASE_PATH__ || '') + `/v1/volumes/${volumeId}/${encodeURIComponent(server)}/vacuum`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

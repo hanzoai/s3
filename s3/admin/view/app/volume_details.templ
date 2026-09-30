@@ -404,7 +404,7 @@ templ VolumeDetails(data dash.VolumeDetailsData) {
             button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Vacuuming...';
 
             // Send vacuum request
-            fetch((window.__BASE_PATH__ || '') + `/api/volumes/${volumeId}/${encodeURIComponent(server)}/vacuum`, {
+            fetch((window.__BASE_PATH__ || '') + `/v1/volumes/${volumeId}/${encodeURIComponent(server)}/vacuum`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -219,7 +219,7 @@ func fetchPluginWorkerGrpcPort(host string, httpPort int) (int, error) {
 	var lastErr error
 
 	for _, scheme := range []string{"http", "https"} {
-		statusURL := fmt.Sprintf("%s://%s/api/plugin/status", scheme, address)
+		statusURL := fmt.Sprintf("%s://%s/v1/plugin/status", scheme, address)
 		resp, err := client.Get(statusURL)
 		if err != nil {
 			lastErr = err

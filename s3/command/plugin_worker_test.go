@@ -233,7 +233,7 @@ func TestResolvePluginWorkerAdminServerUsesStatusGrpcPort(t *testing.T) {
 	const grpcPort = 35432
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/plugin/status" {
+		if r.URL.Path != "/v1/plugin/status" {
 			http.NotFound(w, r)
 			return
 		}
@@ -257,7 +257,7 @@ func TestResolvePluginWorkerAdminServerUsesStatusGrpcPort(t *testing.T) {
 func TestResolvePluginWorkerAdminServerKeepsDefaultGrpcOffset(t *testing.T) {
 	var server *httptest.Server
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/plugin/status" {
+		if r.URL.Path != "/v1/plugin/status" {
 			http.NotFound(w, r)
 			return
 		}

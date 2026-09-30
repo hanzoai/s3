@@ -1247,7 +1247,7 @@ templ Plugin(page string, initialJob string, lane string) {
                 }
 
                 try {
-                    var response = await pluginRequest('POST', '/api/plugin/jobs/' + encodePath(normalizedJobID) + '/expire', {
+                    var response = await pluginRequest('POST', '/v1/plugin/jobs/' + encodePath(normalizedJobID) + '/expire', {
                         reason: reason,
                     });
                     if (response && response.expired === false) {
@@ -1285,7 +1285,7 @@ templ Plugin(page string, initialJob string, lane string) {
                 setExpireButtonState(null);
                 contentRoot.innerHTML = '<div class="text-muted">Loading job detail...</div>';
                 try {
-                    var detail = await pluginRequest('GET', '/api/plugin/jobs/' + encodePath(normalizedJobID) + '/detail?activity_limit=500&related_limit=20');
+                    var detail = await pluginRequest('GET', '/v1/plugin/jobs/' + encodePath(normalizedJobID) + '/detail?activity_limit=500&related_limit=20');
                     var job = (detail && detail.job) ? detail.job : {};
                     setExpireButtonState(job);
                     var runRecord = detail && detail.run_record ? detail.run_record : null;
@@ -2774,13 +2774,13 @@ templ Plugin(page string, initialJob string, lane string) {
 
                 try {
                     if (forceRefresh) {
-                        var refreshURL = '/api/plugin/job-types/' + encodePath(jobType) + '/schema?force_refresh=true';
+                        var refreshURL = '/v1/plugin/job-types/' + encodePath(jobType) + '/schema?force_refresh=true';
                         state.descriptor = await pluginRequest('POST', refreshURL, null);
                     } else {
                         try {
-                            state.descriptor = await pluginRequest('GET', '/api/plugin/job-types/' + encodePath(jobType) + '/descriptor');
+                            state.descriptor = await pluginRequest('GET', '/v1/plugin/job-types/' + encodePath(jobType) + '/descriptor');
                         } catch (descriptorLoadError) {
-                            state.descriptor = await pluginRequest('POST', '/api/plugin/job-types/' + encodePath(jobType) + '/schema', null);
+                            state.descriptor = await pluginRequest('POST', '/v1/plugin/job-types/' + encodePath(jobType) + '/schema', null);
                         }
                     }
                 } catch (schemaError) {
@@ -2793,7 +2793,7 @@ templ Plugin(page string, initialJob string, lane string) {
                 }
 
                 try {
-                    state.config = await pluginRequest('GET', '/api/plugin/job-types/' + encodePath(jobType) + '/config');
+                    state.config = await pluginRequest('GET', '/v1/plugin/job-types/' + encodePath(jobType) + '/config');
                 } catch (configError) {
                     state.config = null;
                     notify('Failed to load config: ' + configError.message, 'error');
@@ -2829,7 +2829,7 @@ templ Plugin(page string, initialJob string, lane string) {
                     return;
                 }
                 try {
-                    var history = await pluginRequest('GET', '/api/plugin/job-types/' + encodePath(jobType) + '/runs');
+                    var history = await pluginRequest('GET', '/v1/plugin/job-types/' + encodePath(jobType) + '/runs');
                     renderRunHistory(history);
                 } catch (e) {
                     renderRunHistory(null);
@@ -2863,7 +2863,7 @@ templ Plugin(page string, initialJob string, lane string) {
                 }
 
                 try {
-                    state.config = await pluginRequest('PUT', '/api/plugin/job-types/' + encodePath(jobType) + '/config', payload);
+                    state.config = await pluginRequest('PUT', '/v1/plugin/job-types/' + encodePath(jobType) + '/config', payload);
                     document.getElementById('plugin-config-updated-at').textContent = 'Updated: ' + (parseTime(state.config.updated_at) || state.config.updated_at || 'just now');
                     notify('Config saved for ' + jobType, 'success');
                 } catch (e) {
@@ -2891,7 +2891,7 @@ templ Plugin(page string, initialJob string, lane string) {
                 }
 
                 try {
-                    var data = await pluginRequest('POST', '/api/plugin/job-types/' + encodePath(jobType) + '/detect', {
+                    var data = await pluginRequest('POST', '/v1/plugin/job-types/' + encodePath(jobType) + '/detect', {
                         max_results: getMaxResults(),
                     });
                     state.lastDetectionByJobType[jobType] = data;
@@ -2920,7 +2920,7 @@ templ Plugin(page string, initialJob string, lane string) {
                 }
 
                 try {
-                    var data = await pluginRequest('POST', '/api/plugin/job-types/' + encodePath(jobType) + '/run', {
+                    var data = await pluginRequest('POST', '/v1/plugin/job-types/' + encodePath(jobType) + '/run', {
                         max_results: getMaxResults(),
                     });
                     var resultRoot = document.getElementById('plugin-detection-results');
@@ -2943,10 +2943,10 @@ templ Plugin(page string, initialJob string, lane string) {
 
                 state.monitorExecutionJobState = executionStateFilter ? String(executionStateFilter.value || '').trim() : '';
 
-                var allJobsPromise = pluginRequest('GET', appendLaneParam('/api/plugin/jobs?limit=500'));
-                var allActivitiesPromise = pluginRequest('GET', appendLaneParam('/api/plugin/activities?limit=500'));
-                var schedulerPromise = pluginRequest('GET', appendLaneParam('/api/plugin/scheduler-states'));
-                var schedulerStatusPromise = pluginRequest('GET', appendLaneParam('/api/plugin/scheduler-status'));
+                var allJobsPromise = pluginRequest('GET', appendLaneParam('/v1/plugin/jobs?limit=500'));
+                var allActivitiesPromise = pluginRequest('GET', appendLaneParam('/v1/plugin/activities?limit=500'));
+                var schedulerPromise = pluginRequest('GET', appendLaneParam('/v1/plugin/scheduler-states'));
+                var schedulerStatusPromise = pluginRequest('GET', appendLaneParam('/v1/plugin/scheduler-status'));
 
                 var allJobs = await allJobsPromise;
                 var allActivities = await allActivitiesPromise;
@@ -2978,11 +2978,11 @@ templ Plugin(page string, initialJob string, lane string) {
                 try {
                     var previousSelectedJobType = state.selectedJobType;
 
-                    var workers = await pluginRequest('GET', appendLaneParam('/api/plugin/workers'));
+                    var workers = await pluginRequest('GET', appendLaneParam('/v1/plugin/workers'));
                     state.workers = Array.isArray(workers) ? workers : [];
                     renderWorkers();
 
-                    var jobTypes = await pluginRequest('GET', appendLaneParam('/api/plugin/job-types'));
+                    var jobTypes = await pluginRequest('GET', appendLaneParam('/v1/plugin/job-types'));
                     state.jobTypes = Array.isArray(jobTypes) ? jobTypes : [];
                     applyInitialNavigation();
                     ensureActiveNavigation();

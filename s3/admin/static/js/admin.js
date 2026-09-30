@@ -477,7 +477,7 @@ async function deleteBucket() {
     }
 
     try {
-        const response = await fetch(basePath(`/api/s3/buckets/${bucketToDelete}`), {
+        const response = await fetch(basePath(`/v1/s3/buckets/${bucketToDelete}`), {
             method: 'DELETE'
         });
 
@@ -682,7 +682,7 @@ function exportVolumes() {
 // the table) as a JSON report served by the admin API. Carries the active
 // collection filter from the page URL.
 function exportVolumeList() {
-    let url = basePath('/api/volumes/export');
+    let url = basePath('/v1/volumes/export');
     const collection = new URLSearchParams(window.location.search).get('collection');
     if (collection) {
         url += '?collection=' + encodeURIComponent(collection);
@@ -846,7 +846,7 @@ function confirmDeleteCollection(button) {
 // Delete collection
 async function deleteCollection(collectionName) {
     try {
-        const response = await fetch(basePath(`/api/collections/${collectionName}`), {
+        const response = await fetch(basePath(`/v1/collections/${collectionName}`), {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -982,7 +982,7 @@ async function deleteSelectedFiles(filePaths) {
     deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
 
     try {
-        const response = await fetch(basePath('/api/files/delete-multiple'), {
+        const response = await fetch(basePath('/v1/files/delete-multiple'), {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -1070,7 +1070,7 @@ async function submitCreateFolder() {
     submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Creating...';
 
     try {
-        const response = await fetch(basePath('/api/files/create-folder'), {
+        const response = await fetch(basePath('/v1/files/create-folder'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1223,7 +1223,7 @@ async function submitUploadFile() {
         });
 
         // Send request
-        xhr.open('POST', basePath('/api/files/upload'));
+        xhr.open('POST', basePath('/v1/files/upload'));
         xhr.send(formData);
 
     } catch (error) {
@@ -1276,14 +1276,14 @@ function exportFileList() {
 // Download file
 function downloadFile(filePath) {
     // Create download link using admin API
-    const downloadUrl = basePath(`/api/files/download?path=${encodeURIComponent(filePath)}`);
+    const downloadUrl = basePath(`/v1/files/download?path=${encodeURIComponent(filePath)}`);
     window.open(downloadUrl, '_blank');
 }
 
 // View file
 async function viewFile(filePath) {
     try {
-        const response = await fetch(basePath(`/api/files/view?path=${encodeURIComponent(filePath)}`));
+        const response = await fetch(basePath(`/v1/files/view?path=${encodeURIComponent(filePath)}`));
 
         if (!response.ok) {
             const error = await response.json();
@@ -1303,7 +1303,7 @@ async function viewFile(filePath) {
 // Show file properties
 async function showProperties(filePath) {
     try {
-        const response = await fetch(basePath(`/api/files/properties?path=${encodeURIComponent(filePath)}`));
+        const response = await fetch(basePath(`/v1/files/properties?path=${encodeURIComponent(filePath)}`));
 
         if (!response.ok) {
             const error = await response.json();
@@ -1334,7 +1334,7 @@ function confirmDelete(filePath) {
 // Delete file/folder
 async function deleteFile(filePath) {
     try {
-        const response = await fetch(basePath('/api/files/delete'), {
+        const response = await fetch(basePath('/v1/files/delete'), {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -1655,7 +1655,7 @@ async function handleUpdateQuota(event) {
     };
 
     try {
-        const response = await fetch(basePath(`/api/s3/buckets/${bucketName}/quota`), {
+        const response = await fetch(basePath(`/v1/s3/buckets/${bucketName}/quota`), {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -1742,7 +1742,7 @@ function createFileViewerContent(file, content) {
     if (file.mime.startsWith('image/')) {
         return `
             <div class="text-center">
-                <img src="${basePath('/api/files/download?path=' + encodeURIComponent(file.full_path) + '&inline=true')}"
+                <img src="${basePath('/v1/files/download?path=' + encodeURIComponent(file.full_path) + '&inline=true')}"
                      class="img-fluid" alt="${file.name}" style="max-height: 500px;">
             </div>
         `;
@@ -1760,7 +1760,7 @@ function createFileViewerContent(file, content) {
     } else if (file.mime === 'application/pdf') {
         return `
             <div class="text-center">
-                <embed src="${basePath('/api/files/download?path=' + encodeURIComponent(file.full_path) + '&inline=true')}"
+                <embed src="${basePath('/v1/files/download?path=' + encodeURIComponent(file.full_path) + '&inline=true')}"
                        type="application/pdf" width="100%" height="500px">
             </div>
         `;

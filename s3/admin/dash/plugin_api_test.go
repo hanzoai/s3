@@ -16,7 +16,7 @@ import (
 
 func TestExpirePluginJobAPI(t *testing.T) {
 	makeRequest := func(adminServer *AdminServer, jobID string, body io.Reader) *httptest.ResponseRecorder {
-		req := httptest.NewRequest(http.MethodPost, "/api/plugin/jobs/"+jobID+"/expire", body)
+		req := httptest.NewRequest(http.MethodPost, "/v1/plugin/jobs/"+jobID+"/expire", body)
 		req = mux.SetURLVars(req, map[string]string{"jobId": jobID})
 		recorder := httptest.NewRecorder()
 		adminServer.ExpirePluginJobAPI(recorder, req)

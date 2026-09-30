@@ -311,7 +311,7 @@ templ S3TablesNamespaces(data dash.S3TablesNamespacesData) {
 					return;
 				}
 				try {
-					const response = await fetch((window.__BASE_PATH__ || '') + '/api/s3tables/namespaces', {
+					const response = await fetch((window.__BASE_PATH__ || '') + '/v1/s3tables/namespaces', {
 						method: 'POST',
 						headers: makeJSONHeaders(),
 						body: JSON.stringify({ bucket_arn: dataBucketArn, name: name })
@@ -338,7 +338,7 @@ templ S3TablesNamespaces(data dash.S3TablesNamespacesData) {
 				if (csrfToken) {
 					requestOptions.headers = { 'X-CSRF-Token': csrfToken };
 				}
-				const response = await fetch((window.__BASE_PATH__ || '') + `/api/s3tables/namespaces?bucket=${encodeURIComponent(dataBucketArn)}&name=${encodeURIComponent(namespace)}`, requestOptions);
+				const response = await fetch((window.__BASE_PATH__ || '') + `/v1/s3tables/namespaces?bucket=${encodeURIComponent(dataBucketArn)}&name=${encodeURIComponent(namespace)}`, requestOptions);
 				if (!response.ok) {
 					const errorMessage = await readErrorMessage(response, 'Failed to delete namespace');
 					alert(errorMessage);

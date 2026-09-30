@@ -174,9 +174,9 @@ func TestBuildPathWithForwardedPrefix(t *testing.T) {
 		},
 		{
 			name:            "complex key with multiple slashes",
-			forwardedPrefix: "/api/v1",
+			forwardedPrefix: "/v1/s3",
 			urlPath:         "/bucket/path//with///slashes",
-			expected:        "/api/v1/bucket/path//with///slashes",
+			expected:        "/v1/s3/bucket/path//with///slashes",
 		},
 		{
 			name:            "urlPath without leading slash",
