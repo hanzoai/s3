@@ -198,7 +198,7 @@ func testProtobufMarshaling() error {
 
 func testTelemetryClient() error {
 	// Create telemetry client
-	client := telemetry.NewClient(serverURL+"/api/collect", true)
+	client := telemetry.NewClient(serverURL+"/v1/collect", true)
 	client.SetTopologyId("test-topology-12345")
 
 	// Create test data using protobuf format
@@ -272,7 +272,7 @@ func testMetricsEndpoint() error {
 }
 
 func testStatsAPI() error {
-	resp, err := http.Get(serverURL + "/api/stats")
+	resp, err := http.Get(serverURL + "/v1/stats")
 	if err != nil {
 		return fmt.Errorf("failed to get stats: %v", err)
 	}
@@ -299,7 +299,7 @@ func testStatsAPI() error {
 }
 
 func testInstancesAPI() error {
-	resp, err := http.Get(serverURL + "/api/instances?limit=10")
+	resp, err := http.Get(serverURL + "/v1/instances?limit=10")
 	if err != nil {
 		return fmt.Errorf("failed to get instances: %v", err)
 	}

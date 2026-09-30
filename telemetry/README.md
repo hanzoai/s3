@@ -93,7 +93,7 @@ s3 master -telemetry=true
 s3 server -telemetry=true
 
 # Or specify custom telemetry server
-s3 master -telemetry=true -telemetry.url=http://localhost:8080/api/collect
+s3 master -telemetry=true -telemetry.url=http://localhost:8080/v1/collect
 ```
 
 ### 3. Access Dashboards
@@ -111,7 +111,7 @@ s3 master -telemetry=true -telemetry.url=http://localhost:8080/api/collect
 -telemetry=true
 
 # Set custom telemetry server URL (optional, defaults to telemetry.s3.com)
--telemetry.url=http://your-telemetry-server:8080/api/collect
+-telemetry.url=http://your-telemetry-server:8080/v1/collect
 ```
 
 ### Telemetry Server
@@ -151,7 +151,7 @@ The telemetry server exposes these Prometheus metrics:
 ### Data Collection
 ```bash
 # Submit telemetry data (protobuf only)
-POST /api/collect
+POST /v1/collect
 Content-Type: application/x-protobuf
 [TelemetryRequest protobuf data]
 ```
@@ -159,13 +159,13 @@ Content-Type: application/x-protobuf
 ### Statistics (JSON for dashboard/debugging)
 ```bash
 # Get aggregated statistics
-GET /api/stats
+GET /v1/stats
 
 # Get recent cluster instances
-GET /api/instances?limit=100
+GET /v1/instances?limit=100
 
 # Get metrics over time
-GET /api/metrics?days=30
+GET /v1/metrics?days=30
 ```
 
 ### Monitoring
@@ -307,7 +307,7 @@ increase(hanzo_telemetry_total_clusters[7d])
 s3 master -h | grep telemetry
 
 # Verify connectivity
-curl -v http://your-telemetry-server:8080/api/collect
+curl -v http://your-telemetry-server:8080/v1/collect
 ```
 
 **Server not receiving data:**
@@ -338,7 +338,7 @@ s3 master -v=2 -telemetry=true
 curl http://localhost:8080/metrics | grep hanzo_telemetry
 
 # Test data flow
-curl http://localhost:8080/api/stats
+curl http://localhost:8080/v1/stats
 ```
 
 ## Contributing

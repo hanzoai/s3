@@ -46,10 +46,10 @@ func main() {
 
 	// API endpoints
 	apiHandler := api.NewHandler(store)
-	mux.HandleFunc("/api/collect", corsMiddleware(logMiddleware(apiHandler.CollectTelemetry)))
-	mux.HandleFunc("/api/stats", corsMiddleware(logMiddleware(apiHandler.GetStats)))
-	mux.HandleFunc("/api/instances", corsMiddleware(logMiddleware(apiHandler.GetInstances)))
-	mux.HandleFunc("/api/metrics", corsMiddleware(logMiddleware(apiHandler.GetMetrics)))
+	mux.HandleFunc("/v1/collect", corsMiddleware(logMiddleware(apiHandler.CollectTelemetry)))
+	mux.HandleFunc("/v1/stats", corsMiddleware(logMiddleware(apiHandler.GetStats)))
+	mux.HandleFunc("/v1/instances", corsMiddleware(logMiddleware(apiHandler.GetInstances)))
+	mux.HandleFunc("/v1/metrics", corsMiddleware(logMiddleware(apiHandler.GetMetrics)))
 
 	// Dashboard (optional)
 	if *enableDashboard {

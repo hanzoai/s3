@@ -143,11 +143,11 @@ func (h *Handler) ServeIndex(w http.ResponseWriter, r *http.Request) {
         async function loadDashboard() {
             try {
                 // Load stats
-                const statsResponse = await fetch('/api/stats');
+                const statsResponse = await fetch('/v1/stats');
                 const stats = await statsResponse.json();
                 
                 // Load metrics
-                const metricsResponse = await fetch('/api/metrics?days=30');
+                const metricsResponse = await fetch('/v1/metrics?days=30');
                 const metrics = await metricsResponse.json();
 
                 updateStats(stats);

@@ -245,13 +245,13 @@ After deployment, the telemetry server will be available at (default ports shown
 
 - Docker default: `8080`
   - **Dashboard**: `http://your-server:8080`
-  - **API**: `http://your-server:8080/api/*`
+  - **API**: `http://your-server:8080/v1/*`
   - **Metrics**: `http://your-server:8080/metrics`
   - **Health Check**: `http://your-server:8080/health`
 
 - Systemd example (if you configured a different port, e.g. `8353`):
   - **Dashboard**: `http://your-server:8353`
-  - **API**: `http://your-server:8353/api/*`
+  - **API**: `http://your-server:8353/v1/*`
   - **Metrics**: `http://your-server:8353/metrics`
   - **Health Check**: `http://your-server:8353/health`
 
