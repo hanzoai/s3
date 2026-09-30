@@ -12,6 +12,10 @@ on:
 jobs:
   cicd:
     uses: hanzoai/ci/.github/workflows/build.yml@v1
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
     # The door, not buildx on the runner. It schedules one BuildKit Job per
     # platform and the cluster holds a node of each, so the arm64 half of
     # `platforms:` in hanzo.yml is a native compile on spark instead of qemu on
