@@ -28,28 +28,97 @@ func (s3a *S3ApiServer) PostPolicyBucketHandler(w http.ResponseWriter, r *http.R
 
 	glog.V(3).Infof("PostPolicyBucketHandler %s", bucket)
 
+	u, ok := s3a.iam.ReadPostUpload(w, r, bucket)
+	if !ok {
+		return
+	}
+	defer u.Close()
+
+	if err := s3a.validateTableBucketObjectPath(bucket, u.Key); err != nil {
+		s3err.WriteErrorResponse(w, r, s3err.ErrAccessDenied)
+		return
+	}
+
+	filePath := fmt.Sprintf("%s/%s", s3a.bucketDir(bucket), u.Key)
+
+	r.Header.Set("Content-Type", u.ContentType)
+	for k, v := range u.Header {
+		r.Header[k] = v
+	}
+
+	// Use the file's size, not r.ContentLength: the multipart body wrapping form
+	// fields and boundaries inflates ContentLength relative to the object body,
+	// which would mis-evaluate any size-filtered rule.
+	ttlSec := s3a.lifecycleTTLForObjectWrite(bucket, u.Key, u.Size)
+	etag, errCode, sseMetadata := s3a.putToFiler(r, filePath, u.Body, bucket, u.Key, 1, ttlSec, nil, false)
+
+	if errCode != s3err.ErrNone {
+		s3err.WriteErrorResponse(w, r, errCode)
+		return
+	}
+
+	// Include SSE response headers (important for bucket-default encryption)
+	s3a.setSSEResponseHeaders(w, r, sseMetadata)
+	WritePostResult(w, r, bucket, u, etag)
+}
+
+// PostUpload is one POST Object upload whose form, policy signature and policy
+// conditions have been verified. What remains is to store Body under Key.
+type PostUpload struct {
+	Key         string
+	Body        io.Reader
+	Size        int64
+	ContentType string
+	// Header holds the form fields the stored object takes as request headers.
+	Header http.Header
+	// Status is success_action_status; Redirect is success_action_redirect.
+	Status   string
+	Redirect *url.URL
+
+	file io.Closer
+	form *multipart.Form
+}
+
+// Close releases the upload's file part and the form's spooled parts.
+func (u *PostUpload) Close() {
+	u.file.Close()
+	u.form.RemoveAll()
+}
+
+// ReadPostUpload reads a POST Object request to bucket and verifies it: the
+// multipart form, the policy signature against iam's identities (the signer
+// must be allowed to write the bucket), and every policy condition, the
+// content-length range included. On a refusal it writes the S3 error to w and
+// answers false. The caller stores the upload and closes it.
+func (iam *IdentityAccessManagement) ReadPostUpload(w http.ResponseWriter, r *http.Request, bucket string) (*PostUpload, bool) {
 	reader, err := r.MultipartReader()
 	if err != nil {
 		s3err.WriteErrorResponse(w, r, s3err.ErrMalformedPOSTRequest)
-		return
+		return nil, false
 	}
 	form, err := reader.ReadForm(int64(5 * humanize.MiByte))
 	if err != nil {
 		s3err.WriteErrorResponse(w, r, s3err.ErrMalformedPOSTRequest)
-		return
+		return nil, false
 	}
-	defer form.RemoveAll()
 
 	fileBody, fileName, fileContentType, fileSize, formValues, err := extractPostPolicyFormValues(form)
 	if err != nil {
+		form.RemoveAll()
 		s3err.WriteErrorResponse(w, r, s3err.ErrMalformedPOSTRequest)
-		return
+		return nil, false
 	}
 	if fileBody == nil {
+		form.RemoveAll()
 		s3err.WriteErrorResponse(w, r, s3err.ErrPOSTFileRequired)
-		return
+		return nil, false
 	}
-	defer fileBody.Close()
+	u := &PostUpload{Body: fileBody, Size: fileSize, file: fileBody, form: form}
+	refuse := func(code s3err.ErrorCode) (*PostUpload, bool) {
+		u.Close()
+		s3err.WriteErrorResponse(w, r, code)
+		return nil, false
+	}
 
 	formValues.Set("Bucket", bucket)
 
@@ -58,53 +127,40 @@ func (s3a *S3ApiServer) PostPolicyBucketHandler(w http.ResponseWriter, r *http.R
 	}
 	rawObject := formValues.Get("Key")
 	if rawObject == "" || !s3_constants.IsValidObjectKey(rawObject) {
-		s3err.WriteErrorResponse(w, r, s3err.ErrInvalidRequest)
-		return
+		return refuse(s3err.ErrInvalidRequest)
 	}
-	object := s3_constants.NormalizeObjectKey(rawObject)
-	if err := s3a.validateTableBucketObjectPath(bucket, object); err != nil {
-		s3err.WriteErrorResponse(w, r, s3err.ErrAccessDenied)
-		return
-	}
+	u.Key = s3_constants.NormalizeObjectKey(rawObject)
 
-	successRedirect := formValues.Get("success_action_redirect")
-	successStatus := formValues.Get("success_action_status")
-	var redirectURL *url.URL
-	if successRedirect != "" {
-		redirectURL, err = url.Parse(successRedirect)
-		if err != nil {
-			s3err.WriteErrorResponse(w, r, s3err.ErrMalformedPOSTRequest)
-			return
+	u.Status = formValues.Get("success_action_status")
+	if successRedirect := formValues.Get("success_action_redirect"); successRedirect != "" {
+		if u.Redirect, err = url.Parse(successRedirect); err != nil {
+			return refuse(s3err.ErrMalformedPOSTRequest)
 		}
 	}
 
 	// Verify policy signature.
-	errCode := s3a.iam.doesPolicySignatureMatch(formValues)
-	if errCode != s3err.ErrNone {
-		s3err.WriteErrorResponse(w, r, errCode)
-		return
+	if errCode := iam.doesPolicySignatureMatch(formValues); errCode != s3err.ErrNone {
+		return refuse(errCode)
 	}
 
 	policyBytes, err := base64.StdEncoding.DecodeString(formValues.Get("Policy"))
 	if err != nil {
-		s3err.WriteErrorResponse(w, r, s3err.ErrMalformedPOSTRequest)
-		return
+		return refuse(s3err.ErrMalformedPOSTRequest)
 	}
 
 	// Handle policy if it is set.
 	if len(policyBytes) > 0 {
-
 		postPolicyForm, err := policy.ParsePostPolicyForm(string(policyBytes))
 		if err != nil {
-			s3err.WriteErrorResponse(w, r, s3err.ErrPostPolicyConditionInvalidFormat)
-			return
+			return refuse(s3err.ErrPostPolicyConditionInvalidFormat)
 		}
 
 		// Make sure formValues adhere to policy restrictions.
 		if err = policy.CheckPostPolicy(formValues, postPolicyForm); err != nil {
 			glog.V(3).Infof("PostPolicy check failed for bucket %s: %v", bucket, err)
+			u.Close()
 			s3err.WriteErrorResponseWithMessage(w, r, s3err.ErrAccessDenied, err.Error())
-			return
+			return nil, false
 		}
 
 		// Ensure that the object size is within expected range, also the file size
@@ -112,72 +168,52 @@ func (s3a *S3ApiServer) PostPolicyBucketHandler(w http.ResponseWriter, r *http.R
 		lengthRange := postPolicyForm.Conditions.ContentLengthRange
 		if lengthRange.Valid {
 			if fileSize < lengthRange.Min {
-				s3err.WriteErrorResponse(w, r, s3err.ErrEntityTooSmall)
-				return
+				return refuse(s3err.ErrEntityTooSmall)
 			}
-
 			if fileSize > lengthRange.Max {
-				s3err.WriteErrorResponse(w, r, s3err.ErrEntityTooLarge)
-				return
+				return refuse(s3err.ErrEntityTooLarge)
 			}
 		}
 	}
 
-	filePath := fmt.Sprintf("%s/%s", s3a.bucketDir(bucket), object)
-
-	// Get ContentType from post formData
-	// Otherwise from formFile ContentType
-	contentType := formValues.Get("Content-Type")
-	if contentType == "" {
-		contentType = fileContentType
+	// Content-Type from the form, otherwise from the file part.
+	u.ContentType = formValues.Get("Content-Type")
+	if u.ContentType == "" {
+		u.ContentType = fileContentType
 	}
-	r.Header.Set("Content-Type", contentType)
+	u.Header = postPolicyFormHeaders(formValues)
+	return u, true
+}
 
-	// Forward validated POST form fields to the underlying PUT as headers.
-	applyPostPolicyFormHeaders(r, formValues)
-
-	// Use fileSize, not r.ContentLength: the multipart body wrapping form
-	// fields and boundaries inflates ContentLength relative to the
-	// object body, which would mis-evaluate any size-filtered rule.
-	ttlSec := s3a.lifecycleTTLForObjectWrite(bucket, object, fileSize)
-	etag, errCode, sseMetadata := s3a.putToFiler(r, filePath, fileBody, bucket, object, 1, ttlSec, nil, false)
-
-	if errCode != s3err.ErrNone {
-		s3err.WriteErrorResponse(w, r, errCode)
-		return
-	}
-
-	if successRedirect != "" {
-		// Replace raw query params..
-		redirectURL.RawQuery = getRedirectPostRawQuery(bucket, object, etag)
-		w.Header().Set("Location", redirectURL.String())
+// WritePostResult answers a stored POST Object upload as success_action_redirect
+// and success_action_status ask.
+func WritePostResult(w http.ResponseWriter, r *http.Request, bucket string, u *PostUpload, etag string) {
+	if u.Redirect != nil {
+		redirect := *u.Redirect
+		redirect.RawQuery = getRedirectPostRawQuery(bucket, u.Key, etag)
+		w.Header().Set("Location", redirect.String())
 		s3err.WriteEmptyResponse(w, r, http.StatusSeeOther)
 		return
 	}
 
 	setEtag(w, etag)
-	// Include SSE response headers (important for bucket-default encryption)
-	s3a.setSSEResponseHeaders(w, r, sseMetadata)
 
 	// Decide what http response to send depending on success_action_status parameter
-	switch successStatus {
+	switch u.Status {
 	case "201":
 		resp := PostResponse{
 			Bucket:   bucket,
-			Key:      object,
-			ETag:     `"` + etag + `"`,
+			Key:      u.Key,
+			ETag:     `"` + strings.Trim(etag, `"`) + `"`,
 			Location: w.Header().Get("Location"),
 		}
 		s3err.WriteXMLResponse(w, r, http.StatusCreated, resp)
 		s3err.PostLog(r, http.StatusCreated, s3err.ErrNone)
 	case "200":
 		s3err.WriteEmptyResponse(w, r, http.StatusOK)
-	case "204":
-		s3err.WriteEmptyResponse(w, r, http.StatusNoContent)
 	default:
 		s3err.WriteEmptyResponse(w, r, http.StatusNoContent)
 	}
-
 }
 
 // postPolicyReservedFormFields are multipart form fields that are part of the
@@ -207,29 +243,31 @@ var postPolicyReservedFormFields = map[string]struct{}{
 	"Content-Type": {},
 }
 
-// applyPostPolicyFormHeaders forwards validated POST Object form fields to the
-// request headers so they are applied to the resulting PUT. Reserved fields
-// that are part of the POST policy mechanism itself (signature, key, etc.) are
-// skipped. The acl form field is translated to the X-Amz-Acl header to match
-// how AWS promotes the form value to the underlying PUT.
-func applyPostPolicyFormHeaders(r *http.Request, formValues http.Header) {
+// postPolicyFormHeaders returns the validated POST Object form fields the
+// resulting PUT carries as headers. Reserved fields that are part of the POST
+// policy mechanism itself (signature, key, etc.) are skipped. The acl form field
+// is translated to the X-Amz-Acl header to match how AWS promotes the form value
+// to the underlying PUT.
+func postPolicyFormHeaders(formValues http.Header) http.Header {
+	h := http.Header{}
 	for k := range formValues {
 		if _, reserved := postPolicyReservedFormFields[k]; reserved {
 			continue
 		}
 		switch {
 		case k == "Acl":
-			r.Header.Set(s3_constants.AmzCannedAcl, formValues.Get(k))
+			h.Set(s3_constants.AmzCannedAcl, formValues.Get(k))
 		case k == "Cache-Control",
 			k == "Expires",
 			k == "Content-Disposition",
 			k == "Content-Encoding",
 			k == "Content-Language":
-			r.Header.Set(k, formValues.Get(k))
+			h.Set(k, formValues.Get(k))
 		case strings.HasPrefix(k, "X-Amz-"):
-			r.Header.Set(k, formValues.Get(k))
+			h.Set(k, formValues.Get(k))
 		}
 	}
+	return h
 }
 
 // Extract form fields and file data from a HTTP POST Policy

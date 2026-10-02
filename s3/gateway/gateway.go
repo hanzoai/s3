@@ -90,6 +90,13 @@ func (g *Gateway) serve(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// A POST Object form carries its signature in its fields, not its headers,
+	// so it is verified on its own path.
+	if what == postObject {
+		g.postObject(w, r, bucket, upBucket)
+		return
+	}
+
 	identity, code := g.iam.AuthenticateRequest(r)
 	if code != s3err.ErrNone {
 		s3err.WriteErrorResponse(w, r, code)

@@ -330,7 +330,9 @@ func TestApplyPostPolicyFormHeaders_ForwardsAcl(t *testing.T) {
 		"acl": "public-read",
 	})
 
-	applyPostPolicyFormHeaders(r, formValues)
+	for k, v := range postPolicyFormHeaders(formValues) {
+		r.Header[k] = v
+	}
 
 	assert.Equal(t, "public-read", r.Header.Get(s3_constants.AmzCannedAcl))
 	assert.Equal(t, "public-read", r.Header.Get("X-Amz-Acl"))
@@ -366,7 +368,9 @@ func TestApplyPostPolicyFormHeaders_ForwardsContentHeaders(t *testing.T) {
 				tt.header: tt.value,
 			})
 
-			applyPostPolicyFormHeaders(r, formValues)
+			for k, v := range postPolicyFormHeaders(formValues) {
+				r.Header[k] = v
+			}
 
 			assert.Equal(t, tt.value, r.Header.Get(tt.header))
 		})
@@ -387,7 +391,9 @@ func TestApplyPostPolicyFormHeaders_ForwardsXAmzHeaders(t *testing.T) {
 		"x-amz-meta-foo":                  "bar",
 	})
 
-	applyPostPolicyFormHeaders(r, formValues)
+	for k, v := range postPolicyFormHeaders(formValues) {
+		r.Header[k] = v
+	}
 
 	assert.Equal(t, "STANDARD_IA", r.Header.Get("X-Amz-Storage-Class"))
 	assert.Equal(t, "project=alpha&env=prod", r.Header.Get("X-Amz-Tagging"))
@@ -419,7 +425,9 @@ func TestApplyPostPolicyFormHeaders_SkipsReserved(t *testing.T) {
 		"redirect":                "https://example.com/legacy",
 	})
 
-	applyPostPolicyFormHeaders(r, formValues)
+	for k, v := range postPolicyFormHeaders(formValues) {
+		r.Header[k] = v
+	}
 
 	reserved := []string{
 		"Policy",
@@ -453,7 +461,9 @@ func TestApplyPostPolicyFormHeaders_KeepsExistingCacheControl(t *testing.T) {
 		"Content-Disposition": `attachment; filename="report.pdf"`,
 	})
 
-	applyPostPolicyFormHeaders(r, formValues)
+	for k, v := range postPolicyFormHeaders(formValues) {
+		r.Header[k] = v
+	}
 
 	assert.Equal(t, "max-age=3600", r.Header.Get("Cache-Control"))
 	assert.Equal(t, "Wed, 21 Oct 2026 07:28:00 GMT", r.Header.Get("Expires"))
@@ -470,7 +480,9 @@ func TestApplyPostPolicyFormHeaders_IgnoresContentType(t *testing.T) {
 		"Content-Type": "text/plain",
 	})
 
-	applyPostPolicyFormHeaders(r, formValues)
+	for k, v := range postPolicyFormHeaders(formValues) {
+		r.Header[k] = v
+	}
 
 	// The helper must not overwrite the Content-Type that the handler has
 	// already resolved from the form or from the file part.

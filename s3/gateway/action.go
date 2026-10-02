@@ -17,6 +17,7 @@ const (
 	listBuckets              // GET /: answered from the upstream's bucket list
 	createBucket             // PUT /<bucket>: created upstream under its mapped name
 	batchDelete              // POST /<bucket>?delete: every key in the body is authorized
+	postObject               // POST /<bucket> with a form: the form's own policy signs it
 	refused                  // not offered by this gateway
 )
 
@@ -99,6 +100,9 @@ func classify(r *http.Request, bucket, key string) (kind, string) {
 		case http.MethodPost:
 			if has("delete") {
 				return batchDelete, s3_constants.ACTION_WRITE
+			}
+			if len(q) == 0 && strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+				return postObject, s3_constants.ACTION_WRITE
 			}
 			return refused, ""
 		}
