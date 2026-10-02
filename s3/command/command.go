@@ -30,6 +30,7 @@ var Commands = []*Command{
 	cmdFilerSyncVerify,
 	cmdFix,
 	cmdFuse,
+	cmdGateway,
 	cmdIam,
 	cmdMaster,
 	cmdMasterFollower,

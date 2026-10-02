@@ -616,3 +616,10 @@ func getCheckSumWriter(checksumAlgorithm ChecksumAlgorithm) hash.Hash {
 	}
 	return nil
 }
+
+// DecodedBody returns the payload of an aws-chunked request with every chunk
+// signature and trailer checksum checked as it is read. It is for a server that
+// authenticates with this IAM and stores somewhere other than the filer.
+func (iam *IdentityAccessManagement) DecodedBody(req *http.Request) (io.ReadCloser, s3err.ErrorCode) {
+	return iam.newChunkedReader(req)
+}
