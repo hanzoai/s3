@@ -319,7 +319,11 @@ func (g *Gateway) forward(w http.ResponseWriter, r *http.Request, bucket, key, u
 	if err != nil {
 		switch {
 		case r.Context().Err() != nil:
-			// The client went away; there is no one to answer.
+			// The client went away; there is no one to answer, and nothing failed.
+			if rec, ok := w.(*recorder); ok {
+				rec.status = statusClientClosed
+			}
+			return
 		case errors.Is(err, errPayloadHash):
 			s3err.WriteErrorResponse(w, r, s3err.ErrContentSHA256Mismatch)
 			return
@@ -537,6 +541,10 @@ func cors(w http.ResponseWriter, r *http.Request) {
 		h.Set("Access-Control-Max-Age", "3600")
 	}
 }
+
+// statusClientClosed marks, in the access log only, a request whose client
+// disconnected before the upstream answered.
+const statusClientClosed = 499
 
 // recorder keeps the status and size of a reply for the access log.
 type recorder struct {
