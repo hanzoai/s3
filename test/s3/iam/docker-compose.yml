@@ -25,7 +25,7 @@ services:
 
   # Hanzo Master
   s3-master:
-    image: ${S3_IMAGE:-local/hanzo:latest}
+    image: ${S3_IMAGE:-local/s3:latest}
     container_name: s3-master
     hostname: s3-master
     ports:
@@ -45,7 +45,7 @@ services:
 
   # Hanzo Volume Server
   s3-volume:
-    image: ${S3_IMAGE:-local/hanzo:latest}
+    image: ${S3_IMAGE:-local/s3:latest}
     container_name: s3-volume
     hostname: s3-volume
     ports:
@@ -68,7 +68,7 @@ services:
 
   # Hanzo Filer
   s3-filer:
-    image: ${S3_IMAGE:-local/hanzo:latest}
+    image: ${S3_IMAGE:-local/s3:latest}
     container_name: s3-filer
     hostname: s3-filer
     ports:
@@ -93,7 +93,7 @@ services:
 
   # Hanzo S3 API with IAM
   s3-s3:
-    image: ${S3_IMAGE:-local/hanzo:latest}
+    image: ${S3_IMAGE:-local/s3:latest}
     container_name: s3-s3
     hostname: s3-s3
     ports:
