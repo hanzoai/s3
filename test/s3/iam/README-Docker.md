@@ -94,7 +94,7 @@ This runs: build → down → up → test
 ### Using Published Images (Alternative)
 If you want to use published Docker Hub images instead of building locally:
 ```bash
-export SEAWEEDFS_IMAGE=chrislusf/hanzo:latest
+export S3_IMAGE=ghcr.io/hanzoai/s3:latest
 make -f Makefile.docker docker-up
 ```
 

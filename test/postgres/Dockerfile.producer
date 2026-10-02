@@ -29,8 +29,8 @@ COPY --from=builder /app/producer .
 RUN chmod +x ./producer
 
 # Set environment variables with defaults
-ENV SEAWEEDFS_MASTER=localhost:9333
-ENV SEAWEEDFS_FILER=localhost:8888
+ENV S3_MASTER=localhost:9333
+ENV S3_FILER=localhost:8888
 
 # Run the producer
 CMD ["./producer"]

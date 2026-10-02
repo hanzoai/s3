@@ -413,7 +413,7 @@ benchmark: ## Run comprehensive benchmarking suite
 # Advanced targets
 debug: ## Start services in debug mode with verbose logging
 	@echo "$(BLUE)Starting services in debug mode...$(NC)"
-	SEAWEEDFS_LOG_LEVEL=debug \
+	S3_LOG_LEVEL=debug \
 	KAFKA_LOG_LEVEL=debug \
 	$(DOCKER_COMPOSE) up \
 		hanzo-master \

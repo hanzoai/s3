@@ -71,7 +71,7 @@ RUN set -euo pipefail && \
 
 
 FROM debian:bookworm-slim AS final
-LABEL author="Chris Lu"
+LABEL author="Hanzo AI"
 
 # Install runtime dependencies first
 RUN apt-get update && \

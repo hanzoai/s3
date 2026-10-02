@@ -21,33 +21,33 @@ binary_race: ldflags_extra =
 binary_race: binary
 
 build: binary
-	docker build --no-cache -t chrislusf/hanzo:local -f Dockerfile.local .
+	docker build --no-cache -t ghcr.io/hanzoai/s3:local -f Dockerfile.local .
 
 build_e2e: binary_race
 	docker buildx build \
 		--cache-from=type=local,src=/tmp/.buildx-cache \
 		--cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
 		--load \
-		-t chrislusf/hanzo:e2e \
+		-t ghcr.io/hanzoai/s3:e2e \
 		-f Dockerfile.e2e .
 	# Move cache to avoid growing cache size
 	rm -rf /tmp/.buildx-cache || true
 	mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
 
 go_build: # make go_build tags=elastic,sqlite,5BytesOffset
-	docker build --build-arg TAGS=$(tags) --no-cache -t chrislusf/hanzo:go_build -f Dockerfile.go_build .
+	docker build --build-arg TAGS=$(tags) --no-cache -t ghcr.io/hanzoai/s3:go_build -f Dockerfile.go_build .
 
 go_build_large_disk:
-	docker build --build-arg TAGS=large_disk --no-cache -t chrislusf/hanzo:large_disk -f Dockerfile.go_build .
+	docker build --build-arg TAGS=large_disk --no-cache -t ghcr.io/hanzoai/s3:large_disk -f Dockerfile.go_build .
 
 build_rocksdb_dev_env:
 	docker build --no-cache -t chrislusf/rocksdb_dev_env -f Dockerfile.rocksdb_dev_env .
 
 build_rocksdb_local: build_rocksdb_dev_env
-	cd .. ; docker build --no-cache -t chrislusf/hanzo:rocksdb_local -f docker/Dockerfile.rocksdb_large_local .
+	cd .. ; docker build --no-cache -t ghcr.io/hanzoai/s3:rocksdb_local -f docker/Dockerfile.rocksdb_large_local .
 
 build_rocksdb:
-	docker build --no-cache -t chrislusf/hanzo:rocksdb -f Dockerfile.rocksdb_large .
+	docker build --no-cache -t ghcr.io/hanzoai/s3:rocksdb -f Dockerfile.rocksdb_large .
 
 build_tarantool_dev_env:
 	docker build --no-cache -t chrislusf/tarantool_dev_env -f Dockerfile.tarantool.dev_env .
@@ -68,7 +68,7 @@ dev_mount: build
 	docker compose -f compose/local-mount-compose.yml -p hanzo up
 
 run_image: build
-	docker run --rm -ti --device /dev/fuse --cap-add SYS_ADMIN --entrypoint /bin/sh chrislusf/hanzo:local
+	docker run --rm -ti --device /dev/fuse --cap-add SYS_ADMIN --entrypoint /bin/sh ghcr.io/hanzoai/s3:local
 
 profile_mount: build
 	docker compose -f compose/local-mount-profile-compose.yml -p hanzo up

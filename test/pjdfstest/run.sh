@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-WEED_BIN="${WEED_BIN:-s3}"
+S3_BIN="${S3_BIN:-s3}"
 WORK_DIR="${WORK_DIR:-$(mktemp -d /tmp/hanzo-pjdfstest.XXXXXX)}"
 MOUNT_DIR="${MOUNT_DIR:-${WORK_DIR}/mnt}"
 DATA_DIR="${DATA_DIR:-${WORK_DIR}/data}"
@@ -59,7 +59,7 @@ trap cleanup EXIT INT TERM
 mkdir -p "${MOUNT_DIR}" "${DATA_DIR}" "${LOG_DIR}"
 
 echo "==> Starting s3 mini on ${FILER_ADDR}"
-"${WEED_BIN}" mini \
+"${S3_BIN}" mini \
   -dir="${DATA_DIR}" \
   -ip=127.0.0.1 \
   -filer.port="${FILER_PORT}" \
@@ -91,7 +91,7 @@ fi
 echo "==> Mounting Hanzo at ${MOUNT_DIR}"
 # allowOthers is required so that pjdfstest's setuid/setgid sub-tests (run via
 # sudo) can access files created as the invoking user.
-sudo "${WEED_BIN}" mount \
+sudo "${S3_BIN}" mount \
   -filer="${FILER_ADDR}" \
   -dir="${MOUNT_DIR}" \
   -filer.path=/ \

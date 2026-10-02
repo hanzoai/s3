@@ -228,8 +228,8 @@ services:
       schema-registry:
         condition: service_healthy
     environment:
-      - SEAWEEDFS_MASTERS=hanzo-master:9333
-      - SEAWEEDFS_FILER_GROUP=
+      - S3_MASTERS=hanzo-master:9333
+      - S3_FILER_GROUP=
       - SCHEMA_REGISTRY_URL=http://schema-registry:8081
       - KAFKA_PORT=9093
       - PPROF_PORT=10093

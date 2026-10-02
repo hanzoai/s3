@@ -95,7 +95,7 @@ type HanzoFilerClient interface {
 	TransferLocks(ctx context.Context, in *TransferLocksRequest) (*TransferLocksResponse, error)
 	ReplicateLock(ctx context.Context, in *ReplicateLockRequest) (*ReplicateLockResponse, error)
 	// Peer chunk sharing — tier 1: mount-server registry.
-	// See design-weed-mount-peer-chunk-sharing.md for details.
+	// See design-s3-mount-peer-chunk-sharing.md for details.
 	MountRegister(ctx context.Context, in *MountRegisterRequest) (*MountRegisterResponse, error)
 	MountList(ctx context.Context, in *MountListRequest) (*MountListResponse, error)
 }
@@ -180,7 +180,7 @@ type HanzoFilerServer interface {
 	TransferLocks(context.Context, *TransferLocksRequest) (*TransferLocksResponse, error)
 	ReplicateLock(context.Context, *ReplicateLockRequest) (*ReplicateLockResponse, error)
 	// Peer chunk sharing — tier 1: mount-server registry.
-	// See design-weed-mount-peer-chunk-sharing.md for details.
+	// See design-s3-mount-peer-chunk-sharing.md for details.
 	MountRegister(context.Context, *MountRegisterRequest) (*MountRegisterResponse, error)
 	MountList(context.Context, *MountListRequest) (*MountListResponse, error)
 }

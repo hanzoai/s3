@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hanzoai/s3/test/testutil"
 	"github.com/hanzoai/s3/s3/pb"
+	"github.com/hanzoai/s3/test/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,8 +27,8 @@ import (
 // mounts it's ≤ 1/3, so a multi-chunk file almost certainly exercises
 // the remote-owner fan-out.
 type p2pTestCluster struct {
-	t          testing.TB
-	baseDir    string
+	t        testing.TB
+	baseDir  string
 	s3Binary string
 
 	masterPort     int
@@ -58,7 +58,7 @@ func startP2PTestCluster(t testing.TB, numMounts int) *p2pTestCluster {
 	require.GreaterOrEqual(t, numMounts, 2, "need at least 2 mounts to exercise p2p")
 	binary := findS3Binary()
 	if binary == "" {
-		t.Skip("s3 binary not found; set WEED_BINARY or ensure it is on PATH")
+		t.Skip("s3 binary not found; set S3_BINARY or ensure it is on PATH")
 	}
 	baseDir, err := os.MkdirTemp("", "hanzo_fuse_p2p_test_")
 	require.NoError(t, err)
@@ -66,7 +66,7 @@ func startP2PTestCluster(t testing.TB, numMounts int) *p2pTestCluster {
 	c := &p2pTestCluster{
 		t:              t,
 		baseDir:        baseDir,
-		s3Binary:     binary,
+		s3Binary:       binary,
 		mountPeerPorts: make([]int, numMounts),
 		mountPoints:    make([]string, numMounts),
 		mountCmds:      make([]*exec.Cmd, numMounts),
@@ -356,7 +356,7 @@ func (c *p2pTestCluster) waitForMount(mountPoint string, timeout time.Duration) 
 // close-then-reserve pattern fuse_dlm originally used.
 
 func findS3Binary() string {
-	if env := os.Getenv("WEED_BINARY"); env != "" {
+	if env := os.Getenv("S3_BINARY"); env != "" {
 		if _, err := os.Stat(env); err == nil {
 			return env
 		}

@@ -13,7 +13,7 @@ import (
 )
 
 // TestClientCompatibility tests compatibility with different Kafka client libraries and versions
-// This test will use SMQ backend if SEAWEEDFS_MASTERS is available, otherwise mock
+// This test will use SMQ backend if S3_MASTERS is available, otherwise mock
 func TestClientCompatibility(t *testing.T) {
 	gateway := testutil.NewGatewayTestServerWithSMQ(t, testutil.SMQAvailable)
 	defer gateway.CleanupAndClose()

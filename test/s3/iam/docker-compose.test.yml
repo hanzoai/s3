@@ -2,7 +2,7 @@
 services:
   # Hanzo Master
   hanzo-master:
-    image: chrislusf/hanzo:latest
+    image: ghcr.io/hanzoai/s3:latest
     container_name: hanzo-master-test
     command: master -mdir=/data -defaultReplication=000 -port=9333
     ports:
@@ -19,7 +19,7 @@ services:
 
   # Hanzo Volume  
   hanzo-volume:
-    image: chrislusf/hanzo:latest
+    image: ghcr.io/hanzoai/s3:latest
     container_name: hanzo-volume-test
     command: volume -dir=/data -port=8083 -master=hanzo-master:9333
     ports:
@@ -39,7 +39,7 @@ services:
 
   # Hanzo Filer
   hanzo-filer:
-    image: chrislusf/hanzo:latest
+    image: ghcr.io/hanzoai/s3:latest
     container_name: hanzo-filer-test
     command: filer -port=8888 -master=hanzo-master:9333 -defaultStoreDir=/data
     ports:
@@ -61,7 +61,7 @@ services:
 
   # Hanzo S3 API
   hanzo-s3:
-    image: chrislusf/hanzo:latest
+    image: ghcr.io/hanzoai/s3:latest
     container_name: hanzo-s3-test
     command: s3 -port=8333 -filer=hanzo-filer:8888 -config=/config/test_config.json
     ports:
@@ -86,7 +86,7 @@ services:
       dockerfile: test/s3/iam/Dockerfile.s3
     container_name: hanzo-s3-iam-tests
     environment:
-      - WEED_BINARY=s3
+      - S3_BINARY=s3
       - S3_PORT=8333
       - FILER_PORT=8888
       - MASTER_PORT=9333

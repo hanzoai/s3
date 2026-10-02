@@ -3,12 +3,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.seaweedfs</groupId>
-    <artifactId>seaweedfs-client</artifactId>
+    <groupId>ai.hanzo</groupId>
+    <artifactId>s3-client</artifactId>
     <version>4.00</version>
 
-    <name>SeaweedFS Java Client</name>
-    <description>A java client for SeaweedFS.</description>
+    <name>Hanzo S3 Java Client</name>
+    <description>A java client for Hanzo S3.</description>
     <url>https://github.com/hanzoai/s3</url>
     <licenses>
         <license>
@@ -18,15 +18,15 @@
     </licenses>
     <developers>
         <developer>
-            <name>Chris Lu</name>
-            <email>chris.lu@gmail.com</email>
-            <organization>SeaweedFS</organization>
-            <organizationUrl>https://seaweedfs.com</organizationUrl>
+            <name>Hanzo AI</name>
+            <email>dev@hanzo.ai</email>
+            <organization>Hanzo AI</organization>
+            <organizationUrl>https://hanzo.ai</organizationUrl>
         </developer>
     </developers>
     <scm>
         <connection>scm:git:git://github.com/hanzoai/s3.git</connection>
-        <developerConnection>scm:git:ssh://github.com:seaweedfs/seaweedfs.git</developerConnection>
+        <developerConnection>scm:git:ssh://github.com:hanzoai/s3.git</developerConnection>
         <url>https://github.com/hanzoai/s3/tree/master</url>
     </scm>
 

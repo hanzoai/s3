@@ -1,7 +1,7 @@
 # =============================================================================
-# SeaweedFS Terraform core - pure renderer (zero cloud resources).
+# Hanzo S3 Terraform core - pure renderer (zero cloud resources).
 #
-# Computes, per node: the verified `weed` argv, the full systemd ExecStart,
+# Computes, per node: the verified `s3` argv, the full systemd ExecStart,
 # config files, environment, and rendered systemd unit + cloud-init.
 # =============================================================================
 
@@ -24,10 +24,10 @@ locals {
     jwt_filer_signing_key      = var.security.jwt_filer_signing_key
     jwt_filer_signing_read_key = var.security.jwt_filer_signing_read_key
   }) : ""
-  security_files = local.render_security ? { "/etc/seaweedfs/security.toml" = local.security_toml } : {}
+  security_files = local.render_security ? { "/etc/hanzo/security.toml" = local.security_toml } : {}
 
   # ---- S3 identity JSON (non-admin identities only) ----
-  # Empty access_key => anonymous identity (no credentials block), per SeaweedFS
+  # Empty access_key => anonymous identity (no credentials block), per Hanzo S3
   # convention where the identity literally named "anonymous" grants anon access.
   s3_config_json = jsonencode({
     identities = [for id in var.s3_identities : {
@@ -54,11 +54,11 @@ locals {
   filer_keys  = sort(keys(var.filer.nodes))
   first_filer = length(local.filer_keys) > 0 ? format("%s:%d", var.filer.nodes[local.filer_keys[0]].address, coalesce(var.filer.nodes[local.filer_keys[0]].port, var.filer.port)) : ""
 
-  # ---- cluster discovery env (WEED_CLUSTER_*) ----
+  # ---- cluster discovery env (S3_CLUSTER_*) ----
   cluster_env = merge(
-    { WEED_CLUSTER_DEFAULT = var.cluster_name },
-    local.master_peers != "" ? { "WEED_CLUSTER_${replace(upper(var.cluster_name), "/[^A-Z0-9_]/", "_")}_MASTER" = local.master_peers } : {},
-    local.first_filer != "" ? { "WEED_CLUSTER_${replace(upper(var.cluster_name), "/[^A-Z0-9_]/", "_")}_FILER" = local.first_filer } : {},
+    { S3_CLUSTER_DEFAULT = var.cluster_name },
+    local.master_peers != "" ? { "S3_CLUSTER_${replace(upper(var.cluster_name), "/[^A-Z0-9_]/", "_")}_MASTER" = local.master_peers } : {},
+    local.first_filer != "" ? { "S3_CLUSTER_${replace(upper(var.cluster_name), "/[^A-Z0-9_]/", "_")}_FILER" = local.first_filer } : {},
   )
 
   metrics_flags_master = var.monitoring_enabled ? compact([
@@ -262,7 +262,7 @@ locals {
   } : {}
 
   # ===========================================================================
-  # ALL-IN-ONE nodes (weed server)
+  # ALL-IN-ONE nodes (s3 server)
   # ===========================================================================
   aio_keys     = sort(keys(var.all_in_one.nodes))
   aio_s3_files = var.all_in_one.s3.enabled ? { (var.all_in_one.s3.config_path) = local.s3_config_json } : {}
@@ -326,17 +326,17 @@ locals {
 
   nodes = {
     for name, n in local.nodes_base : name => merge(n, {
-      exec_start = "${var.weed_binary} ${join(" ", n.argv)}"
+      exec_start = "${var.s3_binary} ${join(" ", n.argv)}"
       # secret_files: the secret-bearing config a wrapper should deliver from a
       # secret store when render_secret_files=false (else they go in cloud-init).
       secret_files = n.config_files
       mount_script = local.mount_scripts[name]
       file_modes   = { for p in keys(n.config_files) : p => "0600" }
-      systemd_unit = templatefile("${path.module}/templates/weed.service.tftpl", {
+      systemd_unit = templatefile("${path.module}/templates/s3.service.tftpl", {
         role                = n.role
         name                = n.name
         run_as_user         = var.hardening.run_as_user
-        exec_start          = "${var.weed_binary} ${join(" ", n.argv)}"
+        exec_start          = "${var.s3_binary} ${join(" ", n.argv)}"
         no_new_privileges   = var.hardening.no_new_privileges
         protect_system      = var.hardening.protect_system
         cap_drop_all        = var.hardening.cap_drop_all
@@ -354,11 +354,11 @@ locals {
         pre_runcmd   = [for p in n.data_dirs : "install -d -o ${var.hardening.run_as_user} -g ${var.hardening.run_as_user} ${p}"]
         mount_script = local.mount_scripts[name]
         fetch_script = var.boot_fetch_script
-        systemd_unit = templatefile("${path.module}/templates/weed.service.tftpl", {
+        systemd_unit = templatefile("${path.module}/templates/s3.service.tftpl", {
           role                = n.role
           name                = n.name
           run_as_user         = var.hardening.run_as_user
-          exec_start          = "${var.weed_binary} ${join(" ", n.argv)}"
+          exec_start          = "${var.s3_binary} ${join(" ", n.argv)}"
           no_new_privileges   = var.hardening.no_new_privileges
           protect_system      = var.hardening.protect_system
           cap_drop_all        = var.hardening.cap_drop_all

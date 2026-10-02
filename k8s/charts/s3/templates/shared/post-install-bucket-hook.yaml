@@ -11,7 +11,7 @@
 {{- else }}
   {{- $bucketEnvVars = merge (.Values.filer.extraEnvironmentVars | default dict) $bucketEnvVars }}
 {{- end }}
-{{- $bucketsFolder = default $bucketsFolder (get $bucketEnvVars "WEED_FILER_BUCKETS_FOLDER") }}
+{{- $bucketsFolder = default $bucketsFolder (get $bucketEnvVars "S3_FILER_BUCKETS_FOLDER") }}
 {{- $bucketsFolder = trimSuffix "/" $bucketsFolder }}
 
 {{- /* Check allInOne mode first */}}
@@ -71,11 +71,11 @@ spec:
         image: {{ template "hanzo.master.image" . }}
         imagePullPolicy: {{ $.Values.global.s3.imagePullPolicy | default "IfNotPresent" }}
         env:
-          - name: WEED_CLUSTER_DEFAULT
+          - name: S3_CLUSTER_DEFAULT
             value: "sw"
-          - name: WEED_CLUSTER_SW_MASTER
+          - name: S3_CLUSTER_SW_MASTER
             value: {{ include "hanzo.cluster.masterAddress" . | quote }}
-          - name: WEED_CLUSTER_SW_FILER
+          - name: S3_CLUSTER_SW_FILER
             value: {{ include "hanzo.cluster.filerAddress" . | quote }}
           - name: POD_IP
             valueFrom:
@@ -89,7 +89,7 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-          - name: SEAWEEDFS_FULLNAME
+          - name: S3_FULLNAME
             value: "{{ include "hanzo.fullname" . }}"
         command:
           - "/bin/sh"
@@ -115,11 +115,11 @@ spec:
               exit 1
             }
             {{- if .Values.allInOne.enabled }}
-            wait_for_service "http://$WEED_CLUSTER_SW_MASTER{{ .Values.allInOne.readinessProbe.httpGet.path }}"
-            wait_for_service "http://$WEED_CLUSTER_SW_FILER{{ .Values.filer.readinessProbe.httpGet.path }}"
+            wait_for_service "http://$S3_CLUSTER_SW_MASTER{{ .Values.allInOne.readinessProbe.httpGet.path }}"
+            wait_for_service "http://$S3_CLUSTER_SW_FILER{{ .Values.filer.readinessProbe.httpGet.path }}"
             {{- else }}
-            wait_for_service "http://$WEED_CLUSTER_SW_MASTER{{ .Values.master.readinessProbe.httpGet.path }}"
-            wait_for_service "http://$WEED_CLUSTER_SW_FILER{{ .Values.filer.readinessProbe.httpGet.path }}"
+            wait_for_service "http://$S3_CLUSTER_SW_MASTER{{ .Values.master.readinessProbe.httpGet.path }}"
+            wait_for_service "http://$S3_CLUSTER_SW_FILER{{ .Values.filer.readinessProbe.httpGet.path }}"
             {{- end }}
             {{- range $createBuckets }}
             {{- $bucketName := .name }}

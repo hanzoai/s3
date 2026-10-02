@@ -1,4 +1,4 @@
-module seaweedfs-sftp-tests
+module s3-sftp-tests
 
 go 1.27.1
 

@@ -27,8 +27,8 @@ const filerGroup = "fuse-dlm-test"
 // dlmTestCluster manages a full Hanzo cluster with 2 filers and 2 FUSE
 // mounts for testing DLM-based cross-mount write coordination.
 type dlmTestCluster struct {
-	t          testing.TB
-	baseDir    string
+	t        testing.TB
+	baseDir  string
 	s3Binary string
 
 	masterPort     int
@@ -51,15 +51,15 @@ type dlmTestCluster struct {
 func startDLMTestCluster(t testing.TB) *dlmTestCluster {
 	binary := findS3Binary()
 	if binary == "" {
-		t.Skip("s3 binary not found; set WEED_BINARY or ensure it is on PATH")
+		t.Skip("s3 binary not found; set S3_BINARY or ensure it is on PATH")
 	}
 
 	baseDir, err := os.MkdirTemp("", "hanzo_fuse_dlm_test_")
 	require.NoError(t, err)
 
 	c := &dlmTestCluster{
-		t:          t,
-		baseDir:    baseDir,
+		t:        t,
+		baseDir:  baseDir,
 		s3Binary: binary,
 	}
 	// Register cleanup early so processes are stopped even if a require fails below.
@@ -496,7 +496,7 @@ func allocatePorts(t testing.TB, n int) []int {
 }
 
 func findS3Binary() string {
-	if p := os.Getenv("WEED_BINARY"); p != "" {
+	if p := os.Getenv("S3_BINARY"); p != "" {
 		return p
 	}
 	if p, err := exec.LookPath("s3"); err == nil {

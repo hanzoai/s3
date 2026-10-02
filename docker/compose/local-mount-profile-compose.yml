@@ -2,13 +2,13 @@ version: '3.9'
 
 services:
   master:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 9333:9333
       - 19333:19333
     command: "master -ip=master"
   volume:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 7455:8080
       - 9325:9325
@@ -18,7 +18,7 @@ services:
     depends_on:
       - master
   filer:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 8888:8888
       - 18888:18888
@@ -32,7 +32,7 @@ services:
       - master
       - volume
   mount:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     privileged: true
     cap_add:
       - SYS_ADMIN

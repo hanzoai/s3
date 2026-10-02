@@ -22,7 +22,7 @@ LOG_FILE="$PERFORMANCE_RESULTS_DIR/performance-test.log"
 exec > >(tee -a "$LOG_FILE")
 exec 2>&1
 
-echo -e "${BLUE}🏁 SEAWEEDFS RDMA MOUNT PERFORMANCE TESTS${NC}"
+echo -e "${BLUE}🏁 HANZO S3 RDMA MOUNT PERFORMANCE TESTS${NC}"
 echo "==========================================="
 echo "Mount Point: $MOUNT_POINT"
 echo "RDMA Sidecar: $RDMA_SIDECAR_ADDR"

@@ -106,9 +106,9 @@ The tests can be configured using environment variables:
 
 ```bash
 export FDB_CLUSTER_FILE=/var/fdb/config/fdb.cluster
-export WEED_FOUNDATIONDB_ENABLED=true
-export WEED_FOUNDATIONDB_API_VERSION=740
-export WEED_FOUNDATIONDB_TIMEOUT=10s
+export S3_FOUNDATIONDB_ENABLED=true
+export S3_FOUNDATIONDB_API_VERSION=740
+export S3_FOUNDATIONDB_TIMEOUT=10s
 ```
 
 #### Docker Compose Environment Variables
@@ -125,8 +125,8 @@ export FDB_PORT=4500
 # FoundationDB cluster file contents (default: docker:docker@fdb1:4500,fdb2:4500,fdb3:4500)
 export FDB_CLUSTER_FILE_CONTENTS="docker:docker@fdb1:4500,fdb2:4500,fdb3:4500"
 
-# Hanzo image (default: chrislusf/hanzo:latest)
-export SEAWEEDFS_IMAGE=chrislusf/hanzo:latest
+# Hanzo image (default: ghcr.io/hanzoai/s3:latest)
+export S3_IMAGE=ghcr.io/hanzoai/s3:latest
 ```
 
 **Note:** These variables are optional. If not set, the docker-compose will use the default values shown above, allowing `docker-compose up` to work out-of-the-box without any `.env` file or manual configuration.
@@ -276,7 +276,7 @@ Enable verbose logging for detailed troubleshooting:
 
 ```bash
 # Hanzo debug logs
-WEED_FILER_OPTIONS_V=2 make test
+S3_FILER_OPTIONS_V=2 make test
 
 # FoundationDB debug logs (in fdbcli)
 configure new single ssd; status details

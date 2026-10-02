@@ -9,11 +9,11 @@ export GODEBUG="${GODEBUG:+$GODEBUG,}fips140=on"
 # Fix this by ensuring hanzo user owns the directory
 if [ "$(id -u)" = "0" ]; then
   # Running as root, check and fix permissions if needed
-  SEAWEED_UID=$(id -u hanzo)
-  SEAWEED_GID=$(id -g hanzo)
+  S3_UID=$(id -u hanzo)
+  S3_GID=$(id -g hanzo)
   
   # Verify hanzo user and group exist
-  if [ -z "$SEAWEED_UID" ] || [ -z "$SEAWEED_GID" ]; then
+  if [ -z "$S3_UID" ] || [ -z "$S3_GID" ]; then
     echo "Error: 'hanzo' user or group not found. Cannot fix permissions." >&2
     exit 1
   fi
@@ -24,8 +24,8 @@ if [ "$(id -u)" = "0" ]; then
   # Only run chown -R if ownership doesn't already match (avoids expensive
   # recursive chown on subsequent starts, and is a no-op on OpenShift when
   # fsGroup has already set correct ownership on the PVC).
-  if [ "$DATA_UID" != "$SEAWEED_UID" ] || [ "$DATA_GID" != "$SEAWEED_GID" ]; then
-    echo "Fixing /data ownership for hanzo user (uid=$SEAWEED_UID, gid=$SEAWEED_GID)"
+  if [ "$DATA_UID" != "$S3_UID" ] || [ "$DATA_GID" != "$S3_GID" ]; then
+    echo "Fixing /data ownership for hanzo user (uid=$S3_UID, gid=$S3_GID)"
     if ! chown -R hanzo:hanzo /data; then
       echo "Warning: Failed to change ownership of /data. This may cause permission errors." >&2
       echo "If /data is read-only or has mount issues, the application may fail to start." >&2

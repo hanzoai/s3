@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Test client for SeaweedFS PostgreSQL protocol support.
+Test client for Hanzo S3 PostgreSQL protocol support.
 
-This script demonstrates how to connect to SeaweedFS using standard PostgreSQL
+This script demonstrates how to connect to Hanzo S3 using standard PostgreSQL
 libraries and execute various types of queries.
 
 Requirements:
@@ -10,7 +10,7 @@ Requirements:
 
 Usage:
     python test_client.py
-    python test_client.py --host localhost --port 5432 --user seaweedfs --database default
+    python test_client.py --host localhost --port 5432 --user s3 --database default
 """
 
 import sys
@@ -27,7 +27,7 @@ except ImportError:
 
 
 def test_connection(host, port, user, database, password=None):
-    """Test basic connection to SeaweedFS PostgreSQL server."""
+    """Test basic connection to Hanzo S3 PostgreSQL server."""
     print(f"🔗 Testing connection to {host}:{port}/{database} as user '{user}'")
     
     try:
@@ -327,17 +327,17 @@ def test_performance(host, port, user, database, password=None, iterations=10):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Test SeaweedFS PostgreSQL Protocol")
+    parser = argparse.ArgumentParser(description="Test Hanzo S3 PostgreSQL Protocol")
     parser.add_argument("--host", default="localhost", help="PostgreSQL server host")
     parser.add_argument("--port", type=int, default=5432, help="PostgreSQL server port")
-    parser.add_argument("--user", default="seaweedfs", help="PostgreSQL username")
+    parser.add_argument("--user", default="s3", help="PostgreSQL username")
     parser.add_argument("--password", help="PostgreSQL password")
     parser.add_argument("--database", default="default", help="PostgreSQL database")
     parser.add_argument("--skip-performance", action="store_true", help="Skip performance tests")
     
     args = parser.parse_args()
     
-    print("🧪 SeaweedFS PostgreSQL Protocol Test Client")
+    print("🧪 Hanzo S3 PostgreSQL Protocol Test Client")
     print("=" * 50)
     
     # Test basic connection first
@@ -365,7 +365,7 @@ def main():
         sys.exit(1)
     
     print("\n🎉 All tests completed!")
-    print("\nTo use SeaweedFS with PostgreSQL tools:")
+    print("\nTo use Hanzo S3 with PostgreSQL tools:")
     print(f"  psql -h {args.host} -p {args.port} -U {args.user} -d {args.database}")
     print(f"  Connection string: postgresql://{args.user}@{args.host}:{args.port}/{args.database}")
 

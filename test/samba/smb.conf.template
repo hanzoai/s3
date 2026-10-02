@@ -1,7 +1,7 @@
 [global]
     server role = standalone server
     workgroup = WORKGROUP
-    server string = SeaweedFS FUSE Samba test
+    server string = Hanzo S3 FUSE Samba test
     security = user
     server min protocol = SMB2
     smb ports = @SMB_PORT@
@@ -26,7 +26,7 @@
     printcap name = /dev/null
     disable spoolss = yes
 
-    # The SeaweedFS FUSE mount does not implement the full xattr / DOS-attribute
+    # The Hanzo S3 FUSE mount does not implement the full xattr / DOS-attribute
     # surface Samba uses by default. Disabling these avoids spurious
     # NT_STATUS_NOT_SUPPORTED / EOPNOTSUPP errors unrelated to data integrity.
     ea support = no
@@ -42,9 +42,9 @@
     kernel oplocks = no
     posix locking = no
 
-[seaweedfs]
+[s3]
     path = @SHARE_PATH@
-    comment = SeaweedFS share backed by a FUSE mount
+    comment = Hanzo S3 share backed by a FUSE mount
     browseable = yes
     read only = no
     create mask = 0644

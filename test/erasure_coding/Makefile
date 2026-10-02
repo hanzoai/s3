@@ -9,7 +9,7 @@
 #
 # Requirements: curl, jq
 
-WEED_BINARY := $(shell pwd)/../../s3/s3
+S3_BINARY := $(shell pwd)/../../s3/s3
 TEST_DIR := /tmp/ec_manual_test
 # Use non-standard ports to avoid conflicts with existing Hanzo servers
 MASTER_PORT := 29333
@@ -20,11 +20,11 @@ VOLUME_SIZE_LIMIT_MB := 30
 MAX_VOLUMES_PER_SERVER := 10
 
 # Build s3 binary if it doesn't exist
-$(WEED_BINARY):
+$(S3_BINARY):
 	cd ../../s3 && go build -o s3 .
 
 .PHONY: build
-build: $(WEED_BINARY)
+build: $(S3_BINARY)
 
 .PHONY: start
 start: build
@@ -46,7 +46,7 @@ start: build
 	@echo 'dir = "$(TEST_DIR)/filer/filerldb2"' >> $(TEST_DIR)/filer.toml
 	@# Start master
 	@echo "Starting master on port $(MASTER_PORT)..."
-	@cd $(TEST_DIR) && $(WEED_BINARY) master \
+	@cd $(TEST_DIR) && $(S3_BINARY) master \
 		-port=$(MASTER_PORT) \
 		-mdir=$(TEST_DIR)/master \
 		-volumeSizeLimitMB=$(VOLUME_SIZE_LIMIT_MB) \
@@ -57,7 +57,7 @@ start: build
 	@for i in $$(seq 0 $$(($(NUM_VOLUME_SERVERS)-1))); do \
 		port=$$(($(VOLUME_BASE_PORT) + $$i)); \
 		echo "Starting volume server $$i on port $$port (rack$$i)..."; \
-		cd $(TEST_DIR) && $(WEED_BINARY) volume \
+		cd $(TEST_DIR) && $(S3_BINARY) volume \
 			-port=$$port \
 			-dir=$(TEST_DIR)/volume$$i \
 			-max=$(MAX_VOLUMES_PER_SERVER) \
@@ -70,7 +70,7 @@ start: build
 	@sleep 3
 	@# Start filer (run from TEST_DIR to find security.toml)
 	@echo "Starting filer on port $(FILER_PORT)..."
-	@cd $(TEST_DIR) && $(WEED_BINARY) filer \
+	@cd $(TEST_DIR) && $(S3_BINARY) filer \
 		-port=$(FILER_PORT) \
 		-master=127.0.0.1:$(MASTER_PORT) \
 		-ip=127.0.0.1 \
@@ -146,7 +146,7 @@ shell: build
 	@echo "  ec.balance -collection=ectest"
 	@echo "  unlock"
 	@echo ""
-	@$(WEED_BINARY) shell -master=127.0.0.1:$(MASTER_PORT) -filer=127.0.0.1:$(FILER_PORT)
+	@$(S3_BINARY) shell -master=127.0.0.1:$(MASTER_PORT) -filer=127.0.0.1:$(FILER_PORT)
 
 .PHONY: setup
 setup: clean start

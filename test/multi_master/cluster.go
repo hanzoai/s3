@@ -41,11 +41,11 @@ type masterNode struct {
 // lowest-address live member (the Coordinator), so failover is a pure
 // re-computation the instant the membership changes.
 type MasterCluster struct {
-	t          testing.TB
+	t        testing.TB
 	s3Binary string
-	baseDir    string
-	logsDir    string
-	keepLogs   bool
+	baseDir  string
+	logsDir  string
+	keepLogs bool
 
 	nodes [3]*masterNode
 	mu    sync.Mutex
@@ -111,13 +111,13 @@ func StartMasterCluster(t testing.TB) *MasterCluster {
 	}
 
 	mc := &MasterCluster{
-		t:          t,
+		t:        t,
 		s3Binary: s3Binary,
-		baseDir:    baseDir,
-		logsDir:    logsDir,
-		keepLogs:   keepLogs,
-		nodes:      nodes,
-		peersStr:   strings.Join(peerParts, ","),
+		baseDir:  baseDir,
+		logsDir:  logsDir,
+		keepLogs: keepLogs,
+		nodes:    nodes,
+		peersStr: strings.Join(peerParts, ","),
 	}
 
 	for i := range 3 {
@@ -395,11 +395,11 @@ func (mc *MasterCluster) tailLog(i int) string {
 }
 
 func findOrBuildS3Binary() (string, error) {
-	if fromEnv := os.Getenv("WEED_BINARY"); fromEnv != "" {
+	if fromEnv := os.Getenv("S3_BINARY"); fromEnv != "" {
 		if isExecutableFile(fromEnv) {
 			return fromEnv, nil
 		}
-		return "", fmt.Errorf("WEED_BINARY not executable: %s", fromEnv)
+		return "", fmt.Errorf("S3_BINARY not executable: %s", fromEnv)
 	}
 
 	repoRoot := ""

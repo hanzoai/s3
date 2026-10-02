@@ -10,7 +10,7 @@ RUN ls -al /go/src/github.com/hanzo/ && \
 
 
 FROM alpine AS final
-LABEL author="Chris Lu"
+LABEL author="Hanzo AI"
 COPY --from=builder /go/bin/s3 /usr/bin/
 RUN mkdir -p /etc/hanzo
 COPY --from=builder /go/src/github.com/hanzoai/s3/docker/filer_rocksdb.toml /etc/hanzo/filer.toml

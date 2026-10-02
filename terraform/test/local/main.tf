@@ -1,9 +1,9 @@
 # =============================================================================
-# Local test harness: render a small SeaweedFS cluster with the core module
-# and run it as real `weed` processes on 127.0.0.1 (no cloud, no docker).
+# Local test harness: render a small Hanzo S3 cluster with the core module
+# and run it as real `s3` processes on 127.0.0.1 (no cloud, no docker).
 #
 # 3 masters (quorum) + 1 volume + 1 filer + 1 standalone S3, each on a distinct
-# port. run_local_cluster.sh consumes the `cluster` output, launches the weed
+# port. run_local_cluster.sh consumes the `cluster` output, launches the s3
 # processes from the rendered argv, and asserts the cluster actually works.
 # =============================================================================
 
@@ -11,26 +11,26 @@ terraform {
   required_version = ">= 1.3.0"
 }
 
-variable "weed_binary" {
-  description = "Path to the weed executable used for the local cluster."
+variable "s3_binary" {
+  description = "Path to the s3 executable used for the local cluster."
   type        = string
-  default     = "/usr/bin/weed"
+  default     = "/usr/bin/s3"
 }
 
 variable "workdir" {
   description = "Scratch directory for per-node data dirs and config files."
   type        = string
-  default     = "/tmp/seaweedfs-tftest"
+  default     = "/tmp/s3-tftest"
 }
 
 module "core" {
   source = "../../modules/core"
 
-  weed_binary        = var.weed_binary
+  s3_binary        = var.s3_binary
   monitoring_enabled = false
   enable_security    = false
 
-  # High port range so the harness does not collide with a SeaweedFS cluster
+  # High port range so the harness does not collide with a Hanzo S3 cluster
   # that may already be running on this dev machine (default 9333/8080/8888/8333).
   master = {
     nodes = {
@@ -63,7 +63,7 @@ module "core" {
   s3 = {
     enabled = true
     nodes   = { s0 = { address = "127.0.0.1", port = 28333 } }
-    # this weed build starts an Iceberg REST catalog on 8181 by default; disable
+    # this s3 build starts an Iceberg REST catalog on 8181 by default; disable
     # it so the test does not collide with a cluster already using that port.
     iceberg_port = 0
     config_path  = "${var.workdir}/s3_config.json"

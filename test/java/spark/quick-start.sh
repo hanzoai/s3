@@ -50,7 +50,7 @@ build_project() {
 run_tests() {
     echo ""
     echo "Running integration tests..."
-    export SEAWEEDFS_TEST_ENABLED=true
+    export S3_TEST_ENABLED=true
     mvn test
     echo "✓ Tests completed"
 }

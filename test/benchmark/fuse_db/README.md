@@ -64,7 +64,7 @@ only reached the page cache could be lost. A VM hard-reset / power-loss test on 
 is the follow-up to close that gap.
 
 ## Requirements
-- `s3` on `$PATH` (or set `WEED=/path/to/s3`)
+- `s3` on `$PATH` (or set `S3_BIN=/path/to/s3`)
 - macFUSE (macOS) or libfuse (Linux)
 - `python3`, `sqlite3`
 - MySQL/MariaDB install; set `MYSQL_BASE` to its prefix (default macOS Homebrew
@@ -72,7 +72,7 @@ is the follow-up to close that gap.
   For `mysql_bench.py` on a non-default install, also set `MYSQL_BIN=/path/to/mysql`.
 
 ## Run
-Runtime artifacts (cluster, mount, logs) go to `$SEAWEED_BENCH_WORK`
+Runtime artifacts (cluster, mount, logs) go to `$S3_BENCH_WORK`
 (default `/tmp/hanzo_fuse_db_bench`), kept out of the repo.
 
     cd test/benchmark/fuse_db

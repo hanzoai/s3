@@ -54,7 +54,7 @@ RUN if [ -f "/prebuilt/s3-volume-${TARGETARCH}" ]; then \
 RUN chmod 0755 /s3-volume
 
 FROM alpine AS final
-LABEL author="Chris Lu"
+LABEL author="Hanzo AI"
 COPY --from=builder /go/bin/s3 /usr/bin/
 # Copy Rust volume server binary (real binary on amd64/arm64, empty placeholder on other platforms)
 COPY --from=rust_builder /s3-volume /usr/bin/s3-volume

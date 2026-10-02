@@ -95,7 +95,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: SEAWEEDFS_FULLNAME
+            - name: S3_FULLNAME
               value: "{{ include "hanzo.fullname" . }}"
             {{- $mergedExtraEnvironmentVars := dict }}
             {{- include "hanzo.mergeExtraEnvironmentVars" (dict "global" .Values.global.s3 "component" .Values.master "target" $mergedExtraEnvironmentVars) }}

@@ -38,7 +38,7 @@ func NewGatewayTestServer(t *testing.T, opts GatewayOptions) *GatewayTestServer 
 	if opts.UseProduction {
 		if opts.Masters == "" {
 			// Fallback to env variable for convenience in CI
-			if v := os.Getenv("SEAWEEDFS_MASTERS"); v != "" {
+			if v := os.Getenv("S3_MASTERS"); v != "" {
 				opts.Masters = v
 			} else {
 				opts.Masters = "localhost:9333"
@@ -148,7 +148,7 @@ const (
 
 // CheckSMQAvailability checks if Hanzo masters are available for testing
 func CheckSMQAvailability() (bool, string) {
-	masters := os.Getenv("SEAWEEDFS_MASTERS")
+	masters := os.Getenv("S3_MASTERS")
 	if masters == "" {
 		return false, ""
 	}
@@ -175,9 +175,9 @@ func NewGatewayTestServerWithSMQ(t *testing.T, mode SMQAvailabilityMode) *Gatewa
 	case SMQRequired:
 		if !smqAvailable {
 			if masters != "" {
-				t.Skipf("Skipping test: SEAWEEDFS_MASTERS=%s specified but unreachable", masters)
+				t.Skipf("Skipping test: S3_MASTERS=%s specified but unreachable", masters)
 			} else {
-				t.Skip("Skipping test: SEAWEEDFS_MASTERS required but not set")
+				t.Skip("Skipping test: S3_MASTERS required but not set")
 			}
 		}
 		t.Logf("Using SMQ-backed gateway with masters: %s", masters)
@@ -239,7 +239,7 @@ func newGatewayTestServerWithTimeout(t *testing.T, opts GatewayOptions, timeout 
 }
 
 // IsSMQMode returns true if the gateway is using real SMQ backend
-// This is determined by checking if we have the SEAWEEDFS_MASTERS environment variable
+// This is determined by checking if we have the S3_MASTERS environment variable
 func (g *GatewayTestServer) IsSMQMode() bool {
 	available, _ := CheckSMQAvailability()
 	return available

@@ -2,7 +2,7 @@
 
 # Configuration
 FDB_CLUSTER_FILE ?= /tmp/fdb.cluster
-SEAWEEDFS_S3_ENDPOINT ?= http://127.0.0.1:8333
+S3_ENDPOINT ?= http://127.0.0.1:8333
 TEST_TIMEOUT ?= 5m
 DOCKER_COMPOSE ?= docker-compose
 DOCKER_COMPOSE_ARM64 ?= docker-compose -f docker-compose.arm64.yml
@@ -145,12 +145,12 @@ status: ## Show status of all services
 	@$(DOCKER_COMPOSE) exec fdb-init fdbcli --exec 'status' || echo "FoundationDB not accessible"
 	@echo ""
 	@echo "$(BLUE)Hanzo S3 Status:$(NC)"
-	@curl -s $(SEAWEEDFS_S3_ENDPOINT) || echo "Hanzo S3 not accessible"
+	@curl -s $(S3_ENDPOINT) || echo "Hanzo S3 not accessible"
 
 debug: ## Debug test environment
 	@echo "$(BLUE)Debug Information:$(NC)"
 	@echo "FoundationDB Cluster File: $(FDB_CLUSTER_FILE)"
-	@echo "Hanzo S3 Endpoint: $(SEAWEEDFS_S3_ENDPOINT)"
+	@echo "Hanzo S3 Endpoint: $(S3_ENDPOINT)"
 	@echo "Docker Compose Status:"
 	@$(DOCKER_COMPOSE) ps
 	@echo ""
@@ -179,7 +179,7 @@ install-deps: ## Install required dependencies
 check-env: ## Check test environment setup
 	@echo "$(BLUE)Environment Check:$(NC)"
 	@echo "FDB_CLUSTER_FILE: $(FDB_CLUSTER_FILE)"
-	@echo "SEAWEEDFS_S3_ENDPOINT: $(SEAWEEDFS_S3_ENDPOINT)"
+	@echo "S3_ENDPOINT: $(S3_ENDPOINT)"
 	@echo "TEST_TIMEOUT: $(TEST_TIMEOUT)"
 	@make install-deps
 

@@ -1,25 +1,25 @@
 # =============================================================================
-# SeaweedFS Terraform core module - input variables
+# Hanzo S3 Terraform core module - input variables
 #
 # This module is a PURE RENDERER. It creates zero cloud resources. It takes a
 # per-node address map plus configuration and emits, per node, the rendered
-# `weed` argv, systemd unit, cloud-init, and config files. Both the per-cloud
+# `s3` argv, systemd unit, cloud-init, and config files. Both the per-cloud
 # infra wrappers (consume cloud_init/systemd_unit) and the local test harness
 # (consume argv/config_files) read its `nodes` output.
 #
-# Flag names below are verified against the real `weed` binary, not the chart.
+# Flag names below are verified against the real `s3` binary, not the chart.
 # Notably: volume uses -mserver for the master list; gRPC is -port.grpc
 # (auto = http+10000); minFreeSpacePercent is a string.
 # =============================================================================
 
-variable "weed_binary" {
-  description = "Path to the weed executable on the target host."
+variable "s3_binary" {
+  description = "Path to the s3 executable on the target host."
   type        = string
-  default     = "/usr/bin/weed"
+  default     = "/usr/bin/s3"
 }
 
 variable "cluster_name" {
-  description = "Logical cluster name (WEED_CLUSTER_DEFAULT)."
+  description = "Logical cluster name (S3_CLUSTER_DEFAULT)."
   type        = string
   default     = "sw"
 }
@@ -70,7 +70,7 @@ variable "security" {
 variable "hardening" {
   description = "systemd hardening directives (OpenShift SCC analogs). Relax per field if needed."
   type = object({
-    run_as_user       = optional(string, "seaweedfs")
+    run_as_user       = optional(string, "s3")
     no_new_privileges = optional(bool, true)
     protect_system    = optional(bool, true)
     cap_drop_all      = optional(bool, true)
@@ -81,7 +81,7 @@ variable "hardening" {
 variable "env_file" {
   description = "Path to the systemd EnvironmentFile holding secret env (DB creds, S3 admin key) fetched at boot. Optional (-prefixed in the unit, so a missing file is tolerated)."
   type        = string
-  default     = "/etc/seaweedfs/weed.env"
+  default     = "/etc/hanzo/s3.env"
 }
 
 variable "render_secret_files" {
@@ -98,7 +98,7 @@ variable "render_secret_files" {
 }
 
 variable "boot_fetch_script" {
-  description = "Optional shell script written to /opt/seaweedfs/fetch-secrets.sh (root, 0755) and run before the weed unit starts. Used by wrappers to pull certs/secrets from a cloud secret store at boot."
+  description = "Optional shell script written to /opt/hanzo/fetch-secrets.sh (root, 0755) and run before the s3 unit starts. Used by wrappers to pull certs/secrets from a cloud secret store at boot."
   type        = string
   default     = ""
 }
@@ -122,11 +122,11 @@ variable "master" {
       })), [])
     })), {})
     port                 = optional(number, 9333)
-    grpc_port            = optional(number, null) # null => weed auto = port+10000
+    grpc_port            = optional(number, null) # null => s3 auto = port+10000
     metrics_port         = optional(number, 9327)
     metrics_ip           = optional(string, "")
     ip_bind              = optional(string, "0.0.0.0")
-    data_dir             = optional(string, "/var/lib/seaweedfs/master")
+    data_dir             = optional(string, "/var/lib/s3/master")
     default_replication  = optional(string, "000")
     volume_size_limit_mb = optional(number, 1000)
     volume_preallocate   = optional(bool, false)
@@ -210,7 +210,7 @@ variable "filer" {
     metrics_port              = optional(number, 9327)
     metrics_ip                = optional(string, "")
     ip_bind                   = optional(string, "0.0.0.0")
-    data_dir                  = optional(string, "/var/lib/seaweedfs/filer") # -defaultStoreDir for leveldb2
+    data_dir                  = optional(string, "/var/lib/s3/filer") # -defaultStoreDir for leveldb2
     default_replica_placement = optional(string, "000")
     dir_list_limit            = optional(number, 100000)
     max_mb                    = optional(number, null)
@@ -227,7 +227,7 @@ variable "filer" {
       port        = optional(number, 8333)
       https_port  = optional(number, 0)
       domain_name = optional(string, "")
-      config_path = optional(string, "/etc/seaweedfs/s3_config.json")
+      config_path = optional(string, "/etc/hanzo/s3_config.json")
     }), {})
   })
   default = {}
@@ -253,7 +253,7 @@ variable "s3" {
     ip_bind               = optional(string, "0.0.0.0")
     domain_name           = optional(string, "")
     filer_address         = optional(string, "") # override; else first filer node
-    config_path           = optional(string, "/etc/seaweedfs/s3_config.json")
+    config_path           = optional(string, "/etc/hanzo/s3_config.json")
     audit_log_config_path = optional(string, "")
     cert_file             = optional(string, "")
     key_file              = optional(string, "")
@@ -281,10 +281,10 @@ variable "s3_identities" {
 }
 
 # ----------------------------------------------------------------------------
-# All-in-one (single `weed server` process).
+# All-in-one (single `s3 server` process).
 # ----------------------------------------------------------------------------
 variable "all_in_one" {
-  description = "All-in-one tier (weed server). Mutually exclusive with the distributed tiers."
+  description = "All-in-one tier (s3 server). Mutually exclusive with the distributed tiers."
   type = object({
     enabled = optional(bool, false)
     nodes = optional(map(object({
@@ -309,7 +309,7 @@ variable "all_in_one" {
     s3 = optional(object({
       enabled     = optional(bool, false)
       port        = optional(number, 8333)
-      config_path = optional(string, "/etc/seaweedfs/s3/s3_config.json")
+      config_path = optional(string, "/etc/hanzo/s3/s3_config.json")
       domain_name = optional(string, "")
     }), {})
     extra_args = optional(list(string), [])

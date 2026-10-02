@@ -4,7 +4,7 @@
 .PHONY: help build-s3 setup-server start-server stop-server test-tagging test-tagging-quick test-tagging-comprehensive test-all clean logs check-deps test-with-server
 
 # Configuration
-WEED_BINARY := ../../../s3/s3_binary
+S3_BINARY := ../../../s3/s3_binary
 S3_PORT := 8006
 MASTER_PORT := 9338
 VOLUME_PORT := 8085
@@ -38,18 +38,18 @@ help:
 build-s3:
 	@echo "Building Hanzo binary..."
 	@cd ../../../s3 && go build -o s3_binary .
-	@chmod +x $(WEED_BINARY)
-	@echo "✅ Hanzo binary built at $(WEED_BINARY)"
+	@chmod +x $(S3_BINARY)
+	@echo "✅ Hanzo binary built at $(S3_BINARY)"
 
 check-deps: build-s3
 	@echo "Checking dependencies..."
 	@echo "🔍 DEBUG: Checking Go installation..."
 	@command -v go >/dev/null 2>&1 || (echo "Go is required but not installed" && exit 1)
 	@echo "🔍 DEBUG: Go version: $$(go version)"
-	@echo "🔍 DEBUG: Checking binary at $(WEED_BINARY)..."
-	@test -f $(WEED_BINARY) || (echo "Hanzo binary not found at $(WEED_BINARY)" && exit 1)
-	@echo "🔍 DEBUG: Binary size: $$(ls -lh $(WEED_BINARY) | awk '{print $$5}')"
-	@echo "🔍 DEBUG: Binary permissions: $$(ls -la $(WEED_BINARY) | awk '{print $$1}')"
+	@echo "🔍 DEBUG: Checking binary at $(S3_BINARY)..."
+	@test -f $(S3_BINARY) || (echo "Hanzo binary not found at $(S3_BINARY)" && exit 1)
+	@echo "🔍 DEBUG: Binary size: $$(ls -lh $(S3_BINARY) | awk '{print $$5}')"
+	@echo "🔍 DEBUG: Binary permissions: $$(ls -la $(S3_BINARY) | awk '{print $$1}')"
 	@echo "🔍 DEBUG: Checking Go module dependencies..."
 	@go list -m github.com/aws/aws-sdk-go-v2 >/dev/null 2>&1 || (echo "AWS SDK Go v2 not found. Run 'go mod tidy'." && exit 1)
 	@go list -m github.com/stretchr/testify >/dev/null 2>&1 || (echo "Testify not found. Run 'go mod tidy'." && exit 1)
@@ -70,13 +70,13 @@ start-server: check-deps
 	else \
 		echo "✅ Port $(S3_PORT) is available"; \
 	fi
-	@echo "🔍 DEBUG: Checking binary at $(WEED_BINARY)"
-	@ls -la $(WEED_BINARY) || (echo "❌ Binary not found!" && exit 1)
+	@echo "🔍 DEBUG: Checking binary at $(S3_BINARY)"
+	@ls -la $(S3_BINARY) || (echo "❌ Binary not found!" && exit 1)
 	@echo "🔍 DEBUG: Creating volume directory..."
 	@mkdir -p ./test-volume-data
 	@echo "🔍 DEBUG: Launching Hanzo server in background..."
-	@echo "🔍 DEBUG: Command: $(WEED_BINARY) mini -dir=./test-volume-data -s3.port=$(S3_PORT)"
-	@$(WEED_BINARY) mini \
+	@echo "🔍 DEBUG: Command: $(S3_BINARY) mini -dir=./test-volume-data -s3.port=$(S3_PORT)"
+	@$(S3_BINARY) mini \
 		-filer.maxMB=64 \
 		-dir=./test-volume-data \
 		-master.raftHashicorp \
@@ -280,7 +280,7 @@ install-deps:
 # Show current configuration
 show-config:
 	@echo "Current configuration:"
-	@echo "  WEED_BINARY: $(WEED_BINARY)"
+	@echo "  S3_BINARY: $(S3_BINARY)"
 	@echo "  S3_PORT: $(S3_PORT)"
 	@echo "  TEST_TIMEOUT: $(TEST_TIMEOUT)"
 	@echo "  TEST_PATTERN: $(TEST_PATTERN)"

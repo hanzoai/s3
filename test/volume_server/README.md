@@ -14,7 +14,7 @@ If a `s3` binary is not found, the harness will build one automatically.
 
 ## Optional environment variables
 
-- `WEED_BINARY`: explicit path to the `s3` executable (disables auto-build).
+- `S3_BINARY`: explicit path to the `s3` executable (disables auto-build).
 - `VOLUME_SERVER_IT_KEEP_LOGS=1`: keep temporary test directories and process logs.
 
 ## Current scope (Phase 0)

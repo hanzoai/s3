@@ -6,22 +6,22 @@ networks:
 
 services:
   master:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - "9333:9333"
       - "19333:19333"
     command: "master -ip=master -mdir=/data -volumeSizeLimitMB=50"
     environment:
-      - WEED_MASTER_VOLUME_GROWTH_COPY_1=1
-      - WEED_MASTER_VOLUME_GROWTH_COPY_2=2
-      - WEED_MASTER_VOLUME_GROWTH_COPY_OTHER=1
+      - S3_MASTER_VOLUME_GROWTH_COPY_1=1
+      - S3_MASTER_VOLUME_GROWTH_COPY_2=2
+      - S3_MASTER_VOLUME_GROWTH_COPY_OTHER=1
     volumes:
       - ./data/master:/data
     networks:
       - hanzo_net
 
   volume1:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - "8080:8080"
       - "18080:18080"
@@ -34,7 +34,7 @@ services:
       - hanzo_net
 
   volume2:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - "8081:8080"
       - "18081:18080"
@@ -47,7 +47,7 @@ services:
       - hanzo_net
 
   volume3:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - "8082:8080"
       - "18082:18080"
@@ -60,7 +60,7 @@ services:
       - hanzo_net
 
   volume4:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - "8083:8080"
       - "18083:18080"
@@ -73,7 +73,7 @@ services:
       - hanzo_net
 
   volume5:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - "8084:8080"
       - "18084:18080"
@@ -86,7 +86,7 @@ services:
       - hanzo_net
 
   volume6:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - "8085:8080"
       - "18085:18080"
@@ -99,7 +99,7 @@ services:
       - hanzo_net
 
   filer:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - "8888:8888"
       - "18888:18888"
@@ -112,7 +112,7 @@ services:
       - hanzo_net
 
   admin:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - "23646:23646"      # HTTP admin interface (default port)
       - "33646:33646"      # gRPC worker communication (23646 + 10000)
@@ -126,7 +126,7 @@ services:
       - hanzo_net
 
   worker1:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     command: "-v=2 worker -admin=admin:23646 -capabilities=erasure_coding,vacuum -maxConcurrent=2"
     depends_on:
       - admin
@@ -138,7 +138,7 @@ services:
       - WORKER_ID=worker-1
 
   worker2:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     command: "-v=2 worker -admin=admin:23646 -capabilities=erasure_coding,vacuum -maxConcurrent=2"
     depends_on:
       - admin
@@ -150,7 +150,7 @@ services:
       - WORKER_ID=worker-2
 
   worker3:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     command: "-v=2 worker -admin=admin:23646 -capabilities=erasure_coding,vacuum -maxConcurrent=2"
     depends_on:
       - admin
@@ -162,7 +162,7 @@ services:
       - WORKER_ID=worker-3
 
   load_generator:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     entrypoint: ["/bin/sh"]
     command: >
       -c "
@@ -215,7 +215,7 @@ services:
       - hanzo_net
 
   vacuum-tester:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     entrypoint: ["/bin/sh"]
     command: >
       -c "

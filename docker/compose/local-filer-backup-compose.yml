@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   server-left:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     command: "-v=0 server -ip=server-left -filer -filer.maxMB 5 -s3 -s3.config=/etc/hanzo/s3.json -volume.max=0 -master.volumeSizeLimitMB=100 -volume.preStopSeconds=1"
     volumes:
       - ./s3.json:/etc/hanzo/s3.json
@@ -12,7 +12,7 @@ services:
       start_period: 15s
       timeout: 30s
   server-right:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     command: "-v=0 server -ip=server-right -filer -filer.maxMB 64 -s3 -s3.config=/etc/hanzo/s3.json -volume.max=0 -master.volumeSizeLimitMB=100 -volume.preStopSeconds=1"
     volumes:
       - ./s3.json:/etc/hanzo/s3.json
@@ -22,21 +22,21 @@ services:
       start_period: 15s
       timeout: 30s
   filer-backup:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     command: "-v=0 filer.backup -debug -doDeleteFiles=False -filer server-left:8888"
     volumes:
       - ./replication.toml:/etc/hanzo/replication.toml
     environment:
-      WEED_SINK_LOCAL_INCREMENTAL_ENABLED: "false"
-      WEED_SINK_S3_ENABLED: "true"
-      WEED_SINK_S3_BUCKET: "backup"
-      WEED_SINK_S3_ENDPOINT: "http://server-right:8333"
-      WEED_SINK_S3_DIRECTORY: "/"
-      WEED_SINK_S3_AWS_ACCESS_KEY_ID: "some_access_key1"
-      WEED_SINK_S3_AWS_SECRET_ACCESS_KEY: "some_secret_key1"
-      WEED_SINK_S3_S3_DISABLE_CONTENT_MD5_VALIDATION: "false"
-      WEED_SINK_S3_UPLOADER_PART_SIZE_MB: "5"
-      WEED_SINK_S3_KEEP_PART_SIZE: "false"
+      S3_SINK_LOCAL_INCREMENTAL_ENABLED: "false"
+      S3_SINK_S3_ENABLED: "true"
+      S3_SINK_S3_BUCKET: "backup"
+      S3_SINK_S3_ENDPOINT: "http://server-right:8333"
+      S3_SINK_S3_DIRECTORY: "/"
+      S3_SINK_S3_AWS_ACCESS_KEY_ID: "some_access_key1"
+      S3_SINK_S3_AWS_SECRET_ACCESS_KEY: "some_secret_key1"
+      S3_SINK_S3_S3_DISABLE_CONTENT_MD5_VALIDATION: "false"
+      S3_SINK_S3_UPLOADER_PART_SIZE_MB: "5"
+      S3_SINK_S3_KEEP_PART_SIZE: "false"
     depends_on:
       server-left:
         condition: service_healthy
@@ -45,7 +45,7 @@ services:
   # Writes 10x6MB under /buckets on server-left, which is the tree filer.backup
   # watches, so every object lands on server-right through the S3 sink.
   load:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     entrypoint: >
       /bin/sh -c "
       mkdir -p /tmp/load;

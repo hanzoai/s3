@@ -12,7 +12,7 @@ pub fn size_limit() -> &'static str {
 }
 
 pub fn commit() -> &'static str {
-    option_env!("SEAWEEDFS_COMMIT")
+    option_env!("S3_COMMIT")
         .or(option_env!("GIT_COMMIT"))
         .or(option_env!("GIT_SHA"))
         .unwrap_or("")

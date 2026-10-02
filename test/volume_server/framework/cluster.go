@@ -39,11 +39,11 @@ type Cluster struct {
 	testingTB testing.TB
 	profile   matrix.Profile
 
-	s3Binary string
-	baseDir    string
-	configDir  string
-	logsDir    string
-	keepLogs   bool
+	s3Binary  string
+	baseDir   string
+	configDir string
+	logsDir   string
+	keepLogs  bool
 
 	masterPort     int
 	masterGrpcPort int
@@ -119,7 +119,7 @@ func StartSingleVolumeClusterWithDataDirs(t testing.TB, profile matrix.Profile, 
 	c := &Cluster{
 		testingTB:      t,
 		profile:        profile,
-		s3Binary:     s3Binary,
+		s3Binary:       s3Binary,
 		baseDir:        baseDir,
 		configDir:      configDir,
 		logsDir:        logsDir,
@@ -371,11 +371,11 @@ func writeSecurityConfig(configDir string, profile matrix.Profile) error {
 
 // FindOrBuildS3Binary returns an executable s3 binary, building one when needed.
 func FindOrBuildS3Binary() (string, error) {
-	if fromEnv := os.Getenv("WEED_BINARY"); fromEnv != "" {
+	if fromEnv := os.Getenv("S3_BINARY"); fromEnv != "" {
 		if isExecutableFile(fromEnv) {
 			return fromEnv, nil
 		}
-		return "", fmt.Errorf("WEED_BINARY is set but not executable: %s", fromEnv)
+		return "", fmt.Errorf("S3_BINARY is set but not executable: %s", fromEnv)
 	}
 
 	s3BinaryOnce.Do(func() {

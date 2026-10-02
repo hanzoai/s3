@@ -2,7 +2,7 @@
 #   cd terraform/modules/core && tofu test
 
 variables {
-  weed_binary = "/usr/bin/weed"
+  s3_binary = "/usr/bin/s3"
 }
 
 # ---------------------------------------------------------------------------
@@ -116,7 +116,7 @@ run "security_toml_on_with_mtls" {
   variables {
     enable_security = true
     security = {
-      allowed_wildcard_domain = ".seaweedfs.internal"
+      allowed_wildcard_domain = ".s3.internal"
       jwt_signing_key         = "test-signing-key-not-a-real-secret-0123456789"
     }
     master = { nodes = { m0 = { address = "10.0.0.10" } } }
@@ -124,7 +124,7 @@ run "security_toml_on_with_mtls" {
     filer  = { enabled = false }
   }
   assert {
-    condition     = contains(keys(output.nodes["master-m0"].config_files), "/etc/seaweedfs/security.toml")
+    condition     = contains(keys(output.nodes["master-m0"].config_files), "/etc/hanzo/security.toml")
     error_message = "security.toml must render when enable_security is true"
   }
 }
@@ -144,7 +144,7 @@ run "all_in_one_renders_server" {
   }
   assert {
     condition     = contains(output.nodes["all-in-one-a0"].argv, "server")
-    error_message = "all-in-one must invoke the weed server subcommand"
+    error_message = "all-in-one must invoke the s3 server subcommand"
   }
   assert {
     condition     = contains(output.nodes["all-in-one-a0"].argv, "-s3") && contains(output.nodes["all-in-one-a0"].argv, "-s3.port=8333")
@@ -162,11 +162,11 @@ run "security_toml_mtls_only_no_jwt" {
     filer           = { enabled = false }
   }
   assert {
-    condition     = contains(keys(output.nodes["master-m0"].config_files), "/etc/seaweedfs/security.toml")
+    condition     = contains(keys(output.nodes["master-m0"].config_files), "/etc/hanzo/security.toml")
     error_message = "security.toml must render for mTLS even without JWT keys"
   }
   assert {
-    condition     = !strcontains(output.nodes["master-m0"].config_files["/etc/seaweedfs/security.toml"], "[jwt.signing]")
+    condition     = !strcontains(output.nodes["master-m0"].config_files["/etc/hanzo/security.toml"], "[jwt.signing]")
     error_message = "the jwt.signing block must be omitted when no signing key is set"
   }
 }
@@ -185,11 +185,11 @@ run "mount_fetch_and_secret_delivery" {
     filer  = { enabled = false }
   }
   assert {
-    condition     = strcontains(output.nodes["master-m0"].cloud_init, "/opt/seaweedfs/mount-disks.sh")
+    condition     = strcontains(output.nodes["master-m0"].cloud_init, "/opt/hanzo/mount-disks.sh")
     error_message = "cloud-init must write+run the mount script when disk_mounts is set"
   }
   assert {
-    condition     = strcontains(output.nodes["master-m0"].cloud_init, "/opt/seaweedfs/fetch-secrets.sh")
+    condition     = strcontains(output.nodes["master-m0"].cloud_init, "/opt/hanzo/fetch-secrets.sh")
     error_message = "cloud-init must write+run the fetch script when boot_fetch_script is set"
   }
   assert {
@@ -197,7 +197,7 @@ run "mount_fetch_and_secret_delivery" {
     error_message = "security.toml must NOT be inlined in cloud-init when render_secret_files=false"
   }
   assert {
-    condition     = contains(keys(output.nodes["master-m0"].secret_files), "/etc/seaweedfs/security.toml")
+    condition     = contains(keys(output.nodes["master-m0"].secret_files), "/etc/hanzo/security.toml")
     error_message = "secret_files must expose security.toml for secret-store delivery"
   }
 }
@@ -228,7 +228,7 @@ run "s3_standalone_targets_filer" {
     error_message = "standalone S3 must point -filer at the first filer node"
   }
   assert {
-    condition     = contains(output.nodes["s3-s0"].argv, "-config=/etc/seaweedfs/s3_config.json")
+    condition     = contains(output.nodes["s3-s0"].argv, "-config=/etc/hanzo/s3_config.json")
     error_message = "standalone S3 must reference the rendered config path"
   }
 }

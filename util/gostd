@@ -84,7 +84,7 @@ Options:
 Examples:
     gostd
     gostd -b master -l 100
-    gostd -b 59d532a -e weed/pb -l 100
+    gostd -b 59d532a -e s3/pb -l 100
 _EOC_
 }
 

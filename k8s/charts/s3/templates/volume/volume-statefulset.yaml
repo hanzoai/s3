@@ -139,7 +139,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            - name: SEAWEEDFS_FULLNAME
+            - name: S3_FULLNAME
               value: "{{ include "hanzo.fullname" $ }}"
             {{- $mergedExtraEnvironmentVars := dict }}
             {{- include "hanzo.mergeExtraEnvironmentVars" (dict "global" $.Values.global.s3 "component" $volume "target" $mergedExtraEnvironmentVars) }}

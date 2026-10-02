@@ -101,19 +101,19 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: WEED_MYSQL_USERNAME
+            - name: S3_MYSQL_USERNAME
               valueFrom:
                 secretKeyRef:
                   name: {{ include "hanzo.fullname" . }}-db-secret
                   key: user
                   optional: true
-            - name: WEED_MYSQL_PASSWORD
+            - name: S3_MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "hanzo.fullname" . }}-db-secret
                   key: password
                   optional: true
-            - name: SEAWEEDFS_FULLNAME
+            - name: S3_FULLNAME
               value: "{{ include "hanzo.fullname" . }}"
             {{- $mergedExtraEnvironmentVars := dict }}
             {{- include "hanzo.mergeExtraEnvironmentVars" (dict "global" .Values.global.s3 "component" .Values.filer "target" $mergedExtraEnvironmentVars) }}

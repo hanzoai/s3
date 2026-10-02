@@ -27,7 +27,7 @@ import (
 // "500ms"). Primarily a hook for integration tests that need rotation
 // to complete in seconds, but also useful in production when paired
 // with short-lived certs (e.g. Vault-issued).
-const RefreshIntervalEnv = "WEED_TLS_CERT_REFRESH_INTERVAL"
+const RefreshIntervalEnv = "S3_TLS_CERT_REFRESH_INTERVAL"
 
 // DefaultRefreshInterval is the cadence at which the provider stats the
 // cert/key files on disk. It re-parses only when mtime/size change, so the hot

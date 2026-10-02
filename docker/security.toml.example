@@ -1,7 +1,7 @@
 # Put this file to one of the location, with descending priority
 #    ./security.toml
-#    $HOME/.seaweedfs/security.toml
-#    /etc/seaweedfs/security.toml
+#    $HOME/.s3/security.toml
+#    /etc/hanzo/security.toml
 # this file is read by master, volume server, filer, and worker
 
 # comma separated origins allowed to make requests to the filer and s3 gateway. 

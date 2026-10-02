@@ -4,13 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.seaweedfs</groupId>
-    <artifactId>seaweedfs-spark-integration-tests</artifactId>
+    <groupId>ai.hanzo</groupId>
+    <artifactId>s3-spark-integration-tests</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>SeaweedFS Spark Integration Tests</name>
-    <description>Integration tests for Apache Spark with SeaweedFS HDFS client</description>
+    <name>Hanzo S3 Spark Integration Tests</name>
+    <description>Integration tests for Apache Spark with Hanzo S3 HDFS client</description>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -20,7 +20,7 @@
         <hadoop.version>3.3.6</hadoop.version>
         <scala.binary.version>2.12</scala.binary.version>
         <junit.version>4.13.2</junit.version>
-        <seaweedfs.hadoop3.client.version>4.00</seaweedfs.hadoop3.client.version>
+        <hanzofs.hadoop3.client.version>4.00</hanzofs.hadoop3.client.version>
         <jackson.version>2.18.6</jackson.version> <!-- Upgraded from 2.15.3 -->
         <netty.version>4.2.15.Final</netty.version> <!-- Upgraded to 4.1.125.Final for security fixes (CVE in netty-codec < 4.1.125.Final, netty-codec-http2 <= 4.1.123.Final) -->
         <parquet.version>1.15.2</parquet.version> <!-- Upgraded to 1.15.2 for security fix -->
@@ -250,11 +250,11 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- SeaweedFS Hadoop3 Client -->
+        <!-- Hanzo S3 Hadoop3 Client -->
         <dependency>
-            <groupId>com.seaweedfs</groupId>
-            <artifactId>seaweedfs-hadoop3-client</artifactId>
-            <version>${seaweedfs.hadoop3.client.version}</version>
+            <groupId>ai.hanzo</groupId>
+            <artifactId>s3-hadoop3-client</artifactId>
+            <version>${hanzofs.hadoop3.client.version}</version>
         </dependency>
 
         <!-- Testing -->
@@ -335,7 +335,7 @@
                             </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>seaweed.spark.SparkSeaweedFSExample</mainClass>
+                                    <mainClass>hanzofs.spark.SparkFilerExample</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

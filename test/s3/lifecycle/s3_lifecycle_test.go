@@ -9,7 +9,7 @@
 //
 // Variables (set by the Makefile):
 //
-//	WEED_BINARY         - path to the built `s3` binary
+//	S3_BINARY         - path to the built `s3` binary
 //	S3_ENDPOINT         - http://host:port for the S3 API
 //	FILER_GRPC_ADDRESS  - host:port of the filer's gRPC listener
 package lifecycle
@@ -310,8 +310,8 @@ func splitBucketKey(bucket, key string) (dir, name string) {
 // command piped via stdin and returns the combined stdout+stderr.
 func runShellCommand(t *testing.T, command string) string {
 	t.Helper()
-	binary := envOr("WEED_BINARY", "")
-	require.NotEmpty(t, binary, "WEED_BINARY must be set")
+	binary := envOr("S3_BINARY", "")
+	require.NotEmpty(t, binary, "S3_BINARY must be set")
 	masterEndpoint := envOr("MASTER_ENDPOINT", defaultMasterEndpt)
 	master := strings.TrimPrefix(masterEndpoint, "http://")
 	if u, err := url.Parse(masterEndpoint); err == nil && u.Host != "" {

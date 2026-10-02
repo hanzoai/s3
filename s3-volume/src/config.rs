@@ -809,7 +809,7 @@ fn resolve_config(cli: Cli) -> VolumeServerConfig {
         grpc_allowed_wildcard_domain: sec.grpc_allowed_wildcard_domain,
         grpc_volume_allowed_common_names: sec.grpc_volume_allowed_common_names,
         tls_policy: sec.tls_policy,
-        enable_write_queue: std::env::var("SEAWEED_WRITE_QUEUE")
+        enable_write_queue: std::env::var("S3_WRITE_QUEUE")
             .map(|v| v == "1" || v == "true")
             .unwrap_or(false),
         security_file: cli.security_file,
@@ -1044,9 +1044,9 @@ pub fn parse_security_config(path: &str) -> SecurityConfig {
         cfg.jwt_read_signing_expires = 60;
     }
 
-    // Override with WEED_ environment variables (matches Go's Viper convention:
-    // prefix WEED_, uppercase, replace . with _).
-    // e.g. WEED_JWT_SIGNING_KEY overrides [jwt.signing] key
+    // Override with S3_ environment variables (matches Go's Viper convention:
+    // prefix S3_, uppercase, replace . with _).
+    // e.g. S3_JWT_SIGNING_KEY overrides [jwt.signing] key
     apply_env_overrides(&mut cfg);
 
     cfg
@@ -1092,76 +1092,76 @@ fn home_dir_from_env() -> Option<PathBuf> {
         })
 }
 
-/// Apply WEED_ environment variable overrides to a SecurityConfig.
-/// Matches Go's Viper convention: WEED_ prefix, uppercase, dots replaced with underscores.
+/// Apply S3_ environment variable overrides to a SecurityConfig.
+/// Matches Go's Viper convention: S3_ prefix, uppercase, dots replaced with underscores.
 fn apply_env_overrides(cfg: &mut SecurityConfig) {
-    if let Ok(v) = std::env::var("WEED_JWT_SIGNING_KEY") {
+    if let Ok(v) = std::env::var("S3_JWT_SIGNING_KEY") {
         cfg.jwt_signing_key = v.into_bytes();
     }
-    if let Ok(v) = std::env::var("WEED_JWT_SIGNING_EXPIRES_AFTER_SECONDS") {
+    if let Ok(v) = std::env::var("S3_JWT_SIGNING_EXPIRES_AFTER_SECONDS") {
         cfg.jwt_signing_expires = v.parse().unwrap_or(cfg.jwt_signing_expires);
     }
-    if let Ok(v) = std::env::var("WEED_JWT_SIGNING_READ_KEY") {
+    if let Ok(v) = std::env::var("S3_JWT_SIGNING_READ_KEY") {
         cfg.jwt_read_signing_key = v.into_bytes();
     }
-    if let Ok(v) = std::env::var("WEED_JWT_SIGNING_READ_EXPIRES_AFTER_SECONDS") {
+    if let Ok(v) = std::env::var("S3_JWT_SIGNING_READ_EXPIRES_AFTER_SECONDS") {
         cfg.jwt_read_signing_expires = v.parse().unwrap_or(cfg.jwt_read_signing_expires);
     }
-    if let Ok(v) = std::env::var("WEED_HTTPS_VOLUME_CERT") {
+    if let Ok(v) = std::env::var("S3_HTTPS_VOLUME_CERT") {
         cfg.https_cert_file = v;
     }
-    if let Ok(v) = std::env::var("WEED_HTTPS_VOLUME_KEY") {
+    if let Ok(v) = std::env::var("S3_HTTPS_VOLUME_KEY") {
         cfg.https_key_file = v;
     }
-    if let Ok(v) = std::env::var("WEED_HTTPS_VOLUME_CA") {
+    if let Ok(v) = std::env::var("S3_HTTPS_VOLUME_CA") {
         cfg.https_ca_file = v;
     }
-    if let Ok(v) = std::env::var("WEED_HTTPS_CLIENT_ENABLED") {
+    if let Ok(v) = std::env::var("S3_HTTPS_CLIENT_ENABLED") {
         cfg.https_client_enabled = v == "true" || v == "1";
     }
-    if let Ok(v) = std::env::var("WEED_HTTPS_CLIENT_CERT") {
+    if let Ok(v) = std::env::var("S3_HTTPS_CLIENT_CERT") {
         cfg.https_client_cert_file = v;
     }
-    if let Ok(v) = std::env::var("WEED_HTTPS_CLIENT_KEY") {
+    if let Ok(v) = std::env::var("S3_HTTPS_CLIENT_KEY") {
         cfg.https_client_key_file = v;
     }
-    if let Ok(v) = std::env::var("WEED_HTTPS_CLIENT_CA") {
+    if let Ok(v) = std::env::var("S3_HTTPS_CLIENT_CA") {
         cfg.https_client_ca_file = v;
     }
-    if let Ok(v) = std::env::var("WEED_GRPC_VOLUME_CERT") {
+    if let Ok(v) = std::env::var("S3_GRPC_VOLUME_CERT") {
         cfg.grpc_cert_file = v;
     }
-    if let Ok(v) = std::env::var("WEED_GRPC_VOLUME_KEY") {
+    if let Ok(v) = std::env::var("S3_GRPC_VOLUME_KEY") {
         cfg.grpc_key_file = v;
     }
-    if let Ok(v) = std::env::var("WEED_GRPC_CA") {
+    if let Ok(v) = std::env::var("S3_GRPC_CA") {
         cfg.grpc_ca_file = v;
-    } else if let Ok(v) = std::env::var("WEED_GRPC_VOLUME_CA") {
+    } else if let Ok(v) = std::env::var("S3_GRPC_VOLUME_CA") {
         cfg.grpc_ca_file = v;
     }
-    if let Ok(v) = std::env::var("WEED_GRPC_ALLOWED_WILDCARD_DOMAIN") {
+    if let Ok(v) = std::env::var("S3_GRPC_ALLOWED_WILDCARD_DOMAIN") {
         cfg.grpc_allowed_wildcard_domain = v;
     }
-    if let Ok(v) = std::env::var("WEED_GRPC_VOLUME_ALLOWED_COMMONNAMES") {
+    if let Ok(v) = std::env::var("S3_GRPC_VOLUME_ALLOWED_COMMONNAMES") {
         cfg.grpc_volume_allowed_common_names = v.split(',').map(|name| name.to_string()).collect();
     }
-    if let Ok(v) = std::env::var("WEED_TLS_MIN_VERSION") {
+    if let Ok(v) = std::env::var("S3_TLS_MIN_VERSION") {
         cfg.tls_policy.min_version = v;
     }
-    if let Ok(v) = std::env::var("WEED_TLS_MAX_VERSION") {
+    if let Ok(v) = std::env::var("S3_TLS_MAX_VERSION") {
         cfg.tls_policy.max_version = v;
     }
-    if let Ok(v) = std::env::var("WEED_TLS_CIPHER_SUITES") {
+    if let Ok(v) = std::env::var("S3_TLS_CIPHER_SUITES") {
         cfg.tls_policy.cipher_suites = v;
     }
-    if let Ok(v) = std::env::var("WEED_GUARD_WHITE_LIST") {
+    if let Ok(v) = std::env::var("S3_GUARD_WHITE_LIST") {
         cfg.guard_white_list = v
             .split(',')
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
             .collect();
     }
-    if let Ok(v) = std::env::var("WEED_ACCESS_UI") {
+    if let Ok(v) = std::env::var("S3_ACCESS_UI") {
         cfg.access_ui = v == "true" || v == "1";
     }
 }
@@ -1218,28 +1218,28 @@ mod tests {
 
     fn with_cleared_security_env<F: FnOnce()>(f: F) {
         const KEYS: &[&str] = &[
-            "WEED_JWT_SIGNING_KEY",
-            "WEED_JWT_SIGNING_EXPIRES_AFTER_SECONDS",
-            "WEED_JWT_SIGNING_READ_KEY",
-            "WEED_JWT_SIGNING_READ_EXPIRES_AFTER_SECONDS",
-            "WEED_HTTPS_VOLUME_CERT",
-            "WEED_HTTPS_VOLUME_KEY",
-            "WEED_HTTPS_VOLUME_CA",
-            "WEED_HTTPS_CLIENT_ENABLED",
-            "WEED_HTTPS_CLIENT_CERT",
-            "WEED_HTTPS_CLIENT_KEY",
-            "WEED_HTTPS_CLIENT_CA",
-            "WEED_GRPC_VOLUME_CERT",
-            "WEED_GRPC_VOLUME_KEY",
-            "WEED_GRPC_CA",
-            "WEED_GRPC_VOLUME_CA",
-            "WEED_GRPC_ALLOWED_WILDCARD_DOMAIN",
-            "WEED_GRPC_VOLUME_ALLOWED_COMMONNAMES",
-            "WEED_TLS_MIN_VERSION",
-            "WEED_TLS_MAX_VERSION",
-            "WEED_TLS_CIPHER_SUITES",
-            "WEED_GUARD_WHITE_LIST",
-            "WEED_ACCESS_UI",
+            "S3_JWT_SIGNING_KEY",
+            "S3_JWT_SIGNING_EXPIRES_AFTER_SECONDS",
+            "S3_JWT_SIGNING_READ_KEY",
+            "S3_JWT_SIGNING_READ_EXPIRES_AFTER_SECONDS",
+            "S3_HTTPS_VOLUME_CERT",
+            "S3_HTTPS_VOLUME_KEY",
+            "S3_HTTPS_VOLUME_CA",
+            "S3_HTTPS_CLIENT_ENABLED",
+            "S3_HTTPS_CLIENT_CERT",
+            "S3_HTTPS_CLIENT_KEY",
+            "S3_HTTPS_CLIENT_CA",
+            "S3_GRPC_VOLUME_CERT",
+            "S3_GRPC_VOLUME_KEY",
+            "S3_GRPC_CA",
+            "S3_GRPC_VOLUME_CA",
+            "S3_GRPC_ALLOWED_WILDCARD_DOMAIN",
+            "S3_GRPC_VOLUME_ALLOWED_COMMONNAMES",
+            "S3_TLS_MIN_VERSION",
+            "S3_TLS_MAX_VERSION",
+            "S3_TLS_CIPHER_SUITES",
+            "S3_GUARD_WHITE_LIST",
+            "S3_ACCESS_UI",
         ];
 
         let previous: Vec<(&str, Option<OsString>)> = KEYS
@@ -1442,7 +1442,7 @@ key = "cwd-secret"
         .unwrap();
 
         with_temp_current_dir(tmp.path(), || {
-            with_temp_env_var("WEED_JWT_SIGNING_KEY", None, || {
+            with_temp_env_var("S3_JWT_SIGNING_KEY", None, || {
                 let cfg = parse_security_config("");
                 assert_eq!(cfg.jwt_signing_key, b"cwd-secret");
             });
@@ -1466,7 +1466,7 @@ key = "home-secret"
         .unwrap();
 
         with_temp_current_dir(current_dir.path(), || {
-            with_temp_env_var("WEED_JWT_SIGNING_KEY", None, || {
+            with_temp_env_var("S3_JWT_SIGNING_KEY", None, || {
                 with_temp_env_var("HOME", Some(home_dir.path().to_str().unwrap()), || {
                     let cfg = parse_security_config("");
                     assert_eq!(cfg.jwt_signing_key, b"home-secret");
@@ -1679,7 +1679,7 @@ cipher_suites = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
     #[test]
     fn test_env_override_jwt_signing_key() {
         let _guard = process_state_lock();
-        with_temp_env_var("WEED_JWT_SIGNING_KEY", Some("env-secret"), || {
+        with_temp_env_var("S3_JWT_SIGNING_KEY", Some("env-secret"), || {
             let cfg = parse_security_config("");
             assert_eq!(cfg.jwt_signing_key, b"env-secret");
         });
@@ -1698,7 +1698,7 @@ key = "file-secret"
         )
         .unwrap();
 
-        with_temp_env_var("WEED_JWT_SIGNING_KEY", Some("env-secret"), || {
+        with_temp_env_var("S3_JWT_SIGNING_KEY", Some("env-secret"), || {
             let cfg = parse_security_config(tmp.path().to_str().unwrap());
             assert_eq!(cfg.jwt_signing_key, b"env-secret");
         });
@@ -1708,7 +1708,7 @@ key = "file-secret"
     fn test_env_override_guard_white_list() {
         let _guard = process_state_lock();
         with_temp_env_var(
-            "WEED_GUARD_WHITE_LIST",
+            "S3_GUARD_WHITE_LIST",
             Some("10.0.0.0/8, 192.168.1.0/24"),
             || {
                 let cfg = parse_security_config("");
@@ -1720,7 +1720,7 @@ key = "file-secret"
     #[test]
     fn test_env_override_access_ui() {
         let _guard = process_state_lock();
-        with_temp_env_var("WEED_ACCESS_UI", Some("true"), || {
+        with_temp_env_var("S3_ACCESS_UI", Some("true"), || {
             let cfg = parse_security_config("");
             assert!(cfg.access_ui);
         });

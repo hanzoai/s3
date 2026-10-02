@@ -13,9 +13,9 @@ cd "$(dirname "$0")/../../.."
 go build -o /tmp/s3 ./s3
 
 # Setup data directory
-WEED_DATA_DIR="/tmp/hanzo-broker-test-$$"
-mkdir -p "$WEED_DATA_DIR"
-echo "Using data directory: $WEED_DATA_DIR"
+S3_DATA_DIR="/tmp/hanzo-broker-test-$$"
+mkdir -p "$S3_DATA_DIR"
+echo "Using data directory: $S3_DATA_DIR"
 
 # Cleanup function
 cleanup() {
@@ -23,7 +23,7 @@ cleanup() {
     pkill -f "s3.*server" || true
     pkill -f "s3.*mq.broker" || true
     sleep 2
-    rm -rf "$WEED_DATA_DIR"
+    rm -rf "$S3_DATA_DIR"
     rm -f /tmp/s3-*.log
 }
 trap cleanup EXIT
@@ -33,7 +33,7 @@ echo "Starting Hanzo server..."
 /tmp/s3 -v 1 server \
   -ip="127.0.0.1" \
   -ip.bind="0.0.0.0" \
-  -dir="$WEED_DATA_DIR" \
+  -dir="$S3_DATA_DIR" \
   -master.raftHashicorp \
   -master.port=9333 \
   -volume.port=8081 \

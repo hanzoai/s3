@@ -28,7 +28,7 @@ LOG_FILE="$TEST_RESULTS_DIR/integration-test.log"
 exec > >(tee -a "$LOG_FILE")
 exec 2>&1
 
-echo -e "${BLUE}🧪 SEAWEEDFS RDMA MOUNT INTEGRATION TESTS${NC}"
+echo -e "${BLUE}🧪 HANZO S3 RDMA MOUNT INTEGRATION TESTS${NC}"
 echo "=========================================="
 echo "Mount Point: $MOUNT_POINT"
 echo "Filer Address: $FILER_ADDR"

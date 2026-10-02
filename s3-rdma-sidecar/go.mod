@@ -40,8 +40,8 @@ require (
 )
 
 // For local development, this replace directive is required to build the sidecar
-// against the parent SeaweedFS module in this monorepo.
+// against the parent Hanzo S3 module in this monorepo.
 //
-// To build this module, ensure the main SeaweedFS repository is checked out
+// To build this module, ensure the main Hanzo S3 repository is checked out
 // as a sibling directory to this `s3-rdma-sidecar` directory.
 replace github.com/hanzoai/s3 => ../

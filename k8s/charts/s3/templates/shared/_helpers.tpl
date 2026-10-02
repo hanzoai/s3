@@ -4,7 +4,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to
 this (by the DNS naming spec). If release name contains chart name it will
 be used as a full name.
 */}}
-{{- define "seaweedfs.fullname" -}}
+{{- define "hanzo.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
@@ -19,15 +19,15 @@ be used as a full name.
 
 {{/*
 Create a truncated component name.
-Usage: {{ include "seaweedfs.componentName" (list . "component-suffix") }}
+Usage: {{ include "hanzo.componentName" (list . "component-suffix") }}
 */}}
-{{- define "seaweedfs.componentName" -}}
+{{- define "hanzo.componentName" -}}
 {{- $context := index . 0 -}}
 {{- $suffix := index . 1 -}}
 {{- if gt (len $suffix) 61 -}}
 {{-   fail (printf "Suffix '%s' is too long for componentName helper. Max length is 61." $suffix) -}}
 {{- end -}}
-{{- $fullname := include "seaweedfs.fullname" $context -}}
+{{- $fullname := include "hanzo.fullname" $context -}}
 {{- $maxLen := sub 62 (len $suffix) | int -}}
 {{- $truncatedFullname := trunc $maxLen $fullname | trimSuffix "-" -}}
 {{- printf "%s-%s" $truncatedFullname $suffix -}}
@@ -36,21 +36,21 @@ Usage: {{ include "seaweedfs.componentName" (list . "component-suffix") }}
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "seaweedfs.chart" -}}
+{{- define "hanzo.chart" -}}
 {{- printf "%s-helm" .Chart.Name | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "seaweedfs.name" -}}
+{{- define "hanzo.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
 Inject extra environment vars in the format key:value, if populated
 */}}
-{{- define "seaweedfs.extraEnvironmentVars" -}}
+{{- define "hanzo.extraEnvironmentVars" -}}
 {{- if .extraEnvironmentVars -}}
 {{- range $key, $value := .extraEnvironmentVars }}
 - name: {{ $key }}
@@ -59,7 +59,7 @@ Inject extra environment vars in the format key:value, if populated
 {{- end -}}
 {{- end -}}
 
-{{- define "seaweedfs.mergeExtraEnvironmentVars" -}}
+{{- define "hanzo.mergeExtraEnvironmentVars" -}}
 {{- $global := ((.global | default dict).extraEnvironmentVars | default dict) -}}
 {{- $component := ((.component | default dict).extraEnvironmentVars | default dict) -}}
 {{- $target := .target -}}
@@ -72,80 +72,80 @@ Inject extra environment vars in the format key:value, if populated
 {{- end -}}
 
 {{/* Return the proper filer image */}}
-{{- define "seaweedfs.filer.image" -}}
+{{- define "hanzo.filer.image" -}}
 {{- if .Values.filer.imageOverride -}}
 {{- $imageOverride := .Values.filer.imageOverride -}}
 {{- printf "%s" $imageOverride -}}
 {{- else -}}
-{{- include "seaweedfs.image" . }}
+{{- include "hanzo.image" . }}
 {{- end -}}
 {{- end -}}
 
 {{/* Return the proper master image */}}
-{{- define "seaweedfs.master.image" -}}
+{{- define "hanzo.master.image" -}}
 {{- if .Values.master.imageOverride -}}
 {{- $imageOverride := .Values.master.imageOverride -}}
 {{- printf "%s" $imageOverride -}}
 {{- else -}}
-{{- include "seaweedfs.image" . }}
+{{- include "hanzo.image" . }}
 {{- end -}}
 {{- end -}}
 
 {{/* Return the proper s3 image */}}
-{{- define "seaweedfs.s3.image" -}}
+{{- define "hanzo.s3.image" -}}
 {{- if .Values.s3.imageOverride -}}
 {{- $imageOverride := .Values.s3.imageOverride -}}
 {{- printf "%s" $imageOverride -}}
 {{- else -}}
-{{- include "seaweedfs.image" . }}
+{{- include "hanzo.image" . }}
 {{- end -}}
 {{- end -}}
 
 {{/* Return the proper sftp image */}}
-{{- define "seaweedfs.sftp.image" -}}
+{{- define "hanzo.sftp.image" -}}
 {{- if .Values.sftp.imageOverride -}}
 {{- $imageOverride := .Values.sftp.imageOverride -}}
 {{- printf "%s" $imageOverride -}}
 {{- else -}}
-{{- include "seaweedfs.image" . }}
+{{- include "hanzo.image" . }}
 {{- end -}}
 {{- end -}}
 
 {{/* Return the proper admin image */}}
-{{- define "seaweedfs.admin.image" -}}
+{{- define "hanzo.admin.image" -}}
 {{- if .Values.admin.imageOverride -}}
 {{- $imageOverride := .Values.admin.imageOverride -}}
 {{- printf "%s" $imageOverride -}}
 {{- else -}}
-{{- include "seaweedfs.image" . }}
+{{- include "hanzo.image" . }}
 {{- end -}}
 {{- end -}}
 
 {{/* Return the proper worker image */}}
-{{- define "seaweedfs.worker.image" -}}
+{{- define "hanzo.worker.image" -}}
 {{- if .Values.worker.imageOverride -}}
 {{- $imageOverride := .Values.worker.imageOverride -}}
 {{- printf "%s" $imageOverride -}}
 {{- else -}}
-{{- include "seaweedfs.image" . }}
+{{- include "hanzo.image" . }}
 {{- end -}}
 {{- end -}}
 
 {{/* Return the proper volume image */}}
-{{- define "seaweedfs.volume.image" -}}
+{{- define "hanzo.volume.image" -}}
 {{- if .Values.volume.imageOverride -}}
 {{- $imageOverride := .Values.volume.imageOverride -}}
 {{- printf "%s" $imageOverride -}}
 {{- else -}}
-{{- include "seaweedfs.image" . }}
+{{- include "hanzo.image" . }}
 {{- end -}}
 {{- end -}}
 
 {{/* Computes the container image name for all components (if they are not overridden) */}}
-{{- define "seaweedfs.image" -}}
+{{- define "hanzo.image" -}}
 {{- $registryName := default .Values.image.registry .Values.global.imageRegistry | toString -}}
-{{- $repositoryName := default .Values.image.repository .Values.global.seaweedfs.image.repository | toString -}}
-{{- $name := .Values.global.seaweedfs.image.name | toString -}}
+{{- $repositoryName := default .Values.image.repository .Values.global.s3.image.repository | toString -}}
+{{- $name := .Values.global.s3.image.name | toString -}}
 {{- $tag := default .Chart.AppVersion .Values.image.tag  | toString -}}
 {{- if .Values.image.repository -}}
 {{-   $name = $repositoryName -}}
@@ -160,7 +160,7 @@ Inject extra environment vars in the format key:value, if populated
 {{- end -}}
 
 {{/* check if any Volume PVC exists */}}
-{{- define "seaweedfs.volume.pvc_exists" -}}
+{{- define "hanzo.volume.pvc_exists" -}}
 {{- if or (or (eq .Values.volume.data.type "persistentVolumeClaim") (and (eq .Values.volume.idx.type "persistentVolumeClaim") .Values.volume.dir_idx )) (eq .Values.volume.logs.type "persistentVolumeClaim") -}}
 {{- printf "true" -}}
 {{- else -}}
@@ -169,7 +169,7 @@ Inject extra environment vars in the format key:value, if populated
 {{- end -}}
 
 {{/* check if any Filer PVC exists */}}
-{{- define "seaweedfs.filer.pvc_exists" -}}
+{{- define "hanzo.filer.pvc_exists" -}}
 {{- if or (eq .Values.filer.data.type "persistentVolumeClaim") (eq .Values.filer.logs.type "persistentVolumeClaim") -}}
 {{- printf "true" -}}
 {{- else -}}
@@ -178,7 +178,7 @@ Inject extra environment vars in the format key:value, if populated
 {{- end -}}
 
 {{/* check if any Master PVC exists */}}
-{{- define "seaweedfs.master.pvc_exists" -}}
+{{- define "hanzo.master.pvc_exists" -}}
 {{- if or (eq .Values.master.data.type "persistentVolumeClaim") (eq .Values.master.logs.type "persistentVolumeClaim") -}}
 {{- printf "true" -}}
 {{- else -}}
@@ -187,7 +187,7 @@ Inject extra environment vars in the format key:value, if populated
 {{- end -}}
 
 {{/* check if any Admin PVC exists */}}
-{{- define "seaweedfs.admin.pvc_exists" -}}
+{{- define "hanzo.admin.pvc_exists" -}}
 {{- if or (eq .Values.admin.data.type "persistentVolumeClaim") (eq .Values.admin.logs.type "persistentVolumeClaim") -}}
 {{- printf "true" -}}
 {{- else -}}
@@ -196,7 +196,7 @@ Inject extra environment vars in the format key:value, if populated
 {{- end -}}
 
 {{/* check if any InitContainers exist for Volumes */}}
-{{- define "seaweedfs.volume.initContainers_exists" -}}
+{{- define "hanzo.volume.initContainers_exists" -}}
 {{- if or (not (empty .Values.volume.idx )) (not (empty .Values.volume.initContainers )) -}}
 {{- printf "true" -}}
 {{- else -}}
@@ -205,7 +205,7 @@ Inject extra environment vars in the format key:value, if populated
 {{- end -}}
 
 {{/* Return the proper imagePullSecrets */}}
-{{- define "seaweedfs.imagePullSecrets" -}}
+{{- define "hanzo.imagePullSecrets" -}}
 {{- with .Values.global.imagePullSecrets }}
 imagePullSecrets:
 {{- if kindIs "string" . }}
@@ -225,10 +225,10 @@ imagePullSecrets:
 {{/*
 Renders a value that contains template perhaps with scope if the scope is present.
 Usage:
-{{ include "seaweedfs.tplvalues.render" ( dict "value" .Values.path.to.the.Value "context" $ ) }}
-{{ include "seaweedfs.tplvalues.render" ( dict "value" .Values.path.to.the.Value "context" $ "scope" $app ) }}
+{{ include "hanzo.tplvalues.render" ( dict "value" .Values.path.to.the.Value "context" $ ) }}
+{{ include "hanzo.tplvalues.render" ( dict "value" .Values.path.to.the.Value "context" $ "scope" $app ) }}
 */}}
-{{- define "seaweedfs.tplvalues.render" -}}
+{{- define "hanzo.tplvalues.render" -}}
 {{- $value := typeIs "string" .value | ternary .value (.value | toYaml) }}
 {{- if contains "{{" (toJson .value) }}
   {{- if .scope }}
@@ -245,9 +245,9 @@ Usage:
 Converts a Kubernetes quantity like "256Mi" or "2G" to a float64 in base units,
 handling both binary (Ki, Mi, Gi) and decimal (m, k, M) suffixes; numeric inputs
 Usage:
-{{ include "seaweedfs.resource-quantity" "10Gi" }}
+{{ include "hanzo.resource-quantity" "10Gi" }}
 */}}
-{{- define "seaweedfs.resource-quantity" -}}
+{{- define "hanzo.resource-quantity" -}}
     {{- $value := . -}}
     {{- $unit := 1.0 -}}
     {{- if typeIs "string" . -}}
@@ -267,7 +267,7 @@ Usage:
 getOrGeneratePassword will check if a password exists in a secret and return it,
 or generate a new random password if it doesn't exist.
 */}}
-{{- define "seaweedfs.getOrGeneratePassword" -}}
+{{- define "hanzo.getOrGeneratePassword" -}}
 {{- $params := . -}}
 {{- $namespace := $params.namespace -}}
 {{- $secretName := $params.secretName -}}
@@ -286,27 +286,27 @@ or generate a new random password if it doesn't exist.
 Compute the master service address to be used in cluster env vars.
 If allInOne is enabled, point to the all-in-one service; otherwise, point to the master service.
 */}}
-{{- define "seaweedfs.cluster.masterAddress" -}}
+{{- define "hanzo.cluster.masterAddress" -}}
 {{- $component := ternary "all-in-one" "master" .Values.allInOne.enabled -}}
-{{- printf "%s.%s:%d" (include "seaweedfs.componentName" (list . $component)) .Release.Namespace (int .Values.master.port) -}}
+{{- printf "%s.%s:%d" (include "hanzo.componentName" (list . $component)) .Release.Namespace (int .Values.master.port) -}}
 {{- end -}}
 
 {{/*
 Compute the filer service address to be used in cluster env vars.
 If allInOne is enabled, point to the all-in-one service; otherwise, point to the filer-client service.
 */}}
-{{- define "seaweedfs.cluster.filerAddress" -}}
+{{- define "hanzo.cluster.filerAddress" -}}
 {{- $component := ternary "all-in-one" "filer-client" .Values.allInOne.enabled -}}
-{{- printf "%s.%s:%d" (include "seaweedfs.componentName" (list . $component)) .Release.Namespace (int .Values.filer.port) -}}
+{{- printf "%s.%s:%d" (include "hanzo.componentName" (list . $component)) .Release.Namespace (int .Values.filer.port) -}}
 {{- end -}}
 
 {{/*
 Generate comma-separated list of master server addresses.
-Usage: {{ include "seaweedfs.masterServers" . }}
+Usage: {{ include "hanzo.masterServers" . }}
 Output example: my-release-master-0.my-release-master.namespace:9333,my-release-master-1...
 */}}
-{{- define "seaweedfs.masterServers" -}}
-{{- $masterName := include "seaweedfs.componentName" (list . "master") -}}
+{{- define "hanzo.masterServers" -}}
+{{- $masterName := include "hanzo.componentName" (list . "master") -}}
 {{- range $index := until (.Values.master.replicas | int) -}}
 {{- if $index }},{{ end -}}
 {{ $masterName }}-{{ $index }}.{{ $masterName }}.{{ $.Release.Namespace }}:{{ $.Values.master.port }}
@@ -315,37 +315,37 @@ Output example: my-release-master-0.my-release-master.namespace:9333,my-release-
 
 {{/*
 Generate master server argument value, using global.masterServer if set, otherwise the generated list.
-Usage: {{ include "seaweedfs.masterServerArg" . }}
+Usage: {{ include "hanzo.masterServerArg" . }}
 */}}
-{{- define "seaweedfs.masterServerArg" -}}
-{{- if .Values.global.seaweedfs.masterServer -}}
-{{- .Values.global.seaweedfs.masterServer -}}
+{{- define "hanzo.masterServerArg" -}}
+{{- if .Values.global.s3.masterServer -}}
+{{- .Values.global.s3.masterServer -}}
 {{- else -}}
-{{- include "seaweedfs.masterServers" . -}}
+{{- include "hanzo.masterServers" . -}}
 {{- end -}}
 {{- end -}}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "seaweedfs.serviceAccountName" -}}
-{{- .Values.global.seaweedfs.serviceAccountName | default "seaweedfs" -}}
+{{- define "hanzo.serviceAccountName" -}}
+{{- .Values.global.s3.serviceAccountName | default "s3" -}}
 {{- end -}}
 
 {{/* True when security.toml should be rendered and mounted. volumeWrite is
      excluded unless its non-default expiration is configured. */}}
-{{- define "seaweedfs.securityConfigEnabled" -}}
-{{- $sec := (.Values.global.seaweedfs).securityConfig | default dict -}}
+{{- define "hanzo.securityConfigEnabled" -}}
+{{- $sec := (.Values.global.s3).securityConfig | default dict -}}
 {{- $jwt := $sec.jwtSigning | default dict -}}
 {{- $expiresAfterSeconds := $jwt.expiresAfterSeconds | default dict -}}
 {{- $volumeWriteExpirationConfigured := and $jwt.volumeWrite (gt (int $expiresAfterSeconds.volumeWrite) 0) -}}
-{{- if or .Values.global.seaweedfs.enableSecurity $volumeWriteExpirationConfigured $jwt.volumeRead $jwt.filerWrite $jwt.filerRead -}}
+{{- if or .Values.global.s3.enableSecurity $volumeWriteExpirationConfigured $jwt.volumeRead $jwt.filerWrite $jwt.filerRead -}}
 true
 {{- end -}}
 {{- end -}}
 
 {{/* S3 TLS cert/key arguments, using custom secret if s3.tlsSecret is set */}}
-{{- define "seaweedfs.s3.tlsArgs" -}}
+{{- define "hanzo.s3.tlsArgs" -}}
 {{- $prefix := .prefix -}}
 {{- $root := .root -}}
 {{- if $root.Values.s3.tlsSecret -}}
@@ -358,7 +358,7 @@ true
 {{- end -}}
 
 {{/* S3 custom TLS volume mount */}}
-{{- define "seaweedfs.s3.tlsVolumeMount" -}}
+{{- define "hanzo.s3.tlsVolumeMount" -}}
 {{- if .Values.s3.tlsSecret }}
 - name: s3-tls-cert
   readOnly: true
@@ -367,7 +367,7 @@ true
 {{- end -}}
 
 {{/* S3 custom TLS volume */}}
-{{- define "seaweedfs.s3.tlsVolume" -}}
+{{- define "hanzo.s3.tlsVolume" -}}
 {{- if .Values.s3.tlsSecret }}
 - name: s3-tls-cert
   secret:
@@ -377,7 +377,7 @@ true
 
 {{/* Generate a compatible trafficDistribution value due to "PreferClose" fast deprecation in k8s v1.35.
      Accepts a dict with "value" (the trafficDistribution string) and "Capabilities". */}}
-{{- define "seaweedfs.trafficDistribution" -}}
+{{- define "hanzo.trafficDistribution" -}}
 {{- if .value -}}
 {{- and (eq .value "PreferClose") (semverCompare ">=1.35-0" .Capabilities.KubeVersion.GitVersion) | ternary "PreferSameZone" .value -}}
 {{- end -}}

@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   server1:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 9333:9333
       - 19333:19333
@@ -16,7 +16,7 @@ services:
     depends_on:
       - server2
   server2:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 9334:9333
       - 19334:19333

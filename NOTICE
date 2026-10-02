@@ -96,6 +96,10 @@ DEVIATIONS
     entrypoint is s3/s3.go.
   - Command binary renamed from weed to s3 (Makefile BINARY = s3); the CLI
     banner and subcommand descriptions are branded "Hanzo S3".
+  - Environment variable prefixes WEED_ and SEAWEEDFS_ renamed to S3_. The
+    Java and Hadoop clients moved to the hanzofs namespace (packages, fs.*
+    configuration keys, hanzofs:// URI scheme), and upstream naming was removed
+    from tests, scripts, the Helm chart, Terraform modules and documentation.
   - gRPC service identifiers renamed to Hanzo-prefixed names (for example
     HanzoClient, HanzoFilerClient, HanzoIdentityAccessManagementClient) under
     s3/wire/.

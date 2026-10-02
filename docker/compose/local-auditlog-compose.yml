@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   s3:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 8333:8333
       - 9333:9333

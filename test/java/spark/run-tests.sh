@@ -30,10 +30,10 @@ echo ""
 echo "Running Spark integration tests..."
 echo ""
 
-export SEAWEEDFS_TEST_ENABLED=true
-export SEAWEEDFS_FILER_HOST=localhost
-export SEAWEEDFS_FILER_PORT=8888
-export SEAWEEDFS_FILER_GRPC_PORT=18888
+export S3_TEST_ENABLED=true
+export S3_FILER_HOST=localhost
+export S3_FILER_PORT=8888
+export S3_FILER_GRPC_PORT=18888
 
 # Run tests
 mvn test "$@"

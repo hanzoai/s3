@@ -178,7 +178,7 @@ The test configuration defines:
 
 ```bash
 # Hanzo binary location
-export WEED_BINARY=../../../s3
+export S3_BINARY=../../../s3
 
 # Service ports (optional)
 export S3_PORT=8333

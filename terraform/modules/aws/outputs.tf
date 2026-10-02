@@ -9,7 +9,7 @@ output "master_private_ips" {
 }
 
 output "master_peers" {
-  description = "Master peer list passed to the weed processes."
+  description = "Master peer list passed to the s3 processes."
   value       = module.core.master_peers
 }
 

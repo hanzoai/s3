@@ -1,5 +1,5 @@
 # =============================================================================
-# SeaweedFS security material generator (cloud-agnostic).
+# Hanzo S3 security material generator (cloud-agnostic).
 #
 # Generates the CA, per-component mTLS certs with DISTINCT CommonNames, and JWT
 # signing keys. Outputs a `core_security` object ready to feed the core module's
@@ -11,7 +11,7 @@
 variable "internal_domain" {
   description = "Internal domain for component CNs (e.g. master.<domain>). Drives the allowed_wildcard_domain peer-auth check."
   type        = string
-  default     = "seaweedfs.internal"
+  default     = "s3.internal"
 }
 
 variable "ip_sans" {

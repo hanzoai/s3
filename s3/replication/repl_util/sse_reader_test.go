@@ -255,7 +255,7 @@ func TestMaybeDecryptContent_MixedExtended_Error(t *testing.T) {
 // These tests exercise the full MaybeDecryptReader/MaybeDecryptContent path
 // for SSE-S3: detectSSEType → decryptSSES3 → DeserializeSSES3Metadata →
 // GetSSES3IV → CreateSSES3DecryptedReader. A test KEK is injected via
-// WEED_S3_SSE_KEK env var and a mock filer client.
+// S3_S3_SSE_KEK env var and a mock filer client.
 
 // testFilerClient is a minimal filer_pb.FilerClient mock that returns
 // ErrNotFound for all lookups (no KEK on filer — we use env var instead).
@@ -268,7 +268,7 @@ func (c *testFilerClient) AdjustedUrl(loc *filer_pb.Location) string { return lo
 func (c *testFilerClient) GetDataCenter() string                     { return "" }
 
 // setupTestSSES3 initializes the global SSE-S3 key manager with a test KEK
-// via the WEED_S3_SSE_KEK env var and returns the KEK bytes + cleanup func.
+// via the S3_S3_SSE_KEK env var and returns the KEK bytes + cleanup func.
 func setupTestSSES3(t *testing.T) (kek []byte, cleanup func()) {
 	t.Helper()
 
@@ -279,7 +279,7 @@ func setupTestSSES3(t *testing.T) (kek []byte, cleanup func()) {
 
 	// Configure the SSE-S3 KEK directly via the viper key the manager reads
 	// (s3.sse.kek). Setting the key is prefix-agnostic — unlike an env var, it
-	// doesn't depend on the viper env prefix (now "s3", was "weed").
+	// doesn't depend on the viper env prefix.
 	util.GetViper().Set("s3.sse.kek", hex.EncodeToString(kek))
 
 	// Re-initialize the global key manager with the configured KEK.

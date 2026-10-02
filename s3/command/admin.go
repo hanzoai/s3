@@ -119,7 +119,7 @@ var cmdAdmin = &Command{
     - This ensures an admin account exists to manage and authorize read-only access
     - Sessions are secured with auto-generated session keys
     - Credentials can also be set via security.toml [admin] section or environment variables:
-      WEED_ADMIN_USER, WEED_ADMIN_PASSWORD, WEED_ADMIN_READONLY_USER, WEED_ADMIN_READONLY_PASSWORD
+      S3_ADMIN_USER, S3_ADMIN_PASSWORD, S3_ADMIN_READONLY_USER, S3_ADMIN_READONLY_PASSWORD
     - Precedence: CLI flag > env var / security.toml > default value
 
   Security Configuration:
@@ -176,8 +176,8 @@ var cmdAdmin = &Command{
       ([maintenance.vacuum], [maintenance.balance], [maintenance.erasure_coding])
     - Settings in admin.toml are applied at every startup, overriding values
       saved from the admin UI, so they can be managed declaratively
-    - Requires -dataDir; values can also be set via WEED_* environment
-      variables, e.g. WEED_MAINTENANCE_VACUUM_GARBAGE_THRESHOLD=0.3
+    - Requires -dataDir; values can also be set via S3_* environment
+      variables, e.g. S3_MAINTENANCE_VACUUM_GARBAGE_THRESHOLD=0.3
     - Generate example admin.toml: s3 scaffold -config=admin
 
   Configuration File:
@@ -204,7 +204,7 @@ func runAdmin(cmd *Command, args []string) bool {
 	util.LoadConfiguration("admin", false)
 
 	// Apply security.toml / env var fallbacks for credential flags.
-	// CLI flags take precedence over security.toml / WEED_* env vars.
+	// CLI flags take precedence over security.toml / S3_* env vars.
 	applyViperFallback(cmd, a.adminUser, "adminUser", "admin.user")
 	applyViperFallback(cmd, a.adminPassword, "adminPassword", "admin.password")
 	applyViperFallback(cmd, a.readOnlyUser, "readOnlyUser", "admin.readonly.user")

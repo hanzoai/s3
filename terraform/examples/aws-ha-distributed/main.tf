@@ -1,8 +1,8 @@
-# SeaweedFS HA on AWS: 3-master quorum + 3 volume servers (one per AZ) + 2
+# Hanzo S3 HA on AWS: 3-master quorum + 3 volume servers (one per AZ) + 2
 # filers (leveldb2-replicated HA) + 1 standalone S3 gateway.
 #
 #   tofu init && tofu validate
-#   tofu apply   # requires AWS credentials, a VPC, subnets, and a weed AMI
+#   tofu apply   # requires AWS credentials, a VPC, subnets, and a s3 AMI
 #
 # This is a scaffold: it provisions instances, protected EBS data disks, and the
 # security group. Mounting the EBS disk at /data and secret-store cert delivery
@@ -32,7 +32,7 @@ variable "vpc_id" {
 }
 
 variable "ami_id" {
-  description = "AMI with the weed binary at /usr/bin/weed."
+  description = "AMI with the s3 binary at /usr/bin/s3."
   type        = string
 }
 
@@ -67,10 +67,10 @@ variable "ssh_ingress_cidrs" {
   default = []
 }
 
-module "seaweedfs" {
+module "s3" {
   source = "../../modules/aws"
 
-  name   = "seaweedfs"
+  name   = "s3"
   vpc_id = var.vpc_id
   ami_id = var.ami_id
 
@@ -105,13 +105,13 @@ module "seaweedfs" {
 }
 
 output "master_peers" {
-  value = module.seaweedfs.master_peers
+  value = module.s3.master_peers
 }
 
 output "instance_ids" {
-  value = module.seaweedfs.instance_ids
+  value = module.s3.instance_ids
 }
 
 output "security_group_id" {
-  value = module.seaweedfs.security_group_id
+  value = module.s3.security_group_id
 }

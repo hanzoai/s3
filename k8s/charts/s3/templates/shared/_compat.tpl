@@ -1,24 +1,24 @@
 {{/*
-Backward-compatibility shim for the global.* → global.seaweedfs.* migration.
+Backward-compatibility shim for the global.* → global.s3.* migration.
 
 When the chart is used as a subchart, .Values.global is shared with sibling
 charts.  To avoid namespace pollution, app-specific values were moved under
-global.seaweedfs.* (and global.registry was renamed to global.imageRegistry).
+global.s3.* (and global.registry was renamed to global.imageRegistry).
 
 If a user still passes the OLD key paths (e.g. --set global.enableSecurity=true),
 those keys will no longer have defaults in values.yaml, so their mere presence in
 .Values.global means the user explicitly provided them.  This helper merges them
-into global.seaweedfs.* so the rest of the templates see a single, canonical
+into global.s3.* so the rest of the templates see a single, canonical
 location.
 
-The helper mutates .Values.global.seaweedfs in-place via `set` and produces no
+The helper mutates .Values.global.s3 in-place via `set` and produces no
 output.  It is idempotent (safe to call more than once in the same render).
 
-Usage:  {{- include "seaweedfs.compat" . -}}
+Usage:  {{- include "hanzo.compat" . -}}
 */}}
-{{- define "seaweedfs.compat" -}}
+{{- define "hanzo.compat" -}}
 {{- $g  := .Values.global -}}
-{{- $sw := $g.seaweedfs | default dict -}}
+{{- $sw := $g.s3 | default dict -}}
 
 {{/* --- image-related renames --- */}}
 {{- if hasKey $g "registry" -}}
@@ -35,7 +35,7 @@ Usage:  {{- include "seaweedfs.compat" . -}}
 {{-   $_ := set $sw "image" $img -}}
 {{- end -}}
 
-{{/* --- scalar keys that moved 1:1 under global.seaweedfs --- */}}
+{{/* --- scalar keys that moved 1:1 under global.s3 --- */}}
 {{- range $key := list "createClusterRole" "imagePullPolicy" "restartPolicy" "loggingLevel" "enableSecurity" "masterServer" "serviceAccountName" "automountServiceAccountToken" "enableReplication" "replicationPlacement" -}}
 {{-   if hasKey $g $key -}}
 {{-     $_ := set $sw $key (index $g $key) -}}
@@ -55,5 +55,5 @@ Usage:  {{- include "seaweedfs.compat" . -}}
 {{-   end -}}
 {{- end -}}
 
-{{- $_ := set $g "seaweedfs" $sw -}}
+{{- $_ := set $g "s3" $sw -}}
 {{- end -}}

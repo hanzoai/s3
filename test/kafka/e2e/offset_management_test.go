@@ -8,7 +8,7 @@ import (
 )
 
 // TestOffsetManagement tests end-to-end offset management scenarios
-// This test will use SMQ backend if SEAWEEDFS_MASTERS is available, otherwise mock
+// This test will use SMQ backend if S3_MASTERS is available, otherwise mock
 func TestOffsetManagement(t *testing.T) {
 	gateway := testutil.NewGatewayTestServerWithSMQ(t, testutil.SMQAvailable)
 	defer gateway.CleanupAndClose()

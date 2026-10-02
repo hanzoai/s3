@@ -8,7 +8,7 @@ TEMPL_FILES := $(shell find $(VIEW_DIR) -name "*.templ")
 TEMPL_GO_FILES := $(TEMPL_FILES:.templ=_templ.go)
 GO_FILES := $(shell find $(ADMIN_DIR) -name "*.go" -not -name "*_templ.go")
 BUILD_DIR := ../..
-WEED_BINARY := $(BUILD_DIR)/s3
+S3_BINARY := $(BUILD_DIR)/s3
 
 # Default target
 .PHONY: all
@@ -160,7 +160,7 @@ help:
 	@echo "  make dev         # Development mode with auto-reload"
 
 # Make sure generated files are up to date before building
-$(WEED_BINARY): $(TEMPL_GO_FILES) $(GO_FILES)
+$(S3_BINARY): $(TEMPL_GO_FILES) $(GO_FILES)
 	@$(MAKE) build
 
 # Auto-generate templ files when .templ files change

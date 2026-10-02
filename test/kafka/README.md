@@ -12,7 +12,7 @@ This directory contains tests for the Hanzo Kafka Gateway with full HanzoMQ (SMQ
 
 ### **Integration Tests** (`./integration/`)
 - **Mock Mode** (default): Uses in-memory handlers for protocol testing
-- **SMQ Mode** (with `SEAWEEDFS_MASTERS`): Uses real Hanzo backend for full integration
+- **SMQ Mode** (with `S3_MASTERS`): Uses real Hanzo backend for full integration
 
 ### **E2E Tests** (`./e2e/`)
 - End-to-end workflows
@@ -46,10 +46,10 @@ s3 mq.broker -master="127.0.0.1:9333" -ip="127.0.0.1" -port=17777
 2. **Run tests with SMQ backend:**
 ```bash
 cd test/kafka
-SEAWEEDFS_MASTERS=127.0.0.1:9333 go test ./integration/...
+S3_MASTERS=127.0.0.1:9333 go test ./integration/...
 
 # Run specific SMQ integration tests
-SEAWEEDFS_MASTERS=127.0.0.1:9333 go test -v ./integration/ -run TestSMQIntegration
+S3_MASTERS=127.0.0.1:9333 go test -v ./integration/ -run TestSMQIntegration
 ```
 
 ### Test Broker Startup
@@ -72,7 +72,7 @@ If you're having broker startup issues:
 
 ### What Gets Tested with SMQ
 
-When `SEAWEEDFS_MASTERS` is available, tests exercise:
+When `S3_MASTERS` is available, tests exercise:
 
 - **Real Message Persistence** - Messages stored in Hanzo volumes  
 - **Offset Persistence** - Consumer group offsets stored in Hanzo filer  
@@ -86,7 +86,7 @@ When `SEAWEEDFS_MASTERS` is available, tests exercise:
 ### `testutil.NewGatewayTestServerWithSMQ(t, mode)`
 
 Smart gateway creation that automatically:
-- Detects SMQ availability via `SEAWEEDFS_MASTERS`
+- Detects SMQ availability via `S3_MASTERS`
 - Uses production handler when available
 - Falls back to mock when unavailable  
 - Provides timeout protection against hanging

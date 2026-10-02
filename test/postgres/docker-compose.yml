@@ -81,8 +81,8 @@ services:
       hanzo:
         condition: service_healthy
     environment:
-      - SEAWEEDFS_MASTER=hanzo:9333
-      - SEAWEEDFS_FILER=hanzo:8888
+      - S3_MASTER=hanzo:9333
+      - S3_FILER=hanzo:8888
     networks:
       - hanzo-net
     restart: "no"  # Run once to create data

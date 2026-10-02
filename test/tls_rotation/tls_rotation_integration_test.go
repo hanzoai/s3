@@ -3,7 +3,7 @@
 // served at handshake time, rewrite the cert/key files on disk, and
 // assert that a subsequent handshake sees the new leaf — all without
 // stopping the master process. The test shortens the reloader's refresh
-// window to ~half a second via WEED_TLS_CERT_REFRESH_INTERVAL so it
+// window to ~half a second via S3_TLS_CERT_REFRESH_INTERVAL so it
 // completes in seconds rather than hours.
 package tls_rotation
 
@@ -84,10 +84,10 @@ func TestMasterHTTPSCertRotation(t *testing.T) {
 		// so this is only belt-and-braces — but it insures us against a
 		// future viper upgrade that does expand env vars.
 		"HOME="+dir,
-		"WEED_HTTPS_MASTER_CERT="+certPath,
-		"WEED_HTTPS_MASTER_KEY="+keyPath,
+		"S3_HTTPS_MASTER_CERT="+certPath,
+		"S3_HTTPS_MASTER_KEY="+keyPath,
 		// Short refresh window so rotation completes in seconds.
-		"WEED_TLS_CERT_REFRESH_INTERVAL=500ms",
+		"S3_TLS_CERT_REFRESH_INTERVAL=500ms",
 	)
 	logPath := filepath.Join(masterDir, "master.log")
 	logOut, err := os.Create(logPath)

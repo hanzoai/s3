@@ -10,7 +10,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration - assumes script is run from s3-rdma-sidecar directory
-SEAWEEDFS_DIR="$(realpath ..)"
+S3_DIR="$(realpath ..)"
 SIDECAR_DIR="$(pwd)"
 MOUNT_POINT="/tmp/hanzo-rdma-mount"
 FILER_ADDR="localhost:8888"
@@ -84,7 +84,7 @@ wait_for_service() {
     return 1
 }
 
-echo -e "${BLUE}🚀 SEAWEEDFS RDMA MOUNT DEMONSTRATION${NC}"
+echo -e "${BLUE}🚀 HANZO S3 RDMA MOUNT DEMONSTRATION${NC}"
 echo "======================================"
 echo ""
 echo "This demo shows Hanzo mount with RDMA acceleration:"
@@ -100,7 +100,7 @@ mkdir -p "$MOUNT_POINT"
 
 # Start Hanzo Master
 echo -e "${BLUE}🎯 Starting Hanzo Master...${NC}"
-cd "$SEAWEEDFS_DIR"
+cd "$S3_DIR"
 ./s3 master -port=9333 -mdir=/tmp/hanzo-master &
 MASTER_PID=$!
 wait_for_service "Master" "http://localhost:9333/cluster/status"
@@ -132,7 +132,7 @@ echo ""
 echo -e "${BLUE}🗂️  Mounting Hanzo with RDMA acceleration...${NC}"
 
 # Mount with RDMA acceleration
-cd "$SEAWEEDFS_DIR"
+cd "$S3_DIR"
 ./s3 mount \
     -filer="$FILER_ADDR" \
     -dir="$MOUNT_POINT" \

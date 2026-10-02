@@ -1,5 +1,5 @@
 # =============================================================================
-# terraform-aws-seaweedfs - thin AWS wrapper around the cloud-agnostic core.
+# terraform-aws-s3 - thin AWS wrapper around the cloud-agnostic core.
 #
 # Reserves stable per-node addressing (ENIs with fixed private IPs) FIRST, feeds
 # that address map to the core to render cloud-init, then creates instances and
@@ -10,7 +10,7 @@
 variable "name" {
   description = "Name prefix for all resources."
   type        = string
-  default     = "seaweedfs"
+  default     = "s3"
 }
 
 variable "vpc_id" {
@@ -19,14 +19,14 @@ variable "vpc_id" {
 }
 
 variable "ami_id" {
-  description = "AMI with the weed binary installed (e.g. baked with Packer)."
+  description = "AMI with the s3 binary installed (e.g. baked with Packer)."
   type        = string
 }
 
-variable "weed_binary" {
-  description = "Path to weed on the AMI."
+variable "s3_binary" {
+  description = "Path to s3 on the AMI."
   type        = string
-  default     = "/usr/bin/weed"
+  default     = "/usr/bin/s3"
 }
 
 variable "key_name" {
@@ -56,7 +56,7 @@ variable "security" {
 variable "internal_domain" {
   description = "Internal domain for generated component cert CNs / peer-auth wildcard (enable_security=true)."
   type        = string
-  default     = "seaweedfs.internal"
+  default     = "s3.internal"
 }
 
 variable "cert_dir" {

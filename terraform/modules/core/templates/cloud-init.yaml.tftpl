@@ -1,5 +1,5 @@
 #cloud-config
-# Rendered by the SeaweedFS Terraform core module for node ${name} (role ${role}).
+# Rendered by the Hanzo S3 Terraform core module for node ${name} (role ${role}).
 # When render_secret_files=false, secret-bearing files are NOT here; they are
 # fetched at boot by fetch-secrets.sh from the cloud secret store.
 users:
@@ -15,30 +15,30 @@ write_files:
       ${indent(6, content)}
 %{ endfor ~}
 %{ if mount_script != "" ~}
-  - path: /opt/seaweedfs/mount-disks.sh
+  - path: /opt/hanzo/mount-disks.sh
     permissions: '0755'
     content: |
       ${indent(6, mount_script)}
 %{ endif ~}
 %{ if fetch_script != "" ~}
-  - path: /opt/seaweedfs/fetch-secrets.sh
+  - path: /opt/hanzo/fetch-secrets.sh
     permissions: '0755'
     content: |
       ${indent(6, fetch_script)}
 %{ endif ~}
-  - path: /etc/systemd/system/weed-${role}.service
+  - path: /etc/systemd/system/s3-${role}.service
     permissions: '0644'
     content: |
       ${indent(6, systemd_unit)}
 runcmd:
 %{ if mount_script != "" ~}
-  - /opt/seaweedfs/mount-disks.sh
+  - /opt/hanzo/mount-disks.sh
 %{ endif ~}
 %{ if fetch_script != "" ~}
-  - /opt/seaweedfs/fetch-secrets.sh
+  - /opt/hanzo/fetch-secrets.sh
 %{ endif ~}
 %{ for cmd in pre_runcmd ~}
   - ${cmd}
 %{ endfor ~}
   - systemctl daemon-reload
-  - systemctl enable --now weed-${role}.service
+  - systemctl enable --now s3-${role}.service

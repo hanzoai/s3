@@ -17,13 +17,13 @@ locals {
     [for k, v in var.s3_nodes : v.private_ip],
   )
 
-  ssm_prefix        = "/seaweedfs/${var.name}"
+  ssm_prefix        = "/s3/${var.name}"
   deliver_s3_config = length(var.s3_nodes) > 0 || var.embedded_s3.enabled
 
   # security.toml is identical across nodes; take it from the first master.
   first_master       = var.enable_security ? sort(keys(var.masters))[0] : ""
-  security_toml_path = "/etc/seaweedfs/security.toml"
-  s3_config_path     = "/etc/seaweedfs/s3_config.json"
+  security_toml_path = "/etc/hanzo/security.toml"
+  s3_config_path     = "/etc/hanzo/s3_config.json"
 
   # Boot fetch entries: cert files + security.toml + (optional) S3 config.
   fetch_entries = var.enable_security ? concat(
@@ -33,7 +33,7 @@ locals {
   ) : []
 
   fetch_script = var.enable_security ? templatefile("${path.module}/templates/fetch-secrets.sh.tftpl", {
-    run_as_user = "seaweedfs"
+    run_as_user = "s3"
     entries     = local.fetch_entries
   }) : ""
 
@@ -99,7 +99,7 @@ data "aws_iam_policy_document" "assume" {
 data "aws_iam_policy_document" "ssm_read" {
   count = var.enable_security ? 1 : 0
   statement {
-    sid       = "ReadSeaweedfsParams"
+    sid       = "ReadS3Params"
     actions   = ["ssm:GetParameter", "ssm:GetParameters"]
     resources = ["arn:aws:ssm:*:*:parameter${local.ssm_prefix}/*"]
   }

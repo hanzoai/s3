@@ -17,10 +17,10 @@ build:
 	mvn clean package
 
 test:
-	@if [ -z "$$SEAWEEDFS_TEST_ENABLED" ]; then \
-		echo "Setting SEAWEEDFS_TEST_ENABLED=true"; \
+	@if [ -z "$$S3_TEST_ENABLED" ]; then \
+		echo "Setting S3_TEST_ENABLED=true"; \
 	fi
-	SEAWEEDFS_TEST_ENABLED=true mvn test
+	S3_TEST_ENABLED=true mvn test
 
 test-local:
 	@echo "Testing against local Hanzo (localhost:8888)..."

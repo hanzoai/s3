@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script for PyArrow's NATIVE S3 filesystem with SeaweedFS.
+Test script for PyArrow's NATIVE S3 filesystem with Hanzo S3.
 
 This test uses PyArrow's built-in S3FileSystem (pyarrow.fs.S3FileSystem)
 instead of s3fs, providing a pure PyArrow solution for reading and writing
@@ -271,10 +271,10 @@ def test_write_and_read(s3: pafs.S3FileSystem, test_name: str, num_rows: int) ->
 def cleanup_test_files(s3: pafs.S3FileSystem) -> None:
     """Clean up test files from S3.
     
-    Note: We cannot use s3.delete_dir() directly because SeaweedFS uses implicit
+    Note: We cannot use s3.delete_dir() directly because Hanzo S3 uses implicit
     directories (path prefixes without physical directory objects). PyArrow's
     delete_dir() attempts to delete the directory marker itself, which fails with
-    "INTERNAL_FAILURE" on SeaweedFS. Instead, we list and delete files individually,
+    "INTERNAL_FAILURE" on Hanzo S3. Instead, we list and delete files individually,
     letting implicit directories disappear automatically.
     """
     try:
@@ -306,7 +306,7 @@ def cleanup_test_files(s3: pafs.S3FileSystem) -> None:
 def main():
     """Run all tests with PyArrow's native S3 filesystem."""
     print("=" * 80)
-    print("PyArrow Native S3 Filesystem Tests for SeaweedFS")
+    print("PyArrow Native S3 Filesystem Tests for Hanzo S3")
     print("Testing Parquet Files with Multiple Row Groups")
     if TEST_QUICK:
         print("*** QUICK TEST MODE - Small files only ***")

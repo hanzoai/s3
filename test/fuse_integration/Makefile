@@ -1,7 +1,7 @@
 # Hanzo FUSE Integration Testing Makefile
 
 # Configuration
-WEED_BINARY := s3
+S3_BINARY := s3
 GO_VERSION := 1.24
 TEST_TIMEOUT := 30m
 COVERAGE_FILE := coverage.out
@@ -11,8 +11,8 @@ COVERAGE_FILE := coverage.out
 
 # Check if s3 binary exists
 check-binary:
-	@if [ ! -f "$(WEED_BINARY)" ]; then \
-		echo "ERROR Hanzo binary not found at $(WEED_BINARY)"; \
+	@if [ ! -f "$(S3_BINARY)" ]; then \
+		echo "ERROR Hanzo binary not found at $(S3_BINARY)"; \
 		echo "   Please run 'make' in the root directory first"; \
 		exit 1; \
 	fi

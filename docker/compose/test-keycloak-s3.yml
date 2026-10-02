@@ -20,7 +20,7 @@ services:
       start_period: 60s
 
   s3:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     command:
       - -v=9
       - server
@@ -35,7 +35,7 @@ services:
       - -s3.config=/etc/hanzo/s3_config.json
       - -s3.iam.config=/etc/hanzo/iam_config.json
     environment:
-      WEED_MASTER_VOLUME_GROWTH_COPY_OTHER: 1
+      S3_MASTER_VOLUME_GROWTH_COPY_OTHER: 1
     volumes:
       - ../../test/s3/iam/test_config.json:/etc/hanzo/s3_config.json:ro
       - ../../test/s3/iam/iam_config_docker.json:/etc/hanzo/iam_config.json:ro

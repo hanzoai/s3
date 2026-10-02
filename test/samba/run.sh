@@ -19,7 +19,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WEED_BIN="${WEED_BIN:-s3}"
+S3_BIN="${S3_BIN:-s3}"
 WORK_DIR="${WORK_DIR:-$(mktemp -d /tmp/hanzo-samba.XXXXXX)}"
 MOUNT_DIR="${MOUNT_DIR:-${WORK_DIR}/mnt}"
 MOUNT2_DIR="${MOUNT2_DIR:-${WORK_DIR}/mnt2}"
@@ -84,7 +84,7 @@ mkdir -p "${MOUNT_DIR}" "${MOUNT2_DIR}" "${DATA_DIR}" "${LOG_DIR}" \
 
 # --- 1. s3 mini -----------------------------------------------------------
 echo "==> Starting s3 mini on ${FILER_ADDR}"
-"${WEED_BIN}" mini \
+"${S3_BIN}" mini \
   -dir="${DATA_DIR}" \
   -ip=127.0.0.1 \
   -filer.port="${FILER_PORT}" \
@@ -116,7 +116,7 @@ fi
 mount_with_dlm() {
   local dir="$1" log="$2" pidvar="$3" pid
   echo "==> Mounting Hanzo at ${dir} with -dlm"
-  "${WEED_BIN}" mount \
+  "${S3_BIN}" mount \
     -filer="${FILER_ADDR}" \
     -dir="${dir}" \
     -filer.path=/ \

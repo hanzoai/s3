@@ -19,7 +19,7 @@ var (
 // replication sinks can transparently decrypt encrypted objects.
 // SSE-S3 is initialized from the filer (KEK stored on filer).
 // SSE-KMS is initialized from Viper config (security.toml [kms] section or
-// WEED_KMS_* environment variables).
+// S3_KMS_* environment variables).
 // SSE-C cannot be decrypted (customer key not available) and will error at
 // decryption time.
 //
@@ -40,7 +40,7 @@ func InitializeSSEForReplication(filerSource filer_pb.FilerClient) error {
 	// Attempt KMS initialization from Viper config.
 	// KMS configuration is typically in the S3 config file which the
 	// replication commands don't load directly. Support loading from
-	// security.toml [kms] section or WEED_KMS_* environment variables.
+	// security.toml [kms] section or S3_KMS_* environment variables.
 	loader := kms.NewConfigLoader(util.GetViper())
 	if err := loader.LoadConfigurations(); err != nil {
 		glog.Warningf("KMS initialization from config failed: %v (SSE-KMS decryption will not be available)", err)

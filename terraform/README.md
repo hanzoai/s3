@@ -60,7 +60,7 @@ processes, asserting quorum, volume registration, and filer/S3 round-trips:
 
 ```bash
 cd terraform/test/local
-WEED=/path/to/s3 ./run_local_cluster.sh
+S3_BIN=/path/to/s3 ./run_local_cluster.sh
 # => 7 passed, 0 failed
 ```
 
@@ -72,7 +72,7 @@ required port is taken. `KEEP=1 ./run_local_cluster.sh` leaves the cluster up.
 
 ```bash
 cd terraform/test/local-secure
-WEED=/path/to/s3 ./run_local_secure.sh
+S3_BIN=/path/to/s3 ./run_local_secure.sh
 # => generates a CA + component certs + JWT, renders security.toml, runs a real
 #    mTLS cluster, asserts master/volume/filer form over mutual TLS and that the
 #    filer enforces JWT signing (unsigned writes get 401). 5 passed.

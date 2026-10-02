@@ -3,7 +3,7 @@
 
 .PHONY: help build-s3 check-deps start-server stop-server test test-with-server logs clean health-check
 
-WEED_BINARY := ../../../s3/s3_binary
+S3_BINARY := ../../../s3/s3_binary
 S3_PORT := 8333
 ACCESS_KEY ?= some_access_key1
 SECRET_KEY ?= some_secret_key1
@@ -26,11 +26,11 @@ help:
 build-s3:
 	@echo "Building Hanzo binary..."
 	@cd ../../../s3 && go build -o s3_binary .
-	@chmod +x $(WEED_BINARY)
+	@chmod +x $(S3_BINARY)
 
 check-deps: build-s3
 	@command -v go >/dev/null 2>&1 || (echo "Go is required but not installed" && exit 1)
-	@test -f $(WEED_BINARY) || (echo "Hanzo binary not found at $(WEED_BINARY)" && exit 1)
+	@test -f $(S3_BINARY) || (echo "Hanzo binary not found at $(S3_BINARY)" && exit 1)
 	@go list -m github.com/aws/aws-sdk-go-v2 >/dev/null 2>&1 || (echo "AWS SDK Go v2 not found. Run 'go mod tidy'." && exit 1)
 	@go list -m github.com/stretchr/testify >/dev/null 2>&1 || (echo "Testify not found. Run 'go mod tidy'." && exit 1)
 
@@ -38,7 +38,7 @@ start-server: check-deps
 	@echo "Starting Hanzo server..."
 	@rm -f s3-server.pid
 	@mkdir -p $(SERVER_DIR)
-	@AWS_ACCESS_KEY_ID=$(ACCESS_KEY) AWS_SECRET_ACCESS_KEY=$(SECRET_KEY) $(WEED_BINARY) mini \
+	@AWS_ACCESS_KEY_ID=$(ACCESS_KEY) AWS_SECRET_ACCESS_KEY=$(SECRET_KEY) $(S3_BINARY) mini \
 		-dir=$(SERVER_DIR) \
 		-s3.port=$(S3_PORT) \
 		> s3-test.log 2>&1 & \

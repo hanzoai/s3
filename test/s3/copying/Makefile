@@ -2,7 +2,7 @@
 # This Makefile provides targets for running comprehensive S3 copying tests
 
 # Default values
-SEAWEEDFS_BINARY ?= s3
+S3_BINARY ?= s3
 S3_PORT ?= 8333
 FILER_PORT ?= 8888
 VOLUME_PORT ?= 8080
@@ -15,7 +15,7 @@ VOLUME_MAX_SIZE_MB ?= 50
 
 # Test directory
 TEST_DIR := $(shell pwd)
-SEAWEEDFS_ROOT := $(shell cd ../../../ && pwd)
+S3_ROOT := $(shell cd ../../../ && pwd)
 
 # Colors for output
 RED := \033[0;31m
@@ -41,7 +41,7 @@ help:
 	@echo "  check-binary  - Check if Hanzo binary exists"
 	@echo ""
 	@echo "Configuration:"
-	@echo "  SEAWEEDFS_BINARY=$(SEAWEEDFS_BINARY)"
+	@echo "  S3_BINARY=$(S3_BINARY)"
 	@echo "  S3_PORT=$(S3_PORT)"
 	@echo "  FILER_PORT=$(FILER_PORT)"
 	@echo "  VOLUME_PORT=$(VOLUME_PORT)"
@@ -50,12 +50,12 @@ help:
 	@echo "  VOLUME_MAX_SIZE_MB=$(VOLUME_MAX_SIZE_MB)"
 
 check-binary:
-	@if ! command -v $(SEAWEEDFS_BINARY) > /dev/null 2>&1; then \
-		echo "$(RED)Error: Hanzo binary '$(SEAWEEDFS_BINARY)' not found in PATH$(NC)"; \
+	@if ! command -v $(S3_BINARY) > /dev/null 2>&1; then \
+		echo "$(RED)Error: Hanzo binary '$(S3_BINARY)' not found in PATH$(NC)"; \
 		echo "Please build Hanzo first by running 'make' in the root directory"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)Hanzo binary found: $$(which $(SEAWEEDFS_BINARY))$(NC)"
+	@echo "$(GREEN)Hanzo binary found: $$(which $(S3_BINARY))$(NC)"
 
 start-hanzo: check-binary
 	@echo "$(YELLOW)Starting Hanzo server...$(NC)"
@@ -67,7 +67,7 @@ start-hanzo: check-binary
 	@sleep 2
 	@mkdir -p /tmp/hanzo-test-copying
 	@echo "Starting s3 mini with dir=/tmp/hanzo-test-copying"
-	@AWS_ACCESS_KEY_ID=$(ACCESS_KEY) AWS_SECRET_ACCESS_KEY=$(SECRET_KEY) nohup $(SEAWEEDFS_BINARY) mini \
+	@AWS_ACCESS_KEY_ID=$(ACCESS_KEY) AWS_SECRET_ACCESS_KEY=$(SECRET_KEY) nohup $(S3_BINARY) mini \
 		-dir=/tmp/hanzo-test-copying \
 		-s3.port=$(S3_PORT) \
 		-ip=127.0.0.1 \
@@ -110,7 +110,7 @@ test-basic: check-binary
 	@$(MAKE) start-hanzo
 	@sleep 5
 	@echo "$(GREEN)Starting basic tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestBasic" ./test/s3/copying || (echo "$(RED)Basic tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestBasic" ./test/s3/copying || (echo "$(RED)Basic tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
 	@$(MAKE) stop-hanzo
 	@echo "$(GREEN)Basic tests completed successfully!$(NC)"
 
@@ -119,7 +119,7 @@ test: test-basic
 	@$(MAKE) start-hanzo
 	@sleep 5
 	@echo "$(GREEN)Starting tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "Test.*" ./test/s3/copying || (echo "$(RED)Tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "Test.*" ./test/s3/copying || (echo "$(RED)Tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
 	@$(MAKE) stop-hanzo
 	@echo "$(GREEN)All tests completed successfully!$(NC)"
 
@@ -128,7 +128,7 @@ test-quick: check-binary
 	@$(MAKE) start-hanzo
 	@sleep 5
 	@echo "$(GREEN)Starting quick tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestObjectCopy|TestCopyObjectIf" ./test/s3/copying || (echo "$(RED)Tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestObjectCopy|TestCopyObjectIf" ./test/s3/copying || (echo "$(RED)Tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
 	@$(MAKE) stop-hanzo
 	@echo "$(GREEN)Quick tests completed successfully!$(NC)"
 
@@ -137,7 +137,7 @@ test-full: check-binary
 	@$(MAKE) start-hanzo
 	@sleep 5
 	@echo "$(GREEN)Starting full test suite...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=30m -run "Test.*" ./test/s3/copying || (echo "$(RED)Tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=30m -run "Test.*" ./test/s3/copying || (echo "$(RED)Tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
 	@$(MAKE) stop-hanzo
 	@echo "$(GREEN)Full test suite completed successfully!$(NC)"
 
@@ -146,7 +146,7 @@ test-multipart: check-binary
 	@$(MAKE) start-hanzo
 	@sleep 5
 	@echo "$(GREEN)Starting multipart tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestMultipart" ./test/s3/copying || (echo "$(RED)Tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestMultipart" ./test/s3/copying || (echo "$(RED)Tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
 	@$(MAKE) stop-hanzo
 	@echo "$(GREEN)Multipart tests completed successfully!$(NC)"
 
@@ -155,7 +155,7 @@ test-conditional: check-binary
 	@$(MAKE) start-hanzo
 	@sleep 5
 	@echo "$(GREEN)Starting conditional tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestCopyObjectIf" ./test/s3/copying || (echo "$(RED)Tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestCopyObjectIf" ./test/s3/copying || (echo "$(RED)Tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
 	@$(MAKE) stop-hanzo
 	@echo "$(GREEN)Conditional tests completed successfully!$(NC)"
 
@@ -191,7 +191,7 @@ benchmark: check-binary
 	@echo "$(YELLOW)Running S3 copying benchmarks...$(NC)"
 	@$(MAKE) start-hanzo
 	@sleep 5
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=30m -bench=. -run=Benchmark ./test/s3/copying || (echo "$(RED)Benchmarks failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=30m -bench=. -run=Benchmark ./test/s3/copying || (echo "$(RED)Benchmarks failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
 	@$(MAKE) stop-hanzo
 	@echo "$(GREEN)Benchmarks completed!$(NC)"
 
@@ -200,7 +200,7 @@ stress: check-binary
 	@echo "$(YELLOW)Running S3 copying stress tests...$(NC)"
 	@$(MAKE) start-hanzo
 	@sleep 5
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=60m -run="TestMultipartCopyMultipleSizes" -count=10 ./test/s3/copying || (echo "$(RED)Stress tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=60m -run="TestMultipartCopyMultipleSizes" -count=10 ./test/s3/copying || (echo "$(RED)Stress tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
 	@$(MAKE) stop-hanzo
 	@echo "$(GREEN)Stress tests completed!$(NC)"
 
@@ -209,6 +209,6 @@ perf: check-binary
 	@echo "$(YELLOW)Running S3 copying performance tests...$(NC)"
 	@$(MAKE) start-hanzo
 	@sleep 5
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=60m -run="TestMultipartCopyMultipleSizes" ./test/s3/copying || (echo "$(RED)Performance tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=60m -run="TestMultipartCopyMultipleSizes" ./test/s3/copying || (echo "$(RED)Performance tests failed$(NC)" && $(MAKE) stop-hanzo && exit 1)
 	@$(MAKE) stop-hanzo
 	@echo "$(GREEN)Performance tests completed!$(NC)" 

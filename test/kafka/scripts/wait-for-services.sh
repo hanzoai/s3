@@ -12,7 +12,7 @@ KAFKA_PORT=${KAFKA_PORT:-9092}
 SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL:-http://localhost:8081}
 KAFKA_GATEWAY_HOST=${KAFKA_GATEWAY_HOST:-localhost}
 KAFKA_GATEWAY_PORT=${KAFKA_GATEWAY_PORT:-9093}
-SEAWEEDFS_MASTER_URL=${SEAWEEDFS_MASTER_URL:-http://localhost:9333}
+S3_MASTER_URL=${S3_MASTER_URL:-http://localhost:9333}
 MAX_WAIT=${MAX_WAIT:-300}  # 5 minutes
 
 # Colors
@@ -67,7 +67,7 @@ wait_for_service "Schema Registry" "curl -f ${SCHEMA_REGISTRY_URL}/subjects" 60
 
 # Wait for Hanzo Master
 echo "=== Checking Hanzo Master ==="
-wait_for_service "Hanzo Master" "curl -f ${SEAWEEDFS_MASTER_URL}/cluster/status" 30
+wait_for_service "Hanzo Master" "curl -f ${S3_MASTER_URL}/cluster/status" 30
 
 # Wait for Hanzo Volume
 echo "=== Checking Hanzo Volume ==="
@@ -127,7 +127,7 @@ echo "Service endpoints:"
 echo "  Kafka: ${KAFKA_HOST}:${KAFKA_PORT}"
 echo "  Schema Registry: ${SCHEMA_REGISTRY_URL}"
 echo "  Kafka Gateway: ${KAFKA_GATEWAY_HOST}:${KAFKA_GATEWAY_PORT}"
-echo "  Hanzo Master: ${SEAWEEDFS_MASTER_URL}"
+echo "  Hanzo Master: ${S3_MASTER_URL}"
 echo "  Hanzo Filer: http://localhost:8888"
 echo "  Hanzo MQ Broker: localhost:17777"
 echo "  Hanzo MQ Agent: localhost:16777"

@@ -4,7 +4,7 @@
 #
 #   ./run_local_cluster.sh            # render + run + assert + teardown
 #   KEEP=1 ./run_local_cluster.sh     # leave the cluster running after asserts
-#   WEED=/path/to/s3 ./run_local_cluster.sh
+#   S3_BIN=/path/to/s3 ./run_local_cluster.sh
 #
 # Ports come from the rendered config (high range, to avoid colliding with a
 # Hanzo cluster already running on this machine). Exits non-zero on any
@@ -14,7 +14,7 @@ set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 export PATH="/opt/homebrew/bin:$PATH"
 TOFU="${TOFU:-tofu}"
-WEED="${WEED:-$(go env GOPATH 2>/dev/null || echo "$HOME/go")/bin/s3}"
+S3_BIN="${S3_BIN:-$(go env GOPATH 2>/dev/null || echo "$HOME/go")/bin/s3}"
 WORKDIR="${WORKDIR:-/tmp/hanzo-tftest}"
 LOGDIR="$WORKDIR/logs"
 RUNDIR="$WORKDIR/run"
@@ -38,13 +38,13 @@ info "cleaning $WORKDIR"
 case "$WORKDIR" in "" | "/" | "$HOME") echo "refusing to delete '$WORKDIR'" >&2; exit 2 ;; esac
 rm -rf "$WORKDIR"
 mkdir -p "$LOGDIR" "$RUNDIR"
-[ -x "$WEED" ] || { echo "s3 binary not found/executable at $WEED" >&2; exit 2; }
+[ -x "$S3_BIN" ] || { echo "s3 binary not found/executable at $S3_BIN" >&2; exit 2; }
 
 info "rendering cluster config with OpenTofu"
 cd "$HERE"
 "$TOFU" init -backend=false -input=false -no-color >/dev/null 2>&1 || { echo "tofu init failed"; exit 2; }
 if ! "$TOFU" apply -auto-approve -input=false -no-color \
-       -var "s3_binary=$WEED" -var "workdir=$WORKDIR" >"$LOGDIR/tofu.log" 2>&1; then
+       -var "s3_binary=$S3_BIN" -var "workdir=$WORKDIR" >"$LOGDIR/tofu.log" 2>&1; then
   echo "tofu apply failed; see $LOGDIR/tofu.log"; tail -30 "$LOGDIR/tofu.log"; exit 2
 fi
 OUT="$("$TOFU" output -json cluster)"
@@ -84,9 +84,9 @@ launch_node() {
     < <(echo "$OUT" | jq -r --arg n "$n" '.[$n].argv[]')
   info "launching $n"
   if [ "${#ENVS[@]}" -gt 0 ]; then
-    env "${ENVS[@]}" "$WEED" "${ARGV[@]}" >"$LOGDIR/$n.log" 2>&1 &
+    env "${ENVS[@]}" "$S3_BIN" "${ARGV[@]}" >"$LOGDIR/$n.log" 2>&1 &
   else
-    "$WEED" "${ARGV[@]}" >"$LOGDIR/$n.log" 2>&1 &
+    "$S3_BIN" "${ARGV[@]}" >"$LOGDIR/$n.log" 2>&1 &
   fi
   echo "$!" > "$RUNDIR/$n.pid"
 }

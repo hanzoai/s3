@@ -2,7 +2,7 @@
 
 .PHONY: all test help build-s3 check-deps start-server stop-server test-delete test-with-server clean logs
 
-WEED_BINARY := ../../../s3/s3_binary
+S3_BINARY := ../../../s3/s3_binary
 S3_PORT := 8333
 TEST_TIMEOUT := 10m
 SERVER_DIR := ./test-volume-data
@@ -29,18 +29,18 @@ help:
 build-s3:
 	@echo "Building Hanzo binary..."
 	@cd ../../../s3 && go build -o s3_binary .
-	@chmod +x $(WEED_BINARY)
+	@chmod +x $(S3_BINARY)
 
 check-deps: build-s3
 	@command -v go >/dev/null 2>&1 || (echo "Go is required but not installed" && exit 1)
-	@test -f $(WEED_BINARY) || (echo "Hanzo binary not found at $(WEED_BINARY)" && exit 1)
+	@test -f $(S3_BINARY) || (echo "Hanzo binary not found at $(S3_BINARY)" && exit 1)
 	@test -f $(S3_CONFIG) || (echo "S3 config not found at $(S3_CONFIG)" && exit 1)
 
 start-server: check-deps
 	@echo "Starting Hanzo server for delete regression tests..."
 	@rm -f s3-server.pid
 	@mkdir -p $(SERVER_DIR)
-	@$(WEED_BINARY) mini \
+	@$(S3_BINARY) mini \
 		-dir=$(SERVER_DIR) \
 		-s3 \
 		-s3.port=$(S3_PORT) \

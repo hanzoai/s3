@@ -15,8 +15,8 @@ resource "tls_self_signed_cert" "ca" {
   is_ca_certificate = true
 
   subject {
-    common_name  = "SeaweedFS CA"
-    organization = "SeaweedFS"
+    common_name  = "Hanzo S3 CA"
+    organization = "Hanzo S3"
   }
 
   validity_period_hours = var.ca_validity_hours
@@ -39,7 +39,7 @@ resource "tls_cert_request" "component" {
     # Distinct CN per component so peer-identity authZ (allowed_wildcard_domain
     # / allowed_commonNames) is meaningful. Do NOT use one CN for all.
     common_name  = "${each.key}.${var.internal_domain}"
-    organization = "SeaweedFS"
+    organization = "Hanzo S3"
   }
 
   dns_names = distinct(concat(

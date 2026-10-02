@@ -18,19 +18,19 @@ directory_prefix = "hanzo"
 
 ### 2. Environment Variables
 
-All configuration options can be set via environment variables with the `WEED_FOUNDATIONDB_` prefix:
+All configuration options can be set via environment variables with the `S3_FOUNDATIONDB_` prefix:
 
 ```bash
-export WEED_FOUNDATIONDB_ENABLED=true
-export WEED_FOUNDATIONDB_CLUSTER_FILE=/etc/foundationdb/fdb.cluster
-export WEED_FOUNDATIONDB_API_VERSION=740
-export WEED_FOUNDATIONDB_TIMEOUT=5s
-export WEED_FOUNDATIONDB_MAX_RETRY_DELAY=1s
-export WEED_FOUNDATIONDB_DIRECTORY_PREFIX=hanzo
+export S3_FOUNDATIONDB_ENABLED=true
+export S3_FOUNDATIONDB_CLUSTER_FILE=/etc/foundationdb/fdb.cluster
+export S3_FOUNDATIONDB_API_VERSION=740
+export S3_FOUNDATIONDB_TIMEOUT=5s
+export S3_FOUNDATIONDB_MAX_RETRY_DELAY=1s
+export S3_FOUNDATIONDB_DIRECTORY_PREFIX=hanzo
 # Write batching (disabled by default)
-export WEED_FOUNDATIONDB_BATCH_ENABLED=false
-export WEED_FOUNDATIONDB_BATCH_SIZE=100
-export WEED_FOUNDATIONDB_BATCH_INTERVAL=1ms
+export S3_FOUNDATIONDB_BATCH_ENABLED=false
+export S3_FOUNDATIONDB_BATCH_SIZE=100
+export S3_FOUNDATIONDB_BATCH_INTERVAL=1ms
 ```
 
 ### 3. Command Line Arguments
@@ -260,7 +260,7 @@ Enable verbose logging for troubleshooting:
 
 ```bash
 # Start Hanzo with debug logs
-WEED_FOUNDATIONDB_ENABLED=true s3 -v=2 server -filer
+S3_FOUNDATIONDB_ENABLED=true s3 -v=2 server -filer
 ```
 
 ## Migration Configuration
@@ -310,9 +310,9 @@ location = "/backup"
 
 ```bash
 # Docker environment
-WEED_FOUNDATIONDB_ENABLED=true
-WEED_FOUNDATIONDB_CLUSTER_FILE=/var/fdb/config/fdb.cluster
-WEED_FOUNDATIONDB_API_VERSION=740
+S3_FOUNDATIONDB_ENABLED=true
+S3_FOUNDATIONDB_CLUSTER_FILE=/var/fdb/config/fdb.cluster
+S3_FOUNDATIONDB_API_VERSION=740
 ```
 
 ### Kubernetes ConfigMap
@@ -398,13 +398,13 @@ Use different directory prefixes for different environments:
 # Test FoundationDB configuration
 
 # Check cluster file
-if [ ! -f "$WEED_FOUNDATIONDB_CLUSTER_FILE" ]; then
-    echo "ERROR: Cluster file not found: $WEED_FOUNDATIONDB_CLUSTER_FILE"
+if [ ! -f "$S3_FOUNDATIONDB_CLUSTER_FILE" ]; then
+    echo "ERROR: Cluster file not found: $S3_FOUNDATIONDB_CLUSTER_FILE"
     exit 1
 fi
 
 # Test connection
-fdbcli -C "$WEED_FOUNDATIONDB_CLUSTER_FILE" --exec 'status' > /dev/null
+fdbcli -C "$S3_FOUNDATIONDB_CLUSTER_FILE" --exec 'status' > /dev/null
 if [ $? -ne 0 ]; then
     echo "ERROR: Cannot connect to FoundationDB cluster"
     exit 1

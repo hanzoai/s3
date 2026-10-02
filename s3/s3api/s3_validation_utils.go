@@ -20,7 +20,7 @@ import (
 // in via this env var to close the silent downgrade vector that an
 // attacker with write access to object metadata could otherwise exploit
 // by stripping the commitment field.
-const RequireKeyCommitmentEnv = "WEED_S3_REQUIRE_KEY_COMMITMENT"
+const RequireKeyCommitmentEnv = "S3_S3_REQUIRE_KEY_COMMITMENT"
 
 // requireKeyCommitment is the runtime mirror of the env var, kept as an
 // atomic so config-reload paths can flip it without a global mutex.
@@ -59,7 +59,7 @@ func ComputeKeyCommitment(key []byte, iv []byte, algorithm string) []byte {
 //
 // When the commitment is empty (legacy object written before commitments
 // shipped), the default behaviour is to accept the object — this is the
-// AWS-compatible path. Setting WEED_S3_REQUIRE_KEY_COMMITMENT=true (via
+// AWS-compatible path. Setting S3_S3_REQUIRE_KEY_COMMITMENT=true (via
 // env at startup or via SetRequireKeyCommitment at runtime) flips that
 // to reject, closing the silent-downgrade vector at the cost of locking
 // out un-migrated legacy objects.

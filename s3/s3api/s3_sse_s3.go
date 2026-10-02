@@ -291,7 +291,7 @@ const (
 	// Legacy KEK path on the filer (backward compatibility)
 	defaultKEKPath = SSES3KEKDirectory + "/" + SSES3KEKFileName
 
-	// security.toml keys (also settable via env vars WEED_S3_SSE_KEK / WEED_S3_SSE_KEY):
+	// security.toml keys (also settable via env vars S3_S3_SSE_KEK / S3_S3_SSE_KEY):
 	//
 	// s3.sse.kek: hex-encoded 256-bit key, same format as /etc/s3/sse_kek.
 	//   Drop-in replacement for the filer-stored KEK. If /etc/s3/sse_kek also
@@ -475,10 +475,10 @@ func (km *SSES3KeyManager) loadFilerKEK() ([]byte, error) {
 
 // InitializeWithFiler initializes the key manager with a filer client.
 //
-// Key source priority (via security.toml or WEED_ env vars):
-//  1. s3.sse.kek (env: WEED_S3_SSE_KEK) — hex-encoded, same format as /etc/s3/sse_kek.
+// Key source priority (via security.toml or S3_ env vars):
+//  1. s3.sse.kek (env: S3_S3_SSE_KEK) — hex-encoded, same format as /etc/s3/sse_kek.
 //     If the filer file also exists, they must match.
-//  2. s3.sse.key (env: WEED_S3_SSE_KEY) — any string; 256-bit key derived via HKDF.
+//  2. s3.sse.key (env: S3_S3_SSE_KEY) — any string; 256-bit key derived via HKDF.
 //     Refused if /etc/s3/sse_kek exists — delete the filer file first.
 //  3. Existing /etc/s3/sse_kek on the filer (backward compat).
 //  4. SSE-S3 disabled (fail on first encrypt/decrypt attempt).
@@ -805,7 +805,7 @@ func (km *SSES3KeyManager) GetMasterKey() []byte {
 // preferred way to set it — same precedence as s3.sse.kek and s3.sse.key —
 // but the env var is honoured as a fallback so deployments that wired only
 // the env keep working.
-const SSES3KEKPassphraseEnv = "WEED_S3_SSE_KEK_PASSPHRASE"
+const SSES3KEKPassphraseEnv = "S3_S3_SSE_KEK_PASSPHRASE"
 
 // Global SSE-S3 key manager instance
 var globalSSES3KeyManager = NewSSES3KeyManager()
@@ -846,7 +846,7 @@ func (k *KeyManagerFilerClient) WithFilerClient(streamingMode bool, fn func(file
 // filer access. The KEK-wrapping passphrase is sourced from the Viper
 // config key s3.sse.kek.passphrase (matching the s3.sse.kek and
 // s3.sse.key conventions, settable via security.toml or
-// WEED_S3_SSE_KEK_PASSPHRASE env), with a fallback to the bare
+// S3_S3_SSE_KEK_PASSPHRASE env), with a fallback to the bare
 // SSES3KEKPassphraseEnv lookup for deployments wired before the Viper key
 // existed. If neither is set the KEK falls back to plaintext at-rest
 // storage (with a startup warning).

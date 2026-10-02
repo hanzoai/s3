@@ -1,8 +1,8 @@
-CREATE DATABASE IF NOT EXISTS seaweedfs;
-CREATE USER IF NOT EXISTS 'seaweedfs'@'%' IDENTIFIED BY 'secret';
-GRANT ALL PRIVILEGES ON seaweedfs.* TO 'seaweedfs'@'%';
+CREATE DATABASE IF NOT EXISTS s3;
+CREATE USER IF NOT EXISTS 's3'@'%' IDENTIFIED BY 'secret';
+GRANT ALL PRIVILEGES ON s3.* TO 's3'@'%';
 FLUSH PRIVILEGES;
-USE seaweedfs;
+USE s3;
 CREATE TABLE IF NOT EXISTS `filemeta` (
     `dirhash`   BIGINT NOT NULL       COMMENT 'first 64 bits of MD5 hash value of directory field',
     `name`      VARCHAR(766) NOT NULL COMMENT 'directory or file name',

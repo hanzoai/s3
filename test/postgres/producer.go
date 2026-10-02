@@ -64,8 +64,8 @@ type ProductView struct {
 
 func main() {
 	// Get Hanzo configuration from environment
-	masterAddr := getEnv("SEAWEEDFS_MASTER", "localhost:9333")
-	filerAddr := getEnv("SEAWEEDFS_FILER", "localhost:8888")
+	masterAddr := getEnv("S3_MASTER", "localhost:9333")
+	filerAddr := getEnv("S3_FILER", "localhost:8888")
 
 	log.Printf("Creating MQ test data...")
 	log.Printf("Master: %s", masterAddr)

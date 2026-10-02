@@ -4472,7 +4472,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "weed-volume"
+name = "s3-volume"
 version = "0.1.0"
 dependencies = [
  "anyhow",

@@ -2,16 +2,16 @@ version: '3.9'
 
 services:
   master:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 9333:9333
       - 19333:19333
     command: "master -ip=master -volumeSizeLimitMB=16"
     environment:
-      WEED_MASTER_VOLUME_GROWTH_COPY_1: 1
-      WEED_MASTER_VOLUME_GROWTH_COPY_OTHER: 1
+      S3_MASTER_VOLUME_GROWTH_COPY_1: 1
+      S3_MASTER_VOLUME_GROWTH_COPY_OTHER: 1
   volume:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 8080:8080
       - 18080:18080
@@ -19,7 +19,7 @@ services:
     depends_on:
       - master
   s3:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 8888:8888
       - 18888:18888

@@ -5,7 +5,7 @@
 .PHONY: help build-s3 check-deps start-server stop-server test test-with-server clean logs health-check
 
 # Configuration
-WEED_BINARY := ../../../s3/s3_binary
+S3_BINARY := ../../../s3/s3_binary
 S3_PORT := 8333
 MASTER_PORT := 9333
 MASTER_GRPC_PORT := 19333
@@ -45,14 +45,14 @@ help:
 build-s3:
 	@echo "Building Hanzo binary..."
 	@cd ../../../s3 && go build -o s3_binary .
-	@chmod +x $(WEED_BINARY)
-	@echo "OK Hanzo binary built at $(WEED_BINARY)"
+	@chmod +x $(S3_BINARY)
+	@echo "OK Hanzo binary built at $(S3_BINARY)"
 
 check-deps: build-s3
 	@echo "Checking dependencies..."
 	@command -v go >/dev/null 2>&1 || (echo "Go is required but not installed" && exit 1)
 	@echo "Go version: $$(go version)"
-	@test -f $(WEED_BINARY) || (echo "Hanzo binary not found at $(WEED_BINARY)" && exit 1)
+	@test -f $(S3_BINARY) || (echo "Hanzo binary not found at $(S3_BINARY)" && exit 1)
 	@go list -m github.com/aws/aws-sdk-go-v2 >/dev/null 2>&1 || (echo "AWS SDK Go v2 not found. Run 'go mod tidy'." && exit 1)
 	@go list -m github.com/stretchr/testify >/dev/null 2>&1 || (echo "Testify not found. Run 'go mod tidy'." && exit 1)
 	@echo "OK All dependencies are available"
@@ -69,7 +69,7 @@ start-server: check-deps
 	@echo "Launching Hanzo server with filer group $(FILER_GROUP)..."
 	@export AWS_ACCESS_KEY_ID=some_access_key1 && \
 	export AWS_SECRET_ACCESS_KEY=some_secret_key1 && \
-	$(WEED_BINARY) mini \
+	$(S3_BINARY) mini \
 		-debug \
 		-dir=$(SERVER_DIR) \
 		-s3.port=$(S3_PORT) \

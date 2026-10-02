@@ -133,7 +133,7 @@ The integration test suite covers:
 
 ```
 ===============================================
-🚀 SEAWEEDFS RDMA INTEGRATION TEST SUITE  
+🚀 HANZO S3 RDMA INTEGRATION TEST SUITE  
 ===============================================
 
 🔵 Waiting for Hanzo Master to be ready...

@@ -98,12 +98,12 @@ spec:
           {{- $adminSecretName := .Values.admin.secret.existingSecret | default (printf "%s-admin-secret" (include "hanzo.fullname" .)) }}
           env:
             {{- if $adminAuthEnabled }}
-            - name: WEED_ADMIN_USER
+            - name: S3_ADMIN_USER
               valueFrom:
                 secretKeyRef:
                   name: {{ $adminSecretName }}
                   key: {{ if .Values.admin.secret.existingSecret }}{{ .Values.admin.secret.userKey }}{{ else }}adminUser{{ end }}
-            - name: WEED_ADMIN_PASSWORD
+            - name: S3_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ $adminSecretName }}
@@ -121,7 +121,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: SEAWEEDFS_FULLNAME
+            - name: S3_FULLNAME
               value: "{{ include "hanzo.fullname" . }}"
             {{- $mergedExtraEnvironmentVars := dict }}
             {{- include "hanzo.mergeExtraEnvironmentVars" (dict "global" .Values.global.s3 "component" .Values.admin "target" $mergedExtraEnvironmentVars) }}
@@ -171,7 +171,7 @@ spec:
               {{- else if .Values.global.s3.masterServer }}
               -masters={{ .Values.global.s3.masterServer }}{{- if or $urlPrefix .Values.admin.extraArgs }} \{{ end }}
               {{- else }}
-              -masters={{ range $index := until (.Values.master.replicas | int) }}${SEAWEEDFS_FULLNAME}-master-{{ $index }}.${SEAWEEDFS_FULLNAME}-master.{{ $.Release.Namespace }}:{{ $.Values.master.port }}{{ if lt $index (sub ($.Values.master.replicas | int) 1) }},{{ end }}{{ end }}{{- if or $urlPrefix .Values.admin.extraArgs }} \{{ end }}
+              -masters={{ range $index := until (.Values.master.replicas | int) }}${S3_FULLNAME}-master-{{ $index }}.${S3_FULLNAME}-master.{{ $.Release.Namespace }}:{{ $.Values.master.port }}{{ if lt $index (sub ($.Values.master.replicas | int) 1) }},{{ end }}{{ end }}{{- if or $urlPrefix .Values.admin.extraArgs }} \{{ end }}
               {{- end }}
               {{- if $urlPrefix }}
               -urlPrefix={{ $urlPrefix }}{{- if .Values.admin.extraArgs }} \{{ end }}

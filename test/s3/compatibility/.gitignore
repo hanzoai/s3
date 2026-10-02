@@ -3,6 +3,6 @@
 /tmp
 
 # Test run outputs
-weed.log
+s3.log
 compat.raw.txt
 compat.summary.txt

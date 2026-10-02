@@ -4,7 +4,7 @@
 .PHONY: all test help build-s3 setup-server start-server stop-server test-versioning test-versioning-quick test-versioning-regressions test-versioning-comprehensive test-all clean logs check-deps
 
 # Configuration
-WEED_BINARY := ../../../s3/s3_binary
+S3_BINARY := ../../../s3/s3_binary
 S3_PORT := 8333
 MASTER_PORT := 9333
 VOLUME_PORT := 8080
@@ -53,18 +53,18 @@ help:
 build-s3:
 	@echo "Building Hanzo binary..."
 	@cd ../../../s3 && go build -o s3_binary .
-	@chmod +x $(WEED_BINARY)
-	@echo "OK Hanzo binary built at $(WEED_BINARY)"
+	@chmod +x $(S3_BINARY)
+	@echo "OK Hanzo binary built at $(S3_BINARY)"
 
 check-deps: build-s3
 	@echo "Checking dependencies..."
 	@echo "DEBUG: Checking Go installation..."
 	@command -v go >/dev/null 2>&1 || (echo "Go is required but not installed" && exit 1)
 	@echo "DEBUG: Go version: $$(go version)"
-	@echo "🔍 DEBUG: Checking binary at $(WEED_BINARY)..."
-	@test -f $(WEED_BINARY) || (echo "Hanzo binary not found at $(WEED_BINARY)" && exit 1)
-	@echo "🔍 DEBUG: Binary size: $$(ls -lh $(WEED_BINARY) | awk '{print $$5}')"
-	@echo "🔍 DEBUG: Binary permissions: $$(ls -la $(WEED_BINARY) | awk '{print $$1}')"
+	@echo "🔍 DEBUG: Checking binary at $(S3_BINARY)..."
+	@test -f $(S3_BINARY) || (echo "Hanzo binary not found at $(S3_BINARY)" && exit 1)
+	@echo "🔍 DEBUG: Binary size: $$(ls -lh $(S3_BINARY) | awk '{print $$5}')"
+	@echo "🔍 DEBUG: Binary permissions: $$(ls -la $(S3_BINARY) | awk '{print $$1}')"
 	@echo "🔍 DEBUG: Checking Go module dependencies..."
 	@go list -m github.com/aws/aws-sdk-go-v2 >/dev/null 2>&1 || (echo "AWS SDK Go v2 not found. Run 'go mod tidy'." && exit 1)
 	@go list -m github.com/stretchr/testify >/dev/null 2>&1 || (echo "Testify not found. Run 'go mod tidy'." && exit 1)
@@ -85,15 +85,15 @@ start-server: check-deps
 	else \
 		echo "✅ Port $(S3_PORT) is available"; \
 	fi
-	@echo "🔍 DEBUG: Checking binary at $(WEED_BINARY)"
-	@ls -la $(WEED_BINARY) || (echo "❌ Binary not found!" && exit 1)
+	@echo "🔍 DEBUG: Checking binary at $(S3_BINARY)"
+	@ls -la $(S3_BINARY) || (echo "❌ Binary not found!" && exit 1)
 	@echo "🔍 DEBUG: Checking config file at ../../../docker/compose/s3.json"
 	@ls -la ../../../docker/compose/s3.json || echo "⚠️  Config file not found, continuing without it"
 	@echo "🔍 DEBUG: Creating volume directory..."
 	@mkdir -p ./test-volume-data
 	@echo "🔍 DEBUG: Launching Hanzo server in background..."
-	@echo "🔍 DEBUG: Command: $(WEED_BINARY) mini -dir=./test-volume-data -s3.port=$(S3_PORT) -s3.config=../../../docker/compose/s3.json"
-	@$(WEED_BINARY) mini \
+	@echo "🔍 DEBUG: Command: $(S3_BINARY) mini -dir=./test-volume-data -s3.port=$(S3_PORT) -s3.config=../../../docker/compose/s3.json"
+	@$(S3_BINARY) mini \
 		-dir=./test-volume-data \
 		-s3.port=$(S3_PORT) \
 		-s3.config=../../../docker/compose/s3.json \
@@ -229,13 +229,13 @@ test-with-server: start-server
 test-versioning-with-configs: check-deps
 	@echo "Testing with different S3 configurations..."
 	@echo "Testing with empty folder allowed..."
-	@$(WEED_BINARY) mini -s3.port=$(S3_PORT) > s3-test-config1.log 2>&1 & echo $$! > s3-config1.pid
+	@$(S3_BINARY) mini -s3.port=$(S3_PORT) > s3-test-config1.log 2>&1 & echo $$! > s3-config1.pid
 	@sleep 5
 	@go test -v -timeout=5m -run "TestVersioningBasicWorkflow" . || true
 	@if [ -f s3-config1.pid ]; then kill -TERM $$(cat s3-config1.pid) 2>/dev/null || true; rm -f s3-config1.pid; fi
 	@sleep 2
 	@echo "Testing with delete bucket not empty disabled..."
-	@$(WEED_BINARY) mini -s3.port=$(S3_PORT) -s3.allowDeleteBucketNotEmpty=false > s3-test-config2.log 2>&1 & echo $$! > s3-config2.pid
+	@$(S3_BINARY) mini -s3.port=$(S3_PORT) -s3.allowDeleteBucketNotEmpty=false > s3-test-config2.log 2>&1 & echo $$! > s3-config2.pid
 	@sleep 5
 	@go test -v -timeout=5m -run "TestVersioningBasicWorkflow" . || true
 	@if [ -f s3-config2.pid ]; then kill -TERM $$(cat s3-config2.pid) 2>/dev/null || true; rm -f s3-config2.pid; fi
@@ -278,7 +278,7 @@ debug-server:
 	@echo "Starting Hanzo server in debug mode..."
 	@$(MAKE) stop-server
 	@mkdir -p ./test-volume-data
-	@$(WEED_BINARY) mini \
+	@$(S3_BINARY) mini \
 		-debug \
 		-s3.port=$(S3_PORT) \
 		-s3.allowDeleteBucketNotEmpty=true \
@@ -322,7 +322,7 @@ health-check:
 # Simple server start without process cleanup (for CI troubleshooting)
 start-server-simple: check-deps
 	@echo "Starting Hanzo server (simple mode)..."
-	@$(WEED_BINARY) mini \
+	@$(S3_BINARY) mini \
 		-dir=$(SERVER_DIR) \
 		-s3 \
 		-s3.port=$(S3_PORT) \

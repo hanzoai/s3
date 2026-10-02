@@ -1,4 +1,4 @@
-# Makefile for SeaweedFS S3 IAM Integration Tests with Docker Compose
+# Makefile for Hanzo S3 IAM Integration Tests with Docker Compose
 .PHONY: help docker-build docker-up docker-down docker-logs docker-test docker-clean docker-status docker-keycloak-setup
 
 # Default target
@@ -6,10 +6,10 @@
 
 # Docker Compose configuration
 COMPOSE_FILE := docker-compose.yml
-PROJECT_NAME := seaweedfs-iam-test
+PROJECT_NAME := s3-iam-test
 
 help: ## Show this help message
-	@echo "SeaweedFS S3 IAM Integration Tests - Docker Compose"
+	@echo "Hanzo S3 IAM Integration Tests - Docker Compose"
 	@echo ""
 	@echo "Available commands:"
 	@echo ""
@@ -19,22 +19,22 @@ help: ## Show this help message
 	@echo "  COMPOSE_FILE: $(COMPOSE_FILE)"
 	@echo "  PROJECT_NAME: $(PROJECT_NAME)"
 
-docker-build: ## Build local SeaweedFS image for testing
-	@echo "🔨 Building local SeaweedFS image..."
+docker-build: ## Build local Hanzo S3 image for testing
+	@echo "🔨 Building local Hanzo S3 image..."
 	@echo "Creating build directory..."
 	@cd ../../.. && mkdir -p .docker-build
-	@echo "Building weed binary..."
-	@cd ../../.. && cd weed && go build -o ../.docker-build/weed
+	@echo "Building s3 binary..."
+	@cd ../../.. && cd s3 && go build -o ../.docker-build/s3
 	@echo "Copying required files to build directory..."
 	@cd ../../.. && cp docker/filer.toml .docker-build/ && cp docker/entrypoint.sh .docker-build/
 	@echo "Building Docker image..."
-	@cd ../../.. && docker build -f docker/Dockerfile.local -t local/seaweedfs:latest .docker-build/
+	@cd ../../.. && docker build -f docker/Dockerfile.local -t local/s3:latest .docker-build/
 	@echo "Cleaning up build directory..."
 	@cd ../../.. && rm -rf .docker-build
-	@echo "✅ Built local/seaweedfs:latest"
+	@echo "✅ Built local/s3:latest"
 
 docker-up: ## Start all services with Docker Compose
-	@echo "🚀 Starting SeaweedFS S3 IAM integration environment..."
+	@echo "🚀 Starting Hanzo S3 IAM integration environment..."
 	@docker-compose -p $(PROJECT_NAME) -f $(COMPOSE_FILE) up -d
 	@echo ""
 	@echo "✅ Environment started! Services will be available at:"
@@ -47,7 +47,7 @@ docker-up: ## Start all services with Docker Compose
 	@docker-compose -p $(PROJECT_NAME) -f $(COMPOSE_FILE) ps
 
 docker-down: ## Stop and remove all containers
-	@echo "🛑 Stopping SeaweedFS S3 IAM integration environment..."
+	@echo "🛑 Stopping Hanzo S3 IAM integration environment..."
 	@docker-compose -p $(PROJECT_NAME) -f $(COMPOSE_FILE) down -v
 	@echo "✅ Environment stopped and cleaned up"
 
@@ -57,7 +57,7 @@ docker-logs: ## Show logs from all services
 	@docker-compose -p $(PROJECT_NAME) -f $(COMPOSE_FILE) logs -f
 
 docker-logs-s3: ## Show logs from S3 service only
-	@docker-compose -p $(PROJECT_NAME) -f $(COMPOSE_FILE) logs -f weed-s3
+	@docker-compose -p $(PROJECT_NAME) -f $(COMPOSE_FILE) logs -f s3-gateway
 
 docker-logs-keycloak: ## Show logs from Keycloak service only  
 	@docker-compose -p $(PROJECT_NAME) -f $(COMPOSE_FILE) logs -f keycloak
@@ -70,7 +70,7 @@ docker-status: ## Check status of all services
 	@docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep $(PROJECT_NAME) || true
 
 docker-test: docker-wait-healthy ## Run integration tests against Docker environment
-	@echo "🧪 Running SeaweedFS S3 IAM integration tests..."
+	@echo "🧪 Running Hanzo S3 IAM integration tests..."
 	@echo ""
 	@KEYCLOAK_URL=http://localhost:8080 go test -v -timeout 10m ./...
 
@@ -93,7 +93,7 @@ docker-clean: ## Clean up everything (containers, volumes, images)
 	@echo "✅ Cleanup complete"
 
 docker-shell-s3: ## Get shell access to S3 container
-	@docker-compose -p $(PROJECT_NAME) -f $(COMPOSE_FILE) exec weed-s3 sh
+	@docker-compose -p $(PROJECT_NAME) -f $(COMPOSE_FILE) exec s3-gateway sh
 
 docker-shell-keycloak: ## Get shell access to Keycloak container  
 	@docker-compose -p $(PROJECT_NAME) -f $(COMPOSE_FILE) exec keycloak bash
@@ -131,7 +131,7 @@ docker-urls: ## Display all service URLs
 	@echo "🌐 Service URLs:"
 	@echo ""  
 	@echo "  🔐 Keycloak Admin:   http://localhost:8080 (admin/admin)"
-	@echo "  🔐 Keycloak Realm:   http://localhost:8080/realms/seaweedfs-test"
+	@echo "  🔐 Keycloak Realm:   http://localhost:8080/realms/s3-test"
 	@echo "  📁 S3 API:          http://localhost:8333"
 	@echo "  📂 Filer UI:        http://localhost:8888"  
 	@echo "  🎯 Master UI:       http://localhost:9333"
@@ -147,7 +147,7 @@ docker-urls: ## Display all service URLs
 docker-wait-healthy: ## Wait for all services to be healthy
 	@echo "⏳ Waiting for all services to be healthy..."
 	@timeout 300 bash -c ' \
-		required_services="keycloak weed-master weed-volume weed-filer weed-s3"; \
+		required_services="keycloak s3-master s3-volume s3-filer s3-gateway"; \
 		while true; do \
 			all_healthy=true; \
 			for service in $$required_services; do \

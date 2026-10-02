@@ -13,9 +13,9 @@ echo "Building s3 binary..."
 go build -o /tmp/s3-discovery ./s3
 
 # Setup data directory
-WEED_DATA_DIR="/tmp/hanzo-discovery-test-$$"
-mkdir -p "$WEED_DATA_DIR"
-echo "Using data directory: $WEED_DATA_DIR"
+S3_DATA_DIR="/tmp/hanzo-discovery-test-$$"
+mkdir -p "$S3_DATA_DIR"
+echo "Using data directory: $S3_DATA_DIR"
 
 # Cleanup function
 cleanup() {
@@ -23,7 +23,7 @@ cleanup() {
     pkill -f "s3.*server" || true
     pkill -f "s3.*mq.broker" || true
     sleep 2
-    rm -rf "$WEED_DATA_DIR"
+    rm -rf "$S3_DATA_DIR"
     rm -f /tmp/s3-discovery* /tmp/broker-discovery-test*
 }
 trap cleanup EXIT
@@ -33,7 +33,7 @@ echo "Starting Hanzo server..."
 /tmp/s3-discovery -v 1 server \
   -ip="127.0.0.1" \
   -ip.bind="127.0.0.1" \
-  -dir="$WEED_DATA_DIR" \
+  -dir="$S3_DATA_DIR" \
   -master.raftHashicorp \
   -master.port=9333 \
   -volume.port=8081 \
@@ -105,7 +105,7 @@ echo "Cluster status: $CLUSTER_STATUS"
 # Now test broker discovery using the same approach as the Kafka gateway
 echo "Testing broker discovery..."
 cd test/kafka
-SEAWEEDFS_MASTERS=127.0.0.1:9333 timeout 30s go test -v -run "TestOffsetManagement" -timeout 25s ./e2e/... > /tmp/broker-discovery-test.log 2>&1 && discovery_success=true || discovery_success=false
+S3_MASTERS=127.0.0.1:9333 timeout 30s go test -v -run "TestOffsetManagement" -timeout 25s ./e2e/... > /tmp/broker-discovery-test.log 2>&1 && discovery_success=true || discovery_success=false
 
 if [ "$discovery_success" = true ]; then
   echo "[OK] Broker discovery test PASSED!"

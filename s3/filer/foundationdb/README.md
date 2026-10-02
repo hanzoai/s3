@@ -72,12 +72,12 @@ location = "/backup"
 Configure via environment variables:
 
 ```bash
-export WEED_FOUNDATIONDB_ENABLED=true
-export WEED_FOUNDATIONDB_CLUSTER_FILE=/etc/foundationdb/fdb.cluster
-export WEED_FOUNDATIONDB_API_VERSION=740
-export WEED_FOUNDATIONDB_TIMEOUT=5s
-export WEED_FOUNDATIONDB_MAX_RETRY_DELAY=1s
-export WEED_FOUNDATIONDB_DIRECTORY_PREFIX=hanzo
+export S3_FOUNDATIONDB_ENABLED=true
+export S3_FOUNDATIONDB_CLUSTER_FILE=/etc/foundationdb/fdb.cluster
+export S3_FOUNDATIONDB_API_VERSION=740
+export S3_FOUNDATIONDB_TIMEOUT=5s
+export S3_FOUNDATIONDB_MAX_RETRY_DELAY=1s
+export S3_FOUNDATIONDB_DIRECTORY_PREFIX=hanzo
 ```
 
 ## FoundationDB Cluster Setup

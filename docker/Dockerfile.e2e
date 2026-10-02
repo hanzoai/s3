@@ -1,6 +1,6 @@
 FROM ubuntu:22.04
 
-LABEL author="Chris Lu"
+LABEL author="Hanzo AI"
 
 # Use Azure's Ubuntu mirror — much faster than archive.ubuntu.com from GitHub-hosted runners,
 # which have been hanging long enough on Ign:/retry to trip the 10-min step timeout.

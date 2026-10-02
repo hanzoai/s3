@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 	"github.com/hanzoai/s3/test/volume_server/framework"
 	"github.com/hanzoai/s3/test/volume_server/matrix"
-	"github.com/hanzoai/s3/s3/pb/volume_server_pb"
 )
 
 // runS3Shell executes a s3 shell command by providing commands via stdin with lock/unlock.
@@ -62,7 +62,7 @@ func TestVolumeMergeBasic(t *testing.T) {
 	t.Logf("Successfully allocated volume %d on servers 0 and 1 as replicas", volumeID)
 
 	// Get s3 binary
-	s3Binary := os.Getenv("WEED_BINARY")
+	s3Binary := os.Getenv("S3_BINARY")
 	if s3Binary == "" {
 		var err error
 		s3Binary, err = framework.FindOrBuildS3Binary()
@@ -110,7 +110,7 @@ func TestVolumeMergeReadonly(t *testing.T) {
 	framework.AllocateVolume(t, volumeClient1, volumeID, "")
 
 	// Get s3 binary
-	s3Binary := os.Getenv("WEED_BINARY")
+	s3Binary := os.Getenv("S3_BINARY")
 	if s3Binary == "" {
 		var err error
 		s3Binary, err = framework.FindOrBuildS3Binary()
@@ -201,7 +201,7 @@ func TestVolumeMergeRestore(t *testing.T) {
 	}
 
 	// Get s3 binary
-	s3Binary := os.Getenv("WEED_BINARY")
+	s3Binary := os.Getenv("S3_BINARY")
 	if s3Binary == "" {
 		var err error
 		s3Binary, err = framework.FindOrBuildS3Binary()
@@ -316,7 +316,7 @@ func TestVolumeMergeTailNeedles(t *testing.T) {
 	}
 
 	// Get s3 binary
-	s3Binary := os.Getenv("WEED_BINARY")
+	s3Binary := os.Getenv("S3_BINARY")
 	if s3Binary == "" {
 		var err error
 		s3Binary, err = framework.FindOrBuildS3Binary()
@@ -427,7 +427,7 @@ func TestVolumeMergeDivergentReplicas(t *testing.T) {
 	}
 
 	// Get s3 binary
-	s3Binary := os.Getenv("WEED_BINARY")
+	s3Binary := os.Getenv("S3_BINARY")
 	if s3Binary == "" {
 		var err error
 		s3Binary, err = framework.FindOrBuildS3Binary()

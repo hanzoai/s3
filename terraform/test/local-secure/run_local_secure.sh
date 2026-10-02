@@ -8,7 +8,7 @@ set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 export PATH="/opt/homebrew/bin:$PATH"
 TOFU="${TOFU:-tofu}"
-WEED="${WEED:-$(go env GOPATH 2>/dev/null || echo "$HOME/go")/bin/s3}"
+S3_BIN="${S3_BIN:-$(go env GOPATH 2>/dev/null || echo "$HOME/go")/bin/s3}"
 WORKDIR="${WORKDIR:-/tmp/hanzo-tftest-secure}"
 LOGDIR="$WORKDIR/logs"
 RUNDIR="$WORKDIR/run"
@@ -32,13 +32,13 @@ info "cleaning $WORKDIR"
 case "$WORKDIR" in "" | "/" | "$HOME") echo "refusing to delete '$WORKDIR'" >&2; exit 2 ;; esac
 rm -rf "$WORKDIR"
 mkdir -p "$LOGDIR" "$RUNDIR" "$WORKDIR/.s3"
-[ -x "$WEED" ] || { echo "s3 not found at $WEED" >&2; exit 2; }
+[ -x "$S3_BIN" ] || { echo "s3 not found at $S3_BIN" >&2; exit 2; }
 
 info "generating certs + rendering config with OpenTofu"
 cd "$HERE"
 "$TOFU" init -backend=false -input=false -no-color >/dev/null 2>&1 || { echo "tofu init failed"; exit 2; }
 if ! "$TOFU" apply -auto-approve -input=false -no-color \
-       -var "s3_binary=$WEED" -var "workdir=$WORKDIR" >"$LOGDIR/tofu.log" 2>&1; then
+       -var "s3_binary=$S3_BIN" -var "workdir=$WORKDIR" >"$LOGDIR/tofu.log" 2>&1; then
   echo "tofu apply failed"; tail -30 "$LOGDIR/tofu.log"; exit 2
 fi
 
@@ -78,7 +78,7 @@ launch() {
   while IFS= read -r a; do ARGV+=("$a"); done \
     < <(echo "$OUT" | jq -r --arg n "$n" '.[$n].argv[]')
   info "launching $n (mTLS)"
-  env "${ENVS[@]}" "$WEED" "${ARGV[@]}" >"$LOGDIR/$n.log" 2>&1 &
+  env "${ENVS[@]}" "$S3_BIN" "${ARGV[@]}" >"$LOGDIR/$n.log" 2>&1 &
   echo "$!" > "$RUNDIR/$n.pid"
 }
 

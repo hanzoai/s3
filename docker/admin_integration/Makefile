@@ -15,7 +15,7 @@ build: ## Build Hanzo with latest changes and create Docker image
 	@cd ../ && make build
 	@echo "3️⃣ Copying binary for local docker-compose..."
 	@cp ../s3 ./s3-local
-	@echo "✅ Build complete! Updated image: chrislusf/hanzo:local"
+	@echo "✅ Build complete! Updated image: ghcr.io/hanzoai/s3:local"
 	@echo "💡 Run 'make restart' to apply changes to running services"
 
 build-and-restart: build ## Build with latest changes and restart services
@@ -177,7 +177,7 @@ test: ## Run integration test to verify task assignment and completion
 	@echo "Creating large files with random data to trigger EC (targeting ~60MB total to exceed 50MB limit)..."
 	@for i in {1..12}; do \
 		echo "Creating 5MB random file $$i..."; \
-		docker run --rm --network admin_integration_hanzo_net -v /tmp:/tmp --entrypoint sh chrislusf/hanzo:local -c "dd if=/dev/urandom of=/tmp/largefile$$i.dat bs=1M count=5 2>/dev/null && s3 upload -master=master:9333 /tmp/largefile$$i.dat && rm /tmp/largefile$$i.dat"; \
+		docker run --rm --network admin_integration_hanzo_net -v /tmp:/tmp --entrypoint sh ghcr.io/hanzoai/s3:local -c "dd if=/dev/urandom of=/tmp/largefile$$i.dat bs=1M count=5 2>/dev/null && s3 upload -master=master:9333 /tmp/largefile$$i.dat && rm /tmp/largefile$$i.dat"; \
 		sleep 3; \
 	done
 	@echo ""

@@ -1030,7 +1030,7 @@ func (f *FlagSet) Init(name string, errorHandling ErrorHandling) {
 
 // EnvPrefix defines a string that will be implicitly prefixed to a
 // flag name before looking it up in the environment variables.
-var EnvPrefix = "WEED"
+var EnvPrefix = "S3"
 
 // ParseEnv parses flags from environment variables.
 // Flags already set will be ignored.

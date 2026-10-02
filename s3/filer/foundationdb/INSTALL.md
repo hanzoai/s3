@@ -133,12 +133,12 @@ directory_prefix = "hanzo"
 Alternative configuration via environment variables:
 
 ```bash
-export WEED_FOUNDATIONDB_ENABLED=true
-export WEED_FOUNDATIONDB_CLUSTER_FILE=/etc/foundationdb/fdb.cluster
-export WEED_FOUNDATIONDB_API_VERSION=740
-export WEED_FOUNDATIONDB_TIMEOUT=5s
-export WEED_FOUNDATIONDB_MAX_RETRY_DELAY=1s
-export WEED_FOUNDATIONDB_DIRECTORY_PREFIX=hanzo
+export S3_FOUNDATIONDB_ENABLED=true
+export S3_FOUNDATIONDB_CLUSTER_FILE=/etc/foundationdb/fdb.cluster
+export S3_FOUNDATIONDB_API_VERSION=740
+export S3_FOUNDATIONDB_TIMEOUT=5s
+export S3_FOUNDATIONDB_MAX_RETRY_DELAY=1s
+export S3_FOUNDATIONDB_DIRECTORY_PREFIX=hanzo
 ```
 
 ### Advanced Configuration
@@ -216,15 +216,15 @@ services:
       - fdb_config:/var/fdb/config
 
   hanzo:
-    image: chrislusf/hanzo:latest
+    image: ghcr.io/hanzoai/s3:latest
     command: "server -filer -ip=hanzo"
     ports:
       - "9333:9333"
       - "8888:8888"
       - "8333:8333"
     environment:
-      WEED_FOUNDATIONDB_ENABLED: "true"
-      WEED_FOUNDATIONDB_CLUSTER_FILE: "/var/fdb/config/fdb.cluster"
+      S3_FOUNDATIONDB_ENABLED: "true"
+      S3_FOUNDATIONDB_CLUSTER_FILE: "/var/fdb/config/fdb.cluster"
     volumes:
       - fdb_config:/var/fdb/config
     depends_on:
@@ -261,12 +261,12 @@ spec:
     spec:
       containers:
       - name: hanzo
-        image: chrislusf/hanzo:latest
+        image: ghcr.io/hanzoai/s3:latest
         command: ["s3", "filer"]
         env:
-        - name: WEED_FOUNDATIONDB_ENABLED
+        - name: S3_FOUNDATIONDB_ENABLED
           value: "true"
-        - name: WEED_FOUNDATIONDB_CLUSTER_FILE
+        - name: S3_FOUNDATIONDB_CLUSTER_FILE
           value: "/var/fdb/config/cluster_file"
         ports:
         - containerPort: 8888

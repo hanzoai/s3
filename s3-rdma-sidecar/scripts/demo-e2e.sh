@@ -252,7 +252,7 @@ interactive_mode() {
 }
 
 main() {
-    print_header "🚀 SEAWEEDFS RDMA END-TO-END DEMO"
+    print_header "🚀 HANZO S3 RDMA END-TO-END DEMO"
     
     echo -e "${GREEN}This demonstration shows:${NC}"
     echo -e "  ✅ Complete Go ↔ Rust IPC integration"

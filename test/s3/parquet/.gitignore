@@ -14,9 +14,9 @@ __pycache__/
 # Test artifacts
 *.log
 test_run.log
-weed-test.log
+s3-test.log
 
-# SeaweedFS data directories
+# Hanzo S3 data directories
 filerldb2/
 idx/
 dat/

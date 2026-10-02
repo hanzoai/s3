@@ -2,7 +2,7 @@
 # This Makefile provides targets for running comprehensive S3 Parquet tests with PyArrow
 
 # Default values
-SEAWEEDFS_BINARY ?= s3
+S3_BINARY ?= s3
 S3_PORT ?= 8333
 TEST_TIMEOUT ?= 15m
 ACCESS_KEY ?= some_access_key1
@@ -17,7 +17,7 @@ PYTHON_TEST_SCRIPT ?= s3_parquet_test.py
 
 # Test directory
 TEST_DIR := $(shell pwd)
-SEAWEEDFS_ROOT := $(shell cd ../../../ && pwd)
+S3_ROOT := $(shell cd ../../../ && pwd)
 
 # Colors for output
 RED := \033[0;31m
@@ -32,7 +32,7 @@ all: test
 # Build Hanzo binary (GitHub Actions compatible)
 build-s3:
 	@echo "Building Hanzo binary..."
-	@cd $(SEAWEEDFS_ROOT)/s3 && go install -buildvcs=false
+	@cd $(S3_ROOT)/s3 && go install -buildvcs=false
 	@echo "✅ Hanzo binary built successfully"
 
 help:
@@ -61,19 +61,19 @@ help:
 	@echo "  build-s3        - Build Hanzo binary"
 	@echo ""
 	@echo "Configuration:"
-	@echo "  SEAWEEDFS_BINARY=$(SEAWEEDFS_BINARY)"
+	@echo "  S3_BINARY=$(S3_BINARY)"
 	@echo "  S3_PORT=$(S3_PORT)"
 	@echo "  BUCKET_NAME=$(BUCKET_NAME)"
 	@echo "  ENABLE_SSE_S3=$(ENABLE_SSE_S3)"
 	@echo "  PYTHON=$(PYTHON)"
 
 check-binary:
-	@if ! command -v $(SEAWEEDFS_BINARY) > /dev/null 2>&1; then \
-		echo "$(RED)Error: Hanzo binary '$(SEAWEEDFS_BINARY)' not found in PATH$(NC)"; \
+	@if ! command -v $(S3_BINARY) > /dev/null 2>&1; then \
+		echo "$(RED)Error: Hanzo binary '$(S3_BINARY)' not found in PATH$(NC)"; \
 		echo "Please build Hanzo first by running 'make' in the root directory"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)Hanzo binary found: $$(which $(SEAWEEDFS_BINARY))$(NC)"
+	@echo "$(GREEN)Hanzo binary found: $$(which $(S3_BINARY))$(NC)"
 
 check-python:
 	@if ! command -v $(PYTHON) > /dev/null 2>&1; then \
@@ -123,7 +123,7 @@ start-hanzo-ci: check-binary
 		echo "  SSE-S3 encryption: DISABLED"; \
 		printf '{"identities":[{"name":"%s","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","Write"]}]}' "$(ACCESS_KEY)" "$(ACCESS_KEY)" "$(SECRET_KEY)" > /tmp/hanzo-parquet-s3.json; \
 	fi
-	@$(SEAWEEDFS_BINARY) mini \
+	@$(S3_BINARY) mini \
 		-dir=/tmp/hanzo-test-parquet \
 		-ip.bind=0.0.0.0 \
 		-s3.port=$(S3_PORT) \

@@ -191,7 +191,7 @@ metadata:
 spec:
   containers:
   - name: volume-server
-    image: chrislusf/hanzo:latest
+    image: ghcr.io/hanzoai/s3:latest
     # ... volume server config
     
   - name: rdma-sidecar

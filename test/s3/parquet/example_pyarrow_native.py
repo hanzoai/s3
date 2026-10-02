@@ -7,7 +7,7 @@
 # ///
 
 """
-Simple example of using PyArrow's native S3 filesystem with SeaweedFS.
+Simple example of using PyArrow's native S3 filesystem with Hanzo S3.
 
 This is a minimal example demonstrating how to write and read Parquet files
 using PyArrow's built-in S3FileSystem without any additional dependencies
@@ -130,5 +130,5 @@ print(f"✓ Read {table_pads.num_rows:,} rows")
 
 print("\n✅ All operations completed successfully!")
 print(f"\nFile written to: {filename}")
-print("You can verify the file using the SeaweedFS S3 API or weed shell")
+print("You can verify the file using the Hanzo S3 API or s3 shell")
 

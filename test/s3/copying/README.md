@@ -119,7 +119,7 @@ The tests use the following default configuration:
 You can modify these values in `test_config.json` or by setting environment variables:
 
 ```bash
-export SEAWEEDFS_BINARY=/path/to/s3
+export S3_BINARY=/path/to/s3
 export S3_PORT=8333
 export FILER_PORT=8888
 export VOLUME_PORT=8080

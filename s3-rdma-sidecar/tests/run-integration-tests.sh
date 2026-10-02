@@ -60,12 +60,12 @@ wait_for_service() {
 }
 
 test_hanzo_master() {
-    print_header "TESTING SEAWEEDFS MASTER"
+    print_header "TESTING HANZO S3 MASTER"
     
-    wait_for_service "$SEAWEEDFS_MASTER/cluster/status" "Hanzo Master"
+    wait_for_service "$S3_MASTER/cluster/status" "Hanzo Master"
     
     print_step "Checking master status..."
-    response=$(curl -s "$SEAWEEDFS_MASTER/cluster/status")
+    response=$(curl -s "$S3_MASTER/cluster/status")
     
     if echo "$response" | jq -e '.IsLeader == true' > /dev/null; then
         print_success "Hanzo Master is leader and ready"
@@ -77,12 +77,12 @@ test_hanzo_master() {
 }
 
 test_hanzo_volume() {
-    print_header "TESTING SEAWEEDFS VOLUME SERVER"
+    print_header "TESTING HANZO S3 VOLUME SERVER"
     
-    wait_for_service "$SEAWEEDFS_VOLUME/status" "Hanzo Volume Server"
+    wait_for_service "$S3_VOLUME/status" "Hanzo Volume Server"
     
     print_step "Checking volume server status..."
-    response=$(curl -s "$SEAWEEDFS_VOLUME/status")
+    response=$(curl -s "$S3_VOLUME/status")
     
     if echo "$response" | jq -e '.Version' > /dev/null; then
         print_success "Hanzo Volume Server is ready"
@@ -255,14 +255,14 @@ test_error_handling() {
 }
 
 main() {
-    print_header "🚀 SEAWEEDFS RDMA INTEGRATION TEST SUITE"
+    print_header "🚀 HANZO S3 RDMA INTEGRATION TEST SUITE"
     
     echo -e "${GREEN}Starting comprehensive integration tests...${NC}"
     echo -e "${BLUE}Environment:${NC}"
     echo -e "  RDMA Socket: $RDMA_SOCKET_PATH"
     echo -e "  Sidecar URL: $SIDECAR_URL"
-    echo -e "  Hanzo Master: $SEAWEEDFS_MASTER"
-    echo -e "  Hanzo Volume: $SEAWEEDFS_VOLUME"
+    echo -e "  Hanzo Master: $S3_MASTER"
+    echo -e "  Hanzo Volume: $S3_VOLUME"
     
     # Run tests in sequence
     test_hanzo_master
@@ -292,9 +292,9 @@ main() {
 }
 
 # Check required environment variables
-if [ -z "$RDMA_SOCKET_PATH" ] || [ -z "$SIDECAR_URL" ] || [ -z "$SEAWEEDFS_MASTER" ] || [ -z "$SEAWEEDFS_VOLUME" ]; then
+if [ -z "$RDMA_SOCKET_PATH" ] || [ -z "$SIDECAR_URL" ] || [ -z "$S3_MASTER" ] || [ -z "$S3_VOLUME" ]; then
     print_error "Required environment variables not set"
-    echo "Required: RDMA_SOCKET_PATH, SIDECAR_URL, SEAWEEDFS_MASTER, SEAWEEDFS_VOLUME"
+    echo "Required: RDMA_SOCKET_PATH, SIDECAR_URL, S3_MASTER, S3_VOLUME"
     exit 1
 fi
 

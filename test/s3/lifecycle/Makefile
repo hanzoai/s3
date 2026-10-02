@@ -4,7 +4,7 @@
 
 .PHONY: help build-s3 start-server stop-server test test-with-server clean health-check
 
-WEED_BINARY := ../../../s3/s3_binary
+S3_BINARY := ../../../s3/s3_binary
 S3_PORT := 8333
 MASTER_PORT := 9333
 VOLUME_PORT := 8080
@@ -34,13 +34,13 @@ help:
 build-s3:
 	@echo "Building Hanzo binary..."
 	@cd ../../../s3 && go build -o s3_binary .
-	@chmod +x $(WEED_BINARY)
+	@chmod +x $(S3_BINARY)
 
 start-server: build-s3
 	@echo "Starting s3 mini..."
 	@rm -f s3-server.pid
 	@mkdir -p $(SERVER_DIR)
-	@AWS_ACCESS_KEY_ID=$(ACCESS_KEY) AWS_SECRET_ACCESS_KEY=$(SECRET_KEY) $(WEED_BINARY) mini \
+	@AWS_ACCESS_KEY_ID=$(ACCESS_KEY) AWS_SECRET_ACCESS_KEY=$(SECRET_KEY) $(S3_BINARY) mini \
 		-dir=$(SERVER_DIR) \
 		-s3.port=$(S3_PORT) \
 		-filer.port.grpc=$(FILER_GRPC_PORT) \
@@ -69,7 +69,7 @@ health-check:
 	@curl -s http://localhost:$(S3_PORT) >/dev/null && echo "S3 up on $(S3_PORT)" || (echo "S3 not reachable"; exit 1)
 
 test:
-	@WEED_BINARY=$$(cd ../../../s3 && pwd)/s3_binary \
+	@S3_BINARY=$$(cd ../../../s3 && pwd)/s3_binary \
 	S3_ENDPOINT=http://localhost:$(S3_PORT) \
 	S3_GRPC_ENDPOINT=localhost:$$(($(S3_PORT) + 10000)) \
 	MASTER_ENDPOINT=http://localhost:$(MASTER_PORT) \

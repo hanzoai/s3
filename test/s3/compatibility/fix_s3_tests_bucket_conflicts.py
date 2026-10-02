@@ -175,7 +175,7 @@ def patch_s3_tests_init_file(file_path: str) -> bool:
         print("Patterns not found; appending override implementations to end of file.")
         append_patch = '''
 
-# --- SeaweedFS override start ---
+# --- Hanzo S3 override start ---
 from botocore.exceptions import ClientError as _Sw_ClientError
 
 
@@ -252,7 +252,7 @@ def _sw_get_new_bucket(client=None, name=None):
 # Override original helper functions
 get_new_bucket_resource = _sw_get_new_bucket_resource
 get_new_bucket = _sw_get_new_bucket
-# --- SeaweedFS override end ---
+# --- Hanzo S3 override end ---
 '''
         with open(file_path, "a", encoding="utf-8") as f:
             f.write(append_patch)

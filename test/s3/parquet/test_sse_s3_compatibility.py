@@ -3,7 +3,7 @@
 Test script for SSE-S3 compatibility with PyArrow native S3 filesystem.
 
 This test specifically targets the SSE-S3 multipart upload bug where
-SeaweedFS panics with "bad IV length" when reading multipart uploads
+Hanzo S3 panics with "bad IV length" when reading multipart uploads
 that were encrypted with bucket-default SSE-S3.
 
 Requirements:
@@ -17,8 +17,8 @@ Environment Variables:
     BUCKET_NAME: S3 bucket name (default: test-parquet-bucket)
 
 Usage:
-    # Start SeaweedFS with SSE-S3 enabled
-    make start-seaweedfs-ci ENABLE_SSE_S3=true
+    # Start Hanzo S3 with SSE-S3 enabled
+    make start-s3-ci ENABLE_SSE_S3=true
     
     # Run the test
     python3 test_sse_s3_compatibility.py
@@ -125,7 +125,7 @@ def ensure_bucket_exists(scheme: str, endpoint: str) -> bool:
                 logging.exception("✗ Failed to access bucket")
                 return False
         
-        # Note: SeaweedFS doesn't support GetBucketEncryption API
+        # Note: Hanzo S3 doesn't support GetBucketEncryption API
         # so we can't verify if SSE-S3 is enabled via API
         # We assume it's configured correctly in the s3.json config file
         logging.info("✓ Assuming SSE-S3 is configured in s3.json")
@@ -192,7 +192,7 @@ def main():
     if not ensure_bucket_exists(scheme, endpoint):
         print("\n⚠ WARNING: Failed to access or create the test bucket!")
         print("This test requires a reachable bucket with SSE-S3 enabled.")
-        print("Please ensure SeaweedFS is running with: make start-seaweedfs-ci ENABLE_SSE_S3=true")
+        print("Please ensure Hanzo S3 is running with: make start-s3-ci ENABLE_SSE_S3=true")
         return 1
 
     print()

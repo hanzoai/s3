@@ -55,7 +55,7 @@ echo "[OK] Hanzo infrastructure ready"
 echo "🧪 Running Schema Registry E2E tests..."
 cd /Users/chrislu/go/src/github.com/hanzoai/s3/test/kafka
 
-export SEAWEEDFS_MASTERS=127.0.0.1:9333
+export S3_MASTERS=127.0.0.1:9333
 
 # Run the tests
 if go test -v ./integration -run TestSchemaRegistryE2E -timeout 5m; then

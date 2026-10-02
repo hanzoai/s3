@@ -31,10 +31,10 @@ log_error() {
 # Configuration
 TIMEOUT=${TIMEOUT:-300}  # 5 minutes default timeout
 CHECK_INTERVAL=${CHECK_INTERVAL:-5}  # Check every 5 seconds
-SEAWEEDFS_MASTER_URL=${SEAWEEDFS_MASTER_URL:-"http://localhost:9333"}
+S3_MASTER_URL=${S3_MASTER_URL:-"http://localhost:9333"}
 KAFKA_GATEWAY_URL=${KAFKA_GATEWAY_URL:-"localhost:9093"}
 SCHEMA_REGISTRY_URL=${SCHEMA_REGISTRY_URL:-"http://localhost:8081"}
-SEAWEEDFS_FILER_URL=${SEAWEEDFS_FILER_URL:-"http://localhost:8888"}
+S3_FILER_URL=${S3_FILER_URL:-"http://localhost:8888"}
 
 # Check if a service is reachable
 check_http_service() {
@@ -63,10 +63,10 @@ check_tcp_service() {
 
 # Check Hanzo Master
 check_hanzo_master() {
-    if check_http_service "$SEAWEEDFS_MASTER_URL/cluster/status" "Hanzo Master"; then
+    if check_http_service "$S3_MASTER_URL/cluster/status" "Hanzo Master"; then
         # Additional check: ensure cluster has volumes
         local status_json
-        status_json=$(curl -s "$SEAWEEDFS_MASTER_URL/cluster/status" 2>/dev/null || echo "{}")
+        status_json=$(curl -s "$S3_MASTER_URL/cluster/status" 2>/dev/null || echo "{}")
         
         # Check if we have at least one volume server
         if echo "$status_json" | grep -q '"Max":0'; then
@@ -81,7 +81,7 @@ check_hanzo_master() {
 
 # Check Hanzo Filer
 check_hanzo_filer() {
-    check_http_service "$SEAWEEDFS_FILER_URL/" "Hanzo Filer"
+    check_http_service "$S3_FILER_URL/" "Hanzo Filer"
 }
 
 # Check Kafka Gateway
@@ -279,10 +279,10 @@ main() {
             echo "Environment variables:"
             echo "  TIMEOUT - Maximum time to wait in seconds (default: 300)"
             echo "  CHECK_INTERVAL - Check interval in seconds (default: 5)"
-            echo "  SEAWEEDFS_MASTER_URL - Master URL (default: http://localhost:9333)"
+            echo "  S3_MASTER_URL - Master URL (default: http://localhost:9333)"
             echo "  KAFKA_GATEWAY_URL - Gateway URL (default: localhost:9093)"
             echo "  SCHEMA_REGISTRY_URL - Schema Registry URL (default: http://localhost:8081)"
-            echo "  SEAWEEDFS_FILER_URL - Filer URL (default: http://localhost:8888)"
+            echo "  S3_FILER_URL - Filer URL (default: http://localhost:8888)"
             exit 1
             ;;
     esac

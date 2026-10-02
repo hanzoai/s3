@@ -8,7 +8,7 @@
 all: test-with-server
 
 # Configuration
-WEED_BINARY := ../../../s3/s3_binary
+S3_BINARY := ../../../s3/s3_binary
 
 ACCESS_KEY ?= some_access_key1
 SECRET_KEY ?= some_secret_key1
@@ -65,13 +65,13 @@ help:
 build-s3:
 	@echo "Building Hanzo binary..."
 	@cd ../../../s3 && go build -o s3_binary .
-	@chmod +x $(WEED_BINARY)
+	@chmod +x $(S3_BINARY)
 	@echo "Hanzo binary built"
 
 check-deps: build-s3
 	@echo "Checking dependencies..."
 	@command -v go >/dev/null 2>&1 || (echo "Go is required" && exit 1)
-	@test -f $(WEED_BINARY) || (echo "Hanzo binary not found" && exit 1)
+	@test -f $(S3_BINARY) || (echo "Hanzo binary not found" && exit 1)
 	@echo "All dependencies available"
 
 # Start remote Hanzo (acts as the "remote" S3 storage)
@@ -79,7 +79,7 @@ start-remote: check-deps
 	@echo "Starting remote Hanzo (secondary instance)..."
 	@rm -f remote-server.pid
 	@mkdir -p $(REMOTE_DIR)
-	@$(WEED_BINARY) mini \
+	@$(S3_BINARY) mini \
 		-s3.port=$(REMOTE_S3_PORT) \
 		-master.port=$(REMOTE_MASTER_PORT) \
 		-filer.port=$(REMOTE_FILER_PORT) \
@@ -119,7 +119,7 @@ start-primary: check-deps
 	@echo "Starting primary Hanzo..."
 	@rm -f primary-server.pid
 	@mkdir -p $(PRIMARY_DIR)
-	@$(WEED_BINARY) mini \
+	@$(S3_BINARY) mini \
 		-s3.port=$(PRIMARY_S3_PORT) \
 		-master.port=$(PRIMARY_MASTER_PORT) \
 		-filer.port=$(PRIMARY_FILER_PORT) \
@@ -161,12 +161,12 @@ setup-remote:
 	@go run utils/create_bucket.go http://localhost:$(REMOTE_S3_PORT) $(ACCESS_KEY) $(SECRET_KEY) $(REMOTE_BUCKET)
 	@sleep 3
 	@echo "Configuring remote storage on primary..."
-	@printf 'remote.configure -name=hanzoremote -type=s3 -s3.access_key=$(ACCESS_KEY) -s3.secret_key=$(SECRET_KEY) -s3.endpoint=http://localhost:$(REMOTE_S3_PORT) -s3.region=us-east-1\nexit\n' | $(WEED_BINARY) shell -master=localhost:$(PRIMARY_MASTER_PORT)
+	@printf 'remote.configure -name=hanzoremote -type=s3 -s3.access_key=$(ACCESS_KEY) -s3.secret_key=$(SECRET_KEY) -s3.endpoint=http://localhost:$(REMOTE_S3_PORT) -s3.region=us-east-1\nexit\n' | $(S3_BINARY) shell -master=localhost:$(PRIMARY_MASTER_PORT)
 	@sleep 2
 	@echo "Mounting remote bucket on primary..."
-	@printf 'remote.mount -dir=/buckets/remotemounted -remote=hanzoremote/$(REMOTE_BUCKET) -nonempty\nexit\n' | $(WEED_BINARY) shell -master=localhost:$(PRIMARY_MASTER_PORT)
+	@printf 'remote.mount -dir=/buckets/remotemounted -remote=hanzoremote/$(REMOTE_BUCKET) -nonempty\nexit\n' | $(S3_BINARY) shell -master=localhost:$(PRIMARY_MASTER_PORT)
 	@sleep 5
-	@printf 'remote.mount\nexit\n' | $(WEED_BINARY) shell -master=localhost:$(PRIMARY_MASTER_PORT) | grep -q "/buckets/remotemounted" || (echo "Mount failed" && exit 1)
+	@printf 'remote.mount\nexit\n' | $(S3_BINARY) shell -master=localhost:$(PRIMARY_MASTER_PORT) | grep -q "/buckets/remotemounted" || (echo "Mount failed" && exit 1)
 	@echo "Remote storage configured and verified"
 
 # Run tests

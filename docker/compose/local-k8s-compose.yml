@@ -2,13 +2,13 @@ version: '3.9'
 
 services:
   master:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 9333:9333
       - 19333:19333
     command: "master -ip=master"
   volume:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 8080:8080
       - 18080:18080
@@ -27,24 +27,24 @@ services:
       - MYSQL_PASSWORD=secret
       - MYSQL_USER=hanzo
   filer:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 8888:8888
       - 18888:18888
     environment:
-      - WEED_MYSQL_HOSTNAME=mysql
-      - WEED_MYSQL_PORT=3306
-      - WEED_MYSQL_DATABASE=hanzo
-      - WEED_MYSQL_USERNAME=hanzo
-      - WEED_MYSQL_PASSWORD=secret
-      - WEED_MYSQL_ENABLED=true
-      - WEED_MYSQL_CONNECTION_MAX_IDLE=5
-      - WEED_MYSQL_CONNECTION_MAX_OPEN=75
+      - S3_MYSQL_HOSTNAME=mysql
+      - S3_MYSQL_PORT=3306
+      - S3_MYSQL_DATABASE=hanzo
+      - S3_MYSQL_USERNAME=hanzo
+      - S3_MYSQL_PASSWORD=secret
+      - S3_MYSQL_ENABLED=true
+      - S3_MYSQL_CONNECTION_MAX_IDLE=5
+      - S3_MYSQL_CONNECTION_MAX_OPEN=75
       # "refresh" connection every 10 minutes, eliminating mysql closing "old" connections
-      - WEED_MYSQL_CONNECTION_MAX_LIFETIME_SECONDS=600
+      - S3_MYSQL_CONNECTION_MAX_LIFETIME_SECONDS=600
       # enable usage of memsql as filer backend
-      - WEED_MYSQL_INTERPOLATEPARAMS=true
-      - WEED_LEVELDB2_ENABLED=false
+      - S3_MYSQL_INTERPOLATEPARAMS=true
+      - S3_LEVELDB2_ENABLED=false
     command: '-v 9 filer -master="master:9333"'
     depends_on:
       - master
@@ -58,7 +58,7 @@ services:
       - /var/run/docker.sock:/tmp/docker.sock:ro
       - ./nginx/proxy.conf:/etc/nginx/proxy.conf
   s3:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 8333:8333
     command: '-v 9 s3 -filer="filer:8888"'

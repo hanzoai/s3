@@ -87,14 +87,14 @@ spec:
             - name: REGION
               value: "{{ . }}"
             {{- end }}
-            - name: SEAWEEDFS_FILER
+            - name: S3_FILER
               value: "{{ include "hanzo.componentName" (list . "filer") }}:{{ .Values.filer.grpcPort }}"
             {{- if .Values.global.s3.enableSecurity }}
-            - name: WEED_GRPC_CLIENT_KEY
+            - name: S3_GRPC_CLIENT_KEY
               value: /usr/local/share/ca-certificates/client/tls.key
-            - name: WEED_GRPC_CLIENT_CERT
+            - name: S3_GRPC_CLIENT_CERT
               value: /usr/local/share/ca-certificates/client/tls.crt
-            - name: WEED_GRPC_CA
+            - name: S3_GRPC_CA
               value: /usr/local/share/ca-certificates/client/ca.crt
             {{- end }}
             {{- $mergedExtraEnvironmentVars := dict }}

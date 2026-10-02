@@ -2,7 +2,7 @@
 # This Makefile provides targets for running TUS (resumable upload) integration tests
 
 # Default values
-SEAWEEDFS_BINARY ?= s3
+S3_BINARY ?= s3
 FILER_PORT ?= 18888
 VOLUME_PORT ?= 18080
 MASTER_PORT ?= 19333
@@ -12,7 +12,7 @@ VOLUME_MAX_COUNT ?= 100
 
 # Test directory
 TEST_DIR := $(shell pwd)
-SEAWEEDFS_ROOT := $(shell cd ../.. && pwd)
+S3_ROOT := $(shell cd ../.. && pwd)
 
 # Colors for output
 RED := \033[0;31m
@@ -27,7 +27,7 @@ all: test
 # Build Hanzo binary
 build-s3:
 	@echo "Building Hanzo binary..."
-	@cd $(SEAWEEDFS_ROOT)/s3 && go build -o s3
+	@cd $(S3_ROOT)/s3 && go build -o s3
 	@echo "$(GREEN)Hanzo binary built successfully$(NC)"
 
 help:
@@ -47,14 +47,14 @@ help:
 	@echo "  build-s3        - Build Hanzo binary"
 	@echo ""
 	@echo "Configuration:"
-	@echo "  SEAWEEDFS_BINARY=$(SEAWEEDFS_BINARY)"
+	@echo "  S3_BINARY=$(S3_BINARY)"
 	@echo "  FILER_PORT=$(FILER_PORT)"
 	@echo "  VOLUME_PORT=$(VOLUME_PORT)"
 	@echo "  MASTER_PORT=$(MASTER_PORT)"
 	@echo "  TEST_TIMEOUT=$(TEST_TIMEOUT)"
 
 check-binary:
-	@if ! command -v $(SEAWEEDFS_BINARY) > /dev/null 2>&1 && [ ! -f "$(SEAWEEDFS_ROOT)/s3/s3" ]; then \
+	@if ! command -v $(S3_BINARY) > /dev/null 2>&1 && [ ! -f "$(S3_ROOT)/s3/s3" ]; then \
 		echo "$(RED)Error: Hanzo binary not found$(NC)"; \
 		echo "Please build Hanzo first: make build-s3"; \
 		exit 1; \
@@ -76,7 +76,7 @@ start-hanzo: check-binary
 	
 	# Start master server (use freshly built binary)
 	@echo "Starting master server..."
-	@nohup $(SEAWEEDFS_ROOT)/s3/s3 master \
+	@nohup $(S3_ROOT)/s3/s3 master \
 		-port=$(MASTER_PORT) \
 		-mdir=/tmp/hanzo-test-tus-master \
 		-volumeSizeLimitMB=$(VOLUME_MAX_SIZE_MB) \
@@ -86,7 +86,7 @@ start-hanzo: check-binary
 	
 	# Start volume server
 	@echo "Starting volume server..."
-	@nohup $(SEAWEEDFS_ROOT)/s3/s3 volume \
+	@nohup $(S3_ROOT)/s3/s3 volume \
 		-port=$(VOLUME_PORT) \
 		-mserver=127.0.0.1:$(MASTER_PORT) \
 		-dir=/tmp/hanzo-test-tus-volume \
@@ -97,7 +97,7 @@ start-hanzo: check-binary
 	
 	# Start filer server with TUS enabled (default tusBasePath is .tus)
 	@echo "Starting filer server..."
-	@nohup $(SEAWEEDFS_ROOT)/s3/s3 filer \
+	@nohup $(S3_ROOT)/s3/s3 filer \
 		-port=$(FILER_PORT) \
 		-master=127.0.0.1:$(MASTER_PORT) \
 		-ip=127.0.0.1 \
@@ -143,31 +143,31 @@ clean:
 # Run all tests
 test: check-binary
 	@echo "$(YELLOW)Running all TUS integration tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) ./test/tus/...
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) ./test/tus/...
 	@echo "$(GREEN)All TUS tests completed$(NC)"
 
 # Run basic upload tests
 test-basic: check-binary
 	@echo "$(YELLOW)Running basic TUS upload tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestTusBasicUpload|TestTusOptionsHandler" ./test/tus/...
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestTusBasicUpload|TestTusOptionsHandler" ./test/tus/...
 	@echo "$(GREEN)Basic TUS tests completed$(NC)"
 
 # Run chunked upload tests
 test-chunked: check-binary
 	@echo "$(YELLOW)Running chunked TUS upload tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestTusChunkedUpload" ./test/tus/...
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestTusChunkedUpload" ./test/tus/...
 	@echo "$(GREEN)Chunked TUS tests completed$(NC)"
 
 # Run resume tests
 test-resume: check-binary
 	@echo "$(YELLOW)Running TUS upload resume tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestTusResumeAfterInterruption|TestTusHeadRequest" ./test/tus/...
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestTusResumeAfterInterruption|TestTusHeadRequest" ./test/tus/...
 	@echo "$(GREEN)TUS resume tests completed$(NC)"
 
 # Run error handling tests
 test-errors: check-binary
 	@echo "$(YELLOW)Running TUS error handling tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestTusInvalidOffset|TestTusUploadNotFound|TestTusDeleteUpload" ./test/tus/...
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestTusInvalidOffset|TestTusUploadNotFound|TestTusDeleteUpload" ./test/tus/...
 	@echo "$(GREEN)TUS error tests completed$(NC)"
 
 # Run tests with automatic server management
@@ -175,7 +175,7 @@ test-with-server: build-s3
 	@echo "$(YELLOW)Running TUS tests with automatic server management...$(NC)"
 	@$(MAKE) -C $(TEST_DIR) start-hanzo && \
 	sleep 3 && \
-	cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) ./test/tus/...; \
+	cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) ./test/tus/...; \
 	TEST_RESULT=$$?; \
 	$(MAKE) -C $(TEST_DIR) stop-hanzo; \
 	$(MAKE) -C $(TEST_DIR) clean; \
@@ -221,6 +221,6 @@ ci-test: test-with-server
 # Skip integration tests (short mode)
 test-short:
 	@echo "$(YELLOW)Running TUS tests in short mode (skipping integration tests)...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -short ./test/tus/...
+	@cd $(S3_ROOT) && go test -v -short ./test/tus/...
 	@echo "$(GREEN)Short tests completed$(NC)"
 

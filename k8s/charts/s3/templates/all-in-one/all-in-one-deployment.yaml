@@ -83,10 +83,10 @@ spec:
             {{- /* Determine default cluster alias and the corresponding env var keys to avoid conflicts */}}
             {{- $mergedExtraEnvironmentVars := dict }}
             {{- include "hanzo.mergeExtraEnvironmentVars" (dict "global" .Values.global.s3 "component" .Values.allInOne "target" $mergedExtraEnvironmentVars) }}
-            {{- $clusterDefault := default "sw" (index $mergedExtraEnvironmentVars "WEED_CLUSTER_DEFAULT") }}
+            {{- $clusterDefault := default "sw" (index $mergedExtraEnvironmentVars "S3_CLUSTER_DEFAULT") }}
             {{- $clusterUpper := upper $clusterDefault }}
-            {{- $clusterMasterKey := printf "WEED_CLUSTER_%s_MASTER" $clusterUpper }}
-            {{- $clusterFilerKey := printf "WEED_CLUSTER_%s_FILER" $clusterUpper }}
+            {{- $clusterMasterKey := printf "S3_CLUSTER_%s_MASTER" $clusterUpper }}
+            {{- $clusterFilerKey := printf "S3_CLUSTER_%s_FILER" $clusterUpper }}
             - name: POD_IP
               valueFrom:
                 fieldRef:
@@ -99,7 +99,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: SEAWEEDFS_FULLNAME
+            - name: S3_FULLNAME
               value: "{{ include "hanzo.fullname" . }}"
             {{- range $key := keys $mergedExtraEnvironmentVars | sortAlpha }}
             {{- $value := index $mergedExtraEnvironmentVars $key }}

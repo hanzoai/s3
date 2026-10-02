@@ -6,7 +6,7 @@
 all: test
 
 # Test configuration
-WEED_BINARY ?= $(shell go env GOPATH)/bin/s3
+S3_BINARY ?= $(shell go env GOPATH)/bin/s3
 LOG_LEVEL ?= 2
 S3_PORT ?= 8333
 FILER_PORT ?= 8888
@@ -65,7 +65,7 @@ setup: ## Setup test environment
 start-services: ## Start Hanzo services for testing
 	@echo "Starting Hanzo services using s3 mini..."
 	@mkdir -p test-volume-data
-	@$(WEED_BINARY) mini \
+	@$(S3_BINARY) mini \
 		-dir=test-volume-data \
 		-s3.port=$(S3_PORT) \
 		-s3.config=test_config.json \

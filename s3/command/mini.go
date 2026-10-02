@@ -657,7 +657,7 @@ func quietMiniLogs() {
 //     (cleared by populating the SSE-S3 master KEK so the IAM loader's fallback
 //     at s3api_server.go:1044 can derive an STS signing key from it).
 //
-// Values are exported as WEED_* env vars rather than written via viper.Set:
+// Values are exported as S3_* env vars rather than written via viper.Set:
 // viper treats dots as a path delimiter, so Set("s3.sse.kek.passphrase", ...)
 // and Set("s3.sse.kek", ...) overwrite each other's subtree. Env vars are flat
 // and viper picks them up through AutomaticEnv()+SetEnvPrefix("s3").
@@ -665,7 +665,7 @@ func quietMiniLogs() {
 // Both secrets are random and persisted under the data folder on first run, so
 // later runs reuse the same key — necessary because s3.sse.kek is checked for
 // equality against any existing KEK file on the filer. If the operator already
-// configured one or both via security.toml or WEED_ env vars, their values win.
+// configured one or both via security.toml or S3_ env vars, their values win.
 func ensureMiniDevSSES3Keys(dataFolder string) {
 	topDir := util.StringSplit(dataFolder, ",")[0]
 	if topDir == "" {
@@ -678,9 +678,9 @@ func ensureMiniDevSSES3Keys(dataFolder string) {
 
 	// (1) KEK passphrase — wraps the KEK on the filer at rest, also gates the
 	//     plaintext-KEK warning at s3_sse_s3.go:862. Any non-empty string works.
-	if util.GetViper().GetString("s3.sse.kek.passphrase") == "" && os.Getenv("WEED_S3_SSE_KEK_PASSPHRASE") == "" {
+	if util.GetViper().GetString("s3.sse.kek.passphrase") == "" && os.Getenv("S3_S3_SSE_KEK_PASSPHRASE") == "" {
 		if pp := loadOrCreateMiniHexSecret(filepath.Join(topDir, ".mini_kek_passphrase"), 32); pp != "" {
-			_ = os.Setenv("WEED_S3_SSE_KEK_PASSPHRASE", pp)
+			_ = os.Setenv("S3_S3_SSE_KEK_PASSPHRASE", pp)
 		}
 	}
 
@@ -688,10 +688,10 @@ func ensureMiniDevSSES3Keys(dataFolder string) {
 	//     SSES3KeyManager.superKey so GetMasterKey() returns a derived STS
 	//     signing key instead of nil, satisfying the IAM fallback.
 	hasOperatorKEK := util.GetViper().GetString("s3.sse.kek") != "" || util.GetViper().GetString("s3.sse.key") != "" ||
-		os.Getenv("WEED_S3_SSE_KEK") != "" || os.Getenv("WEED_S3_SSE_KEY") != ""
+		os.Getenv("S3_S3_SSE_KEK") != "" || os.Getenv("S3_S3_SSE_KEY") != ""
 	if !hasOperatorKEK {
 		if kek := loadOrCreateMiniHexSecret(filepath.Join(topDir, ".mini_sse_kek"), 32); kek != "" {
-			_ = os.Setenv("WEED_S3_SSE_KEK", kek)
+			_ = os.Setenv("S3_S3_SSE_KEK", kek)
 		}
 	}
 }
@@ -730,7 +730,7 @@ func loadOrCreateMiniHexSecret(path string, nBytes int) string {
 // can no longer grow a volume — their PutObjects fail with
 // "assign volume: ... no free volumes". Grow one volume at a time so the slots
 // stretch across many collections. Anything the operator already set via
-// master.toml or a WEED_ env var wins.
+// master.toml or an S3_ env var wins.
 func ensureMiniVolumeGrowthDefaults() {
 	v := util.GetViper()
 	for _, key := range []string{
@@ -739,7 +739,7 @@ func ensureMiniVolumeGrowthDefaults() {
 		"master.volume_growth.copy_3",
 		"master.volume_growth.copy_other",
 	} {
-		envKey := "WEED_" + strings.ToUpper(strings.ReplaceAll(key, ".", "_"))
+		envKey := "S3_" + strings.ToUpper(strings.ReplaceAll(key, ".", "_"))
 		if v.IsSet(key) || os.Getenv(envKey) != "" {
 			continue
 		}
@@ -1491,7 +1491,7 @@ func startS3Service() {
 }
 
 // applyMiniAdminCredentialFallback fills the admin credential flags from
-// security.toml [admin] / WEED_ADMIN_* env vars when they were not set on the
+// security.toml [admin] / S3_ADMIN_* env vars when they were not set on the
 // command line, mirroring the standalone `s3 admin` command. CLI flags take
 // precedence. Note the read-only viper keys (admin.readonly.*) differ from the
 // mini flag names (admin.readOnly*).
@@ -1518,7 +1518,7 @@ func startMiniAdminWithWorker(allServicesReady chan struct{}) {
 	// Set admin options
 	*miniAdminOptions.master = masterAddr
 
-	// Resolve admin credentials from security.toml [admin] / WEED_ADMIN_* env
+	// Resolve admin credentials from security.toml [admin] / S3_ADMIN_* env
 	// vars, matching the standalone `s3 admin` command.
 	applyMiniAdminCredentialFallback(&miniAdminOptions)
 

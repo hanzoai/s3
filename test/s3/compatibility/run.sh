@@ -2,7 +2,7 @@
 
 CONTAINER_NAME=${CONTAINER_NAME:-s3test-instance}
 CONF_FILE=${CONF_FILE:-s3tests.conf}
-WEED_BIN=${WEED_BIN:-../../../s3/s3}
+S3_BIN=${S3_BIN:-../../../s3/s3}
 TEST_RAW_OUTPUT_FILE=${TEST_RAW_OUTPUT_FILE:-compat.raw.txt}
 TEST_PROCESSED_OUTPUT_FILE=${TEST_PROCESSED_OUTPUT_FILE:-compat.summary.txt}
 
@@ -22,7 +22,7 @@ docker stop $CONTAINER_NAME || echo "already stopped"
 ulimit -n 10000
 
 # Start s3 w/ filer + s3 in the background
-$WEED_BIN mini \
+$S3_BIN mini \
           -master.volumeSizeLimitMB 5 \
           -dir "$(pwd)/tmp" \
           1>&2>s3.log &

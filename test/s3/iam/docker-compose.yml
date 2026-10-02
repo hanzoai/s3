@@ -25,7 +25,7 @@ services:
 
   # Hanzo Master
   s3-master:
-    image: ${SEAWEEDFS_IMAGE:-local/hanzo:latest}
+    image: ${S3_IMAGE:-local/hanzo:latest}
     container_name: s3-master
     hostname: s3-master
     ports:
@@ -45,7 +45,7 @@ services:
 
   # Hanzo Volume Server
   s3-volume:
-    image: ${SEAWEEDFS_IMAGE:-local/hanzo:latest}
+    image: ${S3_IMAGE:-local/hanzo:latest}
     container_name: s3-volume
     hostname: s3-volume
     ports:
@@ -68,7 +68,7 @@ services:
 
   # Hanzo Filer
   s3-filer:
-    image: ${SEAWEEDFS_IMAGE:-local/hanzo:latest}
+    image: ${S3_IMAGE:-local/hanzo:latest}
     container_name: s3-filer
     hostname: s3-filer
     ports:
@@ -93,15 +93,15 @@ services:
 
   # Hanzo S3 API with IAM
   s3-s3:
-    image: ${SEAWEEDFS_IMAGE:-local/hanzo:latest}
+    image: ${S3_IMAGE:-local/hanzo:latest}
     container_name: s3-s3
     hostname: s3-s3
     ports:
       - "8333:8333"
     environment:
-      WEED_FILER: "s3-filer:8888"
-      WEED_IAM_CONFIG: "/config/iam_config.json"
-      WEED_S3_CONFIG: "/config/test_config.json"
+      S3_FILER: "s3-filer:8888"
+      S3_IAM_CONFIG: "/config/iam_config.json"
+      S3_S3_CONFIG: "/config/test_config.json"
       GLOG_v: "3"
     command: >
       sh -c "

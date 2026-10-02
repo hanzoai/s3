@@ -1,7 +1,7 @@
 services:
   # Hanzo Master
   hanzo-master:
-    image: chrislusf/hanzo:latest
+    image: ghcr.io/hanzoai/s3:latest
     container_name: hanzo-master
     ports:
       - "9333:9333"
@@ -25,7 +25,7 @@ services:
 
   # Hanzo Volume Server
   hanzo-volume:
-    image: chrislusf/hanzo:latest
+    image: ghcr.io/hanzoai/s3:latest
     container_name: hanzo-volume
     ports:
       - "8080:8080"
@@ -52,7 +52,7 @@ services:
 
   # Hanzo Filer
   hanzo-filer:
-    image: chrislusf/hanzo:latest
+    image: ghcr.io/hanzoai/s3:latest
     container_name: hanzo-filer
     ports:
       - "8888:8888"

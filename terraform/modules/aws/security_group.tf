@@ -1,11 +1,11 @@
-# Cluster security group + the SeaweedFS port matrix.
+# Cluster security group + the Hanzo S3 port matrix.
 # Intra-cluster: all TCP allowed within the SG (master 9333/19333, volume
 # 8080/18080, filer 8888/18888, admin 33646, ...). Client-facing: only S3 (8333)
 # and filer (8888). Metrics ports (9327) are never opened to clients.
 
 resource "aws_security_group" "cluster" {
   name_prefix = "${var.name}-cluster-"
-  description = "SeaweedFS cluster"
+  description = "Hanzo S3 cluster"
   vpc_id      = var.vpc_id
   tags        = merge(var.tags, { Name = "${var.name}-cluster" })
 

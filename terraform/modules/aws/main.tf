@@ -38,7 +38,7 @@ resource "aws_network_interface" "s3" {
 module "core" {
   source = "../core"
 
-  weed_binary        = var.weed_binary
+  s3_binary        = var.s3_binary
   monitoring_enabled = var.monitoring_enabled
   enable_security    = var.enable_security
   security           = local.core_security
@@ -160,7 +160,7 @@ resource "aws_instance" "s3" {
 
 # ---- step 4: protected data disks (decoupled; survive instance replacement) -
 # The core's mount-disks.sh (wired via disk_mounts above) mkfs+mounts these at
-# /data before the weed unit starts.
+# /data before the s3 unit starts.
 resource "aws_ebs_volume" "volume_data" {
   for_each          = var.volumes
   availability_zone = each.value.availability_zone

@@ -50,7 +50,7 @@ s3cmd --no-ssl --host=127.0.0.1:8333 ls s3://
 Make sure that `docker buildx` is supported (might be an experimental docker feature)
 ```bash
 BUILDER=$(docker buildx create --driver docker-container --use)
-docker buildx build --pull --push --platform linux/386,linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 . -t chrislusf/hanzo
+docker buildx build --pull --push --platform linux/386,linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6 . -t ghcr.io/hanzoai/s3
 docker buildx stop $BUILDER
 ```
 

@@ -47,7 +47,7 @@ These tests verify actual FileSystem operations against a running Hanzo instance
 
 ```bash
 # Enable integration tests
-export SEAWEEDFS_TEST_ENABLED=true
+export S3_TEST_ENABLED=true
 
 # Run all tests
 mvn test
@@ -60,7 +60,7 @@ mvn test -Dtest=HanzoFileSystemTest
 
 Integration tests can be configured via environment variables or system properties:
 
-- `SEAWEEDFS_TEST_ENABLED`: Set to `true` to enable integration tests (default: false)
+- `S3_TEST_ENABLED`: Set to `true` to enable integration tests (default: false)
 - Tests use these default connection settings:
   - Filer Host: localhost
   - Filer HTTP Port: 8888
@@ -162,7 +162,7 @@ For CI environments, tests can be run in two modes:
    ```bash
    # Start Hanzo in CI environment
    # Then run:
-   export SEAWEEDFS_TEST_ENABLED=true
+   export S3_TEST_ENABLED=true
    mvn test
    ```
 
@@ -170,9 +170,9 @@ For CI environments, tests can be run in two modes:
 
 ### Tests are skipped
 
-If you see "Skipping test - SEAWEEDFS_TEST_ENABLED not set":
+If you see "Skipping test - S3_TEST_ENABLED not set":
 ```bash
-export SEAWEEDFS_TEST_ENABLED=true
+export S3_TEST_ENABLED=true
 ```
 
 ### Connection refused errors
@@ -194,6 +194,6 @@ netstat -an | grep 18888
 
 When adding new features, please include:
 1. Configuration tests (no Hanzo required)
-2. Integration tests (with SEAWEEDFS_TEST_ENABLED guard)
+2. Integration tests (with S3_TEST_ENABLED guard)
 3. Documentation updates
 

@@ -53,7 +53,7 @@ the same data on each.
 | `run.sh` | Local runner: `s3 mini` + two `-dlm` mounts + `smbd` + both batteries, all as the current user on unprivileged ports. |
 | `entrypoint.sh` | Container entrypoint: starts two `-dlm` FUSE mounts and runs `smbd`. |
 | `run_inside_container.sh` | Runs both batteries inside the container against the local `smbd`. |
-| `Dockerfile` | Adds Samba to the `chrislusf/hanzo:e2e` image. |
+| `Dockerfile` | Adds Samba to the `ghcr.io/hanzoai/s3:e2e` image. |
 | `docker-compose.yml` | master + volume + filer + samba services. |
 
 ## Running locally

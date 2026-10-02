@@ -1,5 +1,5 @@
 output "nodes" {
-  description = "Per-node rendered artifacts keyed by node name. Each value: role, name, address, ports, data_dir(s), argv (list, after the weed binary), exec_start, env, config_files, systemd_unit, cloud_init."
+  description = "Per-node rendered artifacts keyed by node name. Each value: role, name, address, ports, data_dir(s), argv (list, after the s3 binary), exec_start, env, config_files, systemd_unit, cloud_init."
   value       = local.nodes
   sensitive   = true # config_files/env may carry JWT keys or S3 identities
 }

@@ -6,16 +6,16 @@ set -e
 
 echo "Starting Kafka Gateway..."
 
-SEAWEEDFS_MASTERS=${SEAWEEDFS_MASTERS:-hanzo-master:9333}
-SEAWEEDFS_FILER=${SEAWEEDFS_FILER:-hanzo-filer:8888}
-SEAWEEDFS_MQ_BROKER=${SEAWEEDFS_MQ_BROKER:-hanzo-mq-broker:17777}
-SEAWEEDFS_FILER_GROUP=${SEAWEEDFS_FILER_GROUP:-}
+S3_MASTERS=${S3_MASTERS:-hanzo-master:9333}
+S3_FILER=${S3_FILER:-hanzo-filer:8888}
+S3_MQ_BROKER=${S3_MQ_BROKER:-hanzo-mq-broker:17777}
+S3_FILER_GROUP=${S3_FILER_GROUP:-}
 
 # Wait for dependencies
 echo "Waiting for Hanzo master(s)..."
 OLD_IFS="$IFS"
 IFS=','
-for MASTER in $SEAWEEDFS_MASTERS; do
+for MASTER in $S3_MASTERS; do
   MASTER_HOST=${MASTER%:*}
   MASTER_PORT=${MASTER#*:}
   while ! nc -z "$MASTER_HOST" "$MASTER_PORT"; do
@@ -26,13 +26,13 @@ done
 IFS="$OLD_IFS"
 
 echo "Waiting for Hanzo Filer..."
-while ! nc -z "${SEAWEEDFS_FILER%:*}" "${SEAWEEDFS_FILER#*:}"; do
+while ! nc -z "${S3_FILER%:*}" "${S3_FILER#*:}"; do
   sleep 1
 done
 echo "Hanzo Filer is ready"
 
 echo "Waiting for Hanzo MQ Broker..."
-while ! nc -z "${SEAWEEDFS_MQ_BROKER%:*}" "${SEAWEEDFS_MQ_BROKER#*:}"; do
+while ! nc -z "${S3_MQ_BROKER%:*}" "${S3_MQ_BROKER#*:}"; do
   sleep 1
 done
 echo "Hanzo MQ Broker is ready"
@@ -46,8 +46,8 @@ echo "Schema Registry is ready"
 # Start Kafka Gateway
 echo "Starting Kafka Gateway on port ${KAFKA_PORT:-9093}..."
 exec /usr/bin/s3 mq.kafka.gateway \
-  -master=${SEAWEEDFS_MASTERS} \
-  -filerGroup=${SEAWEEDFS_FILER_GROUP} \
+  -master=${S3_MASTERS} \
+  -filerGroup=${S3_FILER_GROUP} \
   -port=${KAFKA_PORT:-9093} \
   -port.pprof=${PPROF_PORT:-10093} \
   -schema-registry-url=${SCHEMA_REGISTRY_URL} \

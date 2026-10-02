@@ -1,4 +1,4 @@
-module seaweedfs-fuse-tests
+module s3-fuse-tests
 
 go 1.27.1
 

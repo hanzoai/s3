@@ -219,7 +219,7 @@ services:
       hanzo-mq-broker:
         condition: service_healthy
     environment:
-      - SEAWEEDFS_MASTERS=hanzo-master:9333
+      - S3_MASTERS=hanzo-master:9333
       # - KAFKA_DEBUG=1  # Enable debug logging for Schema Registry troubleshooting
       - KAFKA_ADVERTISED_HOST=kafka-gateway
     volumes:

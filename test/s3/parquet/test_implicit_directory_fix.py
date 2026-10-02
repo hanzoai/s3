@@ -7,7 +7,7 @@ This test verifies that:
 2. s3fs correctly identifies them as directories via LIST fallback
 3. PyArrow can read datasets created with write_dataset()
 
-The fix makes SeaweedFS behave like AWS S3 and improves s3fs compatibility.
+The fix makes Hanzo S3 behave like AWS S3 and improves s3fs compatibility.
 """
 
 import io

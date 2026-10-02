@@ -13,7 +13,7 @@ services:
       - GRPC_PORT=2136
       - MON_PORT=8765
   s3:
-    image: chrislusf/hanzo:local
+    image: ghcr.io/hanzoai/s3:local
     ports:
       - 9333:9333
       - 19333:19333
@@ -24,12 +24,12 @@ services:
     volumes:
       - ./s3.json:/etc/hanzo/s3.json
     environment:
-      WEED_LEVELDB2_ENABLED: "false"
-      WEED_YDB_ENABLED: "true"
-      WEED_YDB_DSN: "grpc://ydb:2136/?database=local"
-      WEED_YDB_PREFIX: "hanzo"
+      S3_LEVELDB2_ENABLED: "false"
+      S3_YDB_ENABLED: "true"
+      S3_YDB_DSN: "grpc://ydb:2136/?database=local"
+      S3_YDB_PREFIX: "hanzo"
       YDB_ANONYMOUS_CREDENTIALS: 1
-      WEED_MASTER_VOLUME_GROWTH_COPY_1: 1
-      WEED_MASTER_VOLUME_GROWTH_COPY_OTHER: 1
+      S3_MASTER_VOLUME_GROWTH_COPY_1: 1
+      S3_MASTER_VOLUME_GROWTH_COPY_OTHER: 1
     depends_on:
       - ydb

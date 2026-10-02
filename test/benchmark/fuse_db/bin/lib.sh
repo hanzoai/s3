@@ -4,14 +4,14 @@
 # on the box (e.g. default ports 9333/8888) are safe.
 #
 # Config via env:
-#   SEAWEED_BENCH_WORK  runtime dir for cluster/mount/logs (default /tmp/...; kept out of the repo)
-#   WEED                path to the s3 binary (default: from $PATH)
+#   S3_BENCH_WORK  runtime dir for cluster/mount/logs (default /tmp/...; kept out of the repo)
+#   S3_BIN                path to the s3 binary (default: from $PATH)
 #   MYSQL_BASE          MySQL install prefix (default macOS Homebrew; on Linux e.g. /usr)
 
 set -u
 
-WORK="${SEAWEED_BENCH_WORK:-/tmp/hanzo_fuse_db_bench}"
-WEED="${WEED:-$(command -v s3 || echo s3)}"
+WORK="${S3_BENCH_WORK:-/tmp/hanzo_fuse_db_bench}"
+S3_BIN="${S3_BIN:-$(command -v s3 || echo s3)}"
 RUN=$WORK
 CLUSTER=$RUN/cluster        # s3 server -dir (master+volume+filer state) -- local disk
 MNT=$RUN/mnt                # FUSE mount point (the Hanzo filesystem under test)
@@ -58,7 +58,7 @@ cluster_start() {
     say "ERROR master port $MASTER_PORT still busy (pid $(lsof -ti TCP:$MASTER_PORT|tr '\n' ' ')); not starting"; return 1
   fi
   say "starting s3 server (master:$MASTER_PORT volume:$VOLUME_PORT filer:$FILER_PORT)"
-  "$WEED" server -ip=127.0.0.1 -dir="$CLUSTER" \
+  "$S3_BIN" server -ip=127.0.0.1 -dir="$CLUSTER" \
     -master.port=$MASTER_PORT -volume.port=$VOLUME_PORT \
     -filer -filer.port=$FILER_PORT \
     -volume.max=50 -master.volumeSizeLimitMB=1024 \
@@ -100,7 +100,7 @@ cluster_kill_hard() {
 mount_start() {
   ensure_dirs
   say "mounting FUSE at $MNT (filer 127.0.0.1:$FILER_PORT)"
-  "$WEED" mount -filer=127.0.0.1:$FILER_PORT -dir="$MNT" \
+  "$S3_BIN" mount -filer=127.0.0.1:$FILER_PORT -dir="$MNT" \
     -dirAutoCreate -cacheDir="$LOCAL/mountcache" \
     >> "$LOGS/mount.log" 2>&1 &
   echo $! > "$PIDS/mount.pid"

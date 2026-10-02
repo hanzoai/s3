@@ -38,7 +38,7 @@ def create_power_user():
     command = f"s3.configure -apply -user poweruser -access_key {power_user_key} -secret_key {power_user_secret} -actions Admin"
     print("Creating Power User...")
     subprocess.run(
-        ["docker", "exec", "-i", "seaweedfs-master-1", "weed", "shell"],
+        ["docker", "exec", "-i", "s3-master-1", "s3", "shell"],
         input=command,
         text=True,
         stdout=subprocess.PIPE,
@@ -122,7 +122,7 @@ def create_policy_for_user(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="SeaweedFS S3 Test Script")
+    parser = argparse.ArgumentParser(description="Hanzo S3 Test Script")
     parser.add_argument(
         "--s3-url", default="http://127.0.0.1:8333", help="S3 endpoint URL"
     )

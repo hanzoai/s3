@@ -2,7 +2,7 @@
 # This Makefile provides targets for running comprehensive S3 Server-Side Encryption tests
 
 # Default values
-SEAWEEDFS_BINARY ?= s3
+S3_BINARY ?= s3
 S3_PORT ?= 8333
 FILER_PORT ?= 8888
 VOLUME_PORT ?= 8080
@@ -20,7 +20,7 @@ KMS_TYPE ?= local
 
 # Test directory
 TEST_DIR := $(shell pwd)
-SEAWEEDFS_ROOT := $(shell cd ../../../ && pwd)
+S3_ROOT := $(shell cd ../../../ && pwd)
 
 # Colors for output
 RED := \033[0;31m
@@ -35,7 +35,7 @@ all: test-basic
 # Build Hanzo binary (GitHub Actions compatible)
 build-s3:
 	@echo "Building Hanzo binary..."
-	@cd $(SEAWEEDFS_ROOT)/s3 && go install -buildvcs=false
+	@cd $(S3_ROOT)/s3 && go install -buildvcs=false
 	@echo "✅ Hanzo binary built successfully"
 
 help:
@@ -56,7 +56,7 @@ help:
 	@echo "  check-binary  - Check if Hanzo binary exists"
 	@echo ""
 	@echo "Configuration:"
-	@echo "  SEAWEEDFS_BINARY=$(SEAWEEDFS_BINARY)"
+	@echo "  S3_BINARY=$(S3_BINARY)"
 	@echo "  S3_PORT=$(S3_PORT)"
 	@echo "  FILER_PORT=$(FILER_PORT)"
 	@echo "  VOLUME_PORT=$(VOLUME_PORT)"
@@ -65,12 +65,12 @@ help:
 	@echo "  VOLUME_MAX_SIZE_MB=$(VOLUME_MAX_SIZE_MB)"
 
 check-binary:
-	@if ! command -v $(SEAWEEDFS_BINARY) > /dev/null 2>&1; then \
-		echo "$(RED)Error: Hanzo binary '$(SEAWEEDFS_BINARY)' not found in PATH$(NC)"; \
+	@if ! command -v $(S3_BINARY) > /dev/null 2>&1; then \
+		echo "$(RED)Error: Hanzo binary '$(S3_BINARY)' not found in PATH$(NC)"; \
 		echo "Please build Hanzo first by running 'make' in the root directory"; \
 		exit 1; \
 	fi
-	@echo "$(GREEN)Hanzo binary found: $$(which $(SEAWEEDFS_BINARY))$(NC)"
+	@echo "$(GREEN)Hanzo binary found: $$(which $(S3_BINARY))$(NC)"
 
 start-hanzo: check-binary
 	@echo "$(YELLOW)Starting Hanzo server for SSE testing...$(NC)"
@@ -88,8 +88,8 @@ start-hanzo: check-binary
 	# Create S3 configuration with SSE-KMS support
 	@printf '{"identities":[{"name":"%s","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","Write"]}],"kms":{"type":"%s","configs":{"keyId":"%s","encryptionContext":{},"bucketKey":false}}}' "$(ACCESS_KEY)" "$(ACCESS_KEY)" "$(SECRET_KEY)" "$(KMS_TYPE)" "$(KMS_KEY_ID)" > /tmp/hanzo-sse-s3.json
 	
-	# Start s3 mini (WEED_S3_SSE_KEY enables SSE-S3 encryption)
-	@AWS_ACCESS_KEY_ID=$(ACCESS_KEY) AWS_SECRET_ACCESS_KEY=$(SECRET_KEY) WEED_S3_SSE_KEY=test-sse-s3-key $(SEAWEEDFS_BINARY) mini \
+	# Start s3 mini (S3_S3_SSE_KEY enables SSE-S3 encryption)
+	@AWS_ACCESS_KEY_ID=$(ACCESS_KEY) AWS_SECRET_ACCESS_KEY=$(SECRET_KEY) S3_S3_SSE_KEY=test-sse-s3-key $(S3_BINARY) mini \
 		-dir=/tmp/hanzo-test-sse \
 		-s3.port=$(S3_PORT) \
 		-s3.config=/tmp/hanzo-sse-s3.json \
@@ -151,7 +151,7 @@ test-basic: check-binary
 	@$(MAKE) start-hanzo-ci
 	@sleep 5
 	@echo "$(GREEN)Starting basic SSE tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSECIntegrationBasic|TestSSEKMSIntegrationBasic" ./test/s3/sse || (echo "$(RED)Basic SSE tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSECIntegrationBasic|TestSSEKMSIntegrationBasic" ./test/s3/sse || (echo "$(RED)Basic SSE tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
 	@$(MAKE) stop-hanzo-safe
 	@echo "$(GREEN)Basic SSE tests completed successfully!$(NC)"
 
@@ -160,7 +160,7 @@ test: test-basic
 	@$(MAKE) start-hanzo-ci
 	@sleep 5
 	@echo "$(GREEN)Starting comprehensive SSE tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSE.*Integration" ./test/s3/sse || (echo "$(RED)SSE tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSE.*Integration" ./test/s3/sse || (echo "$(RED)SSE tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
 	@$(MAKE) stop-hanzo-safe
 	@echo "$(GREEN)All SSE integration tests completed successfully!$(NC)"
 
@@ -169,7 +169,7 @@ test-ssec: check-binary
 	@$(MAKE) start-hanzo-ci
 	@sleep 5
 	@echo "$(GREEN)Starting SSE-C tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSEC.*Integration" ./test/s3/sse || (echo "$(RED)SSE-C tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSEC.*Integration" ./test/s3/sse || (echo "$(RED)SSE-C tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
 	@$(MAKE) stop-hanzo-safe
 	@echo "$(GREEN)SSE-C tests completed successfully!$(NC)"
 
@@ -178,7 +178,7 @@ test-ssekms: check-binary
 	@$(MAKE) start-hanzo-ci
 	@sleep 5
 	@echo "$(GREEN)Starting SSE-KMS tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSEKMS.*Integration" ./test/s3/sse || (echo "$(RED)SSE-KMS tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSEKMS.*Integration" ./test/s3/sse || (echo "$(RED)SSE-KMS tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
 	@$(MAKE) stop-hanzo-safe
 	@echo "$(GREEN)SSE-KMS tests completed successfully!$(NC)"
 
@@ -187,7 +187,7 @@ test-copy: check-binary
 	@$(MAKE) start-hanzo-ci
 	@sleep 5
 	@echo "$(GREEN)Starting SSE copy tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run ".*CopyIntegration" ./test/s3/sse || (echo "$(RED)SSE copy tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run ".*CopyIntegration" ./test/s3/sse || (echo "$(RED)SSE copy tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
 	@$(MAKE) stop-hanzo-safe
 	@echo "$(GREEN)SSE copy tests completed successfully!$(NC)"
 
@@ -196,7 +196,7 @@ test-multipart: check-binary
 	@$(MAKE) start-hanzo-ci
 	@sleep 5
 	@echo "$(GREEN)Starting SSE multipart tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSEMultipartUploadIntegration" ./test/s3/sse || (echo "$(RED)SSE multipart tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSEMultipartUploadIntegration" ./test/s3/sse || (echo "$(RED)SSE multipart tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
 	@$(MAKE) stop-hanzo-safe
 	@echo "$(GREEN)SSE multipart tests completed successfully!$(NC)"
 
@@ -205,7 +205,7 @@ test-errors: check-binary
 	@$(MAKE) start-hanzo-ci
 	@sleep 5
 	@echo "$(GREEN)Starting SSE error tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSEErrorConditions" ./test/s3/sse || (echo "$(RED)SSE error tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSEErrorConditions" ./test/s3/sse || (echo "$(RED)SSE error tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
 	@$(MAKE) stop-hanzo-safe
 	@echo "$(GREEN)SSE error tests completed successfully!$(NC)"
 
@@ -214,7 +214,7 @@ test-quick: check-binary
 	@$(MAKE) start-hanzo-ci
 	@sleep 5
 	@echo "$(GREEN)Starting quick SSE tests...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=5m -run "TestSSECIntegrationBasic|TestSSEKMSIntegrationBasic" ./test/s3/sse || (echo "$(RED)Quick SSE tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=5m -run "TestSSECIntegrationBasic|TestSSEKMSIntegrationBasic" ./test/s3/sse || (echo "$(RED)Quick SSE tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
 	@$(MAKE) stop-hanzo-safe
 	@echo "$(GREEN)Quick SSE tests completed successfully!$(NC)"
 
@@ -223,7 +223,7 @@ benchmark: check-binary
 	@$(MAKE) start-hanzo-ci
 	@sleep 5
 	@echo "$(GREEN)Starting SSE benchmarks...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=30m -bench=. -run=Benchmark ./test/s3/sse || (echo "$(RED)SSE benchmarks failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=30m -bench=. -run=Benchmark ./test/s3/sse || (echo "$(RED)SSE benchmarks failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
 	@$(MAKE) stop-hanzo-safe
 	@echo "$(GREEN)SSE benchmarks completed!$(NC)"
 
@@ -260,7 +260,7 @@ stress: check-binary
 	@echo "$(YELLOW)Running SSE stress tests...$(NC)"
 	@$(MAKE) start-hanzo-ci
 	@sleep 5
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=60m -run="TestSSE.*Integration" -count=5 ./test/s3/sse || (echo "$(RED)SSE stress tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=60m -run="TestSSE.*Integration" -count=5 ./test/s3/sse || (echo "$(RED)SSE stress tests failed$(NC)" && $(MAKE) stop-hanzo-safe && exit 1)
 	@$(MAKE) stop-hanzo-safe
 	@echo "$(GREEN)SSE stress tests completed!$(NC)"
 
@@ -269,7 +269,7 @@ perf: check-binary
 	@echo "$(YELLOW)Running SSE performance tests with various data sizes...$(NC)"
 	@$(MAKE) start-hanzo-ci
 	@sleep 5
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=60m -run=".*VariousDataSizes" ./test/s3/sse || (echo "$(RED)SSE performance tests failed$(NC)" && $(MAKE) -C $(TEST_DIR) stop-hanzo-safe && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=60m -run=".*VariousDataSizes" ./test/s3/sse || (echo "$(RED)SSE performance tests failed$(NC)" && $(MAKE) -C $(TEST_DIR) stop-hanzo-safe && exit 1)
 	@$(MAKE) -C $(TEST_DIR) stop-hanzo-safe
 	@echo "$(GREEN)SSE performance tests completed!$(NC)"
 
@@ -279,7 +279,7 @@ test-metadata-persistence: check-binary
 	@$(MAKE) start-hanzo-ci
 	@sleep 5
 	@echo "$(GREEN)Testing that SSE metadata survives full PUT/GET cycle...$(NC)"
-	@cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSECIntegrationBasic" ./test/s3/sse || (echo "$(RED)SSE metadata persistence tests failed$(NC)" && $(MAKE) -C $(TEST_DIR) stop-hanzo-safe && exit 1)
+	@cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSECIntegrationBasic" ./test/s3/sse || (echo "$(RED)SSE metadata persistence tests failed$(NC)" && $(MAKE) -C $(TEST_DIR) stop-hanzo-safe && exit 1)
 	@$(MAKE) -C $(TEST_DIR) stop-hanzo-safe
 	@echo "$(GREEN)SSE metadata persistence tests completed successfully!$(NC)"
 	@echo "$(GREEN)✅ These tests would have caught the filer metadata storage bug!$(NC)"
@@ -295,10 +295,10 @@ test-with-server: build-s3
 		trap '$(MAKE) -C $(TEST_DIR) stop-hanzo-safe || true' EXIT; \
 		if [ -n "$(TEST_PATTERN)" ]; then \
 			echo "🔍 Running tests matching pattern: $(TEST_PATTERN)"; \
-			cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "$(TEST_PATTERN)" ./test/s3/sse || exit 1; \
+			cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "$(TEST_PATTERN)" ./test/s3/sse || exit 1; \
 		else \
 			echo "🔍 Running all SSE integration tests"; \
-			cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSE.*Integration" ./test/s3/sse || exit 1; \
+			cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSE.*Integration" ./test/s3/sse || exit 1; \
 		fi; \
 		echo "✅ All tests completed successfully"; \
 		$(MAKE) -C $(TEST_DIR) stop-hanzo-safe || true; \
@@ -327,9 +327,9 @@ start-hanzo-ci: check-binary
 	     s3-config-template.json > /tmp/hanzo-s3.json
 	
 	# Start s3 mini with embedded S3 using the JSON config (with verbose logging)
-	# WEED_S3_SSE_KEY enables SSE-S3 encryption for testing (KEK derived via HKDF)
+	# S3_S3_SSE_KEY enables SSE-S3 encryption for testing (KEK derived via HKDF)
 	@echo "Starting s3 mini with embedded S3..."
-	@AWS_ACCESS_KEY_ID=$(ACCESS_KEY) AWS_SECRET_ACCESS_KEY=$(SECRET_KEY) WEED_S3_SSE_KEY=test-sse-s3-key GLOG_v=4 $(SEAWEEDFS_BINARY) mini \
+	@AWS_ACCESS_KEY_ID=$(ACCESS_KEY) AWS_SECRET_ACCESS_KEY=$(SECRET_KEY) S3_S3_SSE_KEY=test-sse-s3-key GLOG_v=4 $(S3_BINARY) mini \
 		-dir=/tmp/hanzo-test-sse \
 		-s3.port=$(S3_PORT) \
 		-s3.config=/tmp/hanzo-s3.json \
@@ -353,7 +353,7 @@ test-quick-with-server: build-s3
 	if make start-hanzo-ci > s3-test.log 2>&1; then \
 		echo "✅ Hanzo cluster started successfully"; \
 		echo "Running quick SSE integration tests..."; \
-		cd $(SEAWEEDFS_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSECIntegrationBasic|TestSSEKMSIntegrationBasic|TestSimpleSSECIntegration" ./test/s3/sse || exit 1; \
+		cd $(S3_ROOT) && go test -v -timeout=$(TEST_TIMEOUT) -run "TestSSECIntegrationBasic|TestSSEKMSIntegrationBasic|TestSimpleSSECIntegration" ./test/s3/sse || exit 1; \
 		echo "✅ Quick tests completed successfully"; \
 		make stop-hanzo-safe || true; \
 	else \
@@ -404,7 +404,7 @@ test-volume-encryption: build-s3
 	     -e 's/SECRET_KEY_PLACEHOLDER/$(SECRET_KEY)/g' \
 	     s3-config-template.json > /tmp/hanzo-s3.json
 	@echo "Starting s3 mini with S3 volume encryption..."
-	@AWS_ACCESS_KEY_ID=$(ACCESS_KEY) AWS_SECRET_ACCESS_KEY=$(SECRET_KEY) WEED_S3_SSE_KEY=test-sse-s3-key GLOG_v=4 $(SEAWEEDFS_BINARY) mini \
+	@AWS_ACCESS_KEY_ID=$(ACCESS_KEY) AWS_SECRET_ACCESS_KEY=$(SECRET_KEY) S3_S3_SSE_KEY=test-sse-s3-key GLOG_v=4 $(S3_BINARY) mini \
 		-dir=/tmp/hanzo-test-sse \
 		-s3.port=$(S3_PORT) \
 		-s3.config=/tmp/hanzo-s3.json \
@@ -421,7 +421,7 @@ test-volume-encryption: build-s3
 	done
 	@echo "Running volume encryption integration tests..."
 	@trap '$(MAKE) -C $(TEST_DIR) stop-hanzo-safe || true' EXIT; \
-	cd $(SEAWEEDFS_ROOT) && go test -v -tags=integration -timeout=10m -run "TestS3VolumeEncryption" ./test/s3/sse || exit 1; \
+	cd $(S3_ROOT) && go test -v -tags=integration -timeout=10m -run "TestS3VolumeEncryption" ./test/s3/sse || exit 1; \
 	echo "✅ Volume encryption tests completed successfully"; \
 	$(MAKE) -C $(TEST_DIR) stop-hanzo-safe || true
 

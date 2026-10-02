@@ -72,10 +72,10 @@ services:
     networks:
       - fdb_network
     environment:
-      WEED_FOUNDATIONDB_ENABLED: "true"
-      WEED_FOUNDATIONDB_CLUSTER_FILE: "/var/fdb/config/fdb.cluster"
-      WEED_FOUNDATIONDB_API_VERSION: "740"
-      WEED_FOUNDATIONDB_DIRECTORY_PREFIX: "hanzo_test"
+      S3_FOUNDATIONDB_ENABLED: "true"
+      S3_FOUNDATIONDB_CLUSTER_FILE: "/var/fdb/config/fdb.cluster"
+      S3_FOUNDATIONDB_API_VERSION: "740"
+      S3_FOUNDATIONDB_DIRECTORY_PREFIX: "hanzo_test"
     command: >
       bash -c "
         echo '🧪 Testing FoundationDB integration...' &&

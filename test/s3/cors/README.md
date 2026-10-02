@@ -124,7 +124,7 @@ make lint                      # Run linter
 The tests use these default settings (configurable via environment variables):
 
 ```bash
-WEED_BINARY=../../../s3/s3_binary
+S3_BINARY=../../../s3/s3_binary
 S3_PORT=8333
 TEST_TIMEOUT=10m
 TEST_PATTERN=TestCORS

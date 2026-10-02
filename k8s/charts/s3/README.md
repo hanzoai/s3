@@ -1,4 +1,4 @@
-# SEAWEEDFS - helm chart (2.x+)
+# Hanzo S3 Helm chart (2.x+)
 
 
 ### Add the helm repo
@@ -53,22 +53,22 @@ Alternative database can also be configured (e.g. leveldb, postgres) following t
 
 The `_large_disk_rocksdb` image tag ships with RocksDB pre-configured as the filer backend.
 To use this image with the Helm chart, override the image on all three components and disable
-the chart's default `WEED_LEVELDB2_ENABLED`, which would otherwise re-enable LevelDB2 and
+the chart's default `S3_LEVELDB2_ENABLED`, which would otherwise re-enable LevelDB2 and
 override the image's built-in RocksDB configuration:
 
 ```yaml
 # Replace <VERSION> with the desired hanzo version, e.g. 3.80_large_disk_rocksdb.
 master:
-  imageOverride: chrislusf/hanzo:<VERSION>_large_disk_rocksdb
+  imageOverride: ghcr.io/hanzoai/s3:<VERSION>_large_disk_rocksdb
 
 volume:
-  imageOverride: chrislusf/hanzo:<VERSION>_large_disk_rocksdb
+  imageOverride: ghcr.io/hanzoai/s3:<VERSION>_large_disk_rocksdb
 
 filer:
   enablePVC: true
-  imageOverride: chrislusf/hanzo:<VERSION>_large_disk_rocksdb
+  imageOverride: ghcr.io/hanzoai/s3:<VERSION>_large_disk_rocksdb
   extraEnvironmentVars:
-    WEED_LEVELDB2_ENABLED: "false"
+    S3_LEVELDB2_ENABLED: "false"
 ```
 
 Notes:

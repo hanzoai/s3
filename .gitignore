@@ -87,44 +87,44 @@ target
 other/java/hdfs/dependency-reduced-pom.xml
 
 # binary file
-weed/weed
-docker/weed
+s3/s3
+docker/s3
 
 # test generated files
-weed/*/*.jpg
-docker/weed_sub
-docker/weed_pub
-weed/mq/schema/example.parquet
+s3/*/*.jpg
+docker/s3_sub
+docker/s3_pub
+s3/mq/schema/example.parquet
 docker/agent_sub_record
 test/mq/bin/consumer
 test/mq/bin/producer
 test/producer
-bin/weed
-weed_binary
+bin/s3
+s3_binary
 /test/s3/copying/filerldb2
 /filerldb2
 /test/s3/retention/test-volume-data
-test/s3/cors/weed-test.log
-test/s3/cors/weed-server.pid
+test/s3/cors/s3-test.log
+test/s3/cors/s3-server.pid
 /test/s3/cors/test-volume-data
 test/s3/cors/cors.test
 /test/s3/retention/filerldb2
-test/s3/retention/weed-server.pid
-test/s3/retention/weed-test.log
+test/s3/retention/s3-server.pid
+test/s3/retention/s3-test.log
 /test/s3/versioning/test-volume-data
-test/s3/versioning/weed-test.log
+test/s3/versioning/s3-test.log
 /docker/admin_integration/data
 docker/agent_pub_record
-docker/admin_integration/weed-local
+docker/admin_integration/s3-local
 /s3-rdma-sidecar/bin
 /test/s3/encryption/filerldb2
 /test/s3/sse/filerldb2
-test/s3/sse/weed-test.log
+test/s3/sse/s3-test.log
 ADVANCED_IAM_DEVELOPMENT_PLAN.md
 /test/s3/iam/test-volume-data
 *.log
-weed-iam
-test/kafka/kafka-client-loadtest/weed-linux-arm64
+s3-iam
+test/kafka/kafka-client-loadtest/s3-linux-arm64
 /test/tus/filerldb2
 coverage.out
 /test/s3/remote_cache/test-primary-data
@@ -141,10 +141,10 @@ test/s3/remote_cache/primary-server.pid
 test/s3/iam/.test_env
 /test/erasure_coding/admin_dockertest/tmp
 /test/erasure_coding/admin_dockertest/task_logs
-weed_bin
+s3_bin
 telemetry/server/telemetry-server
 .aider*
-/seaweed-volume/docs
+/s3-volume/docs
 
 # Compiled binaries built beside their source. ~121 MB of macOS arm64 executables
 # were committed here — useless to a linux/amd64 fleet, and cloned by everyone

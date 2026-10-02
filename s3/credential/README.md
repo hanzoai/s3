@@ -107,18 +107,18 @@ All credential configuration can be overridden with environment variables:
 
 ```bash
 # Override PostgreSQL password
-export WEED_CREDENTIAL_POSTGRES_PASSWORD=secret
+export S3_CREDENTIAL_POSTGRES_PASSWORD=secret
 
 
 # Override PostgreSQL hostname
-export WEED_CREDENTIAL_POSTGRES_HOSTNAME=db.example.com
+export S3_CREDENTIAL_POSTGRES_HOSTNAME=db.example.com
 
 # Enable/disable stores
-export WEED_CREDENTIAL_FILER_ETC_ENABLED=true
+export S3_CREDENTIAL_FILER_ETC_ENABLED=true
 ```
 
 Rules:
-- Prefix with `WEED_CREDENTIAL_`
+- Prefix with `S3_CREDENTIAL_`
 - Convert to uppercase
 - Replace `.` with `_`
 
