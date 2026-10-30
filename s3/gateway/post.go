@@ -11,6 +11,10 @@ import (
 	"github.com/hanzoai/s3/s3/s3api/s3err"
 )
 
+// heldPost is the largest POST Object file held in memory to go upstream on a
+// kept-alive connection; a larger one streams on a connection of its own.
+const heldPost = 1 << 20
+
 // postObject stores a POST Object upload: a browser form, or a presigned POST
 // grant. The form, its policy signature and its conditions are verified against
 // the gateway's identities exactly as the store verifies them
@@ -32,6 +36,20 @@ func (g *Gateway) postObject(w http.ResponseWriter, r *http.Request, bucket, upB
 	)
 	if u.Size > 0 {
 		body, length, hash = newTrailed(u.Body, u.Size, "", algo), trailedLength(u.Size, algo), trailerPayload
+		// A file up to heldPost is held here, trailer and all, so the request can
+		// be sent again and goes out on the kept-alive pool (Upstream.send). Sent
+		// as a stream it opened a connection of its own: a TCP and TLS handshake to
+		// the upstream for every object, which held a Sites publish of ten thousand
+		// small files to some 160 to 360 a second whatever the client's
+		// parallelism (hanzo-inc/app, 2026-10-30).
+		if u.Size <= heldPost {
+			held, err := io.ReadAll(body)
+			if err != nil || int64(len(held)) != length {
+				s3err.WriteErrorResponse(w, r, s3err.ErrInternalError)
+				return
+			}
+			body = bytes.NewReader(held)
+		}
 	}
 	req, err := g.up.request(r.Context(), http.MethodPut, upBucket, u.Key, nil, body, length)
 	if err != nil {

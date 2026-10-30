@@ -2,13 +2,16 @@ package gateway
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -103,5 +106,24 @@ func TestAPostThePolicyDoesNotAdmitStoresNothing(t *testing.T) {
 	}
 	if len(st.objects) != 0 {
 		t.Fatalf("refused posts stored %d objects", len(st.objects))
+	}
+}
+
+// A small file goes upstream on the kept-alive pool, never on a connection of
+// its own: here the one-connection-per-request client cannot dial at all.
+func TestASmallPostReusesTheUpstreamPool(t *testing.T) {
+	gw, st := start(t, func(context.Context, string, string) (net.Conn, error) {
+		return nil, errors.New("a held post opened a connection of its own")
+	})
+	for i := 0; i < 3; i++ {
+		file := bytes.Repeat([]byte{'a' + byte(i)}, 70<<10)
+		key := fmt.Sprintf("hanzo/site/_next/static/%d.js", i)
+		body, ct := postForm(t, adminKey, "alpha", "hanzo/site/", key, file, false)
+		if code, reply := post(t, gw+"/alpha", body, ct); code != http.StatusCreated {
+			t.Fatalf("post %d: %d %s", i, code, reply)
+		}
+		if got := st.objects["hz-alpha-acct/"+key]; !bytes.Equal(got, file) {
+			t.Fatalf("upstream holds %d bytes for %s, want %d", len(got), key, len(file))
+		}
 	}
 }

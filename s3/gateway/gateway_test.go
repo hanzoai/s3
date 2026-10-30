@@ -116,6 +116,13 @@ func (s *store) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // setup starts a gateway in front of a fake upstream and returns its URL.
 func setup(t *testing.T) (string, *store) {
 	t.Helper()
+	return start(t, nil)
+}
+
+// start is setup with the dialer of the one-connection-per-request client
+// replaced by streamDial, when it is not nil.
+func start(t *testing.T, streamDial func(ctx context.Context, network, addr string) (net.Conn, error)) (string, *store) {
+	t.Helper()
 	upIAM := iamFor(t, fmt.Sprintf(`{"identities":[{"name":"up","credentials":[{"accessKey":%q,"secretKey":%q}],"actions":["Admin"]}]}`,
 		upKey.AccessKeyID, upKey.SecretAccessKey))
 	st := &store{iam: upIAM, objects: map[string][]byte{}, types: map[string]string{}}
@@ -128,6 +135,9 @@ func setup(t *testing.T) (string, *store) {
 	}
 	pool, stream := NewTransport(), NewTransport()
 	pool.DialContext, stream.DialContext = dial, dial
+	if streamDial != nil {
+		stream.DialContext = streamDial
+	}
 	stream.DisableKeepAlives = true
 	up, err := NewUpstream("http://s3.test", "us-east-1", upKey, &http.Client{Transport: pool}, &http.Client{Transport: stream})
 	if err != nil {
