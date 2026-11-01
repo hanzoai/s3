@@ -5,7 +5,7 @@ import (
 )
 
 func TestNeedleIdBytesRoundTrip(t *testing.T) {
-	for _, id := range []uint64{0, 1, 0xff, 0xdeadbeef, 1<<32 - 1, 1<<32, 1<<63, 1<<64 - 1} {
+	for _, id := range []uint64{0, 1, 0xff, 0xdeadbeef, 1<<32 - 1, 1 << 32, 1 << 63, 1<<64 - 1} {
 		bytes := make([]byte, NeedleIdSize)
 		NeedleIdToBytes(bytes, NeedleId(id))
 		got := BytesToNeedleId(bytes)
@@ -48,7 +48,7 @@ func TestNeedleIdFileId(t *testing.T) {
 }
 
 func TestOffsetBytesRoundTrip(t *testing.T) {
-	for _, v := range []uint32{0, 1, 0xff, 0x01020304, 1<<31, 1<<32 - 1} {
+	for _, v := range []uint32{0, 1, 0xff, 0x01020304, 1 << 31, 1<<32 - 1} {
 		bytes := make([]byte, OffsetSize)
 		OffsetToBytes(bytes, Uint32ToOffset(v))
 		got := BytesToOffset(bytes)
