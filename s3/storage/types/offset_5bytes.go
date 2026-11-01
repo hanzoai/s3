@@ -25,10 +25,8 @@ func OffsetToBytes(bytes []byte, offset Offset) {
 
 // only for testing, will be removed later.
 func Uint32ToOffset(offset uint32) Offset {
+	// a uint32 input never reaches the b4 byte; OffsetHigher stays zero
 	return Offset{
-		OffsetHigher: OffsetHigher{
-			b4: byte(offset >> 32),
-		},
 		OffsetLower: OffsetLower{
 			b0: byte(offset),
 			b1: byte(offset >> 8),
