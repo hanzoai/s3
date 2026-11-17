@@ -12,13 +12,13 @@ import (
 )
 
 type Telemetry struct {
-	Timestamp       time.Time `json:"timestamp"`
-	Device          string    `json:"device"`
-	CriticalWarning int       `json:"critical_warning"`
-	Temperature     int       `json:"temperature"`
-	AvailableSpare  int       `json:"available_spare"`
-	MediaErrors     int       `json:"media_errors"`
-	NumErrLogEntries int      `json:"num_err_log_entries"`
+	Timestamp        time.Time `json:"timestamp"`
+	Device           string    `json:"device"`
+	CriticalWarning  int       `json:"critical_warning"`
+	Temperature      int       `json:"temperature"`
+	AvailableSpare   int       `json:"available_spare"`
+	MediaErrors      int       `json:"media_errors"`
+	NumErrLogEntries int       `json:"num_err_log_entries"`
 }
 
 const (
@@ -76,6 +76,9 @@ func main() {
 			*device, data.CriticalWarning, data.MediaErrors, data.AvailableSpare)
 	}
 
-	output, _ := json.MarshalIndent(data, "", "  ")
+	output, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		log.Fatalf("Failed to marshal output: %v", err)
+	}
 	fmt.Println(string(output))
 }
