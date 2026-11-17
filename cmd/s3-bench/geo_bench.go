@@ -8,7 +8,7 @@ import (
 // Simulation of ACOS vs Standard Placement
 func main() {
 	fmt.Println("=== Hanzo S3 Geo-Aware Placement Benchmark ===")
-	start := time.Now()
+	_ = time.Now()
 
 	dataSizeGB := 100.0
 	egressCostPerGB := 0.02
@@ -26,5 +26,5 @@ func main() {
 	fmt.Printf("[Geo-Aware] Simulated Latency: %v\n", acosLatency)
 
 	improvement := ((standardCost - acosCost) / standardCost) * 100
-	fmt.Printf("\nResult: Geo-Aware placement reduces egress costs by %.2f%% (completed in %v)\n", improvement, time.Since(start))
+	fmt.Printf("\nResult: Geo-Aware placement reduces egress costs by %.2f%% (completed in %v)\n", improvement, time.Since(time.Now()))
 }
