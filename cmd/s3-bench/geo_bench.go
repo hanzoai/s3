@@ -7,8 +7,8 @@ import (
 
 // Simulation of ACOS vs Standard Placement
 func main() {
-	start := time.Now()
 	fmt.Println("=== Hanzo S3 Geo-Aware Placement Benchmark ===")
+	start := time.Now()
 
 	dataSizeGB := 100.0
 	egressCostPerGB := 0.02
