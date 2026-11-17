@@ -46,7 +46,9 @@ func parseSmartLogJSON(raw []byte, device string) (Telemetry, error) {
 }
 
 func isFailureImminent(t Telemetry) bool {
-	return t.CriticalWarning > 0 || t.MediaErrors > MaxMediaErrors || (t.AvailableSpare > 0 && t.AvailableSpare < MinAvailableSparePct)
+	// Note: AvailableSpare is a percentage (0-100). 
+	// Failure is imminent if spare is below the threshold.
+	return t.CriticalWarning > 0 || t.MediaErrors > MaxMediaErrors || (t.AvailableSpare < MinAvailableSparePct)
 }
 
 func collectTelemetry(device string) (Telemetry, error) {
