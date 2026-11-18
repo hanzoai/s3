@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  acos-bench:
+    build:
+      context: ../../
+      dockerfile: docker/Dockerfile.go_build
+    volumes:
+      - ../../:/src
+    command: go run /src/cmd/acos_bench/main.go
+    networks:
+      acos-net:
+        ipv4_address: 172.20.0.2
+
+networks:
+  acos-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
