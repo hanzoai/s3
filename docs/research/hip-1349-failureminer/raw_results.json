@@ -1,0 +1,1284 @@
+{
+  "generated_at_utc": "2026-11-25T12:46:51Z",
+  "honesty_notice": {
+    "data_source": "deterministic_seeded_nvme_smart_simulation",
+    "real_hardware_exercised": false,
+    "authoring_host_only": true,
+    "not_hanzo_production_claim": true,
+    "note": "All figures are reproducible measurements from the evaluation corpus on the authoring host; they are not Hanzo production SLA claims until validated on production NVMe SMART logs."
+  },
+  "host": {
+    "go_version": "go1.27.1",
+    "goos": "linux",
+    "goarch": "amd64",
+    "num_cpu": 2
+  },
+  "dataset_name": "nvme_fleet_90d_multivendor",
+  "seed": 1349,
+  "total_drives": 1200,
+  "train_drives": 601,
+  "test_drives": 599,
+  "horizon_days": 90,
+  "step_hours": 6,
+  "eval_config": {
+    "min_useful_lead_time_hours": 6,
+    "actionable_lead_time_hours": 24,
+    "evacuation_cost_unit": 1,
+    "unplanned_failure_cost_unit": 12,
+    "drive_capacity_tb": 7.68
+  },
+  "main_results": [
+    {
+      "method": "static_smart_threshold",
+      "total_test_drives": 599,
+      "failing_drives": 23,
+      "predictable_failing_drives": 20,
+      "sudden_death_drives": 3,
+      "healthy_drives": 576,
+      "hard_negative_drives": 115,
+      "true_positives": 14,
+      "false_positives": 24,
+      "false_negatives": 9,
+      "true_negatives": 552,
+      "hard_negative_false_positives": 24,
+      "recall": 0.6087,
+      "predictable_recall": 0.7,
+      "precision": 0.3684,
+      "f1": 0.459,
+      "drive_fpr": 0.0417,
+      "false_alarms_per_drive_day": 0.000464,
+      "false_alarms_per_drive_year": 0.1695,
+      "actionable_24h_recall": 0.3478,
+      "proactive_evacuation_accuracy": 0.3684,
+      "median_lead_time_hours": 72,
+      "mean_lead_time_hours": 57.86,
+      "p10_lead_time_hours": 6,
+      "p90_lead_time_hours": 114.6,
+      "reactive_baseline_cost": 276,
+      "net_operational_cost": 146,
+      "cost_savings_pct": 47.1,
+      "wasted_evacuation_tb": 184.32,
+      "samples_evaluated": 212004,
+      "fit_duration_ms": 0,
+      "eval_duration_ms": 10.404,
+      "throughput_samples_per_sec": 20376097,
+      "latency_ns_per_sample": 49.08,
+      "mode_breakdown": [
+        {
+          "mode": "progressive_media_error_ramp",
+          "total_drives": 8,
+          "detected_drives": 8,
+          "detection_rate": 1,
+          "median_lead_time_hours": 99
+        },
+        {
+          "mode": "thermal_spare_depletion",
+          "total_drives": 7,
+          "detected_drives": 5,
+          "detection_rate": 0.7143,
+          "median_lead_time_hours": 6
+        },
+        {
+          "mode": "intermittent_crc_timeout_burst",
+          "total_drives": 5,
+          "detected_drives": 1,
+          "detection_rate": 0.2,
+          "median_lead_time_hours": 6
+        },
+        {
+          "mode": "sudden_unannounced_controller_death",
+          "total_drives": 3,
+          "detected_drives": 0,
+          "detection_rate": 0,
+          "median_lead_time_hours": 0
+        },
+        {
+          "mode": "hard_negative_hot_tier",
+          "total_drives": 115,
+          "detected_drives": 24,
+          "detection_rate": 0.2087,
+          "median_lead_time_hours": 0
+        },
+        {
+          "mode": "healthy",
+          "total_drives": 461,
+          "detected_drives": 0,
+          "detection_rate": 0,
+          "median_lead_time_hours": 0
+        }
+      ]
+    },
+    {
+      "method": "sliding_window_zscore",
+      "total_test_drives": 599,
+      "failing_drives": 23,
+      "predictable_failing_drives": 20,
+      "sudden_death_drives": 3,
+      "healthy_drives": 576,
+      "hard_negative_drives": 115,
+      "true_positives": 10,
+      "false_positives": 14,
+      "false_negatives": 13,
+      "true_negatives": 562,
+      "hard_negative_false_positives": 10,
+      "recall": 0.4348,
+      "predictable_recall": 0.5,
+      "precision": 0.4167,
+      "f1": 0.4256,
+      "drive_fpr": 0.0243,
+      "false_alarms_per_drive_day": 0.000271,
+      "false_alarms_per_drive_year": 0.0988,
+      "actionable_24h_recall": 0.3913,
+      "proactive_evacuation_accuracy": 0.4167,
+      "median_lead_time_hours": 114,
+      "mean_lead_time_hours": 99,
+      "p10_lead_time_hours": 70.8,
+      "p90_lead_time_hours": 127.8,
+      "reactive_baseline_cost": 276,
+      "net_operational_cost": 180,
+      "cost_savings_pct": 34.78,
+      "wasted_evacuation_tb": 107.52,
+      "samples_evaluated": 212004,
+      "fit_duration_ms": 72.227,
+      "eval_duration_ms": 83.964,
+      "throughput_samples_per_sec": 2524914,
+      "latency_ns_per_sample": 396.05,
+      "mode_breakdown": [
+        {
+          "mode": "progressive_media_error_ramp",
+          "total_drives": 8,
+          "detected_drives": 8,
+          "detection_rate": 1,
+          "median_lead_time_hours": 102
+        },
+        {
+          "mode": "thermal_spare_depletion",
+          "total_drives": 7,
+          "detected_drives": 2,
+          "detection_rate": 0.2857,
+          "median_lead_time_hours": 129
+        },
+        {
+          "mode": "intermittent_crc_timeout_burst",
+          "total_drives": 5,
+          "detected_drives": 0,
+          "detection_rate": 0,
+          "median_lead_time_hours": 0
+        },
+        {
+          "mode": "sudden_unannounced_controller_death",
+          "total_drives": 3,
+          "detected_drives": 0,
+          "detection_rate": 0,
+          "median_lead_time_hours": 0
+        },
+        {
+          "mode": "hard_negative_hot_tier",
+          "total_drives": 115,
+          "detected_drives": 10,
+          "detection_rate": 0.087,
+          "median_lead_time_hours": 0
+        },
+        {
+          "mode": "healthy",
+          "total_drives": 461,
+          "detected_drives": 4,
+          "detection_rate": 0.0087,
+          "median_lead_time_hours": 0
+        }
+      ]
+    },
+    {
+      "method": "ewma_hazard_score",
+      "total_test_drives": 599,
+      "failing_drives": 23,
+      "predictable_failing_drives": 20,
+      "sudden_death_drives": 3,
+      "healthy_drives": 576,
+      "hard_negative_drives": 115,
+      "true_positives": 20,
+      "false_positives": 3,
+      "false_negatives": 3,
+      "true_negatives": 573,
+      "hard_negative_false_positives": 3,
+      "recall": 0.8696,
+      "predictable_recall": 1,
+      "precision": 0.8696,
+      "f1": 0.8696,
+      "drive_fpr": 0.0052,
+      "false_alarms_per_drive_day": 0.000058,
+      "false_alarms_per_drive_year": 0.0212,
+      "actionable_24h_recall": 0.8696,
+      "proactive_evacuation_accuracy": 0.8696,
+      "median_lead_time_hours": 126,
+      "mean_lead_time_hours": 141.3,
+      "p10_lead_time_hours": 83.4,
+      "p90_lead_time_hours": 219.6,
+      "reactive_baseline_cost": 276,
+      "net_operational_cost": 59,
+      "cost_savings_pct": 78.62,
+      "wasted_evacuation_tb": 23.04,
+      "samples_evaluated": 212004,
+      "fit_duration_ms": 69.661,
+      "eval_duration_ms": 31.431,
+      "throughput_samples_per_sec": 6745000,
+      "latency_ns_per_sample": 148.26,
+      "mode_breakdown": [
+        {
+          "mode": "progressive_media_error_ramp",
+          "total_drives": 8,
+          "detected_drives": 8,
+          "detection_rate": 1,
+          "median_lead_time_hours": 114
+        },
+        {
+          "mode": "thermal_spare_depletion",
+          "total_drives": 7,
+          "detected_drives": 7,
+          "detection_rate": 1,
+          "median_lead_time_hours": 204
+        },
+        {
+          "mode": "intermittent_crc_timeout_burst",
+          "total_drives": 5,
+          "detected_drives": 5,
+          "detection_rate": 1,
+          "median_lead_time_hours": 96
+        },
+        {
+          "mode": "sudden_unannounced_controller_death",
+          "total_drives": 3,
+          "detected_drives": 0,
+          "detection_rate": 0,
+          "median_lead_time_hours": 0
+        },
+        {
+          "mode": "hard_negative_hot_tier",
+          "total_drives": 115,
+          "detected_drives": 3,
+          "detection_rate": 0.0261,
+          "median_lead_time_hours": 0
+        },
+        {
+          "mode": "healthy",
+          "total_drives": 461,
+          "detected_drives": 0,
+          "detection_rate": 0,
+          "median_lead_time_hours": 0
+        }
+      ]
+    },
+    {
+      "method": "failureminer_temporal_pattern",
+      "total_test_drives": 599,
+      "failing_drives": 23,
+      "predictable_failing_drives": 20,
+      "sudden_death_drives": 3,
+      "healthy_drives": 576,
+      "hard_negative_drives": 115,
+      "true_positives": 20,
+      "false_positives": 1,
+      "false_negatives": 3,
+      "true_negatives": 575,
+      "hard_negative_false_positives": 1,
+      "recall": 0.8696,
+      "predictable_recall": 1,
+      "precision": 0.9524,
+      "f1": 0.9091,
+      "drive_fpr": 0.0017,
+      "false_alarms_per_drive_day": 0.000019,
+      "false_alarms_per_drive_year": 0.0071,
+      "actionable_24h_recall": 0.8696,
+      "proactive_evacuation_accuracy": 0.9524,
+      "median_lead_time_hours": 168,
+      "mean_lead_time_hours": 179.1,
+      "p10_lead_time_hours": 107.4,
+      "p90_lead_time_hours": 270.6,
+      "reactive_baseline_cost": 276,
+      "net_operational_cost": 57,
+      "cost_savings_pct": 79.35,
+      "wasted_evacuation_tb": 7.68,
+      "samples_evaluated": 212004,
+      "fit_duration_ms": 276.903,
+      "eval_duration_ms": 67.91,
+      "throughput_samples_per_sec": 3121803,
+      "latency_ns_per_sample": 320.33,
+      "mode_breakdown": [
+        {
+          "mode": "progressive_media_error_ramp",
+          "total_drives": 8,
+          "detected_drives": 8,
+          "detection_rate": 1,
+          "median_lead_time_hours": 162
+        },
+        {
+          "mode": "thermal_spare_depletion",
+          "total_drives": 7,
+          "detected_drives": 7,
+          "detection_rate": 1,
+          "median_lead_time_hours": 258
+        },
+        {
+          "mode": "intermittent_crc_timeout_burst",
+          "total_drives": 5,
+          "detected_drives": 5,
+          "detection_rate": 1,
+          "median_lead_time_hours": 108
+        },
+        {
+          "mode": "sudden_unannounced_controller_death",
+          "total_drives": 3,
+          "detected_drives": 0,
+          "detection_rate": 0,
+          "median_lead_time_hours": 0
+        },
+        {
+          "mode": "hard_negative_hot_tier",
+          "total_drives": 115,
+          "detected_drives": 1,
+          "detection_rate": 0.0087,
+          "median_lead_time_hours": 0
+        },
+        {
+          "mode": "healthy",
+          "total_drives": 461,
+          "detected_drives": 0,
+          "detection_rate": 0,
+          "median_lead_time_hours": 0
+        }
+      ]
+    },
+    {
+      "method": "over_sensitive_negative",
+      "total_test_drives": 599,
+      "failing_drives": 23,
+      "predictable_failing_drives": 20,
+      "sudden_death_drives": 3,
+      "healthy_drives": 576,
+      "hard_negative_drives": 115,
+      "true_positives": 23,
+      "false_positives": 575,
+      "false_negatives": 0,
+      "true_negatives": 1,
+      "hard_negative_false_positives": 115,
+      "recall": 1,
+      "predictable_recall": 1,
+      "precision": 0.0385,
+      "f1": 0.0741,
+      "drive_fpr": 0.9983,
+      "false_alarms_per_drive_day": 0.531202,
+      "false_alarms_per_drive_year": 193.8886,
+      "actionable_24h_recall": 1,
+      "proactive_evacuation_accuracy": 0.0385,
+      "median_lead_time_hours": 1044,
+      "mean_lead_time_hours": 1093.3,
+      "p10_lead_time_hours": 562.8,
+      "p90_lead_time_hours": 1788,
+      "reactive_baseline_cost": 276,
+      "net_operational_cost": 598,
+      "cost_savings_pct": -116.67,
+      "wasted_evacuation_tb": 4416,
+      "samples_evaluated": 212004,
+      "fit_duration_ms": 0,
+      "eval_duration_ms": 16.234,
+      "throughput_samples_per_sec": 13059072,
+      "latency_ns_per_sample": 76.58,
+      "mode_breakdown": [
+        {
+          "mode": "progressive_media_error_ramp",
+          "total_drives": 8,
+          "detected_drives": 8,
+          "detection_rate": 1,
+          "median_lead_time_hours": 867
+        },
+        {
+          "mode": "thermal_spare_depletion",
+          "total_drives": 7,
+          "detected_drives": 7,
+          "detection_rate": 1,
+          "median_lead_time_hours": 1296
+        },
+        {
+          "mode": "intermittent_crc_timeout_burst",
+          "total_drives": 5,
+          "detected_drives": 5,
+          "detection_rate": 1,
+          "median_lead_time_hours": 894
+        },
+        {
+          "mode": "sudden_unannounced_controller_death",
+          "total_drives": 3,
+          "detected_drives": 3,
+          "detection_rate": 1,
+          "median_lead_time_hours": 1302
+        },
+        {
+          "mode": "hard_negative_hot_tier",
+          "total_drives": 115,
+          "detected_drives": 115,
+          "detection_rate": 1,
+          "median_lead_time_hours": 0
+        },
+        {
+          "mode": "healthy",
+          "total_drives": 461,
+          "detected_drives": 460,
+          "detection_rate": 0.9978,
+          "median_lead_time_hours": 0
+        }
+      ]
+    }
+  ],
+  "causality_audits": [
+    {
+      "method": "static_smart_threshold",
+      "train_test_disjoint": true,
+      "drives_audited": 12,
+      "cutoffs_audited": 36,
+      "comparisons_checked": 4751,
+      "future_perturbation_invariant": true,
+      "details": "verified disjoint splits and bit-identical predictions across 12 drives / 36 cutoffs / 4751 causal observations"
+    },
+    {
+      "method": "sliding_window_zscore",
+      "train_test_disjoint": true,
+      "drives_audited": 12,
+      "cutoffs_audited": 36,
+      "comparisons_checked": 4751,
+      "future_perturbation_invariant": true,
+      "details": "verified disjoint splits and bit-identical predictions across 12 drives / 36 cutoffs / 4751 causal observations"
+    },
+    {
+      "method": "ewma_hazard_score",
+      "train_test_disjoint": true,
+      "drives_audited": 12,
+      "cutoffs_audited": 36,
+      "comparisons_checked": 4751,
+      "future_perturbation_invariant": true,
+      "details": "verified disjoint splits and bit-identical predictions across 12 drives / 36 cutoffs / 4751 causal observations"
+    },
+    {
+      "method": "failureminer_temporal_pattern",
+      "train_test_disjoint": true,
+      "drives_audited": 12,
+      "cutoffs_audited": 36,
+      "comparisons_checked": 4751,
+      "future_perturbation_invariant": true,
+      "details": "verified disjoint splits and bit-identical predictions across 12 drives / 36 cutoffs / 4751 causal observations"
+    },
+    {
+      "method": "over_sensitive_negative",
+      "train_test_disjoint": true,
+      "drives_audited": 12,
+      "cutoffs_audited": 36,
+      "comparisons_checked": 4751,
+      "future_perturbation_invariant": true,
+      "details": "verified disjoint splits and bit-identical predictions across 12 drives / 36 cutoffs / 4751 causal observations"
+    }
+  ],
+  "boundary_regimes": [
+    {
+      "regime_name": "sudden_unannounced_controller_death",
+      "description": "100% of failing drives suffer abrupt ASIC/power controller death with zero pre-failure SMART/NVMe telemetry drift.",
+      "takeaway": "Proves the physical recall ceiling: calibrated causal models achieve ~0% recall (at ~0% FPR) because no precursor exists, whereas over-sensitive heuristics only catch sudden deaths accidentally by falsely flagging the majority of healthy drives. Proactive prediction complements, and never replaces, erasure coding / replication.",
+      "metrics": [
+        {
+          "method": "static_smart_threshold",
+          "total_test_drives": 150,
+          "failing_drives": 9,
+          "predictable_failing_drives": 0,
+          "sudden_death_drives": 9,
+          "healthy_drives": 141,
+          "hard_negative_drives": 28,
+          "true_positives": 0,
+          "false_positives": 4,
+          "false_negatives": 9,
+          "true_negatives": 137,
+          "hard_negative_false_positives": 4,
+          "recall": 0,
+          "predictable_recall": 0,
+          "precision": 0,
+          "f1": 0,
+          "drive_fpr": 0.0284,
+          "false_alarms_per_drive_day": 0.000316,
+          "false_alarms_per_drive_year": 0.1154,
+          "actionable_24h_recall": 0,
+          "proactive_evacuation_accuracy": 0,
+          "median_lead_time_hours": 0,
+          "mean_lead_time_hours": 0,
+          "p10_lead_time_hours": 0,
+          "p90_lead_time_hours": 0,
+          "reactive_baseline_cost": 108,
+          "net_operational_cost": 112,
+          "cost_savings_pct": -3.7,
+          "wasted_evacuation_tb": 30.72,
+          "samples_evaluated": 52836,
+          "fit_duration_ms": 0,
+          "eval_duration_ms": 2.189,
+          "throughput_samples_per_sec": 24133863,
+          "latency_ns_per_sample": 41.44,
+          "mode_breakdown": [
+            {
+              "mode": "sudden_unannounced_controller_death",
+              "total_drives": 9,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "hard_negative_hot_tier",
+              "total_drives": 28,
+              "detected_drives": 4,
+              "detection_rate": 0.1429,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "healthy",
+              "total_drives": 113,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            }
+          ]
+        },
+        {
+          "method": "failureminer_temporal_pattern",
+          "total_test_drives": 150,
+          "failing_drives": 9,
+          "predictable_failing_drives": 0,
+          "sudden_death_drives": 9,
+          "healthy_drives": 141,
+          "hard_negative_drives": 28,
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 9,
+          "true_negatives": 141,
+          "hard_negative_false_positives": 0,
+          "recall": 0,
+          "predictable_recall": 0,
+          "precision": 0,
+          "f1": 0,
+          "drive_fpr": 0,
+          "false_alarms_per_drive_day": 0,
+          "false_alarms_per_drive_year": 0,
+          "actionable_24h_recall": 0,
+          "proactive_evacuation_accuracy": 0,
+          "median_lead_time_hours": 0,
+          "mean_lead_time_hours": 0,
+          "p10_lead_time_hours": 0,
+          "p90_lead_time_hours": 0,
+          "reactive_baseline_cost": 108,
+          "net_operational_cost": 108,
+          "cost_savings_pct": 0,
+          "wasted_evacuation_tb": 0,
+          "samples_evaluated": 52836,
+          "fit_duration_ms": 58.016,
+          "eval_duration_ms": 14.481,
+          "throughput_samples_per_sec": 3648475,
+          "latency_ns_per_sample": 274.09,
+          "mode_breakdown": [
+            {
+              "mode": "sudden_unannounced_controller_death",
+              "total_drives": 9,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "hard_negative_hot_tier",
+              "total_drives": 28,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "healthy",
+              "total_drives": 113,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            }
+          ]
+        },
+        {
+          "method": "over_sensitive_negative",
+          "total_test_drives": 150,
+          "failing_drives": 9,
+          "predictable_failing_drives": 0,
+          "sudden_death_drives": 9,
+          "healthy_drives": 141,
+          "hard_negative_drives": 28,
+          "true_positives": 9,
+          "false_positives": 141,
+          "false_negatives": 0,
+          "true_negatives": 0,
+          "hard_negative_false_positives": 28,
+          "recall": 1,
+          "predictable_recall": 0,
+          "precision": 0.06,
+          "f1": 0.1132,
+          "drive_fpr": 1,
+          "false_alarms_per_drive_day": 0.514352,
+          "false_alarms_per_drive_year": 187.7386,
+          "actionable_24h_recall": 1,
+          "proactive_evacuation_accuracy": 0.06,
+          "median_lead_time_hours": 1314,
+          "mean_lead_time_hours": 1363.33,
+          "p10_lead_time_hours": 834,
+          "p90_lead_time_hours": 2013.6,
+          "reactive_baseline_cost": 108,
+          "net_operational_cost": 150,
+          "cost_savings_pct": -38.89,
+          "wasted_evacuation_tb": 1082.88,
+          "samples_evaluated": 52836,
+          "fit_duration_ms": 0,
+          "eval_duration_ms": 3.318,
+          "throughput_samples_per_sec": 15921008,
+          "latency_ns_per_sample": 62.81,
+          "mode_breakdown": [
+            {
+              "mode": "sudden_unannounced_controller_death",
+              "total_drives": 9,
+              "detected_drives": 9,
+              "detection_rate": 1,
+              "median_lead_time_hours": 1314
+            },
+            {
+              "mode": "hard_negative_hot_tier",
+              "total_drives": 28,
+              "detected_drives": 28,
+              "detection_rate": 1,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "healthy",
+              "total_drives": 113,
+              "detected_drives": 113,
+              "detection_rate": 1,
+              "median_lead_time_hours": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "regime_name": "high_imbalance_base_rate_precision_trap",
+      "description": "1,000-drive fleet with 1.0% failure prevalence and 25% hot-tier hard negatives (stratified 50/50 split; ~500 test drives).",
+      "takeaway": "Demonstrates Bayes' base-rate trap: at 1% failure prevalence, even a 1.2-6% drive FPR triggers more unnecessary evacuations than real failures (precision 12-40%). Tight FPR budgeting (\u003c=0.5%) + multi-signal motif gating is mandatory before enabling automated volume drain.",
+      "metrics": [
+        {
+          "method": "static_smart_threshold",
+          "total_test_drives": 499,
+          "failing_drives": 4,
+          "predictable_failing_drives": 4,
+          "sudden_death_drives": 0,
+          "healthy_drives": 495,
+          "hard_negative_drives": 124,
+          "true_positives": 4,
+          "false_positives": 30,
+          "false_negatives": 0,
+          "true_negatives": 465,
+          "hard_negative_false_positives": 30,
+          "recall": 1,
+          "predictable_recall": 1,
+          "precision": 0.1176,
+          "f1": 0.2105,
+          "drive_fpr": 0.0606,
+          "false_alarms_per_drive_day": 0.000675,
+          "false_alarms_per_drive_year": 0.2465,
+          "actionable_24h_recall": 0.5,
+          "proactive_evacuation_accuracy": 0.1176,
+          "median_lead_time_hours": 42,
+          "mean_lead_time_hours": 43.5,
+          "p10_lead_time_hours": 6,
+          "p90_lead_time_hours": 82.2,
+          "reactive_baseline_cost": 48,
+          "net_operational_cost": 34,
+          "cost_savings_pct": 29.17,
+          "wasted_evacuation_tb": 230.4,
+          "samples_evaluated": 179250,
+          "fit_duration_ms": 0,
+          "eval_duration_ms": 6.565,
+          "throughput_samples_per_sec": 27302042,
+          "latency_ns_per_sample": 36.63,
+          "mode_breakdown": [
+            {
+              "mode": "progressive_media_error_ramp",
+              "total_drives": 2,
+              "detected_drives": 2,
+              "detection_rate": 1,
+              "median_lead_time_hours": 81
+            },
+            {
+              "mode": "thermal_spare_depletion",
+              "total_drives": 1,
+              "detected_drives": 1,
+              "detection_rate": 1,
+              "median_lead_time_hours": 6
+            },
+            {
+              "mode": "intermittent_crc_timeout_burst",
+              "total_drives": 1,
+              "detected_drives": 1,
+              "detection_rate": 1,
+              "median_lead_time_hours": 6
+            },
+            {
+              "mode": "hard_negative_hot_tier",
+              "total_drives": 124,
+              "detected_drives": 30,
+              "detection_rate": 0.2419,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "healthy",
+              "total_drives": 371,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            }
+          ]
+        },
+        {
+          "method": "ewma_hazard_score",
+          "total_test_drives": 499,
+          "failing_drives": 4,
+          "predictable_failing_drives": 4,
+          "sudden_death_drives": 0,
+          "healthy_drives": 495,
+          "hard_negative_drives": 124,
+          "true_positives": 4,
+          "false_positives": 1,
+          "false_negatives": 0,
+          "true_negatives": 494,
+          "hard_negative_false_positives": 1,
+          "recall": 1,
+          "predictable_recall": 1,
+          "precision": 0.8,
+          "f1": 0.8889,
+          "drive_fpr": 0.002,
+          "false_alarms_per_drive_day": 0.000023,
+          "false_alarms_per_drive_year": 0.0082,
+          "actionable_24h_recall": 1,
+          "proactive_evacuation_accuracy": 0.8,
+          "median_lead_time_hours": 105,
+          "mean_lead_time_hours": 112.5,
+          "p10_lead_time_hours": 93.6,
+          "p90_lead_time_hours": 137.4,
+          "reactive_baseline_cost": 48,
+          "net_operational_cost": 5,
+          "cost_savings_pct": 89.58,
+          "wasted_evacuation_tb": 7.68,
+          "samples_evaluated": 179250,
+          "fit_duration_ms": 48.653,
+          "eval_duration_ms": 26.891,
+          "throughput_samples_per_sec": 6665579,
+          "latency_ns_per_sample": 150.02,
+          "mode_breakdown": [
+            {
+              "mode": "progressive_media_error_ramp",
+              "total_drives": 2,
+              "detected_drives": 2,
+              "detection_rate": 1,
+              "median_lead_time_hours": 99
+            },
+            {
+              "mode": "thermal_spare_depletion",
+              "total_drives": 1,
+              "detected_drives": 1,
+              "detection_rate": 1,
+              "median_lead_time_hours": 150
+            },
+            {
+              "mode": "intermittent_crc_timeout_burst",
+              "total_drives": 1,
+              "detected_drives": 1,
+              "detection_rate": 1,
+              "median_lead_time_hours": 102
+            },
+            {
+              "mode": "hard_negative_hot_tier",
+              "total_drives": 124,
+              "detected_drives": 1,
+              "detection_rate": 0.0081,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "healthy",
+              "total_drives": 371,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            }
+          ]
+        },
+        {
+          "method": "failureminer_loose_fpr_3pct",
+          "total_test_drives": 499,
+          "failing_drives": 4,
+          "predictable_failing_drives": 4,
+          "sudden_death_drives": 0,
+          "healthy_drives": 495,
+          "hard_negative_drives": 124,
+          "true_positives": 4,
+          "false_positives": 6,
+          "false_negatives": 0,
+          "true_negatives": 489,
+          "hard_negative_false_positives": 6,
+          "recall": 1,
+          "predictable_recall": 1,
+          "precision": 0.4,
+          "f1": 0.5714,
+          "drive_fpr": 0.0121,
+          "false_alarms_per_drive_day": 0.000135,
+          "false_alarms_per_drive_year": 0.0493,
+          "actionable_24h_recall": 1,
+          "proactive_evacuation_accuracy": 0.4,
+          "median_lead_time_hours": 129,
+          "mean_lead_time_hours": 138,
+          "p10_lead_time_hours": 121.8,
+          "p90_lead_time_hours": 161.4,
+          "reactive_baseline_cost": 48,
+          "net_operational_cost": 10,
+          "cost_savings_pct": 79.17,
+          "wasted_evacuation_tb": 46.08,
+          "samples_evaluated": 179250,
+          "fit_duration_ms": 237.975,
+          "eval_duration_ms": 57.88,
+          "throughput_samples_per_sec": 3096917,
+          "latency_ns_per_sample": 322.9,
+          "mode_breakdown": [
+            {
+              "mode": "progressive_media_error_ramp",
+              "total_drives": 2,
+              "detected_drives": 2,
+              "detection_rate": 1,
+              "median_lead_time_hours": 126
+            },
+            {
+              "mode": "thermal_spare_depletion",
+              "total_drives": 1,
+              "detected_drives": 1,
+              "detection_rate": 1,
+              "median_lead_time_hours": 174
+            },
+            {
+              "mode": "intermittent_crc_timeout_burst",
+              "total_drives": 1,
+              "detected_drives": 1,
+              "detection_rate": 1,
+              "median_lead_time_hours": 126
+            },
+            {
+              "mode": "hard_negative_hot_tier",
+              "total_drives": 124,
+              "detected_drives": 6,
+              "detection_rate": 0.0484,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "healthy",
+              "total_drives": 371,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            }
+          ]
+        },
+        {
+          "method": "failureminer_tight_fpr_0.4pct",
+          "total_test_drives": 499,
+          "failing_drives": 4,
+          "predictable_failing_drives": 4,
+          "sudden_death_drives": 0,
+          "healthy_drives": 495,
+          "hard_negative_drives": 124,
+          "true_positives": 4,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "true_negatives": 495,
+          "hard_negative_false_positives": 0,
+          "recall": 1,
+          "predictable_recall": 1,
+          "precision": 1,
+          "f1": 1,
+          "drive_fpr": 0,
+          "false_alarms_per_drive_day": 0,
+          "false_alarms_per_drive_year": 0,
+          "actionable_24h_recall": 1,
+          "proactive_evacuation_accuracy": 1,
+          "median_lead_time_hours": 129,
+          "mean_lead_time_hours": 138,
+          "p10_lead_time_hours": 121.8,
+          "p90_lead_time_hours": 161.4,
+          "reactive_baseline_cost": 48,
+          "net_operational_cost": 4,
+          "cost_savings_pct": 91.67,
+          "wasted_evacuation_tb": 0,
+          "samples_evaluated": 179250,
+          "fit_duration_ms": 248.521,
+          "eval_duration_ms": 59.292,
+          "throughput_samples_per_sec": 3023155,
+          "latency_ns_per_sample": 330.78,
+          "mode_breakdown": [
+            {
+              "mode": "progressive_media_error_ramp",
+              "total_drives": 2,
+              "detected_drives": 2,
+              "detection_rate": 1,
+              "median_lead_time_hours": 126
+            },
+            {
+              "mode": "thermal_spare_depletion",
+              "total_drives": 1,
+              "detected_drives": 1,
+              "detection_rate": 1,
+              "median_lead_time_hours": 174
+            },
+            {
+              "mode": "intermittent_crc_timeout_burst",
+              "total_drives": 1,
+              "detected_drives": 1,
+              "detection_rate": 1,
+              "median_lead_time_hours": 126
+            },
+            {
+              "mode": "hard_negative_hot_tier",
+              "total_drives": 124,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "healthy",
+              "total_drives": 371,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            }
+          ]
+        },
+        {
+          "method": "over_sensitive_negative",
+          "total_test_drives": 499,
+          "failing_drives": 4,
+          "predictable_failing_drives": 4,
+          "sudden_death_drives": 0,
+          "healthy_drives": 495,
+          "hard_negative_drives": 124,
+          "true_positives": 4,
+          "false_positives": 494,
+          "false_negatives": 0,
+          "true_negatives": 1,
+          "hard_negative_false_positives": 124,
+          "recall": 1,
+          "predictable_recall": 1,
+          "precision": 0.008,
+          "f1": 0.0159,
+          "drive_fpr": 0.998,
+          "false_alarms_per_drive_day": 0.477218,
+          "false_alarms_per_drive_year": 174.1845,
+          "actionable_24h_recall": 1,
+          "proactive_evacuation_accuracy": 0.008,
+          "median_lead_time_hours": 1305,
+          "mean_lead_time_hours": 1348.5,
+          "p10_lead_time_hours": 948,
+          "p90_lead_time_hours": 1783.8,
+          "reactive_baseline_cost": 48,
+          "net_operational_cost": 498,
+          "cost_savings_pct": -937.5,
+          "wasted_evacuation_tb": 3793.92,
+          "samples_evaluated": 179250,
+          "fit_duration_ms": 0,
+          "eval_duration_ms": 11.914,
+          "throughput_samples_per_sec": 15044091,
+          "latency_ns_per_sample": 66.47,
+          "mode_breakdown": [
+            {
+              "mode": "progressive_media_error_ramp",
+              "total_drives": 2,
+              "detected_drives": 2,
+              "detection_rate": 1,
+              "median_lead_time_hours": 1275
+            },
+            {
+              "mode": "thermal_spare_depletion",
+              "total_drives": 1,
+              "detected_drives": 1,
+              "detection_rate": 1,
+              "median_lead_time_hours": 1854
+            },
+            {
+              "mode": "intermittent_crc_timeout_burst",
+              "total_drives": 1,
+              "detected_drives": 1,
+              "detection_rate": 1,
+              "median_lead_time_hours": 990
+            },
+            {
+              "mode": "hard_negative_hot_tier",
+              "total_drives": 124,
+              "detected_drives": 124,
+              "detection_rate": 1,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "healthy",
+              "total_drives": 371,
+              "detected_drives": 370,
+              "detection_rate": 0.9973,
+              "median_lead_time_hours": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "regime_name": "cross_vendor_distribution_shift",
+      "description": "Models trained exclusively on Vendor A (cool 37C Gen4 TLC, 280us p99 read) and evaluated zero-shot on unseen Vendor B (QLC, 590us p99 read) and Vendor C (warm 51.5C Gen5 TLC).",
+      "takeaway": "Thresholds calibrated globally on Vendor A collapse under cross-vendor thermal/latency shift (surge in false alarms on healthy Vendor B/C drives). Per-vendor calibration plus causal online per-drive burn-in normalization restores low FPR and high precision zero-shot.",
+      "metrics": [
+        {
+          "method": "ewma_hazard_score",
+          "total_test_drives": 240,
+          "failing_drives": 12,
+          "predictable_failing_drives": 10,
+          "sudden_death_drives": 2,
+          "healthy_drives": 228,
+          "hard_negative_drives": 46,
+          "true_positives": 10,
+          "false_positives": 27,
+          "false_negatives": 2,
+          "true_negatives": 201,
+          "hard_negative_false_positives": 27,
+          "recall": 0.8333,
+          "predictable_recall": 1,
+          "precision": 0.2703,
+          "f1": 0.4082,
+          "drive_fpr": 0.1184,
+          "false_alarms_per_drive_day": 0.019596,
+          "false_alarms_per_drive_year": 7.1527,
+          "actionable_24h_recall": 0.8333,
+          "proactive_evacuation_accuracy": 0.2703,
+          "median_lead_time_hours": 156,
+          "mean_lead_time_hours": 179.4,
+          "p10_lead_time_hours": 124.2,
+          "p90_lead_time_hours": 252,
+          "reactive_baseline_cost": 144,
+          "net_operational_cost": 61,
+          "cost_savings_pct": 57.64,
+          "wasted_evacuation_tb": 207.36,
+          "samples_evaluated": 84314,
+          "fit_duration_ms": 15.754,
+          "eval_duration_ms": 13.317,
+          "throughput_samples_per_sec": 6331226,
+          "latency_ns_per_sample": 157.95,
+          "mode_breakdown": [
+            {
+              "mode": "progressive_media_error_ramp",
+              "total_drives": 4,
+              "detected_drives": 4,
+              "detection_rate": 1,
+              "median_lead_time_hours": 156
+            },
+            {
+              "mode": "thermal_spare_depletion",
+              "total_drives": 3,
+              "detected_drives": 3,
+              "detection_rate": 1,
+              "median_lead_time_hours": 252
+            },
+            {
+              "mode": "intermittent_crc_timeout_burst",
+              "total_drives": 3,
+              "detected_drives": 3,
+              "detection_rate": 1,
+              "median_lead_time_hours": 138
+            },
+            {
+              "mode": "sudden_unannounced_controller_death",
+              "total_drives": 2,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "hard_negative_hot_tier",
+              "total_drives": 46,
+              "detected_drives": 27,
+              "detection_rate": 0.587,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "healthy",
+              "total_drives": 182,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            }
+          ]
+        },
+        {
+          "method": "failureminer_no_vendor_norm",
+          "total_test_drives": 240,
+          "failing_drives": 12,
+          "predictable_failing_drives": 10,
+          "sudden_death_drives": 2,
+          "healthy_drives": 228,
+          "hard_negative_drives": 46,
+          "true_positives": 11,
+          "false_positives": 141,
+          "false_negatives": 1,
+          "true_negatives": 87,
+          "hard_negative_false_positives": 46,
+          "recall": 0.9167,
+          "predictable_recall": 1,
+          "precision": 0.0724,
+          "f1": 0.1342,
+          "drive_fpr": 0.6184,
+          "false_alarms_per_drive_day": 0.088599,
+          "false_alarms_per_drive_year": 32.3386,
+          "actionable_24h_recall": 0.9167,
+          "proactive_evacuation_accuracy": 0.0724,
+          "median_lead_time_hours": 276,
+          "mean_lead_time_hours": 539.45,
+          "p10_lead_time_hours": 120,
+          "p90_lead_time_hours": 1260,
+          "reactive_baseline_cost": 144,
+          "net_operational_cost": 164,
+          "cost_savings_pct": -13.89,
+          "wasted_evacuation_tb": 1082.88,
+          "samples_evaluated": 84314,
+          "fit_duration_ms": 88.837,
+          "eval_duration_ms": 28.802,
+          "throughput_samples_per_sec": 2927268,
+          "latency_ns_per_sample": 341.62,
+          "mode_breakdown": [
+            {
+              "mode": "progressive_media_error_ramp",
+              "total_drives": 4,
+              "detected_drives": 4,
+              "detection_rate": 1,
+              "median_lead_time_hours": 819
+            },
+            {
+              "mode": "thermal_spare_depletion",
+              "total_drives": 3,
+              "detected_drives": 3,
+              "detection_rate": 1,
+              "median_lead_time_hours": 276
+            },
+            {
+              "mode": "intermittent_crc_timeout_burst",
+              "total_drives": 3,
+              "detected_drives": 3,
+              "detection_rate": 1,
+              "median_lead_time_hours": 132
+            },
+            {
+              "mode": "sudden_unannounced_controller_death",
+              "total_drives": 2,
+              "detected_drives": 1,
+              "detection_rate": 0.5,
+              "median_lead_time_hours": 618
+            },
+            {
+              "mode": "hard_negative_hot_tier",
+              "total_drives": 46,
+              "detected_drives": 46,
+              "detection_rate": 1,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "healthy",
+              "total_drives": 182,
+              "detected_drives": 95,
+              "detection_rate": 0.522,
+              "median_lead_time_hours": 0
+            }
+          ]
+        },
+        {
+          "method": "failureminer_with_causal_burnin_norm",
+          "total_test_drives": 240,
+          "failing_drives": 12,
+          "predictable_failing_drives": 10,
+          "sudden_death_drives": 2,
+          "healthy_drives": 228,
+          "hard_negative_drives": 46,
+          "true_positives": 10,
+          "false_positives": 0,
+          "false_negatives": 2,
+          "true_negatives": 228,
+          "hard_negative_false_positives": 0,
+          "recall": 0.8333,
+          "predictable_recall": 1,
+          "precision": 1,
+          "f1": 0.9091,
+          "drive_fpr": 0,
+          "false_alarms_per_drive_day": 0,
+          "false_alarms_per_drive_year": 0,
+          "actionable_24h_recall": 0.8333,
+          "proactive_evacuation_accuracy": 1,
+          "median_lead_time_hours": 150,
+          "mean_lead_time_hours": 182.4,
+          "p10_lead_time_hours": 129.6,
+          "p90_lead_time_hours": 270.6,
+          "reactive_baseline_cost": 144,
+          "net_operational_cost": 34,
+          "cost_savings_pct": 76.39,
+          "wasted_evacuation_tb": 0,
+          "samples_evaluated": 84314,
+          "fit_duration_ms": 93.054,
+          "eval_duration_ms": 24.885,
+          "throughput_samples_per_sec": 3388114,
+          "latency_ns_per_sample": 295.15,
+          "mode_breakdown": [
+            {
+              "mode": "progressive_media_error_ramp",
+              "total_drives": 4,
+              "detected_drives": 4,
+              "detection_rate": 1,
+              "median_lead_time_hours": 138
+            },
+            {
+              "mode": "thermal_spare_depletion",
+              "total_drives": 3,
+              "detected_drives": 3,
+              "detection_rate": 1,
+              "median_lead_time_hours": 270
+            },
+            {
+              "mode": "intermittent_crc_timeout_burst",
+              "total_drives": 3,
+              "detected_drives": 3,
+              "detection_rate": 1,
+              "median_lead_time_hours": 150
+            },
+            {
+              "mode": "sudden_unannounced_controller_death",
+              "total_drives": 2,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "hard_negative_hot_tier",
+              "total_drives": 46,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            },
+            {
+              "mode": "healthy",
+              "total_drives": 182,
+              "detected_drives": 0,
+              "detection_rate": 0,
+              "median_lead_time_hours": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
