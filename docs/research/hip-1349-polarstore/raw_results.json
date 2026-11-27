@@ -1,0 +1,745 @@
+{
+  "environment": {
+    "goos": "linux",
+    "goarch": "amd64",
+    "go_version": "go1.27.1",
+    "num_cpu": 2,
+    "seed": 20260224,
+    "objects_per_workload": 32,
+    "measured_rounds": 5,
+    "corpus_objects": 192,
+    "corpus_bytes_per_round": 20980864
+  },
+  "strategies": [
+    {
+      "strategy": "uncompressed_baseline",
+      "description": "Identity baseline storing raw payloads with zero compression overhead.",
+      "rounds": 5,
+      "objects_per_round": 192,
+      "total_original_bytes": 104904320,
+      "total_stored_bytes": 104904320,
+      "overall_compression_ratio": 1,
+      "overall_space_savings_pct": 0,
+      "compress_wall_ms": 0.385372,
+      "decompress_wall_ms": 0.119536,
+      "total_wall_ms": 0.504908,
+      "compress_cpu_ms": 0.491,
+      "decompress_cpu_ms": 0.151,
+      "compress_throughput_mb_s": 272215.7292174834,
+      "decompress_throughput_mb_s": 877596.0380136528,
+      "alloc_bytes_per_round": 8867,
+      "mallocs_per_round": 50,
+      "p50_compress_us": 0.045,
+      "p95_compress_us": 0.087,
+      "p99_compress_us": 0.108,
+      "sha256_verified_all": true,
+      "zk_ciphertext_bypassed_pct": 100,
+      "codec_counts": {
+        "none": 960
+      },
+      "bypass_reasons": {},
+      "workloads": [
+        {
+          "workload": "json_logs",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 20971520,
+          "compression_ratio": 1,
+          "space_savings_pct": 0,
+          "compress_wall_ms": 0.011496999999999995,
+          "decompress_wall_ms": 0.008159000000000001,
+          "compress_throughput_mb_s": 1824086.2833782735,
+          "decompress_throughput_mb_s": 2570354.2100747637,
+          "p50_compress_us": 0.045,
+          "p99_compress_us": 0.749,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "none": 160
+          }
+        },
+        {
+          "workload": "source_tarball",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 20971520,
+          "compression_ratio": 1,
+          "space_savings_pct": 0,
+          "compress_wall_ms": 0.03843000000000003,
+          "decompress_wall_ms": 0.006602000000000002,
+          "compress_throughput_mb_s": 545706.9997397864,
+          "decompress_throughput_mb_s": 3176540.4422902144,
+          "p50_compress_us": 0.045,
+          "p99_compress_us": 0.104,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "none": 160
+          }
+        },
+        {
+          "workload": "columnar_telemetry",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 20971520,
+          "compression_ratio": 1,
+          "space_savings_pct": 0,
+          "compress_wall_ms": 0.008075999999999998,
+          "decompress_wall_ms": 0.006514000000000001,
+          "compress_throughput_mb_s": 2596770.67855374,
+          "decompress_throughput_mb_s": 3219453.484801965,
+          "p50_compress_us": 0.045,
+          "p99_compress_us": 0.103,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "none": 160
+          }
+        },
+        {
+          "workload": "precompressed_media",
+          "objects": 160,
+          "original_bytes": 20972800,
+          "stored_bytes": 20972800,
+          "compression_ratio": 1,
+          "space_savings_pct": 0,
+          "compress_wall_ms": 0.007697999999999997,
+          "decompress_wall_ms": 0.006606000000000001,
+          "compress_throughput_mb_s": 2724447.9085476752,
+          "decompress_throughput_mb_s": 3174810.7780805323,
+          "p50_compress_us": 0.045,
+          "p99_compress_us": 0.088,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "none": 160
+          }
+        },
+        {
+          "workload": "aes_gcm_ciphertext_zk",
+          "objects": 160,
+          "original_bytes": 20976000,
+          "stored_bytes": 20976000,
+          "compression_ratio": 1,
+          "space_savings_pct": 0,
+          "compress_wall_ms": 0.007908999999999998,
+          "decompress_wall_ms": 0.006584000000000002,
+          "compress_throughput_mb_s": 2652168.415728917,
+          "decompress_throughput_mb_s": 3185905.224787362,
+          "p50_compress_us": 0.045,
+          "p99_compress_us": 0.101,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "none": 160
+          }
+        },
+        {
+          "workload": "tiny_metadata",
+          "objects": 160,
+          "original_bytes": 40960,
+          "stored_bytes": 40960,
+          "compression_ratio": 1,
+          "space_savings_pct": 0,
+          "compress_wall_ms": 0.008746999999999998,
+          "decompress_wall_ms": 0.006503,
+          "compress_throughput_mb_s": 4682.748370870014,
+          "decompress_throughput_mb_s": 6298.631400891896,
+          "p50_compress_us": 0.045,
+          "p99_compress_us": 0.101,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "none": 160
+          }
+        }
+      ]
+    },
+    {
+      "strategy": "always_gzip_baseline",
+      "description": "Blindly applies gzip (DefaultCompression) to every object including pre-compressed media, tiny manifests, and ZK ciphertext.",
+      "rounds": 5,
+      "objects_per_round": 192,
+      "total_original_bytes": 104904320,
+      "total_stored_bytes": 55268315,
+      "overall_compression_ratio": 1.8980915195261516,
+      "overall_space_savings_pct": 47.3155014016582,
+      "compress_wall_ms": 836.822996,
+      "decompress_wall_ms": 390.95422,
+      "total_wall_ms": 1227.777216,
+      "compress_cpu_ms": 845.884,
+      "decompress_cpu_ms": 401.79,
+      "compress_throughput_mb_s": 125.36022611883385,
+      "decompress_throughput_mb_s": 268.3289107353797,
+      "alloc_bytes_per_round": 22980032,
+      "mallocs_per_round": 524,
+      "p50_compress_us": 530.224,
+      "p95_compress_us": 2660.825,
+      "p99_compress_us": 3998.236,
+      "sha256_verified_all": true,
+      "zk_ciphertext_bypassed_pct": 0,
+      "codec_counts": {
+        "gzip": 960
+      },
+      "bypass_reasons": {},
+      "workloads": [
+        {
+          "workload": "json_logs",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 3195965,
+          "compression_ratio": 6.561874113139537,
+          "space_savings_pct": 84.7604513168335,
+          "compress_wall_ms": 236.761733,
+          "decompress_wall_ms": 107.674187,
+          "compress_throughput_mb_s": 88.57647616559726,
+          "decompress_throughput_mb_s": 194.76831526947123,
+          "p50_compress_us": 1383.852,
+          "p99_compress_us": 2940.698,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "gzip": 160
+          }
+        },
+        {
+          "workload": "source_tarball",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 444210,
+          "compression_ratio": 47.21082370950676,
+          "space_savings_pct": 97.8818416595459,
+          "compress_wall_ms": 92.54065700000001,
+          "decompress_wall_ms": 33.086270999999996,
+          "compress_throughput_mb_s": 226.6195278903196,
+          "decompress_throughput_mb_s": 633.8435661123614,
+          "p50_compress_us": 569.99,
+          "p99_compress_us": 1143.652,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "gzip": 160
+          }
+        },
+        {
+          "workload": "columnar_telemetry",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 9646390,
+          "compression_ratio": 2.1740277969271404,
+          "space_savings_pct": 54.00242805480957,
+          "compress_wall_ms": 421.90853899999996,
+          "decompress_wall_ms": 197.61751899999996,
+          "compress_throughput_mb_s": 49.70631798471375,
+          "decompress_throughput_mb_s": 106.12176544934766,
+          "p50_compress_us": 2599.051,
+          "p99_compress_us": 4158.991,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "gzip": 160
+          }
+        },
+        {
+          "workload": "precompressed_media",
+          "objects": 160,
+          "original_bytes": 20972800,
+          "stored_bytes": 20978400,
+          "compression_ratio": 0.9997330587652061,
+          "space_savings_pct": -0.026701251144345406,
+          "compress_wall_ms": 17.029415,
+          "decompress_wall_ms": 23.478244000000004,
+          "compress_throughput_mb_s": 1231.5631511710767,
+          "decompress_throughput_mb_s": 893.2865677688671,
+          "p50_compress_us": 97.089,
+          "p99_compress_us": 192.572,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "gzip": 160
+          }
+        },
+        {
+          "workload": "aes_gcm_ciphertext_zk",
+          "objects": 160,
+          "original_bytes": 20976000,
+          "stored_bytes": 20981600,
+          "compression_ratio": 0.9997330994776376,
+          "space_savings_pct": -0.02669717772691982,
+          "compress_wall_ms": 62.636295,
+          "decompress_wall_ms": 27.576790000000003,
+          "compress_throughput_mb_s": 334.8857080387657,
+          "decompress_throughput_mb_s": 760.6396538538386,
+          "p50_compress_us": 334.383,
+          "p99_compress_us": 1247.053,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "gzip": 160
+          }
+        },
+        {
+          "workload": "tiny_metadata",
+          "objects": 160,
+          "original_bytes": 40960,
+          "stored_bytes": 21750,
+          "compression_ratio": 1.8832183908045976,
+          "space_savings_pct": 46.8994140625,
+          "compress_wall_ms": 2.907219,
+          "decompress_wall_ms": 1.1188029999999998,
+          "compress_throughput_mb_s": 14.089065873606359,
+          "decompress_throughput_mb_s": 36.610556103263946,
+          "p50_compress_us": 14.01,
+          "p99_compress_us": 51.126,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "gzip": 160
+          }
+        }
+      ]
+    },
+    {
+      "strategy": "always_zstd_baseline",
+      "description": "Blindly applies zstd (SpeedDefault) to every object including pre-compressed media, tiny manifests, and ZK ciphertext.",
+      "rounds": 5,
+      "objects_per_round": 192,
+      "total_original_bytes": 104904320,
+      "total_stored_bytes": 54536870,
+      "overall_compression_ratio": 1.9235486011573455,
+      "overall_space_savings_pct": 48.01275104781195,
+      "compress_wall_ms": 473.566527,
+      "decompress_wall_ms": 118.477141,
+      "total_wall_ms": 592.043668,
+      "compress_cpu_ms": 482.111,
+      "decompress_cpu_ms": 115.792,
+      "compress_throughput_mb_s": 221.51971057701044,
+      "decompress_throughput_mb_s": 885.4393270681642,
+      "alloc_bytes_per_round": 37685345,
+      "mallocs_per_round": 352,
+      "p50_compress_us": 108.77,
+      "p95_compress_us": 1710.891,
+      "p99_compress_us": 2260.234,
+      "sha256_verified_all": true,
+      "zk_ciphertext_bypassed_pct": 0,
+      "codec_counts": {
+        "zstd": 960
+      },
+      "bypass_reasons": {},
+      "workloads": [
+        {
+          "workload": "json_logs",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 3322385,
+          "compression_ratio": 6.31218838274312,
+          "space_savings_pct": 84.1576337814331,
+          "compress_wall_ms": 130.34700000000004,
+          "decompress_wall_ms": 41.659411999999996,
+          "compress_throughput_mb_s": 160.88993225774274,
+          "decompress_throughput_mb_s": 503.40412869965627,
+          "p50_compress_us": 782.839,
+          "p99_compress_us": 1384.515,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        },
+        {
+          "workload": "source_tarball",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 277335,
+          "compression_ratio": 75.6180071033227,
+          "space_savings_pct": 98.67756366729736,
+          "compress_wall_ms": 18.997613,
+          "decompress_wall_ms": 11.088647,
+          "compress_throughput_mb_s": 1103.9028955900935,
+          "decompress_throughput_mb_s": 1891.2604937284054,
+          "p50_compress_us": 108.539,
+          "p99_compress_us": 237.04,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        },
+        {
+          "workload": "columnar_telemetry",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 8961170,
+          "compression_ratio": 2.3402658358227777,
+          "space_savings_pct": 57.26981163024902,
+          "compress_wall_ms": 272.47257,
+          "decompress_wall_ms": 45.826366,
+          "compress_throughput_mb_s": 76.96745400830623,
+          "decompress_throughput_mb_s": 457.63000278049543,
+          "p50_compress_us": 1599.822,
+          "p99_compress_us": 3009.631,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        },
+        {
+          "workload": "precompressed_media",
+          "objects": 160,
+          "original_bytes": 20972800,
+          "stored_bytes": 20975600,
+          "compression_ratio": 0.9998665115658193,
+          "space_savings_pct": -0.013350625572172703,
+          "compress_wall_ms": 31.990784999999995,
+          "decompress_wall_ms": 9.964353,
+          "compress_throughput_mb_s": 655.5887890841067,
+          "decompress_throughput_mb_s": 2104.782919673761,
+          "p50_compress_us": 98.551,
+          "p99_compress_us": 2780.446,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        },
+        {
+          "workload": "aes_gcm_ciphertext_zk",
+          "objects": 160,
+          "original_bytes": 20976000,
+          "stored_bytes": 20979040,
+          "compression_ratio": 0.9998550934647152,
+          "space_savings_pct": -0.014492753623196464,
+          "compress_wall_ms": 17.197612,
+          "decompress_wall_ms": 8.831816,
+          "compress_throughput_mb_s": 1219.7042240515716,
+          "decompress_throughput_mb_s": 2375.049480197504,
+          "p50_compress_us": 98.598,
+          "p99_compress_us": 275.027,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        },
+        {
+          "workload": "tiny_metadata",
+          "objects": 160,
+          "original_bytes": 40960,
+          "stored_bytes": 21340,
+          "compression_ratio": 1.9194001874414246,
+          "space_savings_pct": 47.900390625,
+          "compress_wall_ms": 1.450085,
+          "decompress_wall_ms": 0.8763880000000001,
+          "compress_throughput_mb_s": 28.24662002572263,
+          "decompress_throughput_mb_s": 46.73728987617357,
+          "p50_compress_us": 7.166,
+          "p99_compress_us": 33.661,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        }
+      ]
+    },
+    {
+      "strategy": "polarstore_adaptive",
+      "description": "PolarStore-inspired sample-based compressibility estimator (magic + Shannon entropy + S2 trial) with adaptive S2/Zstd tiering and fail-closed HIP-0302/CRIME-BREACH guards.",
+      "rounds": 5,
+      "objects_per_round": 192,
+      "total_original_bytes": 104904320,
+      "total_stored_bytes": 58864970,
+      "overall_compression_ratio": 1.7821179557213738,
+      "overall_space_savings_pct": 43.88699149853886,
+      "compress_wall_ms": 219.048028,
+      "decompress_wall_ms": 77.403808,
+      "total_wall_ms": 296.451836,
+      "compress_cpu_ms": 224.217,
+      "decompress_cpu_ms": 80.052,
+      "compress_throughput_mb_s": 478.9101319825623,
+      "decompress_throughput_mb_s": 1355.2862928914296,
+      "alloc_bytes_per_round": 10861977,
+      "mallocs_per_round": 202,
+      "p50_compress_us": 1.085,
+      "p95_compress_us": 888.041,
+      "p99_compress_us": 1258.685,
+      "sha256_verified_all": true,
+      "zk_ciphertext_bypassed_pct": 100,
+      "codec_counts": {
+        "none": 480,
+        "s2": 160,
+        "zstd": 320
+      },
+      "bypass_reasons": {
+        "below_min_size_threshold": 160,
+        "client_side_ciphertext_hip0302": 160,
+        "precompressed_magic_header": 160
+      },
+      "workloads": [
+        {
+          "workload": "json_logs",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 3322385,
+          "compression_ratio": 6.31218838274312,
+          "space_savings_pct": 84.1576337814331,
+          "compress_wall_ms": 145.22910799999997,
+          "decompress_wall_ms": 40.203216,
+          "compress_throughput_mb_s": 144.40300769457323,
+          "decompress_throughput_mb_s": 521.637870960373,
+          "p50_compress_us": 821.26,
+          "p99_compress_us": 2011.765,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        },
+        {
+          "workload": "source_tarball",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 277335,
+          "compression_ratio": 75.6180071033227,
+          "space_savings_pct": 98.67756366729736,
+          "compress_wall_ms": 21.300771,
+          "decompress_wall_ms": 11.470315,
+          "compress_throughput_mb_s": 984.5427660810964,
+          "decompress_throughput_mb_s": 1828.3299107304379,
+          "p50_compress_us": 129.706,
+          "p99_compress_us": 226.229,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        },
+        {
+          "workload": "columnar_telemetry",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 13275490,
+          "compression_ratio": 1.57971720817838,
+          "space_savings_pct": 36.69753074645996,
+          "compress_wall_ms": 51.55611400000001,
+          "decompress_wall_ms": 25.523479,
+          "compress_throughput_mb_s": 406.7707663149321,
+          "decompress_throughput_mb_s": 821.6560132731123,
+          "p50_compress_us": 305.429,
+          "p99_compress_us": 432.768,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "s2": 160
+          }
+        },
+        {
+          "workload": "precompressed_media",
+          "objects": 160,
+          "original_bytes": 20972800,
+          "stored_bytes": 20972800,
+          "compression_ratio": 1,
+          "space_savings_pct": 0,
+          "compress_wall_ms": 0.099868,
+          "decompress_wall_ms": 0.008544000000000003,
+          "compress_throughput_mb_s": 210005.20687307246,
+          "decompress_throughput_mb_s": 2454681.647940074,
+          "p50_compress_us": 0.569,
+          "p99_compress_us": 1.083,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "none": 160
+          },
+          "bypass_reasons": {
+            "precompressed_magic_header": 160
+          }
+        },
+        {
+          "workload": "aes_gcm_ciphertext_zk",
+          "objects": 160,
+          "original_bytes": 20976000,
+          "stored_bytes": 20976000,
+          "compression_ratio": 1,
+          "space_savings_pct": 0,
+          "compress_wall_ms": 0.026362999999999994,
+          "decompress_wall_ms": 0.006510000000000001,
+          "compress_throughput_mb_s": 795660.5849106704,
+          "decompress_throughput_mb_s": 3222119.815668202,
+          "p50_compress_us": 0.156,
+          "p99_compress_us": 0.246,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "none": 160
+          },
+          "bypass_reasons": {
+            "client_side_ciphertext_hip0302": 160
+          }
+        },
+        {
+          "workload": "tiny_metadata",
+          "objects": 160,
+          "original_bytes": 40960,
+          "stored_bytes": 40960,
+          "compression_ratio": 1,
+          "space_savings_pct": 0,
+          "compress_wall_ms": 0.044793999999999994,
+          "decompress_wall_ms": 0.006822000000000002,
+          "compress_throughput_mb_s": 914.40817966692,
+          "decompress_throughput_mb_s": 6004.104368220462,
+          "p50_compress_us": 0.273,
+          "p99_compress_us": 0.328,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "none": 160
+          },
+          "bypass_reasons": {
+            "below_min_size_threshold": 160
+          }
+        }
+      ]
+    },
+    {
+      "strategy": "post_encryption_negative",
+      "description": "Documented negative control: encrypts objects with AES-256-GCM first, then attempts zstd compression on ciphertext.",
+      "rounds": 5,
+      "objects_per_round": 192,
+      "total_original_bytes": 104904320,
+      "total_stored_bytes": 104948800,
+      "overall_compression_ratio": 0.9995761742868904,
+      "overall_space_savings_pct": -0.04240054175079777,
+      "compress_wall_ms": 212.768769,
+      "decompress_wall_ms": 162.772569,
+      "total_wall_ms": 375.541338,
+      "compress_cpu_ms": 224.477,
+      "decompress_cpu_ms": 168.818,
+      "compress_throughput_mb_s": 493.04378877146206,
+      "decompress_throughput_mb_s": 644.484022366201,
+      "alloc_bytes_per_round": 97733601,
+      "mallocs_per_round": 1244,
+      "p50_compress_us": 170.079,
+      "p95_compress_us": 353.939,
+      "p99_compress_us": 2637.558,
+      "sha256_verified_all": true,
+      "zk_ciphertext_bypassed_pct": 0,
+      "codec_counts": {
+        "zstd": 960
+      },
+      "bypass_reasons": {},
+      "workloads": [
+        {
+          "workload": "json_logs",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 20979040,
+          "compression_ratio": 0.9996415469916641,
+          "space_savings_pct": -0.035858154296875,
+          "compress_wall_ms": 62.417886,
+          "decompress_wall_ms": 37.676698,
+          "compress_throughput_mb_s": 335.9857461369326,
+          "decompress_throughput_mb_s": 556.6177800400661,
+          "p50_compress_us": 180.855,
+          "p99_compress_us": 4316.219,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        },
+        {
+          "workload": "source_tarball",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 20979040,
+          "compression_ratio": 0.9996415469916641,
+          "space_savings_pct": -0.035858154296875,
+          "compress_wall_ms": 34.114583,
+          "decompress_wall_ms": 33.155937,
+          "compress_throughput_mb_s": 614.7376915027804,
+          "decompress_throughput_mb_s": 632.5117579997815,
+          "p50_compress_us": 166.432,
+          "p99_compress_us": 368.608,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        },
+        {
+          "workload": "columnar_telemetry",
+          "objects": 160,
+          "original_bytes": 20971520,
+          "stored_bytes": 20979040,
+          "compression_ratio": 0.9996415469916641,
+          "space_savings_pct": -0.035858154296875,
+          "compress_wall_ms": 41.555800000000005,
+          "decompress_wall_ms": 33.75861700000001,
+          "compress_throughput_mb_s": 504.6592774053201,
+          "decompress_throughput_mb_s": 621.2197614611996,
+          "p50_compress_us": 171.979,
+          "p99_compress_us": 1241.412,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        },
+        {
+          "workload": "precompressed_media",
+          "objects": 160,
+          "original_bytes": 20972800,
+          "stored_bytes": 20980320,
+          "compression_ratio": 0.9996415688607229,
+          "space_savings_pct": -0.03585596582240669,
+          "compress_wall_ms": 34.637952,
+          "decompress_wall_ms": 32.268445,
+          "compress_throughput_mb_s": 605.4861442154547,
+          "decompress_throughput_mb_s": 649.9476500959373,
+          "p50_compress_us": 175.764,
+          "p99_compress_us": 305.944,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        },
+        {
+          "workload": "aes_gcm_ciphertext_zk",
+          "objects": 160,
+          "original_bytes": 20976000,
+          "stored_bytes": 20983520,
+          "compression_ratio": 0.999641623521697,
+          "space_savings_pct": -0.03585049580472344,
+          "compress_wall_ms": 39.230563,
+          "decompress_wall_ms": 25.275141000000005,
+          "compress_throughput_mb_s": 534.685163707694,
+          "decompress_throughput_mb_s": 829.9063494838662,
+          "p50_compress_us": 203.088,
+          "p99_compress_us": 478.761,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        },
+        {
+          "workload": "tiny_metadata",
+          "objects": 160,
+          "original_bytes": 40960,
+          "stored_bytes": 47840,
+          "compression_ratio": 0.8561872909698997,
+          "space_savings_pct": -16.796875,
+          "compress_wall_ms": 0.9325530000000001,
+          "decompress_wall_ms": 0.26597099999999996,
+          "compress_throughput_mb_s": 43.922436580012075,
+          "decompress_throughput_mb_s": 154.00175207071453,
+          "p50_compress_us": 6.36,
+          "p99_compress_us": 14.393,
+          "sha256_verified": 160,
+          "codec_counts": {
+            "zstd": 160
+          }
+        }
+      ]
+    }
+  ],
+  "crime_breach_mixed_secret_oracle": {
+    "trials": 100,
+    "plaintext_bytes": 1952,
+    "naive_match_ciphertext_bytes": 134,
+    "naive_mismatch_ciphertext_bytes": 146,
+    "naive_length_delta_bytes": 12,
+    "naive_oracle_leaks": true,
+    "guarded_match_ciphertext_bytes": 1980,
+    "guarded_mismatch_ciphertext_bytes": 1980,
+    "guarded_length_delta_bytes": 0,
+    "guarded_bypass_reason": "crime_breach_mixed_secret_oracle",
+    "guarded_oracle_eliminated": true,
+    "guarded_round_trip_sha256_pass": true,
+    "guarded_avg_latency_us": 22.9257475
+  },
+  "defense_in_depth_high_entropy_probe": {
+    "objects": 32,
+    "object_size_bytes": 131100,
+    "bypassed_high_entropy": 32,
+    "avg_shannon_entropy_bits": 7.977354524436794,
+    "avg_probe_latency_us": 15.0410625,
+    "trial_probes_executed": 0,
+    "effective_throughput_mb_s": 8716.139567932783,
+    "compression_ratio": 1
+  }
+}
